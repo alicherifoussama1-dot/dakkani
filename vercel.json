@@ -25,16 +25,12 @@
 
   "crons": [
     {
-      "path": "/api/cron/sync-sheets",
-      "schedule": "*/15 * * * *"
-    },
-    {
       "path": "/api/cron/auto-blacklist",
-      "schedule": "0 * * * *"
+      "schedule": "0 2 * * *"
     },
     {
       "path": "/api/cron/sync-delivery-status",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 8 * * *"
     }
   ],
 
