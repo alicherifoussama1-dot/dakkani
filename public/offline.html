@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>غير متصل — دكاني</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Tajawal', 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);
+      color: #1e293b;
+    }
+    .card {
+      text-align: center;
+      padding: 3rem 2rem;
+      max-width: 380px;
+    }
+    .icon { font-size: 4rem; margin-bottom: 1.5rem; }
+    h1 { font-size: 1.5rem; font-weight: 900; margin-bottom: 0.75rem; color: #0f172a; }
+    p  { color: #64748b; line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem; }
+    .badge {
+      display: inline-block;
+      background: #fff7ed;
+      border: 2px solid #fed7aa;
+      color: #ea580c;
+      padding: 0.5rem 1.25rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+    button {
+      background: #f97316;
+      color: white;
+      border: none;
+      padding: 0.875rem 2rem;
+      border-radius: 1rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #ea580c; }
+    .info {
+      margin-top: 1.5rem;
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📡</div>
+    <h1>أنت غير متصل بالإنترنت</h1>
+    <p>سيتم تحديث الطلبات والبيانات تلقائياً عند العودة للاتصال</p>
+    <div class="badge">🔄 البيانات المحلية محفوظة</div>
+    <br />
+    <button onclick="window.location.reload()">إعادة المحاولة</button>
+    <p class="info">دكاني — منصة التجارة الإلكترونية الجزائرية</p>
+  </div>
+</body>
+</html>

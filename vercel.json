@@ -1,0 +1,64 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "regions": ["cdg1"],
+
+  "env": {
+    "DISABLE_PWA": "false"
+  },
+
+  "functions": {
+    "app/api/search/route.ts": { "runtime": "edge", "maxDuration": 10 },
+    "app/api/ai/agent/route.ts": { "maxDuration": 60 },
+    "app/api/ai/generate-description/route.ts": { "maxDuration": 30 },
+    "app/api/delivery/create/route.ts": { "maxDuration": 30 },
+    "app/api/meta-events/route.ts": { "maxDuration": 15 },
+    "app/api/tiktok-events/route.ts": { "maxDuration": 15 },
+    "app/api/webhooks/delivery/route.ts": { "maxDuration": 30 },
+    "app/api/webhooks/chargily/route.ts": { "maxDuration": 15 },
+    "app/api/notifications/whatsapp/route.ts": { "maxDuration": 15 },
+    "app/api/notifications/sms/route.ts": { "maxDuration": 15 }
+  },
+
+  "crons": [
+    {
+      "path": "/api/cron/sync-sheets",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/auto-blacklist",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/sync-delivery-status",
+      "schedule": "*/30 * * * *"
+    }
+  ],
+
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options",        "value": "DENY" },
+        { "key": "X-XSS-Protection",       "value": "1; mode=block" }
+      ]
+    },
+    {
+      "source": "/store/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "s-maxage=60, stale-while-revalidate=300" }
+      ]
+    }
+  ],
+
+  "rewrites": [
+    { "source": "/store/:slug", "destination": "/:slug" },
+    { "source": "/store/:slug/product/:product", "destination": "/:slug/product/:product" },
+    { "source": "/store/:slug/products", "destination": "/:slug/products" },
+    { "source": "/store/:slug/checkout", "destination": "/:slug/checkout" }
+  ]
+}
