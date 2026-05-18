@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useCallback } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -57,6 +57,57 @@ interface Props {
 }
 
 type Tab = 'basic' | 'images' | 'variants' | 'pixels' | 'seo' | 'stock'
+
+// ── Standalone components (OUTSIDE main component to prevent re-mount on type) ──
+const inputCls = 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-dakkani-500 focus:border-transparent outline-none bg-white text-gray-900'
+const labelCls = 'block text-sm font-semibold text-gray-700 mb-1.5'
+
+function FieldInput({
+  label, fieldName, type = 'text', placeholder = '', required = false, hint = '',
+  register, errors,
+}: {
+  label: string; fieldName: string; type?: string; placeholder?: string
+  required?: boolean; hint?: string
+  register: any; errors: any
+}) {
+  return (
+    <div>
+      <label className={labelCls}>
+        {label}{required && <span className="text-red-500 mr-1">*</span>}
+      </label>
+      <input
+        {...register(fieldName, type === 'number' ? { valueAsNumber: true } : {})}
+        type={type}
+        placeholder={placeholder}
+        className={inputCls}
+      />
+      {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
+      {errors[fieldName] && (
+        <p className="text-red-500 text-xs mt-1">⚠️ {errors[fieldName]?.message}</p>
+      )}
+    </div>
+  )
+}
+
+function ToggleSwitch({
+  label, fieldName, desc, register,
+}: {
+  label: string; fieldName: string; desc?: string; register: any
+}) {
+  return (
+    <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+      <div>
+        <p className="text-sm font-semibold text-gray-800">{label}</p>
+        {desc && <p className="text-xs text-gray-500 mt-0.5">{desc}</p>}
+      </div>
+      <div className="relative">
+        <input {...register(fieldName)} type="checkbox" className="sr-only peer" />
+        <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-dakkani-500 transition-colors" />
+        <div className="absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-[-20px] transition-transform" />
+      </div>
+    </label>
+  )
+}
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'basic',    label: 'أساسي',       icon: '📝' },
@@ -252,39 +303,9 @@ export default function AdminProductEditor({
   }
 
   // ── UI Helpers ────────────────────────────────────────────
-  const inputCls  = 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-dakkani-500 focus:border-transparent outline-none bg-white text-gray-900'
-  const labelCls  = 'block text-sm font-semibold text-gray-700 mb-1.5'
-  const cardCls   = 'bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4'
-
-  const F = ({ label, name, type = 'text', placeholder = '', required = false, hint = '' }: {
-    label: string; name: keyof FormData; type?: string; placeholder?: string; required?: boolean; hint?: string
-  }) => (
-    <div>
-      <label className={labelCls}>{label}{required && <span className="text-red-500 mr-1">*</span>}</label>
-      <input
-        {...register(name, type === 'number' ? { valueAsNumber: true } : {})}
-        type={type}
-        placeholder={placeholder}
-        className={inputCls}
-      />
-      {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
-      {errors[name] && <p className="text-red-500 text-xs mt-1 flex items-center gap-1">⚠️ {errors[name]?.message as string}</p>}
-    </div>
-  )
-
-  const Toggle = ({ label, name, desc }: { label: string; name: keyof FormData; desc?: string }) => (
-    <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
-      <div>
-        <p className="text-sm font-semibold text-gray-800">{label}</p>
-        {desc && <p className="text-xs text-gray-500 mt-0.5">{desc}</p>}
-      </div>
-      <div className="relative">
-        <input {...register(name)} type="checkbox" className="sr-only peer" />
-        <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-dakkani-500 transition-colors" />
-        <div className="absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-[-20px] transition-transform" />
-      </div>
-    </label>
-  )
+  const cardCls = 'bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4'
+  const r = register   // shorthand
+  const e = errors     // shorthand
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} dir="rtl" className="space-y-4 max-w-4xl pb-20">
@@ -325,8 +346,8 @@ export default function AdminProductEditor({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <F label="الاسم بالعربية" name="name_ar" placeholder="مثال: قميص قطني رجالي" required />
-              <F label="الاسم بالفرنسية / الإنجليزية" name="name" placeholder="Cotton Shirt" required />
+              <FieldInput label="الاسم بالعربية" fieldName="name_ar" placeholder="مثال: قميص قطني رجالي" required  register={r} errors={e} />
+              <FieldInput label="الاسم بالفرنسية / الإنجليزية" fieldName="name" placeholder="Cotton Shirt" required  register={r} errors={e} />
             </div>
 
             <div>
@@ -375,9 +396,9 @@ export default function AdminProductEditor({
           <div className={cardCls}>
             <h3 className="font-bold text-gray-900">الأسعار والتكلفة</h3>
             <div className="grid grid-cols-3 gap-4">
-              <F label="سعر البيع (دج) *" name="price" type="number" placeholder="2500" required hint="السعر الذي يدفعه العميل" />
-              <F label="السعر الأصلي (دج)" name="compare_price" type="number" placeholder="3200" hint="للعرض كسعر مخفّض" />
-              <F label="سعر التكلفة (دج)" name="cost_price" type="number" placeholder="1100" hint="لحساب هامش الربح فقط" />
+              <FieldInput label="سعر البيع (دج) *" fieldName="price" type="number" placeholder="2500" required hint="السعر الذي يدفعه العميل"  register={r} errors={e} />
+              <FieldInput label="السعر الأصلي (دج)" fieldName="compare_price" type="number" placeholder="3200" hint="للعرض كسعر مخفّض"  register={r} errors={e} />
+              <FieldInput label="سعر التكلفة (دج)" fieldName="cost_price" type="number" placeholder="1100" hint="لحساب هامش الربح فقط"  register={r} errors={e} />
             </div>
 
             {/* Live profit margin */}
@@ -406,18 +427,18 @@ export default function AdminProductEditor({
                   ))}
                 </select>
               </div>
-              <F label="SKU (رمز المنتج)" name="sku" placeholder="SKU-001" hint="اختياري" />
-              <F label="الباركود" name="barcode" placeholder="6291004058613" hint="اختياري" />
+              <FieldInput label="SKU (رمز المنتج)" fieldName="sku" placeholder="SKU-001" hint="اختياري"  register={r} errors={e} />
+              <FieldInput label="الباركود" fieldName="barcode" placeholder="6291004058613" hint="اختياري"  register={r} errors={e} />
             </div>
-            <F label="الوسوم (مفصولة بفاصلة)" name="tags" placeholder="صيف, قطن, رجالي, تخفيض" hint="تساعد في البحث والتصفية" />
-            <F label="الوزن (كغ)" name="weight" type="number" placeholder="0.5" hint="لحساب رسوم الشحن" />
+            <FieldInput label="الوسوم (مفصولة بفاصلة)" fieldName="tags" placeholder="صيف, قطن, رجالي, تخفيض" hint="تساعد في البحث والتصفية"  register={r} errors={e} />
+            <FieldInput label="الوزن (كغ)" fieldName="weight" type="number" placeholder="0.5" hint="لحساب رسوم الشحن"  register={r} errors={e} />
           </div>
 
           <div className={cardCls}>
             <h3 className="font-bold text-gray-900">إعدادات العرض</h3>
             <div className="space-y-2">
-              <Toggle label="منتج نشط ومرئي في المتجر" name="is_active" desc="أوقف هذا لإخفاء المنتج مؤقتاً" />
-              <Toggle label="⭐ منتج مميز" name="is_featured" desc="يظهر في أعلى الصفحة الرئيسية وفي قسم العروض" />
+              <ToggleSwitch label="منتج نشط ومرئي في المتجر" fieldName="is_active" desc="أوقف هذا لإخفاء المنتج مؤقتاً"  register={r} />
+              <ToggleSwitch label="⭐ منتج مميز" fieldName="is_featured" desc="يظهر في أعلى الصفحة الرئيسية وفي قسم العروض"  register={r} />
             </div>
           </div>
         </div>
@@ -636,11 +657,9 @@ export default function AdminProductEditor({
             <p className="text-sm text-gray-500 mb-4">
               البكسل يتبع سلوك الزوار (مشاهدة، إضافة للسلة، شراء) لتحسين حملاتك الإعلانية
             </p>
-            <Toggle
-              label="استخدام بكسل المتجر الافتراضي"
-              name="use_store_pixel"
+            <ToggleSwitch label="استخدام بكسل المتجر الافتراضي" fieldName="use_store_pixel"
               desc={`Meta: ${storePixels.meta ? '✅ ' + storePixels.meta : '❌ غير مضبوط'} | TikTok: ${storePixels.tiktok ? '✅ ' + storePixels.tiktok : '❌ غير مضبوط'}`}
-            />
+             register={r} />
           </div>
 
           {/* Custom pixel for this product */}
@@ -732,7 +751,7 @@ export default function AdminProductEditor({
           <h3 className="font-bold text-gray-900 mb-1">تحسين محركات البحث (SEO)</h3>
           <p className="text-sm text-gray-500 mb-4">هذه المعلومات تظهر في نتائج Google</p>
 
-          <F label="عنوان SEO" name="meta_title" placeholder="اسم المنتج | اسم متجرك" hint="الحد الأقصى 60 حرف" />
+          <FieldInput label="عنوان SEO" fieldName="meta_title" placeholder="اسم المنتج | اسم متجرك" hint="الحد الأقصى 60 حرف"  register={r} errors={e} />
           <div>
             <label className={labelCls}>
               وصف SEO
