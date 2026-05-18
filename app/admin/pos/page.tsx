@@ -6,8 +6,8 @@ import POSTerminal from '@/components/admin/POSTerminal'
 
 export default async function POSPage() {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  const { data: store } = await supabase.from('stores').select('id, name, name_ar').eq('owner_id', session!.user.id).single()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: store } = await supabase.from('stores').select('id, name, name_ar').eq('owner_id', user!.id).single()
   if (!store) return null
 
   const { data: products } = await supabase
@@ -21,7 +21,7 @@ export default async function POSPage() {
     <POSTerminal
       storeId={store.id}
       storeName={store.name_ar ?? store.name}
-      cashierId={session!.user.id}
+      cashierId={user!.id}
       products={(products ?? []) as any[]}
     />
   )

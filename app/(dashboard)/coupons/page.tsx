@@ -6,8 +6,8 @@ import CouponsManager from '@/components/dashboard/CouponsManager'
 
 export default async function CouponsPage() {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  const { data: store } = await supabase.from('stores').select('id').eq('owner_id', session!.user.id).single()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user!.id).single()
   if (!store) return null
 
   const { data: coupons } = await supabase

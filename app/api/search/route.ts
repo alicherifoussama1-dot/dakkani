@@ -1,7 +1,7 @@
 // ============================================================
 // AI Smart Search — Gemini intent extraction + pgvector + ILIKE fallback
 // ============================================================
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -61,7 +61,8 @@ export async function GET(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: 'Invalid params' }, { status: 400 })
 
   const { query, storeId, limit } = parsed.data
-  const supabase = createRouteHandlerClient({ cookies })
+  const cookieStore = cookies()
+    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { cookies: { get: (n) => cookieStore.get(n)?.value, set: (n,v,o) => { try { cookieStore.set({name:n,value:v,...o}) } catch {} }, remove: (n,o) => { try { cookieStore.set({name:n,value:'',...o}) } catch {} } } })
 
   // 1. Extract intent
   const intent = await extractIntent(query)

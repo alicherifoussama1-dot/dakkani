@@ -3,20 +3,21 @@
 // GET /api/admin/labels/generate?ids=id1,id2,id3
 // Returns PDF with A4 labels for each order
 // ============================================================
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function GET(req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies })
-  const { data: { session } } = await supabase.auth.getSession()
+  const cookieStore = cookies()
+    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { cookies: { get: (n) => cookieStore.get(n)?.value, set: (n,v,o) => { try { cookieStore.set({name:n,value:v,...o}) } catch {} }, remove: (n,o) => { try { cookieStore.set({name:n,value:'',...o}) } catch {} } } })
+  const { data: { user } } = await supabase.auth.getUser()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const ids = req.nextUrl.searchParams.get('ids')?.split(',').filter(Boolean) ?? []
   if (!ids.length) return NextResponse.json({ error: 'No order IDs' }, { status: 400 })
 
-  const { data: store } = await supabase.from('stores').select('id, name, phone').eq('owner_id', session.user.id).single()
+  const { data: store } = await supabase.from('stores').select('id, name, phone').eq('owner_id', user.id).single()
   if (!store) return NextResponse.json({ error: 'Store not found' }, { status: 404 })
 
   const { data: orders } = await supabase

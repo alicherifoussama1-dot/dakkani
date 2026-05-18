@@ -1,32 +1,50 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/api/webhooks']
-const STOREFRONT_PATTERN = /^\/store\//
+const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/onboarding']
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next({ request: { headers: request.headers } })
-  const supabase = createMiddlewareClient({ req: request, res: response })
-  const { data: { session } } = await supabase.auth.getSession()
+  let response = NextResponse.next({ request: { headers: request.headers } })
 
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) { return request.cookies.get(name)?.value },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({ name, value, ...options })
+          response = NextResponse.next({ request: { headers: request.headers } })
+          response.cookies.set({ name, value, ...options })
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({ name, value: '', ...options })
+          response = NextResponse.next({ request: { headers: request.headers } })
+          response.cookies.set({ name, value: '', ...options })
+        },
+      },
+    }
+  )
+
+  // Refresh session
+  const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  // Storefront is always public
-  if (STOREFRONT_PATTERN.test(pathname)) return response
+  // Always allow API, webhooks, static files
+  if (pathname.startsWith('/api/') || pathname.startsWith('/store/')) return response
 
-  // Public paths
-  const isPublic = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p))
+  const isPublic = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
+
   if (isPublic) {
-    // Redirect logged-in users away from auth pages
-    if (session && (pathname === '/login' || pathname === '/register')) {
+    if (user && (pathname === '/login' || pathname === '/register')) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     return response
   }
 
-  // Protected: require session
-  if (!session) {
+  // Require auth for dashboard & admin
+  if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/products') || pathname.startsWith('/orders') || pathname.startsWith('/settings') || pathname.startsWith('/categories') || pathname.startsWith('/warehouses') || pathname.startsWith('/coupons') || pathname.startsWith('/customers') || pathname.startsWith('/analytics') || pathname.startsWith('/landing-pages'))) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
@@ -36,5 +54,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|icons|manifest.json|sw.js|workbox-.*).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icons|manifest.json|sw.js|workbox-.*|offline.html).*)'],
 }

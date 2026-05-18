@@ -6,8 +6,8 @@ import InventoryManager from '@/components/admin/InventoryManager'
 
 export default async function InventoryPage() {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  const { data: store } = await supabase.from('stores').select('id, store_settings(low_stock_threshold)').eq('owner_id', session!.user.id).single()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: store } = await supabase.from('stores').select('id, store_settings(low_stock_threshold)').eq('owner_id', user!.id).single()
   if (!store) return null
 
   const [stockRes, warehousesRes, productsRes] = await Promise.all([

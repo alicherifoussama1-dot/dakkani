@@ -2,7 +2,7 @@
 // Create Delivery Parcel API — triggers Yalidine/ZR/Maystro
 // Server-side only (CORS blocked on delivery APIs)
 // ============================================================
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -14,8 +14,9 @@ const schema = z.object({
 })
 
 export async function POST(req: Request) {
-  const supabase = createRouteHandlerClient({ cookies })
-  const { data: { session } } = await supabase.auth.getSession()
+  const cookieStore = cookies()
+    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { cookies: { get: (n) => cookieStore.get(n)?.value, set: (n,v,o) => { try { cookieStore.set({name:n,value:v,...o}) } catch {} }, remove: (n,o) => { try { cookieStore.set({name:n,value:'',...o}) } catch {} } } })
+  const { data: { user } } = await supabase.auth.getUser()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
     const { data: store } = await supabase
       .from('stores')
       .select('*, store_settings(*)')
-      .eq('owner_id', session.user.id)
+      .eq('owner_id', user.id)
       .single()
     if (!store) return NextResponse.json({ error: 'Store not found' }, { status: 404 })
 

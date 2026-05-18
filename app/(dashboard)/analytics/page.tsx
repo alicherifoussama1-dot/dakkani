@@ -7,8 +7,8 @@ export const metadata = { title: 'الإحصائيات' }
 
 export default async function AnalyticsPage() {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  const { data: store } = await supabase.from('stores').select('id').eq('owner_id', session!.user.id).single()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user!.id).single()
   if (!store) return null
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()

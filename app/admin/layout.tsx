@@ -5,13 +5,13 @@ import AdminSidebar from '@/components/admin/AdminSidebar'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) redirect('/login')
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const { data: store } = await supabase
     .from('stores')
     .select('id, name, slug, logo_url, plan')
-    .eq('owner_id', session.user.id)
+    .eq('owner_id', user.id)
     .single()
   if (!store) redirect('/dashboard')
 

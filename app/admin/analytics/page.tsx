@@ -6,11 +6,11 @@ import AdvancedAnalytics from '@/components/admin/AdvancedAnalytics'
 
 export default async function AdminAnalyticsPage() {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
   const { data: store } = await supabase
     .from('stores')
     .select('id, name')
-    .eq('owner_id', session!.user.id)
+    .eq('owner_id', user!.id)
     .single()
   if (!store) return null
 

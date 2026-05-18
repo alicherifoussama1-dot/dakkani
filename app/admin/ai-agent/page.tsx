@@ -6,8 +6,8 @@ import AIAgentChat from '@/components/admin/AIAgentChat'
 
 export default async function AIAgentPage() {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  const { data: store } = await supabase.from('stores').select('id, name, slug').eq('owner_id', session!.user.id).single()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: store } = await supabase.from('stores').select('id, name, slug').eq('owner_id', user!.id).single()
   if (!store) return null
 
   // Load store context for AI

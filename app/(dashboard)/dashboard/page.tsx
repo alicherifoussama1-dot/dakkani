@@ -14,12 +14,12 @@ import RecentOrders  from '@/components/dashboard/RecentOrders'
 
 export default async function DashboardPage() {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
 
   const { data: store } = await supabase
     .from('stores')
     .select('id, name, slug')
-    .eq('owner_id', session!.user.id)
+    .eq('owner_id', user!.id)
     .single()
   if (!store) return null
 

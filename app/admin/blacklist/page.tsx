@@ -6,8 +6,8 @@ import BlacklistManager from '@/components/admin/BlacklistManager'
 
 export default async function BlacklistPage() {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  const { data: store } = await supabase.from('stores').select('id').eq('owner_id', session!.user.id).single()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user!.id).single()
   if (!store) return null
 
   const { data: list } = await supabase

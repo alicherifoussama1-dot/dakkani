@@ -11,7 +11,7 @@ const BUCKET = process.env.NEXT_PUBLIC_STORAGE_BUCKET ?? 'dakkani-uploads'
 
 export async function POST(req: Request) {
   const supabase = createRouteHandlerClient({ cookies })
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     }
 
     const ext = file.name.split('.').pop()
-    const fileName = `${folder}/${session.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const fileName = `${folder}/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
     const { data, error } = await supabase.storage
       .from(BUCKET)

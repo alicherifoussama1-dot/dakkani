@@ -8,13 +8,13 @@ export const metadata = { title: 'المنتجات' }
 
 export default async function ProductsPage() {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
 
   // نجلب slug المتجر أيضاً لبناء رابط المعاينة
   const { data: store } = await supabase
     .from('stores')
     .select('id, slug, name')
-    .eq('owner_id', session!.user.id)
+    .eq('owner_id', user!.id)
     .single()
   if (!store) return null
 

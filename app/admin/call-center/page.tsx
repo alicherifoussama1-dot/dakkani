@@ -6,8 +6,8 @@ import CallCenterPage from '@/components/admin/CallCenter'
 
 export default async function CallCenter() {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  const { data: store } = await supabase.from('stores').select('id, name').eq('owner_id', session!.user.id).single()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: store } = await supabase.from('stores').select('id, name').eq('owner_id', user!.id).single()
   if (!store) return null
 
   // Load pending + new orders queue

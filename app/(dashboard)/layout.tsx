@@ -6,14 +6,14 @@ import Header from '@/components/layout/Header'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-  if (!session) redirect('/login')
+  if (userError || !user) redirect('/login')
 
   const { data: store } = await supabase
     .from('stores')
     .select('*, store_settings(*)')
-    .eq('owner_id', session.user.id)
+    .eq('owner_id', user.id)
     .single()
 
   if (!store) redirect('/onboarding')
@@ -22,7 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="flex h-screen bg-[#FAFAF8] overflow-hidden" dir="rtl">
       <Sidebar store={store} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header store={store} user={session.user} />
+        <Header store={store} user={user} />
         <main className="flex-1 overflow-auto p-6 page-enter">
           {children}
         </main>
