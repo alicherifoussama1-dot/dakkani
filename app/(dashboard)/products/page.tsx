@@ -145,16 +145,22 @@ export default async function ProductsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       {/* زر عرض المنتج في المتجر */}
-                      <a
-                        href={`/store/${store.slug}/product/${p.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title="عرض المنتج في المتجر"
-                        className="flex items-center gap-1 text-xs text-gray-500 hover:text-dakkani-600 bg-gray-100 hover:bg-dakkani-50 px-2.5 py-1.5 rounded-lg transition font-medium border border-gray-200 hover:border-dakkani-200"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        عرض
-                      </a>
+                      {p.slug && p.is_active ? (
+                        <a
+                          href={`/${store.slug}/product/${p.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="عرض المنتج في المتجر"
+                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-dakkani-600 bg-gray-100 hover:bg-dakkani-50 px-2.5 py-1.5 rounded-lg transition font-medium border border-gray-200 hover:border-dakkani-200"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          عرض
+                        </a>
+                      ) : (
+                        <span className="text-xs text-gray-300 px-2.5 py-1.5">
+                          {!p.slug ? 'لا يوجد slug' : 'مخفي'}
+                        </span>
+                      )}
 
                       {/* زر تعديل */}
                       <Link

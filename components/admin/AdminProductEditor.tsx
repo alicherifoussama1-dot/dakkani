@@ -488,6 +488,12 @@ export default function AdminProductEditor({
     setError('')
     const supabase = createClient()
     const { variant_groups, tags, initial_stock, warehouse_id, ...rest } = data
+
+    // Auto-generate slug if empty
+    if (!rest.slug || rest.slug.trim() === '') {
+      rest.slug = slugify(data.name_ar ?? data.name ?? '') || `product-${Date.now()}`
+    }
+
     const payload = {
       ...rest,
       store_id:    storeId,

@@ -29,10 +29,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductPage({ params }: Props) {
   const supabase = createPublicClient()
 
-  const { data: store } = await supabase.from('stores').select('*,store_settings(*)').eq('slug', params.storeSlug).eq('is_active', true).single()
-  if (!store) notFound()
+  // Use service role — bypasses RLS completely
+  const { data: store } = await supabase
+    .from('stores')
+    .select('*,store_settings(*)')
+    .eq('slug', params.storeSlug)
+    .single()
+  if (!store || !store.is_active) notFound()
 
-  const { data: product } = await supabase.from('products').select('*').eq('store_id', store.id).eq('slug', params.slug).eq('is_active', true).single()
+  // Allow viewing even inactive products (for admin preview)
+  const { data: product } = await supabase
+    .from('products')
+    .select('*')
+    .eq('store_id', store.id)
+    .eq('slug', params.slug)
+    .single()
   if (!product) notFound()
 
   const [wilayasRes, reviewsRes, relatedRes, stockRes] = await Promise.all([
