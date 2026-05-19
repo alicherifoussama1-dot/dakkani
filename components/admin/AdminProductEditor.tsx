@@ -248,7 +248,7 @@ const ImageGallery = memo(function ImageGallery({
   return (
     <div className={CC}>
       <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-2">صور المنتج 🖼️</h3>
-      <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-8 cursor-pointer transition ${uploading ? 'border-dakkani-500 bg-[#FFF0ED]' : 'border-gray-300 hover:border-gray-400'}`}>
+      <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-8 cursor-pointer transition ${uploading ? 'border-[#E8431A] bg-[#FFF0ED]' : 'border-gray-300 hover:border-gray-400'}`}>
         <input type="file" multiple accept="image/*" onChange={onFileChange} className="sr-only" disabled={uploading} />
         {uploading
           ? <><Loader2 className="w-8 h-8 text-[#E8431A] animate-spin mb-2" /><p className="text-sm text-gray-500">جارٍ الرفع...</p></>
@@ -303,7 +303,7 @@ const VariantsSection = memo(function VariantsSection({
       <div className="flex items-center justify-between border-b border-gray-100 pb-2">
         <h3 className="font-bold text-gray-900">المتغيرات 🎨</h3>
         <button type="button" onClick={() => append({ name: '', options: [''] })}
-          className="flex items-center gap-1.5 text-xs bg-[#FFF0ED] text-[#E8431A] border border-[#FFF0ED] px-3 py-1.5 rounded-lg hover:bg-dakkani-100 transition">
+          className="flex items-center gap-1.5 text-xs bg-[#FFF0ED] text-[#E8431A] border border-[#FFF0ED] px-3 py-1.5 rounded-lg hover:bg-[#FFF0ED] transition">
           <Plus className="w-3.5 h-3.5" />إضافة متغير
         </button>
       </div>

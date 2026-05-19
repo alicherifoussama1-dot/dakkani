@@ -139,7 +139,7 @@ export default function CategoriesManager({ storeId, initialCategories }: Props)
             </select>
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
-            <input {...register('is_active')} type="checkbox" className="w-4 h-4 accent-dakkani-500" />
+            <input {...register('is_active')} type="checkbox" className="w-4 h-4 accent-[#E8431A]" />
             <span className="text-sm text-gray-700">فئة نشطة</span>
           </label>
           <div className="flex gap-3">

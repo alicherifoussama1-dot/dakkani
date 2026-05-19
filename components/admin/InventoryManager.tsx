@@ -163,7 +163,7 @@ export default function InventoryManager({ storeId, stock, warehouses, products,
             <button
               key={v}
               onClick={() => setFilter(v as any)}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition ${filter===v ? 'bg-[#E8431A]/20 text-dakkani-400 border-dakkani-500/30' : 'bg-gray-800 text-gray-500 border-gray-700'}`}
+              className={`text-xs px-3 py-1.5 rounded-lg border transition ${filter===v ? 'bg-[#E8431A]/20 text-[#F96540] border-[#E8431A]/30' : 'bg-gray-800 text-gray-500 border-gray-700'}`}
             >
               {l}
             </button>
@@ -221,13 +221,13 @@ export default function InventoryManager({ storeId, stock, warehouses, products,
                         onChange={e => setEditQty({ id: row.id, val: e.target.value })}
                         onBlur={() => saveQty(row)}
                         onKeyDown={e => e.key === 'Enter' && saveQty(row)}
-                        className="w-20 bg-gray-700 border border-dakkani-500 rounded px-2 py-1 text-sm text-white outline-none"
+                        className="w-20 bg-gray-700 border border-[#E8431A] rounded px-2 py-1 text-sm text-white outline-none"
                         type="number"
                       />
                     ) : (
                       <button
                         onClick={() => setEditQty({ id: row.id, val: String(row.quantity) })}
-                        className="font-bold text-gray-200 hover:text-dakkani-400 transition"
+                        className="font-bold text-gray-200 hover:text-[#F96540] transition"
                       >
                         {row.quantity}
                       </button>

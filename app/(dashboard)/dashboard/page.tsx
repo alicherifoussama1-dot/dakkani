@@ -228,7 +228,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="bg-gradient-to-br from-[#E8431A] to-dakkani-700 rounded-2xl p-5 text-white">
+      <div className="bg-gradient-to-br from-[#E8431A] to-[#C73615] rounded-2xl p-5 text-white">
         <h2 className="font-bold mb-3">إجراءات سريعة</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[

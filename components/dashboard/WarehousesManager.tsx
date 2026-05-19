@@ -114,7 +114,7 @@ export default function WarehousesManager({ storeId, initialWarehouses, wilayas 
             </div>
           </div>
           <label className="flex items-center gap-2 cursor-pointer text-sm">
-            <input {...register('is_default')} type="checkbox" className="w-4 h-4 accent-dakkani-500" />
+            <input {...register('is_default')} type="checkbox" className="w-4 h-4 accent-[#E8431A]" />
             <span className="font-medium text-gray-700">مستودع افتراضي</span>
           </label>
           <div className="flex gap-3">
@@ -135,7 +135,7 @@ export default function WarehousesManager({ storeId, initialWarehouses, wilayas 
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-gray-900">{w.name}</h3>
                   {w.is_default && (
-                    <span className="text-xs bg-dakkani-100 text-[#E8431A] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                    <span className="text-xs bg-[#FFF0ED] text-[#E8431A] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
                       <Star className="w-3 h-3" />افتراضي
                     </span>
                   )}

@@ -196,7 +196,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
           {newOrderCount > 0 && (
             <button
               onClick={() => { setNew(0); router.refresh() }}
-              className="flex items-center gap-1.5 text-xs bg-[#E8431A]/20 text-dakkani-400 border border-dakkani-500/30 px-2.5 py-1 rounded-lg animate-pulse"
+              className="flex items-center gap-1.5 text-xs bg-[#E8431A]/20 text-[#F96540] border border-[#E8431A]/30 px-2.5 py-1 rounded-lg animate-pulse"
             >
               <Bell className="w-3.5 h-3.5" />
               {newOrderCount} طلب جديد
@@ -286,8 +286,8 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
 
       {/* ── Bulk Actions ───────────────────────────────── */}
       {selected.size > 0 && (
-        <div className="px-6 py-2 bg-[#E8431A]/10 border-b border-dakkani-500/20 flex items-center gap-3">
-          <span className="text-sm text-dakkani-400 font-medium">{selected.size} طلب محدد</span>
+        <div className="px-6 py-2 bg-[#E8431A]/10 border-b border-[#E8431A]/20 flex items-center gap-3">
+          <span className="text-sm text-[#F96540] font-medium">{selected.size} طلب محدد</span>
           {[
             { id: 'confirm', label: 'تأكيد', icon: CheckCircle, cls: 'text-green-400 hover:bg-green-500/10' },
             { id: 'ship',    label: 'إرسال للتوصيل', icon: Truck, cls: 'text-blue-400 hover:bg-blue-500/10' },
@@ -324,7 +324,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
                   type="checkbox"
                   checked={selected.size === orders.length && orders.length > 0}
                   onChange={toggleAll}
-                  className="w-3.5 h-3.5 accent-dakkani-500"
+                  className="w-3.5 h-3.5 accent-[#E8431A]"
                 />
               </th>
               {['#', 'رقم الطلب', 'العميل', 'الولاية', 'المنتجات', 'المجموع', 'الدفع', 'الحالة', 'الناقل', 'التتبع', 'الاحتيال', 'التاريخ', ''].map(h => (
@@ -349,12 +349,12 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
                       type="checkbox"
                       checked={selected.has(order.id)}
                       onChange={() => toggle(order.id)}
-                      className="w-3.5 h-3.5 accent-dakkani-500"
+                      className="w-3.5 h-3.5 accent-[#E8431A]"
                     />
                   </td>
                   <td className="px-3 py-3 text-gray-600 text-xs">{(page - 1) * pageSize + idx + 1}</td>
                   <td className="px-3 py-3">
-                    <Link href={`/admin/orders/${order.id}`} className="font-mono text-dakkani-400 hover:text-dakkani-300 font-bold text-xs">
+                    <Link href={`/admin/orders/${order.id}`} className="font-mono text-[#F96540] hover:text-[#FDBA74] font-bold text-xs">
                       {order.order_number}
                     </Link>
                   </td>
@@ -385,7 +385,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
                   <td className="px-3 py-3">
                     <Link
                       href={`/admin/orders/${order.id}`}
-                      className="text-xs text-[#E8431A] hover:text-dakkani-400 font-medium"
+                      className="text-xs text-[#E8431A] hover:text-[#F96540] font-medium"
                     >
                       إدارة
                     </Link>

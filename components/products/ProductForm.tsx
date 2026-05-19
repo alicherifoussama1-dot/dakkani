@@ -138,7 +138,7 @@ export default function ProductForm({
         <p className="text-sm font-medium text-gray-700">{label}</p>
         {desc && <p className="text-xs text-gray-400">{desc}</p>}
       </div>
-      <input {...register(name)} type="checkbox" className="w-4 h-4 accent-dakkani-500" />
+      <input {...register(name)} type="checkbox" className="w-4 h-4 accent-[#E8431A]" />
     </label>
   )
 

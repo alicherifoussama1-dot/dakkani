@@ -44,7 +44,7 @@ export default async function AdminPagesPage() {
           {pages.map((page: any) => {
             const rate = page.views > 0 ? ((page.conversions / page.views) * 100).toFixed(1) : '0'
             return (
-              <div key={page.id} className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-dakkani-500/40 transition">
+              <div key={page.id} className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-[#E8431A]/40 transition">
                 <div className="h-1.5 bg-gradient-to-r from-[#F96540] to-[#C73615]" />
                 <div className="p-5 space-y-3">
                   <div className="flex items-start justify-between gap-2">
@@ -65,7 +65,7 @@ export default async function AdminPagesPage() {
 
                   <div className="grid grid-cols-3 gap-2 bg-gray-800 rounded-xl p-3 text-center text-xs">
                     <div><p className="text-white font-black text-sm">{page.views.toLocaleString()}</p><p className="text-gray-500">زيارة</p></div>
-                    <div className="border-x border-gray-700"><p className="text-dakkani-400 font-black text-sm">{page.conversions}</p><p className="text-gray-500">طلب</p></div>
+                    <div className="border-x border-gray-700"><p className="text-[#F96540] font-black text-sm">{page.conversions}</p><p className="text-gray-500">طلب</p></div>
                     <div><p className="text-green-400 font-black text-sm">{rate}%</p><p className="text-gray-500">تحويل</p></div>
                   </div>
 
@@ -80,7 +80,7 @@ export default async function AdminPagesPage() {
                     </a>
                     <Link
                       href={`/admin/pages/builder?page_id=${page.id}`}
-                      className="flex-1 flex items-center justify-center gap-1 text-xs py-2 bg-[#E8431A]/20 text-dakkani-400 border border-dakkani-500/30 hover:bg-[#E8431A]/30 rounded-xl transition"
+                      className="flex-1 flex items-center justify-center gap-1 text-xs py-2 bg-[#E8431A]/20 text-[#F96540] border border-[#E8431A]/30 hover:bg-[#E8431A]/30 rounded-xl transition"
                     >
                       <Pencil className="w-3.5 h-3.5" />تعديل
                     </Link>

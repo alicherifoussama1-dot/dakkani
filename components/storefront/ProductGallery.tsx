@@ -71,7 +71,7 @@ export default function ProductGallery({ images, productName }: Props) {
               key={i}
               onClick={() => setActive(i)}
               className={`w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 transition ${
-                i === active ? 'border-dakkani-500' : 'border-transparent hover:border-gray-300'
+                i === active ? 'border-[#E8431A]' : 'border-transparent hover:border-gray-300'
               }`}
             >
               <img src={img.url} alt="" className="w-full h-full object-cover" />

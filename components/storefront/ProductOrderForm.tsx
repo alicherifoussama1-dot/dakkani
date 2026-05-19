@@ -77,7 +77,7 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
             onClick={() => setValue('delivery_type', val)}
             className={`py-2.5 rounded-xl text-sm font-semibold border transition ${
               deliveryType === val
-                ? 'bg-[#E8431A] border-dakkani-500 text-white'
+                ? 'bg-[#E8431A] border-[#E8431A] text-white'
                 : 'bg-gray-50 border-gray-200 text-gray-600'
             }`}
           >

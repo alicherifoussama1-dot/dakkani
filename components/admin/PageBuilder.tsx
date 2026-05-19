@@ -62,7 +62,7 @@ function SortableSection({
   const cat = SECTION_CATALOG.find(c => c.type === section.type)
 
   return (
-    <div ref={setNodeRef} style={style} className={`flex items-center gap-3 bg-gray-800 border rounded-xl px-4 py-3 transition ${isDragging ? 'border-dakkani-500 shadow-lg' : 'border-gray-700'}`}>
+    <div ref={setNodeRef} style={style} className={`flex items-center gap-3 bg-gray-800 border rounded-xl px-4 py-3 transition ${isDragging ? 'border-[#E8431A] shadow-lg' : 'border-gray-700'}`}>
       <button {...attributes} {...listeners} className="text-gray-600 hover:text-gray-400 cursor-grab active:cursor-grabbing">
         <GripVertical className="w-4 h-4" />
       </button>
@@ -71,7 +71,7 @@ function SortableSection({
         <p className="text-sm font-medium text-gray-200">{section.label || cat?.label}</p>
         <p className="text-xs text-gray-600">{section.type}</p>
       </div>
-      <button onClick={() => onEdit(section)} className="text-xs text-[#E8431A] hover:text-dakkani-400 px-2 py-1 bg-[#E8431A]/10 rounded-lg transition">
+      <button onClick={() => onEdit(section)} className="text-xs text-[#E8431A] hover:text-[#F96540] px-2 py-1 bg-[#E8431A]/10 rounded-lg transition">
         تعديل
       </button>
       <button onClick={() => onRemove(section.id)} className="text-gray-600 hover:text-red-400 transition">
@@ -203,7 +203,7 @@ export default function PageBuilder({ storeId, storeMeta, existingPage, products
         <div className="p-4 border-b border-gray-800 flex items-center justify-between">
           <h2 className="font-bold text-white text-sm">EcoBuilder</h2>
           <div className="flex gap-2">
-            <button onClick={() => setPreview(!preview)} className="p-1.5 text-gray-500 hover:text-dakkani-400 transition">
+            <button onClick={() => setPreview(!preview)} className="p-1.5 text-gray-500 hover:text-[#F96540] transition">
               <Eye className="w-4 h-4" />
             </button>
             <button onClick={savePage} disabled={saving} className="flex items-center gap-1.5 text-xs bg-[#E8431A] text-white px-3 py-1.5 rounded-lg hover:bg-[#C73615] transition disabled:opacity-50">
@@ -282,7 +282,7 @@ export default function PageBuilder({ storeId, storeMeta, existingPage, products
             {/* Add section */}
             <button
               onClick={() => setShowCatalog(!showCatalog)}
-              className="w-full flex items-center justify-center gap-2 py-2 border-2 border-dashed border-gray-700 text-gray-600 hover:border-dakkani-500 hover:text-dakkani-400 rounded-xl text-xs transition"
+              className="w-full flex items-center justify-center gap-2 py-2 border-2 border-dashed border-gray-700 text-gray-600 hover:border-[#E8431A] hover:text-[#F96540] rounded-xl text-xs transition"
             >
               <Plus className="w-3.5 h-3.5" />
               إضافة قسم

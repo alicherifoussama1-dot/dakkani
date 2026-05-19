@@ -144,13 +144,13 @@ export default function AdminProductsTable({ products, total, page, pageSize, ca
                     {p.use_store_pixel
                       ? <span className="text-xs text-gray-600">متجر</span>
                       : hasPixel
-                      ? <span className="text-xs bg-[#E8431A]/20 text-dakkani-400 px-2 py-0.5 rounded border border-dakkani-500/30">خاص</span>
+                      ? <span className="text-xs bg-[#E8431A]/20 text-[#F96540] px-2 py-0.5 rounded border border-[#E8431A]/30">خاص</span>
                       : <span className="text-xs text-gray-700">—</span>
                     }
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <Link href={`/admin/products/${p.id}/edit`} className="p-1.5 text-gray-500 hover:text-dakkani-400 hover:bg-[#E8431A]/10 rounded-lg transition">
+                      <Link href={`/admin/products/${p.id}/edit`} className="p-1.5 text-gray-500 hover:text-[#F96540] hover:bg-[#E8431A]/10 rounded-lg transition">
                         <Pencil className="w-3.5 h-3.5" />
                       </Link>
                       <button onClick={() => deleteProduct(p.id)} className="p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition">

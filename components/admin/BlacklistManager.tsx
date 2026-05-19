@@ -93,7 +93,7 @@ export default function BlacklistManager({ storeId, blacklist, candidates }: Pro
       <div className="flex items-center gap-3 flex-wrap">
         <button
           onClick={() => setAdding(!adding)}
-          className="flex items-center gap-1.5 text-xs bg-[#E8431A]/20 text-dakkani-400 border border-dakkani-500/30 px-3 py-1.5 rounded-lg hover:bg-[#E8431A]/30 transition"
+          className="flex items-center gap-1.5 text-xs bg-[#E8431A]/20 text-[#F96540] border border-[#E8431A]/30 px-3 py-1.5 rounded-lg hover:bg-[#E8431A]/30 transition"
         >
           <Plus className="w-3.5 h-3.5" />
           إضافة يدوياً
@@ -106,7 +106,7 @@ export default function BlacklistManager({ storeId, blacklist, candidates }: Pro
           تصدير CSV
         </button>
         <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-500">
-          <input type="checkbox" checked={shared} onChange={e => setShared(e.target.checked)} className="w-3.5 h-3.5 accent-dakkani-500" />
+          <input type="checkbox" checked={shared} onChange={e => setShared(e.target.checked)} className="w-3.5 h-3.5 accent-[#E8431A]" />
           <Globe className="w-3.5 h-3.5" />
           مشاركة القائمة مع متاجر أخرى (شبكة مشتركة)
         </label>

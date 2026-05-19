@@ -148,7 +148,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
         <p className="text-sm font-semibold text-gray-800">{label}</p>
         {desc && <p className="text-xs text-gray-500 mt-0.5">{desc}</p>}
       </div>
-      <input {...register(name)} type="checkbox" className="w-4 h-4 accent-dakkani-500" />
+      <input {...register(name)} type="checkbox" className="w-4 h-4 accent-[#E8431A]" />
     </label>
   )
 

@@ -193,7 +193,7 @@ export default function CallCenterPage({ storeId, storeName, initialQueue, stats
         <div className="p-4 border-b border-gray-800">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-gray-300">قائمة الانتظار</h2>
-            <span className="text-xs bg-[#E8431A]/20 text-dakkani-400 px-2 py-0.5 rounded-full">{queue.length}</span>
+            <span className="text-xs bg-[#E8431A]/20 text-[#F96540] px-2 py-0.5 rounded-full">{queue.length}</span>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -202,11 +202,11 @@ export default function CallCenterPage({ storeId, storeName, initialQueue, stats
               key={order.id}
               onClick={() => setActiveIdx(idx)}
               className={`w-full text-right px-4 py-3 border-b border-gray-800/50 hover:bg-gray-800/50 transition ${
-                idx === activeIdx ? 'bg-[#E8431A]/10 border-r-2 border-r-dakkani-500' : ''
+                idx === activeIdx ? 'bg-[#E8431A]/10 border-r-2 border-r-[#E8431A]' : ''
               }`}
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-mono text-dakkani-400">{order.order_number}</span>
+                <span className="text-xs font-mono text-[#F96540]">{order.order_number}</span>
                 {(order.call_attempts ?? 0) > 0 && (
                   <span className="text-xs bg-yellow-900/30 text-yellow-500 px-1.5 rounded">
                     {order.call_attempts}× محاولة
@@ -240,7 +240,7 @@ export default function CallCenterPage({ storeId, storeName, initialQueue, stats
                 <div>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-[#E8431A]/20 rounded-full flex items-center justify-center">
-                      <User className="w-5 h-5 text-dakkani-400" />
+                      <User className="w-5 h-5 text-[#F96540]" />
                     </div>
                     <div>
                       <h2 className="text-lg font-black text-white">{activeOrder.customer_name}</h2>
@@ -271,7 +271,7 @@ export default function CallCenterPage({ storeId, storeName, initialQueue, stats
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
                   <p className="text-xs text-gray-500 mb-1">رقم الطلب</p>
-                  <p className="font-mono font-bold text-dakkani-400">{activeOrder.order_number}</p>
+                  <p className="font-mono font-bold text-[#F96540]">{activeOrder.order_number}</p>
                 </div>
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
                   <p className="text-xs text-gray-500 mb-1">المجموع</p>
@@ -413,7 +413,7 @@ export default function CallCenterPage({ storeId, storeName, initialQueue, stats
             { label: 'طلبات اليوم',       value: stats.todayTotal,     cls: 'text-white' },
             { label: 'مؤكدة',             value: stats.todayConfirmed, cls: 'text-green-400' },
             { label: 'إجمالي المكالمات', value: stats.todayCalls,     cls: 'text-blue-400' },
-            { label: 'معدل التحويل',      value: `${stats.confirmRate}%`, cls: 'text-dakkani-400' },
+            { label: 'معدل التحويل',      value: `${stats.confirmRate}%`, cls: 'text-[#F96540]' },
           ].map(s => (
             <div key={s.label} className="flex justify-between items-center">
               <span className="text-xs text-gray-600">{s.label}</span>

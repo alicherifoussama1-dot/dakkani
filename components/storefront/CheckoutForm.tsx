@@ -412,7 +412,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                   key={val}
                   className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${
                     watchedDeliveryType === val
-                      ? 'border-dakkani-500 bg-[#FFF0ED]'
+                      ? 'border-[#E8431A] bg-[#FFF0ED]'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -533,13 +533,13 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                 key={opt.value}
                 className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition ${
                   watchedPayment === opt.value
-                    ? 'border-dakkani-500 bg-[#FFF0ED]'
+                    ? 'border-[#E8431A] bg-[#FFF0ED]'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <input {...register('payment_method')} type="radio" value={opt.value} className="sr-only" />
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                  watchedPayment === opt.value ? 'border-dakkani-500' : 'border-gray-300'
+                  watchedPayment === opt.value ? 'border-[#E8431A]' : 'border-gray-300'
                 }`}>
                   {watchedPayment === opt.value && <div className="w-2.5 h-2.5 bg-[#E8431A] rounded-full" />}
                 </div>

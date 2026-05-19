@@ -84,7 +84,7 @@ export default function SettingsForm({ store }: { store: Store & { store_setting
         <p className="text-sm font-medium text-gray-700">{label}</p>
         {description && <p className="text-xs text-gray-500">{description}</p>}
       </div>
-      <input {...register(name)} type="checkbox" className="w-4 h-4 accent-dakkani-500" />
+      <input {...register(name)} type="checkbox" className="w-4 h-4 accent-[#E8431A]" />
     </label>
   )
 

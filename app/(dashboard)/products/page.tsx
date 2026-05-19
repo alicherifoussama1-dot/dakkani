@@ -166,7 +166,7 @@ export default async function ProductsPage() {
                       <Link
                         href={`/products/${p.id}`}
                         title="تعديل المنتج"
-                        className="flex items-center gap-1 text-xs text-[#E8431A] hover:text-white bg-[#FFF0ED] hover:bg-[#E8431A] px-2.5 py-1.5 rounded-lg transition font-medium border border-[#FFF0ED] hover:border-dakkani-500"
+                        className="flex items-center gap-1 text-xs text-[#E8431A] hover:text-white bg-[#FFF0ED] hover:bg-[#E8431A] px-2.5 py-1.5 rounded-lg transition font-medium border border-[#FFF0ED] hover:border-[#E8431A]"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                         تعديل

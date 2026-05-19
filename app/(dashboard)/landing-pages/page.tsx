@@ -87,7 +87,7 @@ export default async function LandingPagesPage() {
                   </a>
                   <Link
                     href={`/landing-pages/${page.id}`}
-                    className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 bg-[#FFF0ED] text-[#E8431A] rounded-lg hover:bg-dakkani-100 transition"
+                    className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 bg-[#FFF0ED] text-[#E8431A] rounded-lg hover:bg-[#FFF0ED] transition"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     تعديل

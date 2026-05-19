@@ -221,7 +221,7 @@ export default function OnboardingPage() {
                 </div>
 
                 {/* Features preview */}
-                <div className="bg-gradient-to-br from-dakkani-50 to-orange-50 rounded-2xl p-4 border border-[#FFF0ED]">
+                <div className="bg-gradient-to-br from-[#FFF0ED] to-orange-50 rounded-2xl p-4 border border-[#FFF0ED]">
                   <p className="text-sm font-bold text-[#C73615] mb-3">✨ ما ستحصل عليه مجاناً:</p>
                   <div className="space-y-2">
                     {[
@@ -256,7 +256,7 @@ export default function OnboardingPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 bg-gradient-to-r from-[#E8431A] to-[#C73615] hover:from-dakkani-600 hover:to-[#C73615] text-white font-black py-4 rounded-2xl transition flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-r from-[#E8431A] to-[#C73615] hover:from-[#C73615] hover:to-[#C73615] text-white font-black py-4 rounded-2xl transition flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <><Loader2 className="w-5 h-5 animate-spin" />جارٍ الإنشاء...</>

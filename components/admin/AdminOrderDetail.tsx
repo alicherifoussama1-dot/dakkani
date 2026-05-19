@@ -145,7 +145,7 @@ export default function AdminOrderDetail({ order, store, wilayas }: Props) {
             <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${
               status === 'delivered' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
               status === 'cancelled' ? 'bg-gray-500/20 text-gray-400' :
-              'bg-[#E8431A]/20 text-dakkani-400 border border-dakkani-500/30'
+              'bg-[#E8431A]/20 text-[#F96540] border border-[#E8431A]/30'
             }`}>
               {STATUS_LABELS[status] ?? status}
             </span>
@@ -191,7 +191,7 @@ export default function AdminOrderDetail({ order, store, wilayas }: Props) {
                 <div className="flex flex-col items-center gap-1">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                     i < stepIdx ? 'bg-green-500 text-white' :
-                    i === stepIdx ? 'bg-[#E8431A] text-white ring-2 ring-dakkani-400/30' :
+                    i === stepIdx ? 'bg-[#E8431A] text-white ring-2 ring-[#F96540]/30' :
                     'bg-gray-800 text-gray-600'
                   }`}>
                     {i < stepIdx ? '✓' : i + 1}
@@ -276,7 +276,7 @@ export default function AdminOrderDetail({ order, store, wilayas }: Props) {
               )}
               <div className="flex justify-between font-black text-white text-base border-t border-gray-700 pt-2">
                 <span>المجموع الكلي</span>
-                <span className="text-dakkani-400">{formatDZD(order.total)}</span>
+                <span className="text-[#F96540]">{formatDZD(order.total)}</span>
               </div>
             </div>
           </Section>
@@ -422,7 +422,7 @@ export default function AdminOrderDetail({ order, store, wilayas }: Props) {
               <button
                 onClick={generateAiScript}
                 disabled={loading === 'ai'}
-                className="w-full py-2 text-xs bg-[#E8431A]/20 text-dakkani-400 border border-dakkani-500/30 hover:bg-[#E8431A]/30 rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-2 text-xs bg-[#E8431A]/20 text-[#F96540] border border-[#E8431A]/30 hover:bg-[#E8431A]/30 rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading === 'ai' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : '✨'}
                 توليد نص بالدارجة الجزائرية

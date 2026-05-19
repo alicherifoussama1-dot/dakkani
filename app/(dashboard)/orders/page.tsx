@@ -99,7 +99,7 @@ export default async function OrdersPage({
                     <td className="px-4 py-3">
                       <Link
                         href={`/orders/${order.id}`}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#E8431A] hover:text-white bg-[#FFF0ED] hover:bg-[#E8431A] px-3 py-1.5 rounded-lg transition border border-[#FFF0ED] hover:border-dakkani-500"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#E8431A] hover:text-white bg-[#FFF0ED] hover:bg-[#E8431A] px-3 py-1.5 rounded-lg transition border border-[#FFF0ED] hover:border-[#E8431A]"
                       >
                         عرض التفاصيل ←
                       </Link>
