@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Tajawal, Inter } from 'next/font/google'
 import './globals.css'
-import ScrollProgress from '@/components/layout/ScrollProgress'
+import ScrollProgress    from '@/components/layout/ScrollProgress'
+import AnimationProvider from '@/components/providers/AnimationProvider'
 
 const tajawal = Tajawal({
   subsets: ['arabic', 'latin'],
@@ -21,30 +22,30 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'دكاني | سوقك الرقمي الجزائري',
+    default:  'دكاني | سوقك الرقمي الجزائري',
     template: '%s | دكاني',
   },
-  description: 'ابدأ البيع أونلاين اليوم — متجرك الإلكتروني الجزائري بكل سهولة. توصيل لكل الولايات، دفع آمن، ردود AI بالدارجة.',
+  description: 'ابدأ البيع أونلاين اليوم — متجرك الإلكتروني الجزائري بكل سهولة.',
   manifest: '/manifest.json',
   keywords: ['متجر إلكتروني', 'الجزائر', 'بيع أونلاين', 'تجارة إلكترونية', 'دكاني'],
-  authors: [{ name: 'دكاني' }],
-  creator: 'دكاني',
+  authors:  [{ name: 'دكاني' }],
+  creator:  'دكاني',
   icons: {
-    icon: '/api/icons/192',
+    icon:  '/api/icons/192',
     apple: '/api/icons/152',
   },
   openGraph: {
-    type: 'website',
-    locale: 'ar_DZ',
-    siteName: 'دكاني',
-    title: 'دكاني | سوقك الرقمي الجزائري',
+    type:        'website',
+    locale:      'ar_DZ',
+    siteName:    'دكاني',
+    title:       'دكاني | سوقك الرقمي الجزائري',
     description: 'ابدأ البيع أونلاين اليوم — متجرك الإلكتروني الجزائري',
   },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#E8431A',
-  width: 'device-width',
+  themeColor:   '#E8431A',
+  width:        'device-width',
   initialScale: 1,
   maximumScale: 5,
 }
@@ -58,7 +59,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       style={{ colorScheme: 'light' }}
     >
       <head>
-        {/* Preconnect for font performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
@@ -70,10 +70,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           color: '#111111',
         }}
       >
-        {/* Scroll progress bar */}
+        {/* 3px scroll progress bar in accent #E8431A */}
         <ScrollProgress />
 
-        {children}
+        {/* Detects prefers-reduced-motion, disables all animations when set */}
+        <AnimationProvider>
+          {children}
+        </AnimationProvider>
       </body>
     </html>
   )
