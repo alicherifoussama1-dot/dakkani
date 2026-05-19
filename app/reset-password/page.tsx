@@ -28,7 +28,7 @@ export default function ResetPasswordPage() {
 
   if (done) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center bg-[#F9F9F9]" dir="rtl">
         <div className="bg-white rounded-3xl p-8 shadow-xl text-center max-w-sm w-full">
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <h2 className="text-xl font-black text-gray-900">تم تغيير كلمة المرور!</h2>
@@ -39,10 +39,10 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4" dir="rtl">
+    <div className="min-h-screen flex items-center justify-center bg-[#F9F9F9] p-4" dir="rtl">
       <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-md">
         <div className="w-12 h-12 bg-dakkani-50 rounded-2xl flex items-center justify-center mb-4">
-          <Lock className="w-6 h-6 text-dakkani-600" />
+          <Lock className="w-6 h-6 text-[#E8431A]" />
         </div>
         <h2 className="text-2xl font-black text-gray-900 mb-1">كلمة مرور جديدة</h2>
         <p className="text-gray-500 text-sm mb-6">أدخل كلمة مرور قوية لحماية حسابك</p>
@@ -58,7 +58,7 @@ export default function ResetPasswordPage() {
                 value={f.val}
                 onChange={e => f.set(e.target.value)}
                 placeholder="••••••••"
-                className="w-full border-2 border-gray-200 focus:border-dakkani-500 rounded-xl px-4 py-3 outline-none transition"
+                className="w-full border-2 border-[#EBEBEB] focus:border-dakkani-500 rounded-xl px-4 py-3 outline-none transition"
               />
             </div>
           ))}
@@ -66,7 +66,7 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-dakkani-500 hover:bg-dakkani-600 text-white font-black py-3 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full bg-[#E8431A] hover:bg-[#C73615] text-white font-black py-3 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {loading ? <><Loader2 className="w-4 h-4 animate-spin" />جارٍ الحفظ...</> : 'حفظ كلمة المرور'}
           </button>

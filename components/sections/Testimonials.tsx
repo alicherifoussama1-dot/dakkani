@@ -61,7 +61,7 @@ export default function Testimonials() {
                   className="text-sm leading-relaxed mb-4"
                   style={{ color: '#444444', fontFamily: 'var(--font-tajawal)' }}
                 >
-                  "{quote}"
+                  &ldquo;{quote}&rdquo;
                 </p>
                 <div className="flex items-center gap-3">
                   <div

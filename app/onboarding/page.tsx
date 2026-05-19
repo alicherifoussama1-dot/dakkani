@@ -79,15 +79,15 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dakkani-50 via-white to-orange-50 flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br [#F9F9F9] flex items-center justify-center p-4" dir="rtl">
       <div className="w-full max-w-lg">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-dakkani-500 to-dakkani-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <div className="w-16 h-16 bg-gradient-to-br [#E8431A] to-[#C73615] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
             <span className="text-white font-black text-2xl">د</span>
           </div>
-          <h1 className="text-3xl font-black text-gray-900">مرحباً في دكاني! 🎉</h1>
-          <p className="text-gray-500 mt-2">أنشئ متجرك الإلكتروني في دقيقتين</p>
+          <h1 className="text-3xl font-black text-[#111111]">مرحباً في دكاني! 🎉</h1>
+          <p className="text-[#999999] mt-2">أنشئ متجرك الإلكتروني في دقيقتين</p>
         </div>
 
         {/* Steps indicator */}
@@ -96,77 +96,77 @@ export default function OnboardingPage() {
             <div key={s} className={`flex items-center gap-2 ${s < step ? 'opacity-100' : s === step ? 'opacity-100' : 'opacity-40'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black transition-all ${
                 s < step ? 'bg-green-500 text-white' :
-                s === step ? 'bg-dakkani-500 text-white ring-4 ring-dakkani-100' :
-                'bg-gray-200 text-gray-500'
+                s === step ? 'bg-[#E8431A] text-white ring-4 ring-[#FFF0ED]' :
+                'bg-[#EBEBEB] text-[#999999]'
               }`}>
                 {s < step ? '✓' : s}
               </div>
-              <span className="text-sm font-medium text-gray-600 hidden sm:block">
+              <span className="text-sm font-medium text-[#444444] hidden sm:block">
                 {s === 1 ? 'معلومات المتجر' : 'تفاصيل إضافية'}
               </span>
-              {s < 2 && <ChevronRight className="w-4 h-4 text-gray-300 hidden sm:block" />}
+              {s < 2 && <ChevronRight className="w-4 h-4 text-[#EBEBEB] hidden sm:block" />}
             </div>
           ))}
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-3xl shadow-xl border border-[#EBEBEB] overflow-hidden">
             {/* Step 1 */}
             {step === 1 && (
               <div className="p-8 space-y-5">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-dakkani-50 rounded-xl flex items-center justify-center">
-                    <Store className="w-5 h-5 text-dakkani-600" />
+                  <div className="w-10 h-10 bg-[#FFF0ED] rounded-xl flex items-center justify-center">
+                    <Store className="w-5 h-5 text-[#E8431A]" />
                   </div>
                   <div>
-                    <h2 className="font-black text-gray-900">اسم متجرك</h2>
-                    <p className="text-xs text-gray-500">سيظهر هذا الاسم لعملائك</p>
+                    <h2 className="font-black text-[#111111]">اسم متجرك</h2>
+                    <p className="text-xs text-[#999999]">سيظهر هذا الاسم لعملائك</p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-[#111111] mb-2">
                     اسم المتجر بالعربية <span className="text-red-500">*</span>
                   </label>
                   <input
                     {...register('name_ar')}
                     placeholder="مثال: متجر الأناقة الجزائري"
-                    className="w-full border-2 border-gray-200 focus:border-dakkani-500 rounded-2xl px-4 py-3 text-base outline-none transition"
+                    className="w-full border-2 border-[#EBEBEB] focus:border-[#E8431A] rounded-2xl px-4 py-3 text-base outline-none transition"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-[#111111] mb-2">
                     اسم المتجر بالفرنسية / الإنجليزية <span className="text-red-500">*</span>
                   </label>
                   <input
                     {...register('name')}
                     placeholder="Ex: Elegance Store DZ"
-                    className="w-full border-2 border-gray-200 focus:border-dakkani-500 rounded-2xl px-4 py-3 text-base outline-none transition"
+                    className="w-full border-2 border-[#EBEBEB] focus:border-[#E8431A] rounded-2xl px-4 py-3 text-base outline-none transition"
                     dir="ltr"
                   />
                   {errors.name && <p className="text-red-500 text-xs mt-1">⚠️ {errors.name.message}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-[#111111] mb-2">
                     رقم الهاتف (اختياري)
                   </label>
                   <input
                     {...register('phone')}
                     type="tel"
                     placeholder="0555 xx xx xx"
-                    className="w-full border-2 border-gray-200 focus:border-dakkani-500 rounded-2xl px-4 py-3 text-base outline-none transition"
+                    className="w-full border-2 border-[#EBEBEB] focus:border-[#E8431A] rounded-2xl px-4 py-3 text-base outline-none transition"
                   />
                   {errors.phone && <p className="text-red-500 text-xs mt-1">⚠️ {errors.phone.message}</p>}
                 </div>
 
                 {/* Preview slug */}
                 {(name || nameAr) && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-2xl p-3">
-                    <p className="text-xs text-gray-500 mb-1">رابط متجرك سيكون:</p>
-                    <p className="font-mono text-sm text-dakkani-600 font-bold">
-                      dakkani.dz/store/<span className="text-gray-900">{slugify(nameAr || name || '')}</span>
+                  <div className="bg-[#F9F9F9] border border-[#EBEBEB] rounded-2xl p-3">
+                    <p className="text-xs text-[#999999] mb-1">رابط متجرك سيكون:</p>
+                    <p className="font-mono text-sm text-[#E8431A] font-bold">
+                      dakkani.dz/store/<span className="text-[#111111]">{slugify(nameAr || name || '')}</span>
                     </p>
                   </div>
                 )}
@@ -178,7 +178,7 @@ export default function OnboardingPage() {
                     setStep(2)
                   }}
                   disabled={!name}
-                  className="w-full bg-dakkani-500 hover:bg-dakkani-600 disabled:opacity-40 text-white font-black py-4 rounded-2xl text-base transition"
+                  className="w-full bg-[#FFF0ED]0 hover:bg-[#C73615] disabled:opacity-40 text-white font-black py-4 rounded-2xl text-base transition"
                 >
                   التالي ←
                 </button>
@@ -193,13 +193,13 @@ export default function OnboardingPage() {
                     <Sparkles className="w-5 h-5 text-purple-600" />
                   </div>
                   <div>
-                    <h2 className="font-black text-gray-900">نوع المتجر</h2>
-                    <p className="text-xs text-gray-500">ساعدنا في تخصيص تجربتك</p>
+                    <h2 className="font-black text-[#111111]">نوع المتجر</h2>
+                    <p className="text-xs text-[#999999]">ساعدنا في تخصيص تجربتك</p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  <label className="block text-sm font-semibold text-[#111111] mb-3">
                     ما هي فئة منتجاتك الرئيسية؟
                   </label>
                   <div className="grid grid-cols-3 gap-2">
@@ -210,8 +210,8 @@ export default function OnboardingPage() {
                         onClick={() => setValue('category', cat)}
                         className={`py-2.5 px-2 rounded-xl text-xs font-medium border-2 transition text-center ${
                           watch('category') === cat
-                            ? 'border-dakkani-500 bg-dakkani-50 text-dakkani-700'
-                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                            ? 'border-[#E8431A] bg-[#FFF0ED] text-dakkani-700'
+                            : 'border-[#EBEBEB] text-[#444444] hover:border-gray-300'
                         }`}
                       >
                         {cat}
@@ -249,7 +249,7 @@ export default function OnboardingPage() {
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="w-1/3 border-2 border-gray-200 text-gray-600 font-bold py-4 rounded-2xl hover:bg-gray-50 transition text-sm"
+                    className="w-1/3 border-2 border-[#EBEBEB] text-[#444444] font-bold py-4 rounded-2xl hover:bg-[#F9F9F9] transition text-sm"
                   >
                     رجوع
                   </button>
@@ -270,7 +270,7 @@ export default function OnboardingPage() {
           </div>
         </form>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className="text-center text-xs text-[#CCCCCC] mt-6">
           بالإنشاء، تقبل شروط الاستخدام · دكاني — منصة التجارة الإلكترونية الجزائرية
         </p>
       </div>

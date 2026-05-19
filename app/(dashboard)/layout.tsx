@@ -19,7 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!store) redirect('/onboarding')
 
   return (
-    <div className="flex h-screen bg-[#FAFAF8] overflow-hidden" dir="rtl">
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F9F9F9' }} dir="rtl">
       <Sidebar store={store} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header store={store} user={user} />

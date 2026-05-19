@@ -1,94 +1,110 @@
 'use client'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils/format'
 
-const schema = z.object({
-  storeName: z.string().min(2, 'اسم المتجر يجب أن يكون حرفين على الأقل'),
-  email: z.string().email('بريد إلكتروني غير صالح'),
-  phone: z.string().regex(/^(05|06|07)\d{8}$/, 'رقم الهاتف غير صالح'),
-  password: z.string().min(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'),
-  confirmPassword: z.string(),
-}).refine(d => d.password === d.confirmPassword, {
-  message: 'كلمتا المرور غير متطابقتين',
-  path: ['confirmPassword'],
-})
-type FormData = z.infer<typeof schema>
-
 export default function RegisterPage() {
   const router = useRouter()
-  const [error, setError] = useState('')
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
-    resolver: zodResolver(schema),
-  })
+  const [form,    setForm]    = useState({ storeName: '', email: '', phone: '', password: '' })
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState('')
+  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     setError('')
+    setLoading(true)
     const supabase = createClient()
-
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
+      email: form.email,
+      password: form.password,
     })
-    if (authError || !authData.user) { setError(authError?.message ?? 'خطأ في التسجيل'); return }
-
-    const slug = slugify(data.storeName) || `store-${Date.now()}`
-    const { error: storeError } = await supabase.from('stores').insert({
+    if (authError || !authData.user) { setError(authError?.message ?? 'خطأ في التسجيل'); setLoading(false); return }
+    const slug = slugify(form.storeName) || `store-${Date.now()}`
+    await supabase.from('stores').insert({
       owner_id: authData.user.id,
-      name: data.storeName,
+      name: form.storeName,
+      name_ar: form.storeName,
       slug,
-      phone: data.phone,
-      email: data.email,
+      phone: form.phone,
+      currency: 'DZD',
+      plan: 'free',
+      is_active: true,
     })
-    if (storeError) { setError(storeError.message); return }
-
+    setLoading(false)
     router.push('/dashboard')
+    router.refresh()
   }
 
+  const fields = [
+    { key: 'storeName', label: 'اسم المتجر',           ph: 'متجري الجزائري',     required: true },
+    { key: 'email',     label: 'البريد الإلكتروني',   ph: 'example@email.com',  required: true, dir: 'ltr' },
+    { key: 'phone',     label: 'رقم الهاتف',          ph: '0555 xx xx xx',      required: true },
+    { key: 'password',  label: 'كلمة المرور',         ph: '••••••••',            required: true, type: 'password', dir: 'ltr' },
+  ]
+
   return (
-    <>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">إنشاء متجر جديد</h2>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" dir="rtl">
-        {[
-          { name: 'storeName', label: 'اسم المتجر', type: 'text', placeholder: 'متجري الجزائري' },
-          { name: 'email', label: 'البريد الإلكتروني', type: 'email', placeholder: 'example@email.com' },
-          { name: 'phone', label: 'رقم الهاتف', type: 'tel', placeholder: '0555123456' },
-          { name: 'password', label: 'كلمة المرور', type: 'password', placeholder: '••••••••' },
-          { name: 'confirmPassword', label: 'تأكيد كلمة المرور', type: 'password', placeholder: '••••••••' },
-        ].map(f => (
-          <div key={f.name}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{f.label}</label>
+    <div
+      className="w-full max-w-md rounded-3xl p-8 border"
+      style={{ backgroundColor: '#FFFFFF', borderColor: '#EBEBEB', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}
+    >
+      <div className="text-center mb-8">
+        <Link href="/" className="inline-block font-black text-3xl mb-3" style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}>
+          دكاني<span style={{ color: '#E8431A' }}>.</span>
+        </Link>
+        <h1 className="font-bold text-xl" style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}>
+          إنشاء حساب مجاني
+        </h1>
+        <p className="text-sm mt-1" style={{ color: '#999999', fontFamily: 'var(--font-tajawal)' }}>
+          ابدأ البيع أونلاين في أقل من دقيقتين
+        </p>
+      </div>
+
+      <form onSubmit={onSubmit} className="space-y-4" dir="rtl">
+        {fields.map(f => (
+          <div key={f.key}>
+            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}>
+              {f.label}{f.required && <span style={{ color: '#E8431A' }}> *</span>}
+            </label>
             <input
-              {...register(f.name as keyof FormData)}
-              type={f.type}
-              placeholder={f.placeholder}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-right focus:ring-2 focus:ring-dakkani-500 outline-none"
+              type={(f as any).type ?? 'text'}
+              value={(form as any)[f.key]}
+              onChange={e => set(f.key, e.target.value)}
+              placeholder={f.ph}
+              required={f.required}
+              dir={(f as any).dir ?? 'rtl'}
+              minLength={f.key === 'password' ? 8 : undefined}
+              className="input"
             />
-            {errors[f.name as keyof FormData] && (
-              <p className="text-red-500 text-xs mt-1">{errors[f.name as keyof FormData]?.message}</p>
-            )}
           </div>
         ))}
+
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg p-3 text-sm">{error}</div>
+          <p className="text-sm p-3 rounded-xl" style={{ backgroundColor: '#FFF0ED', color: '#E8431A', fontFamily: 'var(--font-tajawal)' }}>
+            ⚠️ {error}
+          </p>
         )}
+
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-dakkani-500 hover:bg-dakkani-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-lg transition"
+          disabled={loading}
+          className="btn btn-accent w-full h-12 text-base rounded-xl"
+          style={{ fontFamily: 'var(--font-tajawal)' }}
         >
-          {isSubmitting ? 'جارٍ إنشاء المتجر...' : 'إنشاء المتجر مجاناً'}
+          {loading
+            ? <><Loader2 size={18} className="animate-spin ml-2" />جارٍ الإنشاء...</>
+            : 'إنشاء حساب مجاناً ←'
+          }
         </button>
-        <div className="text-center text-sm text-gray-600">
+
+        <p className="text-center text-sm" style={{ color: '#999999', fontFamily: 'var(--font-tajawal)' }}>
           لديك حساب؟{' '}
-          <Link href="/login" className="text-dakkani-600 font-semibold hover:underline">سجّل دخولك</Link>
-        </div>
+          <Link href="/login" className="font-semibold" style={{ color: '#E8431A' }}>سجّل دخولك</Link>
+        </p>
       </form>
-    </>
+    </div>
   )
 }
