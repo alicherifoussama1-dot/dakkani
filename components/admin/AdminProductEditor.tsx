@@ -132,15 +132,29 @@ const SlugPreview = memo(function SlugPreview({
   control, setValue,
 }: { control: Control<FormData>; setValue: UseFormSetValue<FormData> }) {
   const nameAr = useWatch({ control, name: 'name_ar' })
+  const nameFr = useWatch({ control, name: 'name' })
   const slug   = useWatch({ control, name: 'slug' })
+
+  const generateSlug = () => {
+    // Prefer French/English name for URL (better SEO), fallback to Arabic transliteration
+    const source = nameFr?.trim() || nameAr?.trim() || ''
+    const generated = slugify(source)
+    setValue('slug', generated || `product-${Date.now()}`)
+  }
+
+  const hasName = nameAr || nameFr
+
   return (
     <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-      <span className="font-mono">/{slug || '...'}</span>
-      {nameAr && (
+      {slug
+        ? <span className="font-mono text-green-600">✓ /{slug}</span>
+        : <span className="font-mono text-red-400">⚠️ الرابط فارغ</span>
+      }
+      {hasName && (
         <button
           type="button"
-          onClick={() => setValue('slug', slugify(nameAr))}
-          className="text-dakkani-500 hover:underline"
+          onClick={generateSlug}
+          className="text-dakkani-500 hover:text-dakkani-700 font-semibold underline"
         >
           توليد تلقائي
         </button>
