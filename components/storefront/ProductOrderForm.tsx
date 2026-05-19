@@ -77,7 +77,7 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
             onClick={() => setValue('delivery_type', val)}
             className={`py-2.5 rounded-xl text-sm font-semibold border transition ${
               deliveryType === val
-                ? 'bg-dakkani-500 border-dakkani-500 text-white'
+                ? 'bg-[#E8431A] border-dakkani-500 text-white'
                 : 'bg-gray-50 border-gray-200 text-gray-600'
             }`}
           >
@@ -96,7 +96,7 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
             setValue('wilaya_id', id)
             setSelectedWilaya(wilayas.find(w => w.id === id) ?? null)
           }}
-          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none bg-white"
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none bg-white"
         >
           <option value="">اختر الولاية</option>
           {wilayas.map(w => (
@@ -105,7 +105,7 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
         </select>
         {errors.wilaya_id && <p className="text-red-500 text-xs mt-1">{errors.wilaya_id.message}</p>}
         {selectedWilaya && (
-          <p className="text-xs text-dakkani-600 mt-1">
+          <p className="text-xs text-[#E8431A] mt-1">
             رسوم التوصيل: {formatDZD(deliveryFee)} · {deliveryType === 'home' ? selectedWilaya.delivery_days_home : selectedWilaya.delivery_days_stopdesk}
           </p>
         )}
@@ -123,7 +123,7 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
             <input
               {...register(f.name as keyof FormData)}
               placeholder={f.placeholder}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
             />
             {errors[f.name as keyof FormData] && (
               <p className="text-red-500 text-xs mt-1">{(errors[f.name as keyof FormData] as any)?.message}</p>
@@ -136,7 +136,7 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">العنوان التفصيلي</label>
           <input {...register('address')} placeholder="الحي، الشارع، رقم البناية..."
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none" />
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none" />
         </div>
       )}
 
@@ -164,14 +164,14 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
         </div>
         <div className="flex justify-between font-black text-gray-900 text-base border-t border-gray-200 pt-1.5">
           <span>المجموع</span>
-          <span className="text-dakkani-600">{formatDZD(total)}</span>
+          <span className="text-[#E8431A]">{formatDZD(total)}</span>
         </div>
       </div>
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-dakkani-500 hover:bg-dakkani-600 disabled:opacity-50 text-white font-black py-3.5 rounded-xl text-base transition"
+        className="w-full bg-[#E8431A] hover:bg-[#C73615] disabled:opacity-50 text-white font-black py-3.5 rounded-xl text-base transition"
       >
         {isSubmitting ? 'جارٍ تسجيل الطلب...' : `🛒 اطلب الآن — ${formatDZD(total)}`}
       </button>

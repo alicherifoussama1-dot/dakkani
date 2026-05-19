@@ -18,7 +18,7 @@ export default function StorefrontHeader({ store }: Props) {
           {store.logo_url ? (
             <img src={store.logo_url} alt={store.name} className="w-9 h-9 rounded-xl object-cover" />
           ) : (
-            <div className="w-9 h-9 bg-dakkani-500 rounded-xl flex items-center justify-center text-white font-black text-lg">
+            <div className="w-9 h-9 bg-[#E8431A] rounded-xl flex items-center justify-center text-white font-black text-lg">
               {store.name[0]}
             </div>
           )}
@@ -36,7 +36,7 @@ export default function StorefrontHeader({ store }: Props) {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="ابحث عن منتج..."
-              className="w-full border border-gray-200 rounded-xl pr-9 pl-4 py-2 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+              className="w-full border border-gray-200 rounded-xl pr-9 pl-4 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
             />
           </form>
         </div>
@@ -45,7 +45,7 @@ export default function StorefrontHeader({ store }: Props) {
         <div className="flex items-center gap-2">
           <Link
             href={`/store/${store.slug}/products`}
-            className="hidden md:flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-dakkani-600 transition px-3 py-2 rounded-lg hover:bg-dakkani-50"
+            className="hidden md:flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-[#E8431A] transition px-3 py-2 rounded-lg hover:bg-[#FFF0ED]"
           >
             المنتجات
           </Link>

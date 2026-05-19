@@ -54,7 +54,7 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
           {store.logo_url ? (
             <img src={store.logo_url} alt={store.name} className="w-9 h-9 rounded-xl object-cover" />
           ) : (
-            <div className="w-9 h-9 bg-dakkani-500 rounded-xl flex items-center justify-center text-white font-black">
+            <div className="w-9 h-9 bg-[#E8431A] rounded-xl flex items-center justify-center text-white font-black">
               {store.name[0]}
             </div>
           )}

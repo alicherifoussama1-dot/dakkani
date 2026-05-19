@@ -147,7 +147,7 @@ export default function AdvancedAnalytics({ orders, items }: Props) {
       value:  formatDZD(metrics.netProfit),
       icon:   metrics.netProfit >= 0 ? TrendingUp : TrendingDown,
       color:  metrics.netProfit >= 0 ? 'text-dakkani-400' : 'text-red-400',
-      bg:     metrics.netProfit >= 0 ? 'bg-dakkani-500/10' : 'bg-red-500/10',
+      bg:     metrics.netProfit >= 0 ? 'bg-[#E8431A]/10' : 'bg-red-500/10',
       border: metrics.netProfit >= 0 ? 'border-dakkani-500/20' : 'border-red-500/20',
       note:   'الإيرادات - التكلفة - الإعلانات - التوصيل - المرتجعات',
     },
@@ -199,12 +199,12 @@ export default function AdvancedAnalytics({ orders, items }: Props) {
               value={adSpend || ''}
               onChange={e => setAdSpend(parseFloat(e.target.value) || 0)}
               placeholder="0"
-              className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-gray-200 w-28 focus:ring-1 focus:ring-dakkani-500 outline-none"
+              className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-gray-200 w-28 focus:ring-1 focus:ring-[#E8431A] outline-none"
             />
           </label>
           <button
             onClick={() => setCompare(c => !c)}
-            className={`text-xs px-3 py-1.5 rounded-lg border transition ${compare ? 'bg-dakkani-500/20 text-dakkani-400 border-dakkani-500/30' : 'bg-gray-800 text-gray-500 border-gray-700'}`}
+            className={`text-xs px-3 py-1.5 rounded-lg border transition ${compare ? 'bg-[#E8431A]/20 text-dakkani-400 border-dakkani-500/30' : 'bg-gray-800 text-gray-500 border-gray-700'}`}
           >
             مقارنة الأسابيع
           </button>

@@ -66,7 +66,7 @@ export default function WarehousesManager({ storeId, initialWarehouses, wilayas 
       <div className="flex justify-end">
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-dakkani-500 hover:bg-dakkani-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
+          className="flex items-center gap-2 bg-[#E8431A] hover:bg-[#C73615] text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
         >
           <Plus className="w-4 h-4" />
           مستودع جديد
@@ -74,7 +74,7 @@ export default function WarehousesManager({ storeId, initialWarehouses, wilayas 
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl border border-dakkani-100 p-5 space-y-4 shadow-sm" dir="rtl">
+        <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl border border-[#FFF0ED] p-5 space-y-4 shadow-sm" dir="rtl">
           <h3 className="font-bold text-gray-900">إضافة مستودع</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -82,7 +82,7 @@ export default function WarehousesManager({ storeId, initialWarehouses, wilayas 
               <input
                 {...register('name')}
                 placeholder="المستودع الرئيسي"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
               />
               {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
             </div>
@@ -90,7 +90,7 @@ export default function WarehousesManager({ storeId, initialWarehouses, wilayas 
               <label className="block text-sm font-medium text-gray-700 mb-1">الولاية</label>
               <select
                 {...register('wilaya_id', { valueAsNumber: true })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-dakkani-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#E8431A] outline-none"
               >
                 <option value="">اختر الولاية</option>
                 {wilayas.map(w => <option key={w.id} value={w.id}>{w.id} - {w.name_ar}</option>)}
@@ -101,7 +101,7 @@ export default function WarehousesManager({ storeId, initialWarehouses, wilayas 
               <input
                 {...register('address')}
                 placeholder="الحي الصناعي..."
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
               />
             </div>
             <div>
@@ -109,7 +109,7 @@ export default function WarehousesManager({ storeId, initialWarehouses, wilayas 
               <input
                 {...register('phone')}
                 placeholder="055xxxxxxx"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
               />
             </div>
           </div>
@@ -119,7 +119,7 @@ export default function WarehousesManager({ storeId, initialWarehouses, wilayas 
           </label>
           <div className="flex gap-3">
             <button type="submit" disabled={isSubmitting}
-              className="bg-dakkani-500 hover:bg-dakkani-600 text-white font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-50">
+              className="bg-[#E8431A] hover:bg-[#C73615] text-white font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-50">
               {isSubmitting ? 'جارٍ الحفظ...' : 'حفظ'}
             </button>
             <button type="button" onClick={() => setShowForm(false)} className="text-gray-500 text-sm">إلغاء</button>
@@ -129,13 +129,13 @@ export default function WarehousesManager({ storeId, initialWarehouses, wilayas 
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {initialWarehouses.map(w => (
-          <div key={w.id} className={`bg-white rounded-xl border p-4 shadow-sm ${w.is_default ? 'border-dakkani-200' : 'border-gray-100'}`}>
+          <div key={w.id} className={`bg-white rounded-xl border p-4 shadow-sm ${w.is_default ? 'border-[#FFF0ED]' : 'border-gray-100'}`}>
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-gray-900">{w.name}</h3>
                   {w.is_default && (
-                    <span className="text-xs bg-dakkani-100 text-dakkani-600 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                    <span className="text-xs bg-dakkani-100 text-[#E8431A] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
                       <Star className="w-3 h-3" />افتراضي
                     </span>
                   )}
@@ -147,7 +147,7 @@ export default function WarehousesManager({ storeId, initialWarehouses, wilayas 
                 {!w.is_default && (
                   <button
                     onClick={() => setDefault(w.id)}
-                    className="p-1.5 text-gray-400 hover:text-dakkani-500 hover:bg-dakkani-50 rounded-lg transition"
+                    className="p-1.5 text-gray-400 hover:text-[#E8431A] hover:bg-[#FFF0ED] rounded-lg transition"
                     title="تعيين كافتراضي"
                   >
                     <Star className="w-4 h-4" />

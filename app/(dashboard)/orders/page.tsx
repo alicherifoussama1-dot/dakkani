@@ -56,7 +56,7 @@ export default async function OrdersPage({
         </div>
         <Link
           href="/admin/orders"
-          className="text-sm text-dakkani-600 hover:underline font-medium"
+          className="text-sm text-[#E8431A] hover:underline font-medium"
         >
           الإدارة المتقدمة (OMS) ←
         </Link>
@@ -80,7 +80,7 @@ export default async function OrdersPage({
                 return (
                   <tr key={order.id} className="hover:bg-gray-50 transition">
                     <td className="px-4 py-3">
-                      <span className="font-mono font-bold text-dakkani-600">{order.order_number}</span>
+                      <span className="font-mono font-bold text-[#E8431A]">{order.order_number}</span>
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-900">{order.customer_name}</p>
@@ -99,7 +99,7 @@ export default async function OrdersPage({
                     <td className="px-4 py-3">
                       <Link
                         href={`/orders/${order.id}`}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-dakkani-600 hover:text-white bg-dakkani-50 hover:bg-dakkani-500 px-3 py-1.5 rounded-lg transition border border-dakkani-100 hover:border-dakkani-500"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#E8431A] hover:text-white bg-[#FFF0ED] hover:bg-[#E8431A] px-3 py-1.5 rounded-lg transition border border-[#FFF0ED] hover:border-dakkani-500"
                       >
                         عرض التفاصيل ←
                       </Link>
@@ -134,7 +134,7 @@ export default async function OrdersPage({
               )}
               {page < Math.ceil(count / pageSize) && (
                 <Link href={`/orders?page=${page + 1}${searchParams.status ? `&status=${searchParams.status}` : ''}`}
-                  className="px-3 py-1.5 text-sm bg-dakkani-500 text-white rounded-xl hover:bg-dakkani-600 transition">
+                  className="px-3 py-1.5 text-sm bg-[#E8431A] text-white rounded-xl hover:bg-[#C73615] transition">
                   التالي
                 </Link>
               )}

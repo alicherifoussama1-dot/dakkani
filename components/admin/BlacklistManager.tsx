@@ -93,7 +93,7 @@ export default function BlacklistManager({ storeId, blacklist, candidates }: Pro
       <div className="flex items-center gap-3 flex-wrap">
         <button
           onClick={() => setAdding(!adding)}
-          className="flex items-center gap-1.5 text-xs bg-dakkani-500/20 text-dakkani-400 border border-dakkani-500/30 px-3 py-1.5 rounded-lg hover:bg-dakkani-500/30 transition"
+          className="flex items-center gap-1.5 text-xs bg-[#E8431A]/20 text-dakkani-400 border border-dakkani-500/30 px-3 py-1.5 rounded-lg hover:bg-[#E8431A]/30 transition"
         >
           <Plus className="w-3.5 h-3.5" />
           إضافة يدوياً
@@ -128,7 +128,7 @@ export default function BlacklistManager({ storeId, blacklist, candidates }: Pro
                   value={form[f.key as keyof typeof form]}
                   onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                   placeholder={f.placeholder}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:ring-1 focus:ring-dakkani-500 outline-none"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:ring-1 focus:ring-[#E8431A] outline-none"
                 />
               </div>
             ))}

@@ -41,7 +41,7 @@ export default function RecentOrders({ storeId }: { storeId: string }) {
             className="flex items-center justify-between p-2.5 hover:bg-gray-50 rounded-lg transition group"
           >
             <div>
-              <p className="text-sm font-semibold text-gray-900 group-hover:text-dakkani-600">
+              <p className="text-sm font-semibold text-gray-900 group-hover:text-[#E8431A]">
                 {o.order_number}
               </p>
               <p className="text-xs text-gray-500">{o.customer_name}</p>

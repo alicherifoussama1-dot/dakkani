@@ -103,7 +103,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
                 )}
                 <tr className="border-t border-gray-200">
                   <td colSpan={3} className="px-5 py-3 font-bold text-gray-900">المجموع الكلي</td>
-                  <td className="px-5 py-3 font-black text-dakkani-600 text-left text-lg">
+                  <td className="px-5 py-3 font-black text-[#E8431A] text-left text-lg">
                     {formatDZD(order.total)}
                   </td>
                 </tr>
@@ -175,7 +175,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
               {order.tracking_number && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">رقم التتبع</span>
-                  <span className="font-mono font-bold text-dakkani-600">{order.tracking_number}</span>
+                  <span className="font-mono font-bold text-[#E8431A]">{order.tracking_number}</span>
                 </div>
               )}
               <div className="flex justify-between">

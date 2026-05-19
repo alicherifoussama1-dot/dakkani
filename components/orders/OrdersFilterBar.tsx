@@ -39,7 +39,7 @@ export default function OrdersFilterBar({
           onChange={e => setSearch(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && push(currentStatus, search)}
           placeholder="ابحث باسم العميل، الهاتف، أو رقم الطلب..."
-          className="w-full border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:ring-2 focus:ring-dakkani-500 focus:border-transparent outline-none"
+          className="w-full border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] focus:border-transparent outline-none"
         />
         {search && (
           <button
@@ -59,7 +59,7 @@ export default function OrdersFilterBar({
             onClick={() => push(s.value, currentSearch)}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
               (currentStatus ?? '') === s.value
-                ? 'bg-dakkani-500 text-white shadow-sm'
+                ? 'bg-[#E8431A] text-white shadow-sm'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >

@@ -135,7 +135,7 @@ export default function AIAgentChat({ storeContext }: { storeContext: StoreConte
               <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                 msg.role === 'assistant'
                   ? 'bg-gray-900 border border-gray-800 text-gray-300'
-                  : 'bg-dakkani-500/20 border border-dakkani-500/30 text-gray-200'
+                  : 'bg-[#E8431A]/20 border border-dakkani-500/30 text-gray-200'
               }`}>
                 <div className="space-y-1">{renderContent(msg.content)}</div>
               </div>
@@ -166,7 +166,7 @@ export default function AIAgentChat({ storeContext }: { storeContext: StoreConte
               <Bot className="w-4 h-4 text-white" />
             </div>
             <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-2">
-              <Loader2 className="w-4 h-4 text-dakkani-500 animate-spin" />
+              <Loader2 className="w-4 h-4 text-[#E8431A] animate-spin" />
               <span className="text-sm text-gray-500">يفكر...</span>
             </div>
           </div>
@@ -197,12 +197,12 @@ export default function AIAgentChat({ storeContext }: { storeContext: StoreConte
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage(input)}
             placeholder="اكتب سؤالك أو أمرك بالعربية أو الدارجة..."
             disabled={loading}
-            className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder:text-gray-600 focus:ring-1 focus:ring-dakkani-500 outline-none disabled:opacity-50"
+            className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder:text-gray-600 focus:ring-1 focus:ring-[#E8431A] outline-none disabled:opacity-50"
           />
           <button
             onClick={() => sendMessage(input)}
             disabled={loading || !input.trim()}
-            className="bg-dakkani-500 hover:bg-dakkani-600 disabled:opacity-40 text-white p-3 rounded-xl transition"
+            className="bg-[#E8431A] hover:bg-[#C73615] disabled:opacity-40 text-white p-3 rounded-xl transition"
           >
             <Send className="w-5 h-5" />
           </button>

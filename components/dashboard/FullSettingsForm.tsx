@@ -135,7 +135,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
         {...register(name, type === 'number' ? { valueAsNumber: true } : {})}
         type={type}
         placeholder={placeholder}
-        className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-dakkani-500 focus:border-transparent outline-none"
+        className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] focus:border-transparent outline-none"
       />
       {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
       {errors[name] && <p className="text-red-500 text-xs mt-1">⚠️ {(errors[name] as any)?.message}</p>}
@@ -158,22 +158,22 @@ export default function FullSettingsForm({ store }: { store: any }) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 pb-24">
 
       {/* Store URL */}
-      <div className="bg-dakkani-50 border border-dakkani-200 rounded-2xl p-4 flex items-center justify-between gap-3">
+      <div className="bg-[#FFF0ED] border border-[#FFF0ED] rounded-2xl p-4 flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-bold text-dakkani-700">رابط متجرك</p>
-          <p className="text-xs font-mono text-dakkani-600 mt-0.5">{storeUrl}</p>
+          <p className="text-sm font-bold text-[#C73615]">رابط متجرك</p>
+          <p className="text-xs font-mono text-[#E8431A] mt-0.5">{storeUrl}</p>
         </div>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => copy(storeUrl, 'url')}
-            className="flex items-center gap-1.5 text-xs bg-white border border-dakkani-200 text-dakkani-600 px-3 py-1.5 rounded-xl hover:bg-dakkani-50 transition"
+            className="flex items-center gap-1.5 text-xs bg-white border border-[#FFF0ED] text-[#E8431A] px-3 py-1.5 rounded-xl hover:bg-[#FFF0ED] transition"
           >
             <Copy className="w-3.5 h-3.5" />
             {copied === 'url' ? '✓ نُسخ' : 'نسخ'}
           </button>
           <a href={storeUrl} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs bg-dakkani-500 text-white px-3 py-1.5 rounded-xl hover:bg-dakkani-600 transition">
+            className="flex items-center gap-1.5 text-xs bg-[#E8431A] text-white px-3 py-1.5 rounded-xl hover:bg-[#C73615] transition">
             <ExternalLink className="w-3.5 h-3.5" />
             عرض
           </a>
@@ -192,7 +192,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
             {...register('description_ar')}
             rows={2}
             placeholder="وصف قصير عن متجرك..."
-            className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none resize-none"
+            className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none resize-none"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -220,7 +220,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
               {...register('meta_pixel_id')}
               placeholder="123456789012345"
               dir="ltr"
-              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-dakkani-500 outline-none"
+              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-[#E8431A] outline-none"
             />
             <a href="https://business.facebook.com/events_manager" target="_blank" rel="noopener noreferrer"
               className="text-xs text-blue-500 hover:underline mt-1 block">
@@ -236,7 +236,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
               {...register('tiktok_pixel_id')}
               placeholder="CXXXXXXXXXXXXXXX"
               dir="ltr"
-              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-dakkani-500 outline-none"
+              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-[#E8431A] outline-none"
             />
             <a href="https://ads.tiktok.com/i18n/events/manager" target="_blank" rel="noopener noreferrer"
               className="text-xs text-gray-500 hover:underline mt-1 block">
@@ -250,7 +250,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
               {...register('google_tag_id')}
               placeholder="G-XXXXXXXXXX"
               dir="ltr"
-              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-dakkani-500 outline-none"
+              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-[#E8431A] outline-none"
             />
           </div>
 
@@ -260,7 +260,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
               {...register('snapchat_pixel_id')}
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx"
               dir="ltr"
-              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-dakkani-500 outline-none"
+              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-[#E8431A] outline-none"
             />
           </div>
         </div>
@@ -304,7 +304,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
               type="number"
               min="0"
               max="100"
-              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
             />
             <p className="text-xs text-gray-400 mt-1">الطلبات التي تتجاوز هذا الحد تُحظر تلقائياً</p>
           </div>
@@ -317,7 +317,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
               type="number"
               min="1"
               max="10"
-              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
             />
           </div>
         </div>
@@ -333,7 +333,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex items-center gap-2 bg-dakkani-500 hover:bg-dakkani-600 disabled:opacity-50 text-white font-black px-8 py-3 rounded-xl transition shadow-md"
+          className="flex items-center gap-2 bg-[#E8431A] hover:bg-[#C73615] disabled:opacity-50 text-white font-black px-8 py-3 rounded-xl transition shadow-md"
         >
           {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
           {isSubmitting ? 'جارٍ الحفظ...' : '💾 حفظ الإعدادات'}

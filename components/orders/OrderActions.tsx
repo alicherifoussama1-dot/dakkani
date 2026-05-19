@@ -69,7 +69,7 @@ export default function OrderActions({ order, store }: Props) {
           value={trackingInput}
           onChange={e => setTrackingInput(e.target.value)}
           placeholder="رقم التتبع..."
-          className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-36 focus:ring-2 focus:ring-dakkani-500 outline-none"
+          className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-36 focus:ring-2 focus:ring-[#E8431A] outline-none"
         />
         <button
           onClick={saveTracking}
@@ -93,7 +93,7 @@ export default function OrderActions({ order, store }: Props) {
       {/* Print label */}
       <button
         onClick={printLabel}
-        className="flex items-center gap-1.5 text-sm px-3 py-1.5 border border-dakkani-200 rounded-lg hover:bg-dakkani-50 transition text-dakkani-600"
+        className="flex items-center gap-1.5 text-sm px-3 py-1.5 border border-[#FFF0ED] rounded-lg hover:bg-[#FFF0ED] transition text-[#E8431A]"
       >
         <Printer className="w-4 h-4" />
         <span>طباعة الفاتورة</span>

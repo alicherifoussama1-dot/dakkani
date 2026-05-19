@@ -117,7 +117,7 @@ export default function InfiniteProducts({
               <div className="p-3">
                 <p className="font-semibold text-gray-900 text-sm line-clamp-2">{p.name_ar ?? p.name}</p>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <span className="font-black text-dakkani-600">{formatDZD(p.price)}</span>
+                  <span className="font-black text-[#E8431A]">{formatDZD(p.price)}</span>
                   {hasDisc && <span className="text-xs text-gray-400 line-through">{formatDZD(p.compare_price!)}</span>}
                 </div>
               </div>
@@ -128,7 +128,7 @@ export default function InfiniteProducts({
 
       {/* Infinite scroll sentinel */}
       <div ref={bottomRef} className="h-8 flex items-center justify-center mt-6">
-        {loading && <Loader2 className="w-6 h-6 text-dakkani-500 animate-spin" />}
+        {loading && <Loader2 className="w-6 h-6 text-[#E8431A] animate-spin" />}
         {!hasMore && products.length > 0 && (
           <p className="text-sm text-gray-400">تم عرض جميع المنتجات</p>
         )}

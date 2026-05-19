@@ -81,7 +81,7 @@ export default function CategoriesManager({ storeId, initialCategories }: Props)
       <div className="flex justify-end">
         <button
           onClick={() => { setShowForm(!showForm); setEditId(null); reset() }}
-          className="flex items-center gap-2 bg-dakkani-500 hover:bg-dakkani-600 text-white px-4 py-2 rounded-lg text-sm font-semibold"
+          className="flex items-center gap-2 bg-[#E8431A] hover:bg-[#C73615] text-white px-4 py-2 rounded-lg text-sm font-semibold"
         >
           <Plus className="w-4 h-4" />
           فئة جديدة
@@ -89,14 +89,14 @@ export default function CategoriesManager({ storeId, initialCategories }: Props)
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl border border-dakkani-100 p-5 space-y-4 shadow-sm" dir="rtl">
+        <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl border border-[#FFF0ED] p-5 space-y-4 shadow-sm" dir="rtl">
           <h3 className="font-bold text-gray-900">{editId ? 'تعديل الفئة' : 'إضافة فئة جديدة'}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">الاسم (عربي)</label>
               <input
                 {...register('name_ar')}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
                 placeholder="ملابس رجالية"
               />
             </div>
@@ -104,7 +104,7 @@ export default function CategoriesManager({ storeId, initialCategories }: Props)
               <label className="block text-sm font-medium text-gray-700 mb-1">الاسم (فرنسي/انجليزي)</label>
               <input
                 {...register('name')}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
                 placeholder="Men's Clothing"
               />
             </div>
@@ -114,7 +114,7 @@ export default function CategoriesManager({ storeId, initialCategories }: Props)
               <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
               <input
                 {...register('slug')}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
                 placeholder="mens-clothing"
               />
             </div>
@@ -130,7 +130,7 @@ export default function CategoriesManager({ storeId, initialCategories }: Props)
             <label className="block text-sm font-medium text-gray-700 mb-1">الفئة الأم</label>
             <select
               {...register('parent_id')}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-dakkani-500 outline-none"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#E8431A] outline-none"
             >
               <option value="">لا توجد (فئة رئيسية)</option>
               {topLevel.filter(c => c.id !== editId).map(c => (
@@ -144,7 +144,7 @@ export default function CategoriesManager({ storeId, initialCategories }: Props)
           </label>
           <div className="flex gap-3">
             <button type="submit" disabled={isSubmitting}
-              className="bg-dakkani-500 hover:bg-dakkani-600 text-white font-bold px-5 py-2 rounded-lg text-sm disabled:opacity-50">
+              className="bg-[#E8431A] hover:bg-[#C73615] text-white font-bold px-5 py-2 rounded-lg text-sm disabled:opacity-50">
               {isSubmitting ? 'جارٍ الحفظ...' : editId ? 'تحديث' : 'إضافة'}
             </button>
             <button type="button" onClick={() => { setShowForm(false); setEditId(null); reset() }} className="text-gray-500 text-sm">إلغاء</button>
@@ -172,7 +172,7 @@ export default function CategoriesManager({ storeId, initialCategories }: Props)
                       className={`text-xs px-2 py-0.5 rounded-full ${cat.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                       {cat.is_active ? 'نشط' : 'مخفي'}
                     </button>
-                    <button onClick={() => startEdit(cat)} className="p-1.5 text-gray-400 hover:text-dakkani-500 rounded">
+                    <button onClick={() => startEdit(cat)} className="p-1.5 text-gray-400 hover:text-[#E8431A] rounded">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => deleteCategory(cat.id)} className="p-1.5 text-gray-400 hover:text-red-500 rounded">
@@ -190,7 +190,7 @@ export default function CategoriesManager({ storeId, initialCategories }: Props)
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => startEdit(child)} className="p-1 text-gray-400 hover:text-dakkani-500">
+                      <button onClick={() => startEdit(child)} className="p-1 text-gray-400 hover:text-[#E8431A]">
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button onClick={() => deleteCategory(child.id)} className="p-1 text-gray-400 hover:text-red-500">

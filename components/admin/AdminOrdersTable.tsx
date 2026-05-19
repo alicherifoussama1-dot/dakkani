@@ -196,7 +196,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
           {newOrderCount > 0 && (
             <button
               onClick={() => { setNew(0); router.refresh() }}
-              className="flex items-center gap-1.5 text-xs bg-dakkani-500/20 text-dakkani-400 border border-dakkani-500/30 px-2.5 py-1 rounded-lg animate-pulse"
+              className="flex items-center gap-1.5 text-xs bg-[#E8431A]/20 text-dakkani-400 border border-dakkani-500/30 px-2.5 py-1 rounded-lg animate-pulse"
             >
               <Bell className="w-3.5 h-3.5" />
               {newOrderCount} طلب جديد
@@ -218,7 +218,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
             onChange={e => setSearch(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && push('search', searchVal)}
             placeholder="اسم، هاتف، رقم طلب..."
-            className="bg-gray-800 border border-gray-700 rounded-lg pr-9 pl-3 py-1.5 text-sm text-gray-300 placeholder:text-gray-600 focus:ring-1 focus:ring-dakkani-500 outline-none w-48"
+            className="bg-gray-800 border border-gray-700 rounded-lg pr-9 pl-3 py-1.5 text-sm text-gray-300 placeholder:text-gray-600 focus:ring-1 focus:ring-[#E8431A] outline-none w-48"
           />
         </div>
 
@@ -226,7 +226,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
         <select
           value={filters.status ?? ''}
           onChange={e => push('status', e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-dakkani-500 outline-none"
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-[#E8431A] outline-none"
         >
           <option value="">كل الحالات</option>
           {Object.entries(STATUS_CFG).map(([v, c]) => (
@@ -238,7 +238,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
         <select
           value={filters.wilaya ?? ''}
           onChange={e => push('wilaya', e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-dakkani-500 outline-none"
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-[#E8431A] outline-none"
         >
           <option value="">كل الولايات</option>
           {wilayas.map(w => (
@@ -251,21 +251,21 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
           type="date"
           value={filters.from ?? ''}
           onChange={e => push('from', e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-dakkani-500 outline-none"
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-[#E8431A] outline-none"
         />
         <span className="text-gray-600 text-sm">→</span>
         <input
           type="date"
           value={filters.to ?? ''}
           onChange={e => push('to', e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-dakkani-500 outline-none"
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-[#E8431A] outline-none"
         />
 
         {/* Fraud filter */}
         <select
           value={filters.fraud ?? ''}
           onChange={e => push('fraud', e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-dakkani-500 outline-none"
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-[#E8431A] outline-none"
         >
           <option value="">كل المستويات</option>
           <option value="high">خطر عالٍ ≥70%</option>
@@ -286,7 +286,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
 
       {/* ── Bulk Actions ───────────────────────────────── */}
       {selected.size > 0 && (
-        <div className="px-6 py-2 bg-dakkani-500/10 border-b border-dakkani-500/20 flex items-center gap-3">
+        <div className="px-6 py-2 bg-[#E8431A]/10 border-b border-dakkani-500/20 flex items-center gap-3">
           <span className="text-sm text-dakkani-400 font-medium">{selected.size} طلب محدد</span>
           {[
             { id: 'confirm', label: 'تأكيد', icon: CheckCircle, cls: 'text-green-400 hover:bg-green-500/10' },
@@ -385,7 +385,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
                   <td className="px-3 py-3">
                     <Link
                       href={`/admin/orders/${order.id}`}
-                      className="text-xs text-dakkani-500 hover:text-dakkani-400 font-medium"
+                      className="text-xs text-[#E8431A] hover:text-dakkani-400 font-medium"
                     >
                       إدارة
                     </Link>
@@ -418,7 +418,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
           {page < totalPages && (
             <button
               onClick={() => push('page', String(page + 1))}
-              className="text-xs px-3 py-1.5 bg-dakkani-500 text-white hover:bg-dakkani-600 rounded-lg transition"
+              className="text-xs px-3 py-1.5 bg-[#E8431A] text-white hover:bg-[#C73615] rounded-lg transition"
             >
               التالي
             </button>

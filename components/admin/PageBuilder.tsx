@@ -71,7 +71,7 @@ function SortableSection({
         <p className="text-sm font-medium text-gray-200">{section.label || cat?.label}</p>
         <p className="text-xs text-gray-600">{section.type}</p>
       </div>
-      <button onClick={() => onEdit(section)} className="text-xs text-dakkani-500 hover:text-dakkani-400 px-2 py-1 bg-dakkani-500/10 rounded-lg transition">
+      <button onClick={() => onEdit(section)} className="text-xs text-[#E8431A] hover:text-dakkani-400 px-2 py-1 bg-[#E8431A]/10 rounded-lg transition">
         تعديل
       </button>
       <button onClick={() => onRemove(section.id)} className="text-gray-600 hover:text-red-400 transition">
@@ -206,7 +206,7 @@ export default function PageBuilder({ storeId, storeMeta, existingPage, products
             <button onClick={() => setPreview(!preview)} className="p-1.5 text-gray-500 hover:text-dakkani-400 transition">
               <Eye className="w-4 h-4" />
             </button>
-            <button onClick={savePage} disabled={saving} className="flex items-center gap-1.5 text-xs bg-dakkani-500 text-white px-3 py-1.5 rounded-lg hover:bg-dakkani-600 transition disabled:opacity-50">
+            <button onClick={savePage} disabled={saving} className="flex items-center gap-1.5 text-xs bg-[#E8431A] text-white px-3 py-1.5 rounded-lg hover:bg-[#C73615] transition disabled:opacity-50">
               {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
               حفظ
             </button>
@@ -229,7 +229,7 @@ export default function PageBuilder({ storeId, storeMeta, existingPage, products
                 <input
                   value={f.val}
                   onChange={e => f.set(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-200 focus:ring-1 focus:ring-dakkani-500 outline-none"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-200 focus:ring-1 focus:ring-[#E8431A] outline-none"
                 />
               </div>
             ))}
@@ -240,7 +240,7 @@ export default function PageBuilder({ storeId, storeMeta, existingPage, products
               <select
                 value={productId}
                 onChange={e => setProductId(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-200 focus:ring-1 focus:ring-dakkani-500 outline-none"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-200 focus:ring-1 focus:ring-[#E8431A] outline-none"
               >
                 <option value="">اختر منتجاً</option>
                 {products.map(p => (
@@ -435,7 +435,7 @@ function SectionEditor({ section, onSave, onClose }: {
               <div key={k}>
                 <label className="block text-xs text-gray-500 mb-1">{l}</label>
                 <input value={(data as any)[k] ?? ''} onChange={e => set(k, e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:ring-1 focus:ring-dakkani-500 outline-none" />
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:ring-1 focus:ring-[#E8431A] outline-none" />
               </div>
             ))}
             {[['bgColor','لون الخلفية'],['textColor','لون النص']].map(([k,l]) => (
@@ -454,7 +454,7 @@ function SectionEditor({ section, onSave, onClose }: {
               value={((data as any).badges ?? []).join('\n')}
               onChange={e => set('badges', e.target.value.split('\n').filter(Boolean))}
               rows={5}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:ring-1 focus:ring-dakkani-500 outline-none resize-none"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:ring-1 focus:ring-[#E8431A] outline-none resize-none"
             />
           </div>
         )
@@ -464,12 +464,12 @@ function SectionEditor({ section, onSave, onClose }: {
             <div>
               <label className="block text-xs text-gray-500 mb-1">الرسالة</label>
               <input value={(data as any).message ?? ''} onChange={e => set('message', e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:ring-1 focus:ring-dakkani-500 outline-none" />
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:ring-1 focus:ring-[#E8431A] outline-none" />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">تاريخ الانتهاء</label>
               <input type="datetime-local" value={(data as any).endsAt ?? ''} onChange={e => set('endsAt', e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:ring-1 focus:ring-dakkani-500 outline-none" />
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:ring-1 focus:ring-[#E8431A] outline-none" />
             </div>
           </>
         )
@@ -479,7 +479,7 @@ function SectionEditor({ section, onSave, onClose }: {
             <div>
               <label className="block text-xs text-gray-500 mb-1">نص الزر</label>
               <input value={(data as any).buttonText ?? ''} onChange={e => set('buttonText', e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:ring-1 focus:ring-dakkani-500 outline-none" />
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:ring-1 focus:ring-[#E8431A] outline-none" />
             </div>
             <div className="flex items-center gap-3">
               <label className="text-xs text-gray-500">لون الزر</label>
@@ -508,12 +508,12 @@ function SectionEditor({ section, onSave, onClose }: {
         <div>
           <label className="block text-xs text-gray-500 mb-1">اسم القسم</label>
           <input value={label} onChange={e => setLabel(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:ring-1 focus:ring-dakkani-500 outline-none" />
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:ring-1 focus:ring-[#E8431A] outline-none" />
         </div>
         <div className="space-y-3">{renderFields()}</div>
         <button
           onClick={() => onSave({ ...section, label, data })}
-          className="w-full bg-dakkani-500 hover:bg-dakkani-600 text-white font-bold py-2 rounded-xl text-sm transition"
+          className="w-full bg-[#E8431A] hover:bg-[#C73615] text-white font-bold py-2 rounded-xl text-sm transition"
         >
           حفظ التغييرات
         </button>

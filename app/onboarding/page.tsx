@@ -210,7 +210,7 @@ export default function OnboardingPage() {
                         onClick={() => setValue('category', cat)}
                         className={`py-2.5 px-2 rounded-xl text-xs font-medium border-2 transition text-center ${
                           watch('category') === cat
-                            ? 'border-[#E8431A] bg-[#FFF0ED] text-dakkani-700'
+                            ? 'border-[#E8431A] bg-[#FFF0ED] text-[#C73615]'
                             : 'border-[#EBEBEB] text-[#444444] hover:border-gray-300'
                         }`}
                       >
@@ -221,8 +221,8 @@ export default function OnboardingPage() {
                 </div>
 
                 {/* Features preview */}
-                <div className="bg-gradient-to-br from-dakkani-50 to-orange-50 rounded-2xl p-4 border border-dakkani-100">
-                  <p className="text-sm font-bold text-dakkani-700 mb-3">✨ ما ستحصل عليه مجاناً:</p>
+                <div className="bg-gradient-to-br from-dakkani-50 to-orange-50 rounded-2xl p-4 border border-[#FFF0ED]">
+                  <p className="text-sm font-bold text-[#C73615] mb-3">✨ ما ستحصل عليه مجاناً:</p>
                   <div className="space-y-2">
                     {[
                       'متجر إلكتروني كامل',
@@ -231,7 +231,7 @@ export default function OnboardingPage() {
                       'ربط بكسل فيسبوك وتيك توك',
                       'توصيل لكل الجزائر',
                     ].map(f => (
-                      <div key={f} className="flex items-center gap-2 text-sm text-dakkani-700">
+                      <div key={f} className="flex items-center gap-2 text-sm text-[#C73615]">
                         <span className="text-green-500 font-bold">✓</span>
                         {f}
                       </div>
@@ -256,7 +256,7 @@ export default function OnboardingPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 bg-gradient-to-r from-dakkani-500 to-dakkani-600 hover:from-dakkani-600 hover:to-dakkani-700 text-white font-black py-4 rounded-2xl transition flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-r from-[#E8431A] to-[#C73615] hover:from-dakkani-600 hover:to-[#C73615] text-white font-black py-4 rounded-2xl transition flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <><Loader2 className="w-5 h-5 animate-spin" />جارٍ الإنشاء...</>

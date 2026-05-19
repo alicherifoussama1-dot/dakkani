@@ -41,7 +41,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F9F9F9] p-4" dir="rtl">
       <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-md">
-        <div className="w-12 h-12 bg-dakkani-50 rounded-2xl flex items-center justify-center mb-4">
+        <div className="w-12 h-12 bg-[#FFF0ED] rounded-2xl flex items-center justify-center mb-4">
           <Lock className="w-6 h-6 text-[#E8431A]" />
         </div>
         <h2 className="text-2xl font-black text-gray-900 mb-1">كلمة مرور جديدة</h2>
@@ -58,7 +58,7 @@ export default function ResetPasswordPage() {
                 value={f.val}
                 onChange={e => f.set(e.target.value)}
                 placeholder="••••••••"
-                className="w-full border-2 border-[#EBEBEB] focus:border-dakkani-500 rounded-xl px-4 py-3 outline-none transition"
+                className="w-full border-2 border-[#EBEBEB] focus:border-[#E8431A] rounded-xl px-4 py-3 outline-none transition"
               />
             </div>
           ))}

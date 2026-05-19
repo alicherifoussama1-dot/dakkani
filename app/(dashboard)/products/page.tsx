@@ -38,14 +38,14 @@ export default async function ProductsPage() {
             href={`/store/${store.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 border border-dakkani-200 text-dakkani-600 hover:bg-dakkani-50 px-4 py-2 rounded-lg text-sm font-semibold transition"
+            className="flex items-center gap-2 border border-[#FFF0ED] text-[#E8431A] hover:bg-[#FFF0ED] px-4 py-2 rounded-lg text-sm font-semibold transition"
           >
             <ExternalLink className="w-4 h-4" />
             عرض المتجر
           </a>
           <Link
             href="/products/new"
-            className="flex items-center gap-2 bg-dakkani-500 hover:bg-dakkani-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
+            className="flex items-center gap-2 bg-[#E8431A] hover:bg-[#C73615] text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
           >
             <Plus className="w-4 h-4" />
             منتج جديد
@@ -151,7 +151,7 @@ export default async function ProductsPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           title="عرض المنتج في المتجر"
-                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-dakkani-600 bg-gray-100 hover:bg-dakkani-50 px-2.5 py-1.5 rounded-lg transition font-medium border border-gray-200 hover:border-dakkani-200"
+                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-[#E8431A] bg-gray-100 hover:bg-[#FFF0ED] px-2.5 py-1.5 rounded-lg transition font-medium border border-gray-200 hover:border-[#FFF0ED]"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           عرض
@@ -166,7 +166,7 @@ export default async function ProductsPage() {
                       <Link
                         href={`/products/${p.id}`}
                         title="تعديل المنتج"
-                        className="flex items-center gap-1 text-xs text-dakkani-600 hover:text-white bg-dakkani-50 hover:bg-dakkani-500 px-2.5 py-1.5 rounded-lg transition font-medium border border-dakkani-200 hover:border-dakkani-500"
+                        className="flex items-center gap-1 text-xs text-[#E8431A] hover:text-white bg-[#FFF0ED] hover:bg-[#E8431A] px-2.5 py-1.5 rounded-lg transition font-medium border border-[#FFF0ED] hover:border-dakkani-500"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                         تعديل
@@ -186,7 +186,7 @@ export default async function ProductsPage() {
                     <p className="text-sm mt-1">أضف منتجك الأول للبدء في البيع</p>
                     <Link
                       href="/products/new"
-                      className="inline-flex items-center gap-2 mt-4 bg-dakkani-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-dakkani-600 transition"
+                      className="inline-flex items-center gap-2 mt-4 bg-[#E8431A] text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-[#C73615] transition"
                     >
                       <Plus className="w-4 h-4" />
                       أضف منتجاً الآن

@@ -193,7 +193,7 @@ export default function CallCenterPage({ storeId, storeName, initialQueue, stats
         <div className="p-4 border-b border-gray-800">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-gray-300">قائمة الانتظار</h2>
-            <span className="text-xs bg-dakkani-500/20 text-dakkani-400 px-2 py-0.5 rounded-full">{queue.length}</span>
+            <span className="text-xs bg-[#E8431A]/20 text-dakkani-400 px-2 py-0.5 rounded-full">{queue.length}</span>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -202,7 +202,7 @@ export default function CallCenterPage({ storeId, storeName, initialQueue, stats
               key={order.id}
               onClick={() => setActiveIdx(idx)}
               className={`w-full text-right px-4 py-3 border-b border-gray-800/50 hover:bg-gray-800/50 transition ${
-                idx === activeIdx ? 'bg-dakkani-500/10 border-r-2 border-r-dakkani-500' : ''
+                idx === activeIdx ? 'bg-[#E8431A]/10 border-r-2 border-r-dakkani-500' : ''
               }`}
             >
               <div className="flex items-center justify-between mb-1">
@@ -216,7 +216,7 @@ export default function CallCenterPage({ storeId, storeName, initialQueue, stats
               <p className="text-sm text-gray-300 font-medium truncate">{order.customer_name}</p>
               <p className="text-xs text-gray-500">{order.customer_phone}</p>
               <div className="flex items-center justify-between mt-1">
-                <span className="text-xs text-dakkani-500 font-bold">{formatDZD(order.total)}</span>
+                <span className="text-xs text-[#E8431A] font-bold">{formatDZD(order.total)}</span>
                 <span className="text-xs text-gray-600">{order.wilaya?.name_ar}</span>
               </div>
             </button>
@@ -239,7 +239,7 @@ export default function CallCenterPage({ storeId, storeName, initialQueue, stats
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-dakkani-500/20 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-[#E8431A]/20 rounded-full flex items-center justify-center">
                       <User className="w-5 h-5 text-dakkani-400" />
                     </div>
                     <div>
@@ -327,7 +327,7 @@ export default function CallCenterPage({ storeId, storeName, initialQueue, stats
                   onChange={e => setCallNote(e.target.value)}
                   rows={2}
                   placeholder="ملاحظات اختيارية..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-300 focus:ring-1 focus:ring-dakkani-500 outline-none resize-none"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-300 focus:ring-1 focus:ring-[#E8431A] outline-none resize-none"
                 />
               </div>
 
@@ -372,7 +372,7 @@ export default function CallCenterPage({ storeId, storeName, initialQueue, stats
       <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
         <div className="p-4 border-b border-gray-800">
           <h2 className="text-sm font-bold text-gray-300 flex items-center gap-2">
-            <BarChart2 className="w-4 h-4 text-dakkani-500" />
+            <BarChart2 className="w-4 h-4 text-[#E8431A]" />
             إحصائيات الجلسة
           </h2>
         </div>

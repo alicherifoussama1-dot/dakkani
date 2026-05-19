@@ -53,7 +53,7 @@ export default function OrdersTable({ orders, total, page, pageSize }: Props) {
           defaultValue={params.get('search') ?? ''}
           onChange={e => push('search', e.target.value)}
           placeholder="بحث باسم، هاتف، رقم الطلب..."
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm flex-1 min-w-48 focus:ring-2 focus:ring-dakkani-500 outline-none"
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm flex-1 min-w-48 focus:ring-2 focus:ring-[#E8431A] outline-none"
         />
         <div className="flex flex-wrap gap-1.5">
           {STATUS_OPTIONS.map(opt => (
@@ -62,7 +62,7 @@ export default function OrdersTable({ orders, total, page, pageSize }: Props) {
               onClick={() => push('status', opt.value)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                 (params.get('status') ?? '') === opt.value
-                  ? 'bg-dakkani-500 text-white'
+                  ? 'bg-[#E8431A] text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -86,7 +86,7 @@ export default function OrdersTable({ orders, total, page, pageSize }: Props) {
             <tbody className="divide-y divide-gray-50">
               {orders.map(order => (
                 <tr key={order.id} className="hover:bg-gray-50 transition">
-                  <td className="px-4 py-3 font-mono font-semibold text-dakkani-600">{order.order_number}</td>
+                  <td className="px-4 py-3 font-mono font-semibold text-[#E8431A]">{order.order_number}</td>
                   <td className="px-4 py-3">
                     <p className="font-medium text-gray-900">{order.customer_name}</p>
                     <p className="text-xs text-gray-500">{order.customer_phone}</p>
@@ -103,7 +103,7 @@ export default function OrdersTable({ orders, total, page, pageSize }: Props) {
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{formatDateShort(order.created_at)}</td>
                   <td className="px-4 py-3">
-                    <Link href={`/orders/${order.id}`} className="text-dakkani-600 hover:underline text-xs font-medium">
+                    <Link href={`/orders/${order.id}`} className="text-[#E8431A] hover:underline text-xs font-medium">
                       عرض
                     </Link>
                   </td>
@@ -134,7 +134,7 @@ export default function OrdersTable({ orders, total, page, pageSize }: Props) {
               {page < totalPages && (
                 <button
                   onClick={() => push('page', String(page + 1))}
-                  className="px-3 py-1.5 text-sm bg-dakkani-500 text-white rounded-lg hover:bg-dakkani-600"
+                  className="px-3 py-1.5 text-sm bg-[#E8431A] text-white rounded-lg hover:bg-[#C73615]"
                 >
                   التالي
                 </button>

@@ -80,7 +80,7 @@ export default async function DashboardPage() {
         <div className="flex gap-2">
           <Link
             href="/products/new"
-            className="bg-dakkani-500 hover:bg-dakkani-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition shadow-sm"
+            className="bg-[#E8431A] hover:bg-[#C73615] text-white px-4 py-2 rounded-xl text-sm font-bold transition shadow-sm"
           >
             + منتج جديد
           </Link>
@@ -88,7 +88,7 @@ export default async function DashboardPage() {
             href={`/store/${store.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="border border-gray-200 hover:border-dakkani-300 text-gray-600 hover:text-dakkani-600 px-4 py-2 rounded-xl text-sm font-medium transition"
+            className="border border-gray-200 hover:border-[#FFF0ED] text-gray-600 hover:text-[#E8431A] px-4 py-2 rounded-xl text-sm font-medium transition"
           >
             عرض المتجر ↗
           </a>
@@ -210,7 +210,7 @@ export default async function DashboardPage() {
         <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-gray-900">الإيرادات (آخر 30 يوم)</h2>
-            <Link href="/admin/analytics" className="text-xs text-dakkani-600 hover:underline font-medium">
+            <Link href="/admin/analytics" className="text-xs text-[#E8431A] hover:underline font-medium">
               تقرير مفصل ←
             </Link>
           </div>
@@ -219,7 +219,7 @@ export default async function DashboardPage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-gray-900">آخر الطلبات</h2>
-            <Link href="/orders" className="text-xs text-dakkani-600 hover:underline font-medium">
+            <Link href="/orders" className="text-xs text-[#E8431A] hover:underline font-medium">
               عرض الكل ←
             </Link>
           </div>
@@ -228,7 +228,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="bg-gradient-to-br from-dakkani-500 to-dakkani-700 rounded-2xl p-5 text-white">
+      <div className="bg-gradient-to-br from-[#E8431A] to-dakkani-700 rounded-2xl p-5 text-white">
         <h2 className="font-bold mb-3">إجراءات سريعة</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[

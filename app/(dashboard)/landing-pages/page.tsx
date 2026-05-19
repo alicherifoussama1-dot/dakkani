@@ -24,7 +24,7 @@ export default async function LandingPagesPage() {
         <h1 className="text-2xl font-bold text-gray-900">صفحات الهبوط</h1>
         <Link
           href="/landing-pages/new"
-          className="flex items-center gap-2 bg-dakkani-500 hover:bg-dakkani-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
+          className="flex items-center gap-2 bg-[#E8431A] hover:bg-[#C73615] text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
         >
           <Plus className="w-4 h-4" />
           صفحة جديدة
@@ -36,11 +36,11 @@ export default async function LandingPagesPage() {
           const convRate = page.views > 0 ? ((page.conversions / page.views) * 100).toFixed(1) : '0'
           return (
             <div key={page.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden group">
-              <div className="h-2 bg-gradient-to-r from-dakkani-400 to-dakkani-600" />
+              <div className="h-2 bg-gradient-to-r from-[#F96540] to-[#C73615]" />
               <div className="p-4 space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-bold text-gray-900 group-hover:text-dakkani-600 transition">
+                    <h3 className="font-bold text-gray-900 group-hover:text-[#E8431A] transition">
                       {page.title_ar ?? page.title}
                     </h3>
                     <p className="text-xs text-gray-400 font-mono mt-0.5">/{page.slug}</p>
@@ -64,7 +64,7 @@ export default async function LandingPagesPage() {
                     <p className="text-xs text-gray-400">زيارة</p>
                   </div>
                   <div className="text-center border-x border-gray-200">
-                    <p className="text-lg font-black text-dakkani-600">{page.conversions.toLocaleString()}</p>
+                    <p className="text-lg font-black text-[#E8431A]">{page.conversions.toLocaleString()}</p>
                     <p className="text-xs text-gray-400">طلب</p>
                   </div>
                   <div className="text-center">
@@ -87,7 +87,7 @@ export default async function LandingPagesPage() {
                   </a>
                   <Link
                     href={`/landing-pages/${page.id}`}
-                    className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 bg-dakkani-50 text-dakkani-600 rounded-lg hover:bg-dakkani-100 transition"
+                    className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 bg-[#FFF0ED] text-[#E8431A] rounded-lg hover:bg-dakkani-100 transition"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     تعديل

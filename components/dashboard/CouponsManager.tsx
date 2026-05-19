@@ -80,7 +80,7 @@ export default function CouponsManager({
       <div className="flex justify-end">
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-dakkani-500 hover:bg-dakkani-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
+          className="flex items-center gap-2 bg-[#E8431A] hover:bg-[#C73615] text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
         >
           <Plus className="w-4 h-4" />
           كوبون جديد
@@ -89,7 +89,7 @@ export default function CouponsManager({
 
       {/* Create form */}
       {showForm && (
-        <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl border border-dakkani-100 p-5 space-y-4 shadow-sm" dir="rtl">
+        <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl border border-[#FFF0ED] p-5 space-y-4 shadow-sm" dir="rtl">
           <h3 className="font-bold text-gray-900">إنشاء كوبون جديد</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -97,7 +97,7 @@ export default function CouponsManager({
               <input
                 {...register('code')}
                 placeholder="SUMMER20"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm uppercase focus:ring-2 focus:ring-dakkani-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm uppercase focus:ring-2 focus:ring-[#E8431A] outline-none"
               />
               {errors.code && <p className="text-red-500 text-xs mt-1">{errors.code.message}</p>}
             </div>
@@ -105,7 +105,7 @@ export default function CouponsManager({
               <label className="block text-sm font-medium text-gray-700 mb-1">نوع الخصم *</label>
               <select
                 {...register('type')}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-dakkani-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#E8431A] outline-none"
               >
                 {Object.entries(TYPE_LABELS).map(([v, l]) => (
                   <option key={v} value={v}>{l}</option>
@@ -118,7 +118,7 @@ export default function CouponsManager({
                 {...register('value', { valueAsNumber: true })}
                 type="number"
                 min="0"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
               />
             </div>
             <div>
@@ -128,7 +128,7 @@ export default function CouponsManager({
                 type="number"
                 min="0"
                 placeholder="اختياري"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
               />
             </div>
             <div>
@@ -138,7 +138,7 @@ export default function CouponsManager({
                 type="number"
                 min="1"
                 placeholder="غير محدود"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
               />
             </div>
             <div>
@@ -146,7 +146,7 @@ export default function CouponsManager({
               <input
                 {...register('expires_at')}
                 type="datetime-local"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-dakkani-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
               />
             </div>
           </div>
@@ -154,7 +154,7 @@ export default function CouponsManager({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-dakkani-500 hover:bg-dakkani-600 text-white font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-50"
+              className="bg-[#E8431A] hover:bg-[#C73615] text-white font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-50"
             >
               {isSubmitting ? 'جارٍ الإنشاء...' : 'إنشاء الكوبون'}
             </button>
@@ -180,7 +180,7 @@ export default function CouponsManager({
               <tr key={c.id} className="hover:bg-gray-50 transition">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-dakkani-600">{c.code}</span>
+                    <span className="font-mono font-bold text-[#E8431A]">{c.code}</span>
                     <button
                       onClick={() => copyCode(c.code)}
                       className="text-gray-300 hover:text-gray-500"
