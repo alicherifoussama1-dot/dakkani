@@ -1,5 +1,6 @@
+'use client'
 import Link from 'next/link'
-import { Facebook, Instagram, Youtube } from 'lucide-react'
+import { Facebook, Instagram } from 'lucide-react'
 
 const COLS = [
   {

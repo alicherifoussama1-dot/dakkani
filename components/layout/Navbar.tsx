@@ -135,7 +135,7 @@ export default function Navbar() {
       {/* ── Mobile Drawer ────────────────────────────── */}
       <div
         className={`fixed top-0 right-0 z-[70] h-full w-[280px] bg-white shadow-xl lg:hidden
-          transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]
+          transition-transform duration-300 ease-smooth
           ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`}
         dir="rtl"
         role="dialog"
