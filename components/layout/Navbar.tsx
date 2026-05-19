@@ -6,10 +6,10 @@ import { Menu, X, ShoppingBag } from 'lucide-react'
 import { useScrollPosition } from '@/hooks/useScrollPosition'
 
 const NAV_LINKS = [
-  { href: '/',          label: 'الرئيسية' },
-  { href: '/products',  label: 'المنتجات' },
-  { href: '#merchants', label: 'التجار' },
-  { href: '#pricing',   label: 'الأسعار' },
+  { href: '/',           label: 'الرئيسية' },
+  { href: '/discover',   label: 'المنتجات' },
+  { href: '#features',   label: 'المميزات' },
+  { href: '#pricing',    label: 'الأسعار' },
 ]
 
 export default function Navbar() {

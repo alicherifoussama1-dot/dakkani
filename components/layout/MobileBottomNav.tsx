@@ -4,11 +4,11 @@ import { usePathname } from 'next/navigation'
 import { Home, Grid3X3, Search, ShoppingCart, User } from 'lucide-react'
 
 const ITEMS = [
-  { href: '/',         label: 'الرئيسية', Icon: Home },
-  { href: '/products', label: 'المنتجات', Icon: Grid3X3 },
-  { href: '/search',   label: 'البحث',    Icon: Search },
-  { href: '/cart',     label: 'السلة',    Icon: ShoppingCart },
-  { href: '/account',  label: 'حسابي',    Icon: User },
+  { href: '/',           label: 'الرئيسية', Icon: Home },
+  { href: '/discover',   label: 'المنتجات', Icon: Grid3X3 },
+  { href: '/discover',   label: 'البحث',    Icon: Search },
+  { href: '/checkout',   label: 'طلباتي',   Icon: ShoppingCart },
+  { href: '/dashboard',  label: 'حسابي',    Icon: User },
 ]
 
 export default function MobileBottomNav() {
