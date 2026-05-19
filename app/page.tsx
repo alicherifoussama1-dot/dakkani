@@ -1,28 +1,33 @@
-import Link from 'next/link'
+import Navbar         from '@/components/layout/Navbar'
+import Footer          from '@/components/layout/Footer'
+import MobileBottomNav from '@/components/layout/MobileBottomNav'
+import Hero            from '@/components/sections/Hero'
+import Features        from '@/components/sections/Features'
+import HowItWorks      from '@/components/sections/HowItWorks'
+import Categories      from '@/components/sections/Categories'
+import ProductGrid     from '@/components/sections/ProductGrid'
+import Testimonials    from '@/components/sections/Testimonials'
+import Pricing         from '@/components/sections/Pricing'
+import FAQ             from '@/components/sections/FAQ'
+import CTABanner       from '@/components/sections/CTABanner'
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-dakkani-50 to-white">
-      <div className="text-center space-y-6 p-8">
-        <h1 className="text-6xl font-black text-dakkani-600">دكاني</h1>
-        <p className="text-xl text-gray-600 max-w-md">
-          منصة التجارة الإلكترونية الجزائرية متعددة المتاجر
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Link
-            href="/register"
-            className="bg-dakkani-500 hover:bg-dakkani-600 text-white px-8 py-3 rounded-lg font-bold transition"
-          >
-            ابدأ مجاناً
-          </Link>
-          <Link
-            href="/login"
-            className="border border-dakkani-500 text-dakkani-600 hover:bg-dakkani-50 px-8 py-3 rounded-lg font-bold transition"
-          >
-            تسجيل الدخول
-          </Link>
-        </div>
-      </div>
-    </main>
+    <>
+      <Navbar />
+      <main style={{ paddingBottom: '60px' }}>
+        <Hero />
+        <Features />
+        <HowItWorks />
+        <Categories />
+        <ProductGrid />
+        <Testimonials />
+        <Pricing />
+        <FAQ />
+        <CTABanner />
+      </main>
+      <Footer />
+      <MobileBottomNav />
+    </>
   )
 }
