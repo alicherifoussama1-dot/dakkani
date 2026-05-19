@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import { notFound } from 'next/navigation'
 import { formatDZD, formatDate } from '@/lib/utils/format'
 import { CheckCircle, Package, Clock } from 'lucide-react'
@@ -14,7 +14,7 @@ interface Props {
 export const metadata: Metadata = { title: 'تأكيد الطلب' }
 
 export default async function OrderConfirmationPage({ params, searchParams }: Props) {
-  const supabase = createServerClient()
+  const supabase = createPublicClient()
 
   const { data: store } = await supabase
     .from('stores')

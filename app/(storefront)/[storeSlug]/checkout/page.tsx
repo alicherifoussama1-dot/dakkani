@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import CheckoutForm from '@/components/storefront/CheckoutForm'
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CheckoutPage({ params, searchParams }: Props) {
-  const supabase = createServerClient()
+  const supabase = createPublicClient()
 
   // Load store
   const { data: store } = await supabase

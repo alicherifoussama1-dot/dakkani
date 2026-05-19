@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import { notFound }           from 'next/navigation'
 import type { Metadata }      from 'next'
 import StorefrontLayout       from '@/components/storefront/StorefrontLayout'
@@ -16,7 +16,7 @@ import WhatsAppFloat          from '@/components/storefront/WhatsAppFloat'
 interface Props { params: { storeSlug: string } }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const supabase = createServerClient()
+  const supabase = createPublicClient()
   const { data: store } = await supabase.from('stores').select('name, description_ar, logo_url').eq('slug', params.storeSlug).single()
   if (!store) return { title: 'متجر' }
   return {
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function StorefrontHome({ params }: Props) {
-  const supabase = createServerClient()
+  const supabase = createPublicClient()
 
   const { data: store } = await supabase
     .from('stores')

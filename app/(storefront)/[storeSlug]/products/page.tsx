@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import StorefrontLayout from '@/components/storefront/StorefrontLayout'
@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CataloguePage({ params, searchParams }: Props) {
-  const supabase = createServerClient()
+  const supabase = createPublicClient()
   const { data: store } = await supabase.from('stores').select('*, store_settings(*)').eq('slug', params.storeSlug).eq('is_active', true).single()
   if (!store) notFound()
 
