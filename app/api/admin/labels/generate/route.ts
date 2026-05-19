@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const cookieStore = cookies()
     const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { cookies: { get: (n) => cookieStore.get(n)?.value, set: (n,v,o) => { try { cookieStore.set({name:n,value:v,...o}) } catch {} }, remove: (n,o) => { try { cookieStore.set({name:n,value:'',...o}) } catch {} } } })
   const { data: { user } } = await supabase.auth.getUser()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const ids = req.nextUrl.searchParams.get('ids')?.split(',').filter(Boolean) ?? []
   if (!ids.length) return NextResponse.json({ error: 'No order IDs' }, { status: 400 })

@@ -62,7 +62,7 @@ async function executeFunction(
   name: string,
   args: Record<string, unknown>,
   storeId: string,
-  supabase: ReturnType<typeof createRouteHandlerClient>
+  supabase: any
 ): Promise<{ result: string; label: string }> {
   switch (name) {
     case 'get_store_stats': {
@@ -79,9 +79,9 @@ async function executeFunction(
         .gte('created_at', from.toISOString())
 
       const total       = (orders ?? []).length
-      const delivered   = (orders ?? []).filter(o => o.status === 'delivered')
-      const revenue     = delivered.reduce((s, o) => s + o.total, 0)
-      const cancelled   = (orders ?? []).filter(o => o.status === 'cancelled').length
+      const delivered   = (orders ?? []).filter((o: any) => o.status === 'delivered')
+      const revenue     = delivered.reduce((s: number, o: any) => s + o.total, 0)
+      const cancelled   = (orders ?? []).filter((o: any) => o.status === 'cancelled').length
 
       return {
         result: `${total} طلب، إيرادات: ${revenue.toLocaleString('fr-DZ')} دج، ${cancelled} ملغى`,
@@ -119,7 +119,7 @@ async function executeFunction(
         .order('created_at')
         .limit(Number(args.limit ?? 5))
 
-      const list = (data ?? []).map(o => `${o.order_number}: ${o.customer_name}`).join('، ')
+      const list = (data ?? []).map((o: any) => `${o.order_number}: ${o.customer_name}`).join('، ')
       return {
         result: `${count} طلب معلق${list ? ': ' + list : ''}`,
         label:  'الطلبات المعلقة',
@@ -136,7 +136,7 @@ async function executeFunction(
         .limit(200)
 
       const map: Record<string, { qty: number; rev: number }> = {}
-      ;(data ?? []).forEach(i => {
+      ;(data ?? []).forEach((i: any) => {
         if (!map[i.product_name]) map[i.product_name] = { qty: 0, rev: 0 }
         map[i.product_name].qty += i.quantity
         map[i.product_name].rev += i.total_price
@@ -160,7 +160,7 @@ async function executeFunction(
         .order('fraud_score', { ascending: false })
         .limit(5)
 
-      const list = (data ?? []).map(o => `${o.order_number} (${o.fraud_score}%)`).join('، ')
+      const list = (data ?? []).map((o: any) => `${o.order_number} (${o.fraud_score}%)`).join('، ')
       return {
         result: `${count} طلب مشبوه${list ? ': ' + list : ''}`,
         label:  'تقرير الاحتيال',

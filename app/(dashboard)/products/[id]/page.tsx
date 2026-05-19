@@ -12,11 +12,12 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 
 export default async function EditProductPage({ params }: { params: { id: string } }) {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
   const { data: store } = await supabase
     .from('stores')
     .select('id, meta_pixel_id, tiktok_pixel_id')
-    .eq('owner_id', session!.user.id)
+    .eq('owner_id', user.id)
     .single()
   if (!store) return null
 

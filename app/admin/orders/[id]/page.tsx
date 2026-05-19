@@ -6,8 +6,9 @@ import AdminOrderDetail from '@/components/admin/AdminOrderDetail'
 
 export default async function AdminOrderDetailPage({ params }: { params: { id: string } }) {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  const { data: store } = await supabase.from('stores').select('id, name, phone').eq('owner_id', session!.user.id).single()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data: store } = await supabase.from('stores').select('id, name, phone').eq('owner_id', user!.id).single()
   if (!store) return null
 
   const { data: order } = await supabase
