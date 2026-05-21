@@ -49,7 +49,7 @@ export default function OrdersPageClient({
           <button className="btn btn-sm gap-1.5" style={{ background: '#FFC107', color: '#000', border: 'none' }}>
             <RefreshCw size={13} />مزامنة
           </button>
-          <Link href="/dashboard/orders/new" className="btn btn-primary btn-sm gap-1.5">
+          <Link href="/orders/new" className="btn btn-primary btn-sm gap-1.5">
             <Plus size={13} />إنشاء طلب
           </Link>
         </div>

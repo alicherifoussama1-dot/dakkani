@@ -77,7 +77,7 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
               {['اليوم','الأمس','أسبوع','شهر'].map(d => <option key={d}>{d}</option>)}
             </select>
           </div>
-          <Link href="/dashboard/products/new" className="btn btn-primary btn-sm gap-1.5">
+          <Link href="/products/new" className="btn btn-primary btn-sm gap-1.5">
             <Plus size={14} />
             إنشاء صفحة هبوط
           </Link>
@@ -117,7 +117,7 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
             <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>+12,000 تاجر نشط</p>
           </div>
         </div>
-        <Link href="/dashboard/products" className="btn btn-primary btn-sm flex-shrink-0">
+        <Link href="/products" className="btn btn-primary btn-sm flex-shrink-0">
           ابدأ الآن
         </Link>
       </div>
@@ -154,7 +154,7 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
         <div className="card p-4 lg:col-span-2 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>اعدّ متجرك للطلبات القادمة</h2>
-            <Link href="/dashboard/products" className="btn btn-primary btn-sm">ابدأ</Link>
+            <Link href="/products" className="btn btn-primary btn-sm">ابدأ</Link>
           </div>
           {/* YouTube tutorial placeholder */}
           <div className="rounded-xl overflow-hidden flex-1 flex items-center justify-center" style={{ background: '#111', minHeight: '140px' }}>

@@ -39,7 +39,7 @@ export default function ProductsPageClient({
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
         <h1 className="page-title">المنتجات</h1>
-        <Link href="/dashboard/products/new" className="btn btn-primary btn-sm gap-1.5">
+        <Link href="/products/new" className="btn btn-primary btn-sm gap-1.5">
           <Plus size={14} />إنشاء منتج
         </Link>
       </div>
@@ -75,7 +75,7 @@ export default function ProductsPageClient({
                       <p className="text-sm" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-arabic)' }}>
                         لا توجد منتجات — أضف منتجك الأول
                       </p>
-                      <Link href="/dashboard/products/new" className="btn btn-primary btn-sm mt-1">
+                      <Link href="/products/new" className="btn btn-primary btn-sm mt-1">
                         <Plus size={13} />إنشاء منتج
                       </Link>
                     </div>

@@ -62,7 +62,7 @@ export default function BillingPlansClient({ storeName, currentPlan }: Props) {
           <h1 className="page-title">الخطط</h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-muted)' }}>مركز إدارة الاشتراك</p>
         </div>
-        <Link href="/dashboard/billing/history" className="btn btn-sm" style={{ border: '1px solid var(--color-border)', background: '#fff', color: 'var(--color-text-secondary)' }}>
+        <Link href="/billing/history" className="btn btn-sm" style={{ border: '1px solid var(--color-border)', background: '#fff', color: 'var(--color-text-secondary)' }}>
           <FileText size={13} />سجل الفواتير
         </Link>
       </div>

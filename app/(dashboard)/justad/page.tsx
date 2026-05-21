@@ -43,7 +43,7 @@ export default function JustAdPage() {
       </div>
 
       <div className="mt-6 text-center">
-        <Link href="/dashboard/tracking" className="btn btn-primary gap-2">
+        <Link href="/tracking" className="btn btn-primary gap-2">
           ابدأ بإعداد البكسلات الآن
         </Link>
       </div>

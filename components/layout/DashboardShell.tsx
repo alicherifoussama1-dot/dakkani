@@ -14,20 +14,20 @@ import { useRouter } from 'next/navigation'
 
 // ── Nav structure ─────────────────────────────────────────
 const NAV_MAIN = [
-  { href: '/dashboard',           label: 'الرئيسية',    icon: Home },
-  { href: '/dashboard/orders',    label: 'الطلبات',     icon: ShoppingCart },
-  { href: '/dashboard/products',  label: 'المنتجات',    icon: Package },
-  { href: '/dashboard/apps',      label: 'التطبيقات',   icon: Plug },
-  { href: '/dashboard/customers', label: 'الزبائن',     icon: Users },
-  { href: '/dashboard/tracking',  label: 'التتبع',      icon: Navigation2 },
+  { href: '/dashboard',   label: 'الرئيسية',    icon: Home },
+  { href: '/orders',      label: 'الطلبات',     icon: ShoppingCart },
+  { href: '/products',    label: 'المنتجات',    icon: Package },
+  { href: '/apps',        label: 'التطبيقات',   icon: Plug },
+  { href: '/customers',   label: 'الزبائن',     icon: Users },
+  { href: '/tracking',    label: 'التتبع',      icon: Navigation2 },
 ]
 const NAV_FEATURES = [
-  { href: '/dashboard/confirmili', label: 'Confirmili', icon: Phone, badge: 'جديد' },
-  { href: '/dashboard/justad',     label: 'JustAd',      icon: BarChart2 },
-  { href: '/dashboard/learn',      label: 'تعلم',         icon: GraduationCap },
+  { href: '/confirmili',  label: 'Confirmili',  icon: Phone,         badge: 'جديد' },
+  { href: '/justad',      label: 'JustAd',       icon: BarChart2 },
+  { href: '/learn',       label: 'تعلم',          icon: GraduationCap },
 ]
 const NAV_BILLING = [
-  { href: '/dashboard/billing/plans',   label: 'الفواتير والاشتراك', icon: CreditCard },
+  { href: '/billing/plans', label: 'الفواتير والاشتراك', icon: CreditCard },
 ]
 
 interface Props {
@@ -105,7 +105,7 @@ export default function DashboardShell({ children, store, user }: Props) {
         <div>
           <button
             onClick={() => setBillingOpen(o => !o)}
-            className={`sidebar-item w-full ${isActive('/dashboard/billing') ? 'active' : ''}`}
+            className={`sidebar-item w-full ${isActive('/billing') ? 'active' : ''}`}
           >
             <CreditCard size={16} className="icon flex-shrink-0" />
             <span className="flex-1 text-right truncate">الفواتير والاشتراك</span>
@@ -113,12 +113,12 @@ export default function DashboardShell({ children, store, user }: Props) {
           </button>
           {billingOpen && (
             <div className="pr-6 py-0.5 space-y-0.5">
-              <Link href="/dashboard/billing/plans"   className={`sidebar-item text-sm ${isActive('/dashboard/billing/plans') ? 'active' : ''}`}><ChevronRight size={12} className="flex-shrink-0" />الخطط</Link>
-              <Link href="/dashboard/billing/history" className={`sidebar-item text-sm ${isActive('/dashboard/billing/history') ? 'active' : ''}`}><ChevronRight size={12} className="flex-shrink-0" />سجل الفواتير</Link>
+              <Link href="/billing/plans"   className={`sidebar-item text-sm ${isActive('/billing/plans') ? 'active' : ''}`}><ChevronRight size={12} className="flex-shrink-0" />الخطط</Link>
+              <Link href="/billing/history" className={`sidebar-item text-sm ${isActive('/billing/history') ? 'active' : ''}`}><ChevronRight size={12} className="flex-shrink-0" />سجل الفواتير</Link>
             </div>
           )}
         </div>
-        <NavItem item={{ href: '/dashboard/settings', label: 'الإعدادات', icon: Settings }} />
+        <NavItem item={{ href: '/settings', label: 'الإعدادات', icon: Settings }} />
       </div>
 
       {/* Bottom */}
@@ -251,8 +251,8 @@ export default function DashboardShell({ children, store, user }: Props) {
                     </div>
                     <div className="p-1">
                       {[
-                        { label: 'الملف الشخصي', href: '/dashboard/settings/profile', icon: User },
-                        { label: 'الإعدادات', href: '/dashboard/settings', icon: Settings },
+                        { label: 'الملف الشخصي', href: '/settings', icon: User },
+                        { label: 'الإعدادات', href: '/settings', icon: Settings },
                       ].map(item => (
                         <Link key={item.href} href={item.href} onClick={() => setAvatarOpen(false)}
                           className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg hover:bg-[#F8F9FA] transition-colors"
