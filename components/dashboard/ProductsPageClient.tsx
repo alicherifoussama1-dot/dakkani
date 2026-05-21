@@ -142,7 +142,7 @@ export default function ProductsPageClient({
                     <td>
                       <div className="flex items-center gap-1">
                         {p.slug && (
-                          <a href={`/${storeSlug}/product/${p.slug}`} target="_blank" rel="noopener noreferrer"
+                          <a href={`/store/${storeSlug}/product/${p.slug}`} target="_blank" rel="noopener noreferrer"
                             className="p-1.5 rounded hover:bg-[#F8F9FA] transition-colors">
                             <Eye size={13} style={{ color: 'var(--color-text-muted)' }} />
                           </a>
