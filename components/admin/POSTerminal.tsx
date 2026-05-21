@@ -267,7 +267,7 @@ export default function POSTerminal({ storeId, storeName, cashierId, products: s
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="ابحث عن منتج أو امسح الباركود..."
-            className="w-full bg-gray-900 border border-gray-700 rounded-xl pr-10 pl-4 py-3 text-sm text-gray-200 focus:ring-2 focus:ring-[#E8431A] outline-none"
+            className="w-full bg-gray-900 border border-gray-700 rounded-xl pr-10 pl-4 py-3 text-sm text-gray-200 focus:ring-2 focus:ring-[#0D6EFD] outline-none"
           />
         </div>
 
@@ -283,8 +283,8 @@ export default function POSTerminal({ storeId, storeName, cashierId, products: s
                 key={p.id}
                 onClick={() => addToCart(p)}
                 disabled={stock <= 0}
-                className={`relative bg-gray-900 border rounded-2xl p-3 text-right hover:border-[#E8431A] transition group disabled:opacity-40 disabled:cursor-not-allowed ${
-                  inCart ? 'border-[#E8431A] bg-[#E8431A]/10' : 'border-gray-800'
+                className={`relative bg-gray-900 border rounded-2xl p-3 text-right hover:border-[#0D6EFD] transition group disabled:opacity-40 disabled:cursor-not-allowed ${
+                  inCart ? 'border-[#0D6EFD] bg-[#0D6EFD]/10' : 'border-gray-800'
                 }`}
               >
                 <div className="aspect-square bg-gray-800 rounded-xl overflow-hidden mb-2">
@@ -296,7 +296,7 @@ export default function POSTerminal({ storeId, storeName, cashierId, products: s
                 <p className="text-xs font-medium text-gray-300 line-clamp-2">{p.name_ar ?? p.name}</p>
                 <p className="text-sm font-black text-[#F96540] mt-1">{formatDZD(p.price)}</p>
                 {inCart && (
-                  <div className="absolute top-2 left-2 w-5 h-5 bg-[#E8431A] rounded-full text-white text-xs font-black flex items-center justify-center">
+                  <div className="absolute top-2 left-2 w-5 h-5 bg-[#0D6EFD] rounded-full text-white text-xs font-black flex items-center justify-center">
                     {inCart.quantity}
                   </div>
                 )}
@@ -368,7 +368,7 @@ export default function POSTerminal({ storeId, storeName, cashierId, products: s
               value={discount.value || ''}
               onChange={e => setDiscount(d => ({ ...d, value: parseFloat(e.target.value) || 0 }))}
               placeholder="0"
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:ring-1 focus:ring-[#E8431A] outline-none"
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:ring-1 focus:ring-[#0D6EFD] outline-none"
             />
           </div>
         </div>
@@ -410,7 +410,7 @@ export default function POSTerminal({ storeId, storeName, cashierId, products: s
                 value={cashGiven}
                 onChange={e => setCashGiven(e.target.value)}
                 placeholder={formatDZD(total)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:ring-1 focus:ring-[#E8431A] outline-none"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:ring-1 focus:ring-[#0D6EFD] outline-none"
               />
               {change > 0 && (
                 <p className="text-sm text-green-400 font-bold mt-1">الباقي: {formatDZD(change)}</p>
@@ -421,7 +421,7 @@ export default function POSTerminal({ storeId, storeName, cashierId, products: s
           <button
             onClick={checkout}
             disabled={!cart.length}
-            className="w-full bg-[#E8431A] hover:bg-[#C73615] disabled:opacity-40 text-white font-black py-3.5 rounded-xl text-base transition"
+            className="w-full bg-[#0D6EFD] hover:bg-[#0B5ED7] disabled:opacity-40 text-white font-black py-3.5 rounded-xl text-base transition"
           >
             {formatDZD(total)} — إتمام البيع
           </button>

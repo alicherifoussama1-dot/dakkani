@@ -24,7 +24,7 @@ export default async function AdminPagesPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-black text-white">صفحات الهبوط</h1>
-        <Link href="/admin/pages/builder" className="flex items-center gap-2 bg-[#E8431A] hover:bg-[#C73615] text-white px-4 py-2 rounded-xl text-sm font-bold transition">
+        <Link href="/admin/pages/builder" className="flex items-center gap-2 bg-[#0D6EFD] hover:bg-[#0B5ED7] text-white px-4 py-2 rounded-xl text-sm font-bold transition">
           <Plus className="w-4 h-4" />
           صفحة جديدة
         </Link>
@@ -35,7 +35,7 @@ export default async function AdminPagesPage() {
           <BarChart2 className="w-12 h-12 text-gray-700 mx-auto mb-4" />
           <p className="text-gray-400 font-semibold">لا توجد صفحات هبوط بعد</p>
           <p className="text-gray-600 text-sm mt-1">أنشئ صفحة لكل منتج لزيادة معدل التحويل</p>
-          <Link href="/admin/pages/builder" className="inline-block mt-4 bg-[#E8431A] text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-[#C73615] transition">
+          <Link href="/admin/pages/builder" className="inline-block mt-4 bg-[#0D6EFD] text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-[#0B5ED7] transition">
             ✨ أنشئ أول صفحة
           </Link>
         </div>
@@ -44,8 +44,8 @@ export default async function AdminPagesPage() {
           {pages.map((page: any) => {
             const rate = page.views > 0 ? ((page.conversions / page.views) * 100).toFixed(1) : '0'
             return (
-              <div key={page.id} className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-[#E8431A]/40 transition">
-                <div className="h-1.5 bg-gradient-to-r from-[#F96540] to-[#C73615]" />
+              <div key={page.id} className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-[#0D6EFD]/40 transition">
+                <div className="h-1.5 bg-gradient-to-r from-[#F96540] to-[#0B5ED7]" />
                 <div className="p-5 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
@@ -80,7 +80,7 @@ export default async function AdminPagesPage() {
                     </a>
                     <Link
                       href={`/admin/pages/builder?page_id=${page.id}`}
-                      className="flex-1 flex items-center justify-center gap-1 text-xs py-2 bg-[#E8431A]/20 text-[#F96540] border border-[#E8431A]/30 hover:bg-[#E8431A]/30 rounded-xl transition"
+                      className="flex-1 flex items-center justify-center gap-1 text-xs py-2 bg-[#0D6EFD]/20 text-[#F96540] border border-[#0D6EFD]/30 hover:bg-[#0D6EFD]/30 rounded-xl transition"
                     >
                       <Pencil className="w-3.5 h-3.5" />تعديل
                     </Link>

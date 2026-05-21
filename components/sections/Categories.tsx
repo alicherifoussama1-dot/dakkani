@@ -60,8 +60,8 @@ export default function Categories() {
               onClick={addRipple}
               onMouseEnter={e => {
                 const el = e.currentTarget as HTMLElement
-                el.style.borderColor = '#E8431A'
-                el.style.backgroundColor = '#FFF0ED'
+                el.style.borderColor = '#0D6EFD'
+                el.style.backgroundColor = '#EBF5FF'
               }}
               onMouseLeave={e => {
                 const el = e.currentTarget as HTMLElement
@@ -89,7 +89,7 @@ export default function Categories() {
           <Link
             href="/products"
             className="text-sm font-semibold transition-colors"
-            style={{ color: '#E8431A' }}
+            style={{ color: '#0D6EFD' }}
           >
             عرض كل الفئات ←
           </Link>

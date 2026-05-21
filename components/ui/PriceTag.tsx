@@ -19,7 +19,7 @@ export default function PriceTag({ price, originalPrice, size = 'md' }: PriceTag
         className="font-black leading-none"
         style={{
           fontSize: s.price,
-          color: '#E8431A',
+          color: '#0D6EFD',
           fontFamily: 'var(--font-inter)',
         }}
       >

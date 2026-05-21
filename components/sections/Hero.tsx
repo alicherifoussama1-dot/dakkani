@@ -25,7 +25,7 @@ function StatItem({ end, prefix, suffix, label, format }: typeof STATS[0]) {
         className="font-black leading-none"
         style={{
           fontSize: 'clamp(28px, 6vw, 42px)',
-          color: '#E8431A',
+          color: '#0D6EFD',
           fontFamily: 'var(--font-inter)',
         }}
       >
@@ -58,11 +58,11 @@ export default function Hero() {
       >
         <div
           className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-[0.04]"
-          style={{ backgroundColor: '#E8431A', filter: 'blur(80px)' }}
+          style={{ backgroundColor: '#0D6EFD', filter: 'blur(80px)' }}
         />
         <div
           className="absolute top-1/2 -right-40 w-[400px] h-[400px] rounded-full opacity-[0.03]"
-          style={{ backgroundColor: '#E8431A', filter: 'blur(100px)' }}
+          style={{ backgroundColor: '#0D6EFD', filter: 'blur(100px)' }}
         />
       </div>
 
@@ -74,15 +74,15 @@ export default function Hero() {
             <div
               className="inline-flex items-center gap-2 text-xs font-semibold rounded-full px-3 py-1.5 mb-6"
               style={{
-                backgroundColor: '#FFF0ED',
-                color: '#E8431A',
+                backgroundColor: '#EBF5FF',
+                color: '#0D6EFD',
                 border: '1px solid rgba(232,67,26,0.2)',
                 fontFamily: 'var(--font-tajawal)',
               }}
             >
               <span
                 className="w-1.5 h-1.5 rounded-full animate-pulse"
-                style={{ backgroundColor: '#E8431A' }}
+                style={{ backgroundColor: '#0D6EFD' }}
               />
               🇩🇿 منصة البيع الأولى في الجزائر
             </div>
@@ -99,7 +99,7 @@ export default function Hero() {
             >
               بيع أونلاين،
               <br />
-              <span style={{ color: '#E8431A' }}>بكل سهولة</span>
+              <span style={{ color: '#0D6EFD' }}>بكل سهولة</span>
             </h1>
 
             {/* Subheadline */}
@@ -174,7 +174,7 @@ export default function Hero() {
                     </div>
                     <span
                       className="text-xs font-semibold px-2 py-1 rounded-full"
-                      style={{ backgroundColor: '#FFF0ED', color: '#E8431A' }}
+                      style={{ backgroundColor: '#EBF5FF', color: '#0D6EFD' }}
                     >
                       جديد
                     </span>
@@ -182,7 +182,7 @@ export default function Hero() {
                   <div className="flex items-center justify-between">
                     <span
                       className="font-black text-lg"
-                      style={{ color: '#E8431A', fontFamily: 'var(--font-inter)' }}
+                      style={{ color: '#0D6EFD', fontFamily: 'var(--font-inter)' }}
                     >
                       3,500 دج
                     </span>
@@ -193,7 +193,7 @@ export default function Hero() {
                   </div>
                   <button
                     className="w-full mt-3 h-11 rounded-xl text-sm font-bold text-white"
-                    style={{ backgroundColor: '#E8431A', fontFamily: 'var(--font-tajawal)' }}
+                    style={{ backgroundColor: '#0D6EFD', fontFamily: 'var(--font-tajawal)' }}
                   >
                     أضف للسلة
                   </button>

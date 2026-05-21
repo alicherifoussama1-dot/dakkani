@@ -17,8 +17,8 @@ export default async function CouponsPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-4xl">
-      <h1 className="text-2xl font-bold text-gray-900">الكوبونات</h1>
+    <div className="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl" style={{fontFamily:'var(--font-arabic)'}}>
+      <h1 className="page-title mb-5">الكوبونات</h1>
       <CouponsManager storeId={store.id} initialCoupons={coupons ?? []} />
     </div>
   )

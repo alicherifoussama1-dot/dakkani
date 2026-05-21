@@ -55,7 +55,7 @@ export default async function AdminProductsPage({
         </div>
         <Link
           href="/admin/products/new"
-          className="flex items-center gap-2 bg-[#E8431A] hover:bg-[#C73615] text-white px-4 py-2 rounded-lg text-sm font-bold transition"
+          className="flex items-center gap-2 bg-[#0D6EFD] hover:bg-[#0B5ED7] text-white px-4 py-2 rounded-lg text-sm font-bold transition"
         >
           <Plus className="w-4 h-4" />
           منتج جديد

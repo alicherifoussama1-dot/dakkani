@@ -67,11 +67,11 @@ export default function Features() {
               {/* Icon */}
               <div
                 className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-colors"
-                style={{ backgroundColor: '#FFF0ED' }}
+                style={{ backgroundColor: '#EBF5FF' }}
               >
                 <Icon
                   size={22}
-                  style={{ color: '#E8431A' }}
+                  style={{ color: '#0D6EFD' }}
                   strokeWidth={1.8}
                 />
               </div>

@@ -111,7 +111,7 @@ export default function WilayaSelector({
         aria-expanded={open}
       >
         <div className="flex items-center gap-2 min-w-0">
-          <MapPin size={15} style={{ color: selected ? '#E8431A' : '#999999', flexShrink: 0 }} />
+          <MapPin size={15} style={{ color: selected ? '#0D6EFD' : '#999999', flexShrink: 0 }} />
           <span
             className="truncate text-sm"
             style={{
@@ -172,7 +172,7 @@ export default function WilayaSelector({
             <button
               type="button"
               className="w-full text-right px-4 py-2.5 text-sm transition-colors"
-              style={{ color: '#E8431A', fontFamily: 'var(--font-tajawal)' }}
+              style={{ color: '#0D6EFD', fontFamily: 'var(--font-tajawal)' }}
               onClick={() => { onChange?.(null); setOpen(false) }}
             >
               × مسح الاختيار
@@ -201,8 +201,8 @@ export default function WilayaSelector({
                     aria-selected={w.id === value}
                     className="w-full text-right px-4 py-2.5 text-sm transition-colors"
                     style={{
-                      backgroundColor: w.id === value ? '#FFF0ED' : 'transparent',
-                      color: w.id === value ? '#E8431A' : '#111111',
+                      backgroundColor: w.id === value ? '#EBF5FF' : 'transparent',
+                      color: w.id === value ? '#0D6EFD' : '#111111',
                       fontFamily: 'var(--font-tajawal)',
                     }}
                     onMouseEnter={e => {

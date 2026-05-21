@@ -51,7 +51,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
         {/* Order card */}
         {order && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="bg-[#E8431A] px-5 py-3 flex items-center justify-between">
+            <div className="bg-[#0D6EFD] px-5 py-3 flex items-center justify-between">
               <span className="text-white font-bold">رقم الطلب</span>
               <span className="font-mono text-white font-black text-lg">{order.order_number}</span>
             </div>
@@ -73,7 +73,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
                 </div>
                 <div className="flex justify-between font-black text-gray-900 text-base">
                   <span>المجموع الكلي</span>
-                  <span className="text-[#E8431A]">{formatDZD(order.total)}</span>
+                  <span className="text-[#0D6EFD]">{formatDZD(order.total)}</span>
                 </div>
               </div>
 
@@ -111,7 +111,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
         {/* Back to store */}
         <a
           href={`/store/${store.slug}`}
-          className="block w-full text-center bg-[#E8431A] hover:bg-[#C73615] text-white font-bold py-3.5 rounded-2xl transition"
+          className="block w-full text-center bg-[#0D6EFD] hover:bg-[#0B5ED7] text-white font-bold py-3.5 rounded-2xl transition"
         >
           العودة للمتجر
         </a>

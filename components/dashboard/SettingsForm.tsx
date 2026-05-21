@@ -73,7 +73,7 @@ export default function SettingsForm({ store }: { store: Store & { store_setting
         {...register(name)}
         type={type}
         placeholder={placeholder}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
+        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none"
       />
     </div>
   )
@@ -84,7 +84,7 @@ export default function SettingsForm({ store }: { store: Store & { store_setting
         <p className="text-sm font-medium text-gray-700">{label}</p>
         {description && <p className="text-xs text-gray-500">{description}</p>}
       </div>
-      <input {...register(name)} type="checkbox" className="w-4 h-4 accent-[#E8431A]" />
+      <input {...register(name)} type="checkbox" className="w-4 h-4 accent-[#0D6EFD]" />
     </label>
   )
 
@@ -113,13 +113,13 @@ export default function SettingsForm({ store }: { store: Store & { store_setting
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">حد حظر الاحتيال التلقائي (%)</label>
           <input {...register('fraud_auto_block_score', { valueAsNumber: true })} type="number" min="0" max="100"
-            className="w-32 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none" />
+            className="w-32 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none" />
           <p className="text-xs text-gray-500 mt-1">الطلبات التي تتجاوز هذا الحد تُحظر تلقائياً</p>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">الحد الأقصى لمحاولات الاتصال</label>
           <input {...register('max_call_attempts', { valueAsNumber: true })} type="number" min="1" max="10"
-            className="w-32 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none" />
+            className="w-32 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none" />
         </div>
       </Section>
 
@@ -127,7 +127,7 @@ export default function SettingsForm({ store }: { store: Store & { store_setting
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-[#E8431A] hover:bg-[#C73615] disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-lg transition"
+          className="bg-[#0D6EFD] hover:bg-[#0B5ED7] disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-lg transition"
         >
           {isSubmitting ? 'جارٍ الحفظ...' : 'حفظ الإعدادات'}
         </button>

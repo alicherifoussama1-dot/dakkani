@@ -31,8 +31,8 @@ export default async function EditProductPage({ params }: { params: { id: string
   if (!productRes.data) notFound()
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      <h1 className="text-2xl font-bold text-gray-900">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl" style={{fontFamily:'var(--font-arabic)'}}>
+      <h1 className="page-title mb-5">
         تعديل: {productRes.data.name_ar ?? productRes.data.name}
       </h1>
       <AdminProductEditor

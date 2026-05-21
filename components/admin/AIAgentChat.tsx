@@ -100,7 +100,7 @@ export default function AIAgentChat({ storeContext }: { storeContext: StoreConte
     <div className="flex flex-col h-full" dir="rtl">
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-800 bg-gray-900/50 flex items-center gap-3">
-        <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-[#E8431A] rounded-xl flex items-center justify-center">
+        <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-[#0D6EFD] rounded-xl flex items-center justify-center">
           <Sparkles className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -123,7 +123,7 @@ export default function AIAgentChat({ storeContext }: { storeContext: StoreConte
           <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
               msg.role === 'assistant'
-                ? 'bg-gradient-to-br from-purple-500 to-[#E8431A]'
+                ? 'bg-gradient-to-br from-purple-500 to-[#0D6EFD]'
                 : 'bg-gray-700'
             }`}>
               {msg.role === 'assistant'
@@ -135,7 +135,7 @@ export default function AIAgentChat({ storeContext }: { storeContext: StoreConte
               <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                 msg.role === 'assistant'
                   ? 'bg-gray-900 border border-gray-800 text-gray-300'
-                  : 'bg-[#E8431A]/20 border border-[#E8431A]/30 text-gray-200'
+                  : 'bg-[#0D6EFD]/20 border border-[#0D6EFD]/30 text-gray-200'
               }`}>
                 <div className="space-y-1">{renderContent(msg.content)}</div>
               </div>
@@ -162,11 +162,11 @@ export default function AIAgentChat({ storeContext }: { storeContext: StoreConte
 
         {loading && (
           <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-[#E8431A] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-[#0D6EFD] flex items-center justify-center">
               <Bot className="w-4 h-4 text-white" />
             </div>
             <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-2">
-              <Loader2 className="w-4 h-4 text-[#E8431A] animate-spin" />
+              <Loader2 className="w-4 h-4 text-[#0D6EFD] animate-spin" />
               <span className="text-sm text-gray-500">يفكر...</span>
             </div>
           </div>
@@ -197,12 +197,12 @@ export default function AIAgentChat({ storeContext }: { storeContext: StoreConte
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage(input)}
             placeholder="اكتب سؤالك أو أمرك بالعربية أو الدارجة..."
             disabled={loading}
-            className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder:text-gray-600 focus:ring-1 focus:ring-[#E8431A] outline-none disabled:opacity-50"
+            className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder:text-gray-600 focus:ring-1 focus:ring-[#0D6EFD] outline-none disabled:opacity-50"
           />
           <button
             onClick={() => sendMessage(input)}
             disabled={loading || !input.trim()}
-            className="bg-[#E8431A] hover:bg-[#C73615] disabled:opacity-40 text-white p-3 rounded-xl transition"
+            className="bg-[#0D6EFD] hover:bg-[#0B5ED7] disabled:opacity-40 text-white p-3 rounded-xl transition"
           >
             <Send className="w-5 h-5" />
           </button>

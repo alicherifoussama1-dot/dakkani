@@ -106,8 +106,8 @@ export default function ProductCard({
                 key={s}
                 size={11}
                 style={{
-                  color: s <= Math.round(rating) ? '#E8431A' : '#EBEBEB',
-                  fill: s <= Math.round(rating) ? '#E8431A' : '#EBEBEB',
+                  color: s <= Math.round(rating) ? '#0D6EFD' : '#EBEBEB',
+                  fill: s <= Math.round(rating) ? '#0D6EFD' : '#EBEBEB',
                 }}
               />
             ))}
@@ -121,7 +121,7 @@ export default function ProductCard({
         <div className="flex items-end gap-1.5 mb-3">
           <span
             className="font-black text-base leading-none"
-            style={{ color: '#E8431A', fontFamily: 'var(--font-inter)' }}
+            style={{ color: '#0D6EFD', fontFamily: 'var(--font-inter)' }}
           >
             {price.toLocaleString('ar-DZ')} دج
           </span>
@@ -144,15 +144,15 @@ export default function ProductCard({
           }}
           className="w-full h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
           style={{
-            backgroundColor: '#E8431A',
+            backgroundColor: '#0D6EFD',
             color: '#FFFFFF',
             fontFamily: 'var(--font-tajawal)',
           }}
           onMouseEnter={e => {
-            ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = '#C73615'
+            ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0B5ED7'
           }}
           onMouseLeave={e => {
-            ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = '#E8431A'
+            ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0D6EFD'
           }}
           onMouseDown={e => {
             ;(e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97)'

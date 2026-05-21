@@ -19,15 +19,11 @@ export default async function LandingPagesPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">صفحات الهبوط</h1>
-        <Link
-          href="/landing-pages/new"
-          className="flex items-center gap-2 bg-[#E8431A] hover:bg-[#C73615] text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
-        >
-          <Plus className="w-4 h-4" />
-          صفحة جديدة
+    <div className="p-4 md:p-6 max-w-5xl mx-auto" dir="rtl" style={{fontFamily:'var(--font-arabic)'}}>
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="page-title">صفحات الهبوط</h1>
+        <Link href="/landing-pages/new" className="btn btn-primary btn-sm gap-1.5">
+          <Plus size={14} />صفحة جديدة
         </Link>
       </div>
 
@@ -35,15 +31,15 @@ export default async function LandingPagesPage() {
         {(pages ?? []).map(page => {
           const convRate = page.views > 0 ? ((page.conversions / page.views) * 100).toFixed(1) : '0'
           return (
-            <div key={page.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden group">
-              <div className="h-2 bg-gradient-to-r from-[#F96540] to-[#C73615]" />
+            <div key={page.id} className="card overflow-hidden group">
+              <div className="h-1" style={{background:'linear-gradient(90deg, var(--color-accent), #6F42C1)'}} />
               <div className="p-4 space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-bold text-gray-900 group-hover:text-[#E8431A] transition">
+                    <h3 className="font-bold text-sm group-hover:text-[#0D6EFD] transition" style={{color:'var(--color-text-primary)'}}>
                       {page.title_ar ?? page.title}
                     </h3>
-                    <p className="text-xs text-gray-400 font-mono mt-0.5">/{page.slug}</p>
+                    <p className="text-xs font-mono mt-0.5" style={{color:'var(--color-text-muted)'}}>/{page.slug}</p>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                     page.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
@@ -53,44 +49,35 @@ export default async function LandingPagesPage() {
                 </div>
 
                 {(page.product as any)?.name && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs" style={{color:'var(--color-text-muted)'}}>
                     المنتج: {(page.product as any).name_ar ?? (page.product as any).name}
                   </p>
                 )}
 
-                <div className="grid grid-cols-3 gap-2 bg-gray-50 rounded-lg p-3">
+                <div className="grid grid-cols-3 gap-2 rounded-lg p-3" style={{background:'var(--color-bg-soft)'}}>
                   <div className="text-center">
-                    <p className="text-lg font-black text-gray-900">{page.views.toLocaleString()}</p>
-                    <p className="text-xs text-gray-400">زيارة</p>
+                    <p className="text-base font-black" style={{color:'var(--color-text-primary)'}}>{page.views.toLocaleString()}</p>
+                    <p className="text-xs" style={{color:'var(--color-text-muted)'}}>زيارة</p>
                   </div>
-                  <div className="text-center border-x border-gray-200">
-                    <p className="text-lg font-black text-[#E8431A]">{page.conversions.toLocaleString()}</p>
-                    <p className="text-xs text-gray-400">طلب</p>
+                  <div className="text-center border-x" style={{borderColor:'var(--color-border)'}}>
+                    <p className="text-base font-black" style={{color:'var(--color-accent)'}}>{page.conversions.toLocaleString()}</p>
+                    <p className="text-xs" style={{color:'var(--color-text-muted)'}}>طلب</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-lg font-black text-green-600">{convRate}%</p>
-                    <p className="text-xs text-gray-400">تحويل</p>
+                    <p className="text-base font-black text-green-600">{convRate}%</p>
+                    <p className="text-xs" style={{color:'var(--color-text-muted)'}}>تحويل</p>
                   </div>
                 </div>
 
-                <p className="text-xs text-gray-400">{formatDateShort(page.created_at)}</p>
+                <p className="text-xs" style={{color:'var(--color-text-muted)'}}>{formatDateShort(page.created_at)}</p>
 
-                <div className="flex gap-2 pt-1">
-                  <a
-                    href={`/store/${store.slug}/${page.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    معاينة
+                <div className="flex gap-2">
+                  <a href={`/store/${store.slug}/${page.slug}`} target="_blank" rel="noopener noreferrer"
+                    className="flex-1 btn btn-ghost btn-sm gap-1">
+                    <Eye size={12} />معاينة
                   </a>
-                  <Link
-                    href={`/landing-pages/${page.id}`}
-                    className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 bg-[#FFF0ED] text-[#E8431A] rounded-lg hover:bg-[#FFF0ED] transition"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    تعديل
+                  <Link href={`/landing-pages/${page.id}`} className="flex-1 btn btn-sm gap-1" style={{background:'#EBF5FF',color:'var(--color-accent)'}}>
+                    <Pencil size={12} />تعديل
                   </Link>
                 </div>
               </div>
@@ -99,9 +86,9 @@ export default async function LandingPagesPage() {
         })}
 
         {(!pages || pages.length === 0) && (
-          <div className="col-span-3 bg-white rounded-xl border border-gray-100 text-center py-16 text-gray-400">
-            <BarChart2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>لا توجد صفحات هبوط</p>
+          <div className="col-span-3 card text-center py-16" style={{color:'var(--color-text-muted)'}}>
+            <BarChart2 size={40} className="mx-auto mb-3 opacity-30" />
+            <p className="font-medium">لا توجد صفحات هبوط</p>
             <p className="text-sm mt-1">أنشئ صفحة لكل منتج لزيادة معدل التحويل</p>
           </div>
         )}

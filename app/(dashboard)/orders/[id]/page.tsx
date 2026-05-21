@@ -2,209 +2,227 @@ export const dynamic = 'force-dynamic'
 import { createServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { formatDZD, formatDate } from '@/lib/utils/format'
-import OrderStatusBar from '@/components/orders/OrderStatusBar'
+import Link from 'next/link'
+import { ChevronRight, Phone, MapPin, Package, Truck } from 'lucide-react'
 import OrderActions from '@/components/orders/OrderActions'
-import DeliveryTimeline from '@/components/orders/DeliveryTimeline'
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
   return { title: `طلب #${params.id.slice(0, 8)}` }
 }
 
+const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
+  new:         { label: 'جديد',          color: '#2BBFAD', bg: '#E8FAF8' },
+  confirmed:   { label: 'مؤكد',          color: '#0D6EFD', bg: '#EBF5FF' },
+  processing:  { label: 'قيد التجهيز',  color: '#6F42C1', bg: '#F3EEFF' },
+  shipped:     { label: 'في الطريق',     color: '#FD7E14', bg: '#FFF3E0' },
+  delivered:   { label: 'مُسلَّم',       color: '#28A745', bg: '#E8F5E9' },
+  cancelled:   { label: 'ملغى',          color: '#DC3545', bg: '#FDECEA' },
+  returned:    { label: 'مُرجَع',        color: '#6C757D', bg: '#F8F9FA' },
+}
+
+const STATUS_STEPS = ['new','confirmed','processing','shipped','delivered']
+
 export default async function OrderDetailPage({ params }: { params: { id: string } }) {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data: store } = await supabase
-    .from('stores')
-    .select('*')
-    .eq('owner_id', user!.id)
-    .single()
+  const { data: store } = await supabase.from('stores').select('*').eq('owner_id', user.id).single()
   if (!store) return null
 
   const { data: order } = await supabase
     .from('orders')
-    .select(`
-      *,
-      wilaya:wilayas(name_ar, name_fr),
-      commune:communes(name_ar),
-      items:order_items(*)
-    `)
+    .select(`*, wilaya:wilayas(name_ar, name_fr), commune:communes(name_ar), items:order_items(*)`)
     .eq('id', params.id)
     .eq('store_id', store.id)
     .single()
 
   if (!order) notFound()
 
-  const STATUS_STEPS = ['new','confirmed','processing','shipped','delivered']
+  const statusInfo = STATUS_MAP[order.status] ?? { label: order.status, color: '#6C757D', bg: '#F8F9FA' }
   const currentStep = STATUS_STEPS.indexOf(order.status)
 
   return (
-    <div className="space-y-5 animate-fade-in max-w-5xl" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900">طلب {order.order_number}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{formatDate(order.created_at)}</p>
-        </div>
-        <OrderActions order={order as any} store={store} />
+    <div className="p-4 md:p-6 max-w-5xl mx-auto" dir="rtl" style={{fontFamily:'var(--font-arabic)'}}>
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1.5 mb-4 text-xs" style={{color:'var(--color-text-muted)'}}>
+        <Link href="/orders" style={{color:'var(--color-text-muted)'}}>الطلبات</Link>
+        <ChevronRight size={11} />
+        <span style={{color:'var(--color-text-primary)',fontWeight:600}}>{order.order_number}</span>
       </div>
 
-      {/* Status bar */}
-      <OrderStatusBar
-        currentStatus={order.status}
-        steps={STATUS_STEPS}
-        currentStep={currentStep}
-      />
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
+        <div>
+          <h1 className="page-title">طلب {order.order_number}</h1>
+          <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)'}}>{formatDate(order.created_at)}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{background:statusInfo.bg,color:statusInfo.color}}>
+            {statusInfo.label}
+          </span>
+          <OrderActions order={order as any} store={store} />
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Left column */}
+      {/* Status stepper */}
+      {!['cancelled','returned'].includes(order.status) && (
+        <div className="card p-4 mb-5">
+          <div className="flex items-center justify-between relative">
+            <div className="absolute top-3 right-0 left-0 h-0.5" style={{background:'var(--color-border)',zIndex:0}} />
+            {STATUS_STEPS.map((step, i) => {
+              const done = i <= currentStep
+              return (
+                <div key={step} className="flex flex-col items-center gap-1.5 relative z-10">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors"
+                    style={{
+                      background: done ? 'var(--color-accent)' : 'white',
+                      borderColor: done ? 'var(--color-accent)' : 'var(--color-border)',
+                      color: done ? 'white' : 'var(--color-text-muted)',
+                    }}>
+                    {done ? '✓' : i + 1}
+                  </div>
+                  <span className="text-[10px] hidden sm:block" style={{color: done ? 'var(--color-accent)' : 'var(--color-text-muted)', fontWeight: done ? 600 : 400}}>
+                    {STATUS_MAP[step]?.label ?? step}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left — items + delivery */}
         <div className="lg:col-span-2 space-y-4">
           {/* Order items */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-5 py-3 border-b border-gray-100">
-              <h2 className="font-bold text-gray-900">المنتجات</h2>
+          <div className="card overflow-hidden">
+            <div className="px-4 py-3 border-b font-semibold text-sm flex items-center gap-2" style={{borderColor:'var(--color-border)',color:'var(--color-text-primary)'}}>
+              <Package size={15} style={{color:'var(--color-accent)'}} />المنتجات
             </div>
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-gray-50">
+            <table className="data-table">
+              <tbody>
                 {(order.items as any[]).map((item: any) => (
-                  <tr key={item.id} className="px-5 py-3">
-                    <td className="px-5 py-3">
-                      <p className="font-medium text-gray-900">{item.product_name}</p>
-                      {item.variant_label && (
-                        <p className="text-xs text-gray-400">{item.variant_label}</p>
-                      )}
+                  <tr key={item.id}>
+                    <td>
+                      <p className="font-medium text-sm" style={{color:'var(--color-text-primary)'}}>{item.product_name}</p>
+                      {item.variant_label && <p className="text-xs" style={{color:'var(--color-text-muted)'}}>{item.variant_label}</p>}
                     </td>
-                    <td className="px-5 py-3 text-gray-500 text-center">{item.quantity}×</td>
-                    <td className="px-5 py-3 text-gray-700">{formatDZD(item.unit_price)}</td>
-                    <td className="px-5 py-3 font-semibold text-gray-900 text-left">
-                      {formatDZD(item.total_price)}
-                    </td>
+                    <td className="text-sm text-center" style={{color:'var(--color-text-secondary)'}}>{item.quantity}×</td>
+                    <td className="text-sm" style={{color:'var(--color-text-secondary)'}}>{formatDZD(item.unit_price)}</td>
+                    <td className="font-semibold text-sm text-left" style={{color:'var(--color-text-primary)'}}>{formatDZD(item.total_price)}</td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="bg-gray-50">
-                <tr>
-                  <td colSpan={3} className="px-5 py-2 text-sm text-gray-500">المجموع الفرعي</td>
-                  <td className="px-5 py-2 font-semibold text-left">{formatDZD(order.subtotal)}</td>
-                </tr>
-                <tr>
-                  <td colSpan={3} className="px-5 py-2 text-sm text-gray-500">رسوم التوصيل</td>
-                  <td className="px-5 py-2 font-semibold text-left">{formatDZD(order.delivery_fee)}</td>
-                </tr>
-                {order.discount_amount > 0 && (
-                  <tr>
-                    <td colSpan={3} className="px-5 py-2 text-sm text-green-600">
-                      خصم {order.coupon_code && `(${order.coupon_code})`}
-                    </td>
-                    <td className="px-5 py-2 font-semibold text-green-600 text-left">
-                      -{formatDZD(order.discount_amount)}
-                    </td>
-                  </tr>
-                )}
-                <tr className="border-t border-gray-200">
-                  <td colSpan={3} className="px-5 py-3 font-bold text-gray-900">المجموع الكلي</td>
-                  <td className="px-5 py-3 font-black text-[#E8431A] text-left text-lg">
-                    {formatDZD(order.total)}
-                  </td>
-                </tr>
-              </tfoot>
             </table>
+            <div className="border-t px-4 py-3 space-y-1.5" style={{borderColor:'var(--color-border)',background:'var(--color-bg-soft)'}}>
+              <div className="flex justify-between text-sm" style={{color:'var(--color-text-secondary)'}}>
+                <span>المجموع الفرعي</span>
+                <span>{formatDZD(order.subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-sm" style={{color:'var(--color-text-secondary)'}}>
+                <span>رسوم التوصيل</span>
+                <span>{formatDZD(order.delivery_fee)}</span>
+              </div>
+              {order.discount_amount > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>خصم {order.coupon_code && `(${order.coupon_code})`}</span>
+                  <span>-{formatDZD(order.discount_amount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-black text-base pt-1 border-t" style={{borderColor:'var(--color-border)',color:'var(--color-accent)'}}>
+                <span>المجموع الكلي</span>
+                <span>{formatDZD(order.total)}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Delivery timeline */}
-          <DeliveryTimeline
-            timeline={(order.delivery_timeline as any[]) ?? []}
-            trackingNumber={order.tracking_number}
-            deliveryPartner={order.delivery_partner}
-          />
+          {/* Delivery info card */}
+          <div className="card p-4">
+            <div className="flex items-center gap-2 mb-3 font-semibold text-sm" style={{color:'var(--color-text-primary)'}}>
+              <Truck size={15} style={{color:'var(--color-accent)'}} />معلومات التوصيل
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="text-xs" style={{color:'var(--color-text-muted)'}}>نوع التوصيل</span>
+                <p className="font-medium mt-0.5" style={{color:'var(--color-text-primary)'}}>
+                  {order.delivery_type === 'stopdesk' ? 'نقطة توزيع' : 'توصيل للمنزل'}
+                </p>
+              </div>
+              <div>
+                <span className="text-xs" style={{color:'var(--color-text-muted)'}}>الولاية</span>
+                <p className="font-medium mt-0.5" style={{color:'var(--color-text-primary)'}}>{(order.wilaya as any)?.name_ar}</p>
+              </div>
+              {(order.commune as any)?.name_ar && (
+                <div>
+                  <span className="text-xs" style={{color:'var(--color-text-muted)'}}>البلدية</span>
+                  <p className="font-medium mt-0.5" style={{color:'var(--color-text-primary)'}}>{(order.commune as any).name_ar}</p>
+                </div>
+              )}
+              <div>
+                <span className="text-xs" style={{color:'var(--color-text-muted)'}}>شركة التوصيل</span>
+                <p className="font-medium mt-0.5 capitalize" style={{color:'var(--color-text-primary)'}}>{order.delivery_partner ?? 'غير محدد'}</p>
+              </div>
+              {order.tracking_number && (
+                <div>
+                  <span className="text-xs" style={{color:'var(--color-text-muted)'}}>رقم التتبع</span>
+                  <p className="font-mono font-bold mt-0.5" style={{color:'var(--color-accent)'}}>{order.tracking_number}</p>
+                </div>
+              )}
+              <div>
+                <span className="text-xs" style={{color:'var(--color-text-muted)'}}>محاولات الاتصال</span>
+                <p className="font-medium mt-0.5" style={{color:'var(--color-text-primary)'}}>{order.call_attempts}</p>
+              </div>
+            </div>
+            {order.address && (
+              <div className="mt-3 flex items-start gap-2 text-sm" style={{color:'var(--color-text-secondary)'}}>
+                <MapPin size={13} className="mt-0.5 flex-shrink-0" />
+                <span>{order.address}</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Right column */}
+        {/* Right — customer + source + notes */}
         <div className="space-y-4">
           {/* Customer */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
-            <h2 className="font-bold text-gray-900">معلومات العميل</h2>
-            <div className="space-y-2 text-sm">
-              <p className="font-semibold text-gray-900 text-base">{order.customer_name}</p>
-              <p className="text-gray-600">📞 {order.customer_phone}</p>
-              {order.customer_phone2 && <p className="text-gray-500">📞 {order.customer_phone2}</p>}
-              {order.customer_email && <p className="text-gray-500">✉️ {order.customer_email}</p>}
+          <div className="card p-4">
+            <h2 className="font-semibold text-sm mb-3 flex items-center gap-2" style={{color:'var(--color-text-primary)'}}>
+              <Phone size={13} style={{color:'var(--color-accent)'}} />معلومات العميل
+            </h2>
+            <div className="space-y-2">
+              <p className="font-bold" style={{color:'var(--color-text-primary)'}}>{order.customer_name}</p>
+              <p className="text-sm" style={{color:'var(--color-text-secondary)'}}>📞 {order.customer_phone}</p>
+              {order.customer_phone2 && <p className="text-sm" style={{color:'var(--color-text-muted)'}}>📞 {order.customer_phone2}</p>}
+              {order.customer_email && <p className="text-sm" style={{color:'var(--color-text-muted)'}}>✉️ {order.customer_email}</p>}
             </div>
             {order.fraud_score > 0 && (
-              <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg font-medium ${
+              <div className={`mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg font-medium ${
                 order.fraud_score >= 70 ? 'bg-red-50 text-red-600' :
                 order.fraud_score >= 40 ? 'bg-yellow-50 text-yellow-600' :
                 'bg-green-50 text-green-600'
               }`}>
                 <span>تقييم الاحتيال: {order.fraud_score}%</span>
-                {order.is_blacklisted && <span className="mr-auto bg-red-500 text-white px-1.5 py-0.5 rounded text-xs">محظور</span>}
+                {order.is_blacklisted && <span className="mr-auto bg-red-500 text-white px-1.5 py-0.5 rounded">محظور</span>}
               </div>
             )}
           </div>
 
-          {/* Delivery info */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
-            <h2 className="font-bold text-gray-900">معلومات التوصيل</h2>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">نوع التوصيل</span>
-                <span className={`font-medium px-2 py-0.5 rounded text-xs ${
-                  order.delivery_type === 'stopdesk'
-                    ? 'bg-purple-100 text-purple-700'
-                    : 'bg-blue-100 text-blue-700'
-                }`}>
-                  {order.delivery_type === 'stopdesk' ? 'نقطة توزيع' : 'توصيل للمنزل'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">الولاية</span>
-                <span className="font-medium">{(order.wilaya as any)?.name_ar}</span>
-              </div>
-              {(order.commune as any)?.name_ar && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">البلدية</span>
-                  <span className="font-medium">{(order.commune as any).name_ar}</span>
-                </div>
-              )}
-              {order.address && (
-                <div>
-                  <span className="text-gray-500">العنوان</span>
-                  <p className="font-medium mt-0.5">{order.address}</p>
-                </div>
-              )}
-              {order.tracking_number && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">رقم التتبع</span>
-                  <span className="font-mono font-bold text-[#E8431A]">{order.tracking_number}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-gray-500">شركة التوصيل</span>
-                <span className="font-medium capitalize">{order.delivery_partner ?? 'غير محدد'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">محاولات الاتصال</span>
-                <span className="font-medium">{order.call_attempts}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* UTM & Source */}
+          {/* UTM Source */}
           {(order.source || order.utm_source) && (
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-2">
-              <h2 className="font-bold text-gray-900">مصدر الطلب</h2>
-              <div className="space-y-1.5 text-xs text-gray-500">
-                {order.source && <p>المصدر: <span className="text-gray-700">{order.source}</span></p>}
-                {order.utm_source && <p>utm_source: <span className="text-gray-700">{order.utm_source}</span></p>}
-                {order.utm_medium && <p>utm_medium: <span className="text-gray-700">{order.utm_medium}</span></p>}
-                {order.utm_campaign && <p>utm_campaign: <span className="text-gray-700">{order.utm_campaign}</span></p>}
+            <div className="card p-4">
+              <h2 className="font-semibold text-sm mb-2" style={{color:'var(--color-text-primary)'}}>مصدر الطلب</h2>
+              <div className="space-y-1.5 text-xs" style={{color:'var(--color-text-muted)'}}>
+                {order.source && <p>المصدر: <span style={{color:'var(--color-text-secondary)'}}>{order.source}</span></p>}
+                {order.utm_source && <p>utm_source: <span style={{color:'var(--color-text-secondary)'}}>{order.utm_source}</span></p>}
+                {order.utm_medium && <p>utm_medium: <span style={{color:'var(--color-text-secondary)'}}>{order.utm_medium}</span></p>}
+                {order.utm_campaign && <p>utm_campaign: <span style={{color:'var(--color-text-secondary)'}}>{order.utm_campaign}</span></p>}
               </div>
             </div>
           )}
 
           {/* Notes */}
           {order.notes && (
-            <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4">
+            <div className="rounded-xl p-4 border" style={{background:'#FFFBEB',borderColor:'#FEF3C7'}}>
               <p className="text-sm font-medium text-yellow-800">ملاحظة العميل</p>
               <p className="text-sm text-yellow-700 mt-1">{order.notes}</p>
             </div>

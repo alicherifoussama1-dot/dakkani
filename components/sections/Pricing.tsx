@@ -89,7 +89,7 @@ export default function Pricing() {
             <button
               onClick={() => setAnnual(a => !a)}
               className="relative w-12 h-6 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-accent"
-              style={{ backgroundColor: annual ? '#E8431A' : '#EBEBEB' }}
+              style={{ backgroundColor: annual ? '#0D6EFD' : '#EBEBEB' }}
               role="switch"
               aria-checked={annual}
               aria-label="تحويل للاشتراك السنوي"
@@ -106,7 +106,7 @@ export default function Pricing() {
               سنوي
               <span
                 className="text-xs font-bold px-2 py-0.5 rounded-full"
-                style={{ backgroundColor: '#FFF0ED', color: '#E8431A' }}
+                style={{ backgroundColor: '#EBF5FF', color: '#0D6EFD' }}
               >
                 -20%
               </span>
@@ -128,7 +128,7 @@ export default function Pricing() {
                   featured ? 'shadow-lg' : ''
                 }`}
                 style={{
-                  border: featured ? '2px solid #E8431A' : '1px solid #EBEBEB',
+                  border: featured ? '2px solid #0D6EFD' : '1px solid #EBEBEB',
                   backgroundColor: '#FFFFFF',
                   marginTop: featured ? '0' : '0',
                 }}
@@ -137,7 +137,7 @@ export default function Pricing() {
                 {badge && (
                   <div
                     className="absolute -top-3 right-1/2 translate-x-1/2 text-xs font-bold px-3 py-1 rounded-full"
-                    style={{ backgroundColor: '#E8431A', color: '#FFFFFF', fontFamily: 'var(--font-tajawal)' }}
+                    style={{ backgroundColor: '#0D6EFD', color: '#FFFFFF', fontFamily: 'var(--font-tajawal)' }}
                   >
                     {badge}
                   </div>
@@ -195,7 +195,7 @@ export default function Pricing() {
                       }}
                     >
                       {feat !== '—' ? (
-                        <Check size={14} style={{ color: '#E8431A', flexShrink: 0 }} />
+                        <Check size={14} style={{ color: '#0D6EFD', flexShrink: 0 }} />
                       ) : (
                         <span className="w-3.5 h-3.5 flex-shrink-0" />
                       )}

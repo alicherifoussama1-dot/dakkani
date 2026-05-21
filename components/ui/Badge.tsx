@@ -6,9 +6,9 @@ interface BadgeProps {
 const CONFIGS = {
   new: {
     defaultLabel: 'جديد',
-    bg: '#FFF0ED',
-    color: '#E8431A',
-    border: 'rgba(232,67,26,0.2)',
+    bg: '#EBF5FF',
+    color: '#0D6EFD',
+    border: 'rgba(13,110,253,0.2)',
   },
   bestseller: {
     defaultLabel: 'الأكثر مبيعاً',
@@ -18,7 +18,7 @@ const CONFIGS = {
   },
   sale: {
     defaultLabel: 'تخفيض',
-    bg: '#E8431A',
+    bg: '#0D6EFD',
     color: '#FFFFFF',
     border: 'transparent',
   },

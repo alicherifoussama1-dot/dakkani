@@ -20,8 +20,8 @@ export default async function NewProductPage() {
   ])
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      <h1 className="text-2xl font-bold text-gray-900">إضافة منتج جديد</h1>
+    <div className="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl" style={{fontFamily:'var(--font-arabic)'}}>
+      <h1 className="page-title mb-5">إضافة منتج جديد</h1>
       <AdminProductEditor
         storeId={store.id}
         storePixels={{ meta: store.meta_pixel_id, tiktok: store.tiktok_pixel_id }}

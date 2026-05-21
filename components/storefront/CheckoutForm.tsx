@@ -296,7 +296,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-3">
           <div className="flex justify-between">
             <span className="text-gray-500">رقم الطلب</span>
-            <span className="font-mono font-black text-[#E8431A] text-lg">{orderNumber}</span>
+            <span className="font-mono font-black text-[#0D6EFD] text-lg">{orderNumber}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">المبلغ الإجمالي</span>
@@ -309,7 +309,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           {deliveryDays && (
             <div className="flex justify-between">
               <span className="text-gray-500">مدة التوصيل</span>
-              <span className="font-medium text-[#E8431A]">{deliveryDays}</span>
+              <span className="font-medium text-[#0D6EFD]">{deliveryDays}</span>
             </div>
           )}
           {badge && (
@@ -321,7 +321,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
         </div>
         <a
           href={`/store/${store.slug}`}
-          className="block w-full bg-[#E8431A] hover:bg-[#C73615] text-white font-bold py-3 rounded-xl transition"
+          className="block w-full bg-[#0D6EFD] hover:bg-[#0B5ED7] text-white font-bold py-3 rounded-xl transition"
         >
           العودة للمتجر
         </a>
@@ -351,7 +351,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
               </div>
               <div>
                 <p className="font-semibold text-gray-900">{product.name_ar ?? product.name}</p>
-                <p className="text-[#E8431A] font-black">{formatDZD(unitPrice)}</p>
+                <p className="text-[#0D6EFD] font-black">{formatDZD(unitPrice)}</p>
               </div>
             </div>
           )}
@@ -359,7 +359,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           {/* ── Section 1: Customer Info ── */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
             <h2 className="font-bold text-gray-900 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#E8431A] text-white rounded-full flex items-center justify-center text-xs font-black">1</span>
+              <span className="w-6 h-6 bg-[#0D6EFD] text-white rounded-full flex items-center justify-center text-xs font-black">1</span>
               معلومات العميل
             </h2>
             <div>
@@ -367,7 +367,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
               <input
                 {...register('customer_name')}
                 placeholder="محمد بن علي"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none"
               />
               {errors.customer_name && <p className="text-red-500 text-xs mt-1">{errors.customer_name.message}</p>}
             </div>
@@ -378,7 +378,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                   {...register('phone')}
                   type="tel"
                   placeholder="0555 xx xx xx"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none"
                 />
                 {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
               </div>
@@ -388,7 +388,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                   {...register('phone2')}
                   type="tel"
                   placeholder="اختياري"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none"
                 />
                 {errors.phone2 && <p className="text-red-500 text-xs mt-1">{errors.phone2.message}</p>}
               </div>
@@ -398,7 +398,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           {/* ── Section 2: Delivery ── */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
             <h2 className="font-bold text-gray-900 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#E8431A] text-white rounded-full flex items-center justify-center text-xs font-black">2</span>
+              <span className="w-6 h-6 bg-[#0D6EFD] text-white rounded-full flex items-center justify-center text-xs font-black">2</span>
               معلومات التوصيل
             </h2>
 
@@ -412,7 +412,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                   key={val}
                   className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${
                     watchedDeliveryType === val
-                      ? 'border-[#E8431A] bg-[#FFF0ED]'
+                      ? 'border-[#0D6EFD] bg-[#EBF5FF]'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -422,9 +422,9 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                     value={val}
                     className="sr-only"
                   />
-                  <Icon className={`w-5 h-5 ${watchedDeliveryType === val ? 'text-[#E8431A]' : 'text-gray-400'}`} />
+                  <Icon className={`w-5 h-5 ${watchedDeliveryType === val ? 'text-[#0D6EFD]' : 'text-gray-400'}`} />
                   <div>
-                    <p className={`text-sm font-semibold ${watchedDeliveryType === val ? 'text-[#C73615]' : 'text-gray-700'}`}>
+                    <p className={`text-sm font-semibold ${watchedDeliveryType === val ? 'text-[#0B5ED7]' : 'text-gray-700'}`}>
                       {label}
                     </p>
                     {selectedWilaya && (
@@ -445,7 +445,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
               <div className="relative">
                 <select
                   {...register('wilaya_id', { valueAsNumber: true })}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#E8431A] outline-none appearance-none"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#0D6EFD] outline-none appearance-none"
                 >
                   <option value="">اختر الولاية...</option>
                   {wilayas.map(w => (
@@ -458,7 +458,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
               </div>
               {errors.wilaya_id && <p className="text-red-500 text-xs mt-1">{errors.wilaya_id.message}</p>}
               {selectedWilaya && (
-                <div className="mt-2 flex items-center gap-3 text-xs text-[#E8431A] bg-[#FFF0ED] px-3 py-2 rounded-lg">
+                <div className="mt-2 flex items-center gap-3 text-xs text-[#0D6EFD] bg-[#EBF5FF] px-3 py-2 rounded-lg">
                   <span>🚚 التوصيل خلال {deliveryDays}</span>
                   <span>•</span>
                   <span>رسوم التوصيل: {formatDZD(deliveryFee)}</span>
@@ -479,7 +479,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                   ) : (
                     <select
                       {...register('commune_id', { valueAsNumber: true })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#E8431A] outline-none appearance-none"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#0D6EFD] outline-none appearance-none"
                     >
                       <option value="">اختر البلدية...</option>
                       {communes.map(c => (
@@ -500,7 +500,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                   {...register('address')}
                   rows={2}
                   placeholder="الحي، الشارع، رقم البناية..."
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none resize-none"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none resize-none"
                 />
               </div>
             )}
@@ -512,7 +512,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                 {...register('notes')}
                 rows={2}
                 placeholder="أي تعليمات خاصة للتوصيل..."
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none resize-none"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none resize-none"
               />
             </div>
           </div>
@@ -520,7 +520,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           {/* ── Section 3: Payment ── */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
             <h2 className="font-bold text-gray-900 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#E8431A] text-white rounded-full flex items-center justify-center text-xs font-black">3</span>
+              <span className="w-6 h-6 bg-[#0D6EFD] text-white rounded-full flex items-center justify-center text-xs font-black">3</span>
               طريقة الدفع
             </h2>
 
@@ -533,17 +533,17 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                 key={opt.value}
                 className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition ${
                   watchedPayment === opt.value
-                    ? 'border-[#E8431A] bg-[#FFF0ED]'
+                    ? 'border-[#0D6EFD] bg-[#EBF5FF]'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <input {...register('payment_method')} type="radio" value={opt.value} className="sr-only" />
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                  watchedPayment === opt.value ? 'border-[#E8431A]' : 'border-gray-300'
+                  watchedPayment === opt.value ? 'border-[#0D6EFD]' : 'border-gray-300'
                 }`}>
-                  {watchedPayment === opt.value && <div className="w-2.5 h-2.5 bg-[#E8431A] rounded-full" />}
+                  {watchedPayment === opt.value && <div className="w-2.5 h-2.5 bg-[#0D6EFD] rounded-full" />}
                 </div>
-                <opt.icon className={`w-5 h-5 ${watchedPayment === opt.value ? 'text-[#E8431A]' : 'text-gray-400'}`} />
+                <opt.icon className={`w-5 h-5 ${watchedPayment === opt.value ? 'text-[#0D6EFD]' : 'text-gray-400'}`} />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-gray-900">{opt.label}</p>
@@ -564,7 +564,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
               <input
                 {...register('coupon_code')}
                 placeholder="أدخل الكود..."
-                className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none uppercase"
+                className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none uppercase"
                 onBlur={checkCoupon}
               />
               <button
@@ -600,7 +600,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900 text-sm">{product.name_ar ?? product.name}</p>
-                    <p className="text-[#E8431A] font-black text-lg mt-1">{formatDZD(unitPrice)}</p>
+                    <p className="text-[#0D6EFD] font-black text-lg mt-1">{formatDZD(unitPrice)}</p>
                     {product.compare_price && product.compare_price > unitPrice && (
                       <p className="text-xs text-gray-400 line-through">{formatDZD(product.compare_price)}</p>
                     )}
@@ -641,7 +641,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                 )}
                 <div className="flex justify-between font-black text-gray-900 text-base border-t border-gray-100 pt-2.5 mt-2">
                   <span>المجموع</span>
-                  <span className="text-[#E8431A] text-xl">{formatDZD(total)}</span>
+                  <span className="text-[#0D6EFD] text-xl">{formatDZD(total)}</span>
                 </div>
               </div>
             </div>
@@ -650,7 +650,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
             <button
               type="submit"
               disabled={submitState === 'submitting'}
-              className="w-full bg-[#E8431A] hover:bg-[#C73615] disabled:opacity-60 text-white font-black py-4 rounded-2xl text-base transition flex items-center justify-center gap-2"
+              className="w-full bg-[#0D6EFD] hover:bg-[#0B5ED7] disabled:opacity-60 text-white font-black py-4 rounded-2xl text-base transition flex items-center justify-center gap-2"
             >
               {submitState === 'submitting' ? (
                 <><Loader2 className="w-5 h-5 animate-spin" />جارٍ تسجيل الطلب...</>

@@ -49,7 +49,7 @@ export default function DeliveryTimeline({ timeline, trackingNumber, deliveryPar
       <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
         <h2 className="font-bold text-gray-900">مسار التوصيل</h2>
         {trackingNumber && (
-          <span className="text-xs font-mono text-[#E8431A] bg-[#FFF0ED] px-2 py-1 rounded">
+          <span className="text-xs font-mono text-[#0D6EFD] bg-[#EBF5FF] px-2 py-1 rounded">
             {trackingNumber}
           </span>
         )}

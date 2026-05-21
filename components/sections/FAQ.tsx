@@ -67,7 +67,7 @@ export default function FAQ() {
                 <span
                   className="font-semibold text-sm md:text-base leading-snug"
                   style={{
-                    color: open === i ? '#E8431A' : '#111111',
+                    color: open === i ? '#0D6EFD' : '#111111',
                     fontFamily: 'var(--font-tajawal)',
                     transition: 'color 200ms ease',
                   }}
@@ -77,7 +77,7 @@ export default function FAQ() {
                 <span
                   className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full transition-all duration-200"
                   style={{
-                    backgroundColor: open === i ? '#E8431A' : '#F3F3F3',
+                    backgroundColor: open === i ? '#0D6EFD' : '#F3F3F3',
                     transform: open === i ? 'rotate(45deg)' : 'rotate(0deg)',
                   }}
                 >
@@ -121,7 +121,7 @@ export default function FAQ() {
           <a
             href="https://wa.me/213000000000"
             className="font-semibold transition-colors"
-            style={{ color: '#E8431A' }}
+            style={{ color: '#0D6EFD' }}
           >
             تواصل معنا عبر واتساب
           </a>

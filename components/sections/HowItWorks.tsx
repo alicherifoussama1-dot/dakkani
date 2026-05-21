@@ -73,11 +73,11 @@ export default function HowItWorks() {
                   >
                     <span
                       className="font-black text-xs mb-0.5"
-                      style={{ color: '#E8431A', fontFamily: 'var(--font-inter)' }}
+                      style={{ color: '#0D6EFD', fontFamily: 'var(--font-inter)' }}
                     >
                       {num}
                     </span>
-                    <Icon size={22} style={{ color: '#E8431A' }} strokeWidth={1.8} />
+                    <Icon size={22} style={{ color: '#0D6EFD' }} strokeWidth={1.8} />
                   </div>
                   <h3
                     className="font-bold text-lg mb-3"
@@ -108,11 +108,11 @@ export default function HowItWorks() {
                   >
                     <span
                       className="font-black text-[10px]"
-                      style={{ color: '#E8431A', fontFamily: 'var(--font-inter)' }}
+                      style={{ color: '#0D6EFD', fontFamily: 'var(--font-inter)' }}
                     >
                       {num}
                     </span>
-                    <Icon size={16} style={{ color: '#E8431A' }} />
+                    <Icon size={16} style={{ color: '#0D6EFD' }} />
                   </div>
                   {i < STEPS.length - 1 && (
                     <div

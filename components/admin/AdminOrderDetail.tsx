@@ -123,7 +123,7 @@ export default function AdminOrderDetail({ order, store, wilayas }: Props) {
           className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-800/50 transition"
         >
           <div className="flex items-center gap-2 text-gray-300 font-semibold text-sm">
-            <Icon className="w-4 h-4 text-[#E8431A]" />
+            <Icon className="w-4 h-4 text-[#0D6EFD]" />
             {title}
           </div>
           <ChevronDown className={`w-4 h-4 text-gray-600 transition ${open ? 'rotate-180' : ''}`} />
@@ -145,7 +145,7 @@ export default function AdminOrderDetail({ order, store, wilayas }: Props) {
             <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${
               status === 'delivered' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
               status === 'cancelled' ? 'bg-gray-500/20 text-gray-400' :
-              'bg-[#E8431A]/20 text-[#F96540] border border-[#E8431A]/30'
+              'bg-[#0D6EFD]/20 text-[#F96540] border border-[#0D6EFD]/30'
             }`}>
               {STATUS_LABELS[status] ?? status}
             </span>
@@ -165,7 +165,7 @@ export default function AdminOrderDetail({ order, store, wilayas }: Props) {
                 <button
                   onClick={() => updateStatus(STATUS_STEPS[stepIdx + 1])}
                   disabled={!!loading}
-                  className="flex items-center gap-1.5 text-xs px-3 py-2 bg-[#E8431A] text-white hover:bg-[#C73615] rounded-lg transition disabled:opacity-50"
+                  className="flex items-center gap-1.5 text-xs px-3 py-2 bg-[#0D6EFD] text-white hover:bg-[#0B5ED7] rounded-lg transition disabled:opacity-50"
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
                   {STATUS_LABELS[STATUS_STEPS[stepIdx + 1]]}
@@ -191,7 +191,7 @@ export default function AdminOrderDetail({ order, store, wilayas }: Props) {
                 <div className="flex flex-col items-center gap-1">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                     i < stepIdx ? 'bg-green-500 text-white' :
-                    i === stepIdx ? 'bg-[#E8431A] text-white ring-2 ring-[#F96540]/30' :
+                    i === stepIdx ? 'bg-[#0D6EFD] text-white ring-2 ring-[#F96540]/30' :
                     'bg-gray-800 text-gray-600'
                   }`}>
                     {i < stepIdx ? '✓' : i + 1}
@@ -289,7 +289,7 @@ export default function AdminOrderDetail({ order, store, wilayas }: Props) {
                 <select
                   value={provider}
                   onChange={e => setProvider(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:ring-1 focus:ring-[#E8431A] outline-none"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:ring-1 focus:ring-[#0D6EFD] outline-none"
                 >
                   {['yalidine', 'zrexpress', 'maystro'].map(p => (
                     <option key={p} value={p}>{p}</option>
@@ -302,7 +302,7 @@ export default function AdminOrderDetail({ order, store, wilayas }: Props) {
                   value={tracking}
                   onChange={e => setTracking(e.target.value)}
                   placeholder="tracking..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 font-mono focus:ring-1 focus:ring-[#E8431A] outline-none"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 font-mono focus:ring-1 focus:ring-[#0D6EFD] outline-none"
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -328,7 +328,7 @@ export default function AdminOrderDetail({ order, store, wilayas }: Props) {
               <div className="space-y-2 mt-2">
                 {order.logs.slice(-5).reverse().map((log: any, i: number) => (
                   <div key={i} className="flex items-start gap-3 text-xs">
-                    <div className="w-2 h-2 bg-[#E8431A] rounded-full mt-1 flex-shrink-0" />
+                    <div className="w-2 h-2 bg-[#0D6EFD] rounded-full mt-1 flex-shrink-0" />
                     <div>
                       <span className="text-gray-300 font-medium">{log.status}</span>
                       {log.description && <span className="text-gray-500 ml-2">{log.description}</span>}
@@ -422,7 +422,7 @@ export default function AdminOrderDetail({ order, store, wilayas }: Props) {
               <button
                 onClick={generateAiScript}
                 disabled={loading === 'ai'}
-                className="w-full py-2 text-xs bg-[#E8431A]/20 text-[#F96540] border border-[#E8431A]/30 hover:bg-[#E8431A]/30 rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-2 text-xs bg-[#0D6EFD]/20 text-[#F96540] border border-[#0D6EFD]/30 hover:bg-[#0D6EFD]/30 rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading === 'ai' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : '✨'}
                 توليد نص بالدارجة الجزائرية
@@ -437,7 +437,7 @@ export default function AdminOrderDetail({ order, store, wilayas }: Props) {
               onChange={e => setNote(e.target.value)}
               rows={4}
               placeholder="ملاحظات خاصة بالفريق..."
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:ring-1 focus:ring-[#E8431A] outline-none resize-none"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:ring-1 focus:ring-[#0D6EFD] outline-none resize-none"
             />
             <button
               onClick={saveNote}

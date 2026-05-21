@@ -46,7 +46,7 @@ export default function SearchBar({
       >
         <Search
           size={18}
-          style={{ color: focused ? '#E8431A' : '#999999', transition: 'color 200ms ease' }}
+          style={{ color: focused ? '#0D6EFD' : '#999999', transition: 'color 200ms ease' }}
         />
       </div>
 
@@ -63,10 +63,10 @@ export default function SearchBar({
         className="w-full h-12 rounded-full pr-11 pl-11 text-sm outline-none transition-all"
         style={{
           backgroundColor: '#F3F3F3',
-          border: focused ? '2px solid #E8431A' : '2px solid transparent',
+          border: focused ? '2px solid #0D6EFD' : '2px solid transparent',
           color: '#111111',
           fontFamily: 'var(--font-tajawal)',
-          boxShadow: focused ? '0 0 0 3px rgba(232,67,26,0.10)' : 'none',
+          boxShadow: focused ? '0 0 0 3px rgba(13,110,253,0.10)' : 'none',
         }}
         aria-label="البحث عن منتجات"
         autoComplete="off"

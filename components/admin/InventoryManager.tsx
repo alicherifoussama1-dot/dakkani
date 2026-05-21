@@ -155,7 +155,7 @@ export default function InventoryManager({ storeId, stock, warehouses, products,
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="بحث بالاسم أو SKU..."
-            className="bg-gray-800 border border-gray-700 rounded-lg pr-9 pl-3 py-1.5 text-sm text-gray-300 w-52 focus:ring-1 focus:ring-[#E8431A] outline-none"
+            className="bg-gray-800 border border-gray-700 rounded-lg pr-9 pl-3 py-1.5 text-sm text-gray-300 w-52 focus:ring-1 focus:ring-[#0D6EFD] outline-none"
           />
         </div>
         <div className="flex gap-1.5">
@@ -163,7 +163,7 @@ export default function InventoryManager({ storeId, stock, warehouses, products,
             <button
               key={v}
               onClick={() => setFilter(v as any)}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition ${filter===v ? 'bg-[#E8431A]/20 text-[#F96540] border-[#E8431A]/30' : 'bg-gray-800 text-gray-500 border-gray-700'}`}
+              className={`text-xs px-3 py-1.5 rounded-lg border transition ${filter===v ? 'bg-[#0D6EFD]/20 text-[#F96540] border-[#0D6EFD]/30' : 'bg-gray-800 text-gray-500 border-gray-700'}`}
             >
               {l}
             </button>
@@ -221,7 +221,7 @@ export default function InventoryManager({ storeId, stock, warehouses, products,
                         onChange={e => setEditQty({ id: row.id, val: e.target.value })}
                         onBlur={() => saveQty(row)}
                         onKeyDown={e => e.key === 'Enter' && saveQty(row)}
-                        className="w-20 bg-gray-700 border border-[#E8431A] rounded px-2 py-1 text-sm text-white outline-none"
+                        className="w-20 bg-gray-700 border border-[#0D6EFD] rounded px-2 py-1 text-sm text-white outline-none"
                         type="number"
                       />
                     ) : (
@@ -276,7 +276,7 @@ export default function InventoryManager({ storeId, stock, warehouses, products,
               <select
                 value={transfer.toWarehouse}
                 onChange={e => setTransfer(t => ({ ...t, toWarehouse: e.target.value }))}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:ring-1 focus:ring-[#E8431A] outline-none"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:ring-1 focus:ring-[#0D6EFD] outline-none"
               >
                 {warehouses.filter(w => w.id !== transfer.row!.warehouse_id).map(w => (
                   <option key={w.id} value={w.id}>{w.name}</option>
@@ -293,14 +293,14 @@ export default function InventoryManager({ storeId, stock, warehouses, products,
                 max={transfer.row.quantity - transfer.row.reserved}
                 value={transfer.qty}
                 onChange={e => setTransfer(t => ({ ...t, qty: e.target.value }))}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:ring-1 focus:ring-[#E8431A] outline-none"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:ring-1 focus:ring-[#0D6EFD] outline-none"
               />
             </div>
             <div className="flex gap-3">
               <button
                 onClick={doTransfer}
                 disabled={saving}
-                className="flex-1 bg-[#E8431A] hover:bg-[#C73615] text-white font-bold py-2 rounded-xl text-sm transition disabled:opacity-50"
+                className="flex-1 bg-[#0D6EFD] hover:bg-[#0B5ED7] text-white font-bold py-2 rounded-xl text-sm transition disabled:opacity-50"
               >
                 {saving ? 'جارٍ النقل...' : 'نقل'}
               </button>

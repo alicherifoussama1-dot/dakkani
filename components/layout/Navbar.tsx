@@ -62,7 +62,7 @@ export default function Navbar() {
               دكاني
               <span
                 className="w-1.5 h-1.5 rounded-full inline-block mt-0.5"
-                style={{ backgroundColor: '#E8431A' }}
+                style={{ backgroundColor: '#0D6EFD' }}
                 aria-hidden="true"
               />
             </Link>
@@ -75,7 +75,7 @@ export default function Navbar() {
                   href={link.href}
                   className="nav-link px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-[#F9F9F9]"
                   style={{
-                    color: isActive(link.href) ? '#E8431A' : '#444444',
+                    color: isActive(link.href) ? '#0D6EFD' : '#444444',
                     fontFamily: 'var(--font-tajawal)',
                   }}
                 >
@@ -105,14 +105,14 @@ export default function Navbar() {
             <div className="flex lg:hidden items-center gap-3">
               <Link
                 href="/products"
-                className="touch-target text-[#444444] hover:text-[#E8431A] transition-colors"
+                className="touch-target text-[#444444] hover:text-[#0D6EFD] transition-colors"
                 aria-label="المنتجات"
               >
                 <ShoppingBag size={20} />
               </Link>
               <button
                 onClick={() => setDrawerOpen(true)}
-                className="touch-target text-[#111111] hover:text-[#E8431A] transition-colors"
+                className="touch-target text-[#111111] hover:text-[#0D6EFD] transition-colors"
                 aria-label="فتح القائمة"
                 aria-expanded={drawerOpen}
               >
@@ -153,7 +153,7 @@ export default function Navbar() {
             دكاني
             <span
               className="inline-block w-1.5 h-1.5 rounded-full mr-0.5 mb-0.5"
-              style={{ backgroundColor: '#E8431A' }}
+              style={{ backgroundColor: '#0D6EFD' }}
             />
           </Link>
           <button
@@ -173,8 +173,8 @@ export default function Navbar() {
               href={link.href}
               className="flex items-center px-4 py-3 rounded-xl text-base font-medium transition-colors"
               style={{
-                color: isActive(link.href) ? '#E8431A' : '#111111',
-                backgroundColor: isActive(link.href) ? '#FFF0ED' : 'transparent',
+                color: isActive(link.href) ? '#0D6EFD' : '#111111',
+                backgroundColor: isActive(link.href) ? '#EBF5FF' : 'transparent',
                 fontFamily: 'var(--font-tajawal)',
               }}
               onClick={() => setDrawerOpen(false)}

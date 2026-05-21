@@ -69,9 +69,9 @@ export default function Footer() {
           <div>
             <div className="font-black text-2xl mb-1" style={{ fontFamily: 'var(--font-tajawal)' }}>
               دكاني
-              <span style={{ color: '#E8431A' }}>.</span>
+              <span style={{ color: '#0D6EFD' }}>.</span>
             </div>
-            <p style={{ color: '#E8431A', fontFamily: 'var(--font-tajawal)' }} className="text-sm font-medium">
+            <p style={{ color: '#0D6EFD', fontFamily: 'var(--font-tajawal)' }} className="text-sm font-medium">
               سوقك الرقمي الجزائري
             </p>
             <p style={{ color: '#999999' }} className="text-sm mt-1">
@@ -94,7 +94,7 @@ export default function Footer() {
                   color: '#FFFFFF',
                 }}
                 onMouseEnter={e => {
-                  ;(e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#E8431A'
+                  ;(e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#0D6EFD'
                 }}
                 onMouseLeave={e => {
                   ;(e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'rgba(255,255,255,0.08)'

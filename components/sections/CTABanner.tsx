@@ -8,7 +8,7 @@ export default function CTABanner() {
   return (
     <section
       className="py-16 md:py-24 px-4 text-center"
-      style={{ backgroundColor: '#E8431A' }}
+      style={{ backgroundColor: '#0D6EFD' }}
       dir="rtl"
     >
       <div
@@ -41,7 +41,7 @@ export default function CTABanner() {
           className="inline-flex items-center justify-center font-black rounded-2xl px-8 h-14 text-base transition-all"
           style={{
             backgroundColor: '#FFFFFF',
-            color: '#E8431A',
+            color: '#0D6EFD',
             fontFamily: 'var(--font-tajawal)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
             minWidth: '200px',

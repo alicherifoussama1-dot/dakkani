@@ -61,7 +61,7 @@ export default function ProductGrid() {
           <a
             href="/products"
             className="text-sm font-semibold hidden sm:block"
-            style={{ color: '#E8431A', fontFamily: 'var(--font-tajawal)' }}
+            style={{ color: '#0D6EFD', fontFamily: 'var(--font-tajawal)' }}
           >
             عرض الكل ←
           </a>

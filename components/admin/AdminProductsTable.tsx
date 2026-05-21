@@ -68,13 +68,13 @@ export default function AdminProductsTable({ products, total, page, pageSize, ca
             onChange={e => setSearch(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && push('search', search)}
             placeholder="بحث في المنتجات..."
-            className="bg-gray-800 border border-gray-700 rounded-lg pr-9 pl-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-[#E8431A] outline-none w-52"
+            className="bg-gray-800 border border-gray-700 rounded-lg pr-9 pl-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-[#0D6EFD] outline-none w-52"
           />
         </div>
         <select
           value={params.get('category') ?? ''}
           onChange={e => push('category', e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-[#E8431A] outline-none"
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:ring-1 focus:ring-[#0D6EFD] outline-none"
         >
           <option value="">كل الفئات</option>
           {categories.map(c => (
@@ -144,13 +144,13 @@ export default function AdminProductsTable({ products, total, page, pageSize, ca
                     {p.use_store_pixel
                       ? <span className="text-xs text-gray-600">متجر</span>
                       : hasPixel
-                      ? <span className="text-xs bg-[#E8431A]/20 text-[#F96540] px-2 py-0.5 rounded border border-[#E8431A]/30">خاص</span>
+                      ? <span className="text-xs bg-[#0D6EFD]/20 text-[#F96540] px-2 py-0.5 rounded border border-[#0D6EFD]/30">خاص</span>
                       : <span className="text-xs text-gray-700">—</span>
                     }
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <Link href={`/admin/products/${p.id}/edit`} className="p-1.5 text-gray-500 hover:text-[#F96540] hover:bg-[#E8431A]/10 rounded-lg transition">
+                      <Link href={`/admin/products/${p.id}/edit`} className="p-1.5 text-gray-500 hover:text-[#F96540] hover:bg-[#0D6EFD]/10 rounded-lg transition">
                         <Pencil className="w-3.5 h-3.5" />
                       </Link>
                       <button onClick={() => deleteProduct(p.id)} className="p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition">
@@ -175,7 +175,7 @@ export default function AdminProductsTable({ products, total, page, pageSize, ca
                 <button onClick={() => push('page', String(page - 1))} className="text-xs px-3 py-1.5 bg-gray-800 text-gray-300 hover:bg-gray-700 rounded-lg">السابق</button>
               )}
               {page < totalPages && (
-                <button onClick={() => push('page', String(page + 1))} className="text-xs px-3 py-1.5 bg-[#E8431A] text-white hover:bg-[#C73615] rounded-lg">التالي</button>
+                <button onClick={() => push('page', String(page + 1))} className="text-xs px-3 py-1.5 bg-[#0D6EFD] text-white hover:bg-[#0B5ED7] rounded-lg">التالي</button>
               )}
             </div>
           </div>

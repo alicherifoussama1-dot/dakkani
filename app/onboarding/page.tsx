@@ -83,7 +83,7 @@ export default function OnboardingPage() {
       <div className="w-full max-w-lg">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br [#E8431A] to-[#C73615] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <div className="w-16 h-16 bg-gradient-to-br [#0D6EFD] to-[#0B5ED7] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
             <span className="text-white font-black text-2xl">د</span>
           </div>
           <h1 className="text-3xl font-black text-[#111111]">مرحباً في دكاني! 🎉</h1>
@@ -96,7 +96,7 @@ export default function OnboardingPage() {
             <div key={s} className={`flex items-center gap-2 ${s < step ? 'opacity-100' : s === step ? 'opacity-100' : 'opacity-40'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black transition-all ${
                 s < step ? 'bg-green-500 text-white' :
-                s === step ? 'bg-[#E8431A] text-white ring-4 ring-[#FFF0ED]' :
+                s === step ? 'bg-[#0D6EFD] text-white ring-4 ring-[#EBF5FF]' :
                 'bg-[#EBEBEB] text-[#999999]'
               }`}>
                 {s < step ? '✓' : s}
@@ -115,8 +115,8 @@ export default function OnboardingPage() {
             {step === 1 && (
               <div className="p-8 space-y-5">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-[#FFF0ED] rounded-xl flex items-center justify-center">
-                    <Store className="w-5 h-5 text-[#E8431A]" />
+                  <div className="w-10 h-10 bg-[#EBF5FF] rounded-xl flex items-center justify-center">
+                    <Store className="w-5 h-5 text-[#0D6EFD]" />
                   </div>
                   <div>
                     <h2 className="font-black text-[#111111]">اسم متجرك</h2>
@@ -131,7 +131,7 @@ export default function OnboardingPage() {
                   <input
                     {...register('name_ar')}
                     placeholder="مثال: متجر الأناقة الجزائري"
-                    className="w-full border-2 border-[#EBEBEB] focus:border-[#E8431A] rounded-2xl px-4 py-3 text-base outline-none transition"
+                    className="w-full border-2 border-[#EBEBEB] focus:border-[#0D6EFD] rounded-2xl px-4 py-3 text-base outline-none transition"
                   />
                 </div>
 
@@ -142,7 +142,7 @@ export default function OnboardingPage() {
                   <input
                     {...register('name')}
                     placeholder="Ex: Elegance Store DZ"
-                    className="w-full border-2 border-[#EBEBEB] focus:border-[#E8431A] rounded-2xl px-4 py-3 text-base outline-none transition"
+                    className="w-full border-2 border-[#EBEBEB] focus:border-[#0D6EFD] rounded-2xl px-4 py-3 text-base outline-none transition"
                     dir="ltr"
                   />
                   {errors.name && <p className="text-red-500 text-xs mt-1">⚠️ {errors.name.message}</p>}
@@ -156,7 +156,7 @@ export default function OnboardingPage() {
                     {...register('phone')}
                     type="tel"
                     placeholder="0555 xx xx xx"
-                    className="w-full border-2 border-[#EBEBEB] focus:border-[#E8431A] rounded-2xl px-4 py-3 text-base outline-none transition"
+                    className="w-full border-2 border-[#EBEBEB] focus:border-[#0D6EFD] rounded-2xl px-4 py-3 text-base outline-none transition"
                   />
                   {errors.phone && <p className="text-red-500 text-xs mt-1">⚠️ {errors.phone.message}</p>}
                 </div>
@@ -165,7 +165,7 @@ export default function OnboardingPage() {
                 {(name || nameAr) && (
                   <div className="bg-[#F9F9F9] border border-[#EBEBEB] rounded-2xl p-3">
                     <p className="text-xs text-[#999999] mb-1">رابط متجرك سيكون:</p>
-                    <p className="font-mono text-sm text-[#E8431A] font-bold">
+                    <p className="font-mono text-sm text-[#0D6EFD] font-bold">
                       dakkani.dz/store/<span className="text-[#111111]">{slugify(nameAr || name || '')}</span>
                     </p>
                   </div>
@@ -178,7 +178,7 @@ export default function OnboardingPage() {
                     setStep(2)
                   }}
                   disabled={!name}
-                  className="w-full bg-[#FFF0ED]0 hover:bg-[#C73615] disabled:opacity-40 text-white font-black py-4 rounded-2xl text-base transition"
+                  className="w-full bg-[#0D6EFD] hover:bg-[#0B5ED7] disabled:opacity-40 text-white font-black py-4 rounded-2xl text-base transition"
                 >
                   التالي ←
                 </button>
@@ -210,7 +210,7 @@ export default function OnboardingPage() {
                         onClick={() => setValue('category', cat)}
                         className={`py-2.5 px-2 rounded-xl text-xs font-medium border-2 transition text-center ${
                           watch('category') === cat
-                            ? 'border-[#E8431A] bg-[#FFF0ED] text-[#C73615]'
+                            ? 'border-[#0D6EFD] bg-[#EBF5FF] text-[#0B5ED7]'
                             : 'border-[#EBEBEB] text-[#444444] hover:border-gray-300'
                         }`}
                       >
@@ -221,8 +221,8 @@ export default function OnboardingPage() {
                 </div>
 
                 {/* Features preview */}
-                <div className="bg-gradient-to-br from-[#FFF0ED] to-orange-50 rounded-2xl p-4 border border-[#FFF0ED]">
-                  <p className="text-sm font-bold text-[#C73615] mb-3">✨ ما ستحصل عليه مجاناً:</p>
+                <div className="bg-gradient-to-br from-[#EBF5FF] to-orange-50 rounded-2xl p-4 border border-[#EBF5FF]">
+                  <p className="text-sm font-bold text-[#0B5ED7] mb-3">✨ ما ستحصل عليه مجاناً:</p>
                   <div className="space-y-2">
                     {[
                       'متجر إلكتروني كامل',
@@ -231,7 +231,7 @@ export default function OnboardingPage() {
                       'ربط بكسل فيسبوك وتيك توك',
                       'توصيل لكل الجزائر',
                     ].map(f => (
-                      <div key={f} className="flex items-center gap-2 text-sm text-[#C73615]">
+                      <div key={f} className="flex items-center gap-2 text-sm text-[#0B5ED7]">
                         <span className="text-green-500 font-bold">✓</span>
                         {f}
                       </div>
@@ -256,7 +256,7 @@ export default function OnboardingPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 bg-gradient-to-r from-[#E8431A] to-[#C73615] hover:from-[#C73615] hover:to-[#C73615] text-white font-black py-4 rounded-2xl transition flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-r from-[#0D6EFD] to-[#0B5ED7] hover:from-[#0B5ED7] hover:to-[#0B5ED7] text-white font-black py-4 rounded-2xl transition flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <><Loader2 className="w-5 h-5 animate-spin" />جارٍ الإنشاء...</>

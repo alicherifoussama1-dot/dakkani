@@ -53,7 +53,7 @@ export default function RegisterPage() {
     >
       <div className="text-center mb-8">
         <Link href="/" className="inline-block font-black text-3xl mb-3" style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}>
-          دكاني<span style={{ color: '#E8431A' }}>.</span>
+          دكاني<span style={{ color: '#0D6EFD' }}>.</span>
         </Link>
         <h1 className="font-bold text-xl" style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}>
           إنشاء حساب مجاني
@@ -67,7 +67,7 @@ export default function RegisterPage() {
         {fields.map(f => (
           <div key={f.key}>
             <label className="block text-sm font-semibold mb-1.5" style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}>
-              {f.label}{f.required && <span style={{ color: '#E8431A' }}> *</span>}
+              {f.label}{f.required && <span style={{ color: '#0D6EFD' }}> *</span>}
             </label>
             <input
               type={(f as any).type ?? 'text'}
@@ -83,7 +83,7 @@ export default function RegisterPage() {
         ))}
 
         {error && (
-          <p className="text-sm p-3 rounded-xl" style={{ backgroundColor: '#FFF0ED', color: '#E8431A', fontFamily: 'var(--font-tajawal)' }}>
+          <p className="text-sm p-3 rounded-xl" style={{ backgroundColor: '#EBF5FF', color: '#0D6EFD', fontFamily: 'var(--font-tajawal)' }}>
             ⚠️ {error}
           </p>
         )}
@@ -102,7 +102,7 @@ export default function RegisterPage() {
 
         <p className="text-center text-sm" style={{ color: '#999999', fontFamily: 'var(--font-tajawal)' }}>
           لديك حساب؟{' '}
-          <Link href="/login" className="font-semibold" style={{ color: '#E8431A' }}>سجّل دخولك</Link>
+          <Link href="/login" className="font-semibold" style={{ color: '#0D6EFD' }}>سجّل دخولك</Link>
         </p>
       </form>
     </div>

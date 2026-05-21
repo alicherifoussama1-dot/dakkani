@@ -18,8 +18,8 @@ export default function ScrollProgress() {
         className="h-full transition-[width] duration-100 ease-out"
         style={{
           width: `${scrollPercent}%`,
-          backgroundColor: '#E8431A',
-          boxShadow: '0 0 8px rgba(232,67,26,0.4)',
+          backgroundColor: '#0D6EFD',
+          boxShadow: '0 0 8px rgba(13,110,253,0.4)',
         }}
       />
     </div>

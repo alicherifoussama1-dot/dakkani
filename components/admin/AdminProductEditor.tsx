@@ -67,7 +67,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'seo',      label: 'SEO',       icon: '🔍' },
   { id: 'stock',    label: 'المخزون',   icon: '📦' },
 ]
-const IC = 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#E8431A] focus:border-transparent outline-none bg-white text-gray-900'
+const IC = 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] focus:border-transparent outline-none bg-white text-gray-900'
 const LC = 'block text-sm font-semibold text-gray-700 mb-1.5'
 const CC = 'bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4'
 
@@ -120,7 +120,7 @@ const Toggle = memo(function Toggle({
       </div>
       <div className="relative">
         <input {...register(name)} type="checkbox" className="sr-only peer" />
-        <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-[#E8431A] transition-colors" />
+        <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-[#0D6EFD] transition-colors" />
         <div className="absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-[-20px] transition-transform" />
       </div>
     </label>
@@ -154,7 +154,7 @@ const SlugPreview = memo(function SlugPreview({
         <button
           type="button"
           onClick={generateSlug}
-          className="text-[#E8431A] hover:text-[#C73615] font-semibold underline"
+          className="text-[#0D6EFD] hover:text-[#0B5ED7] font-semibold underline"
         >
           توليد تلقائي
         </button>
@@ -248,10 +248,10 @@ const ImageGallery = memo(function ImageGallery({
   return (
     <div className={CC}>
       <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-2">صور المنتج 🖼️</h3>
-      <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-8 cursor-pointer transition ${uploading ? 'border-[#E8431A] bg-[#FFF0ED]' : 'border-gray-300 hover:border-gray-400'}`}>
+      <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-8 cursor-pointer transition ${uploading ? 'border-[#0D6EFD] bg-[#EBF5FF]' : 'border-gray-300 hover:border-gray-400'}`}>
         <input type="file" multiple accept="image/*" onChange={onFileChange} className="sr-only" disabled={uploading} />
         {uploading
-          ? <><Loader2 className="w-8 h-8 text-[#E8431A] animate-spin mb-2" /><p className="text-sm text-gray-500">جارٍ الرفع...</p></>
+          ? <><Loader2 className="w-8 h-8 text-[#0D6EFD] animate-spin mb-2" /><p className="text-sm text-gray-500">جارٍ الرفع...</p></>
           : <><Upload className="w-8 h-8 text-gray-400 mb-2" /><p className="text-sm text-gray-500">اسحب الصور هنا أو اضغط للاختيار</p><p className="text-xs text-gray-400 mt-1">JPEG, PNG, WebP — max 5MB</p></>
         }
       </label>
@@ -262,7 +262,7 @@ const ImageGallery = memo(function ImageGallery({
             <div key={`${img.url}-${idx}`} className="relative group aspect-square bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
               <img src={img.url} alt="" className="w-full h-full object-cover" />
               {idx === 0 && (
-                <span className="absolute top-1.5 right-1.5 bg-[#E8431A] text-white text-xs px-1.5 py-0.5 rounded font-bold">رئيسية</span>
+                <span className="absolute top-1.5 right-1.5 bg-[#0D6EFD] text-white text-xs px-1.5 py-0.5 rounded font-bold">رئيسية</span>
               )}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1">
                 {idx > 0 && (
@@ -303,7 +303,7 @@ const VariantsSection = memo(function VariantsSection({
       <div className="flex items-center justify-between border-b border-gray-100 pb-2">
         <h3 className="font-bold text-gray-900">المتغيرات 🎨</h3>
         <button type="button" onClick={() => append({ name: '', options: [''] })}
-          className="flex items-center gap-1.5 text-xs bg-[#FFF0ED] text-[#E8431A] border border-[#FFF0ED] px-3 py-1.5 rounded-lg hover:bg-[#FFF0ED] transition">
+          className="flex items-center gap-1.5 text-xs bg-[#EBF5FF] text-[#0D6EFD] border border-[#EBF5FF] px-3 py-1.5 rounded-lg hover:bg-[#EBF5FF] transition">
           <Plus className="w-3.5 h-3.5" />إضافة متغير
         </button>
       </div>
@@ -321,7 +321,7 @@ const VariantsSection = memo(function VariantsSection({
               <input
                 {...register(`variant_groups.${gIdx}.name`)}
                 placeholder="اسم المتغير (مثال: اللون)"
-                className="bg-transparent border-b border-gray-400 pb-1 text-sm font-semibold text-gray-800 focus:outline-none focus:border-[#E8431A] w-44"
+                className="bg-transparent border-b border-gray-400 pb-1 text-sm font-semibold text-gray-800 focus:outline-none focus:border-[#0D6EFD] w-44"
               />
               <button type="button" onClick={() => remove(gIdx)} className="text-red-400 hover:text-red-600">
                 <Trash2 className="w-4 h-4" />
@@ -334,7 +334,7 @@ const VariantsSection = memo(function VariantsSection({
                   <input
                     {...register(`variant_groups.${gIdx}.options.${oIdx}`)}
                     placeholder={`الخيار ${oIdx + 1}`}
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-1 focus:ring-[#E8431A] outline-none"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-1 focus:ring-[#0D6EFD] outline-none"
                   />
                   <button type="button"
                     onClick={() => {
@@ -351,7 +351,7 @@ const VariantsSection = memo(function VariantsSection({
 
             <button type="button"
               onClick={() => setValue(`variant_groups.${gIdx}.options`, [...(variantGroups[gIdx]?.options ?? []), ''])}
-              className="text-xs text-[#E8431A] hover:text-[#C73615] flex items-center gap-1">
+              className="text-xs text-[#0D6EFD] hover:text-[#0B5ED7] flex items-center gap-1">
               <Plus className="w-3 h-3" />إضافة خيار
             </button>
           </div>
@@ -547,7 +547,7 @@ export default function AdminProductEditor({
         {TABS.map(t => (
           <button key={t.id} type="button" onClick={() => setTab(t.id)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition ${
-              tab === t.id ? 'bg-white shadow-sm text-[#E8431A] border border-[#FFF0ED]' : 'text-gray-500 hover:text-gray-800'
+              tab === t.id ? 'bg-white shadow-sm text-[#0D6EFD] border border-[#EBF5FF]' : 'text-gray-500 hover:text-gray-800'
             }`}>
             <span>{t.icon}</span>{t.label}
           </button>
@@ -690,7 +690,7 @@ export default function AdminProductEditor({
       {/* Save bar */}
       <div className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 px-6 py-3 flex items-center gap-3 z-20 shadow-lg">
         <button type="submit" disabled={isSubmitting}
-          className="flex items-center gap-2 bg-[#E8431A] hover:bg-[#C73615] disabled:opacity-50 text-white font-black px-8 py-3 rounded-xl transition shadow-sm">
+          className="flex items-center gap-2 bg-[#0D6EFD] hover:bg-[#0B5ED7] disabled:opacity-50 text-white font-black px-8 py-3 rounded-xl transition shadow-sm">
           {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
           {isSubmitting ? 'جارٍ الحفظ...' : isEdit ? '💾 حفظ التعديلات' : '✅ إضافة المنتج'}
         </button>

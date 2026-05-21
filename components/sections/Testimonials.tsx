@@ -54,7 +54,7 @@ export default function Testimonials() {
                   width: 'min(80vw, 300px)',
                 }}
               >
-                <div className="flex gap-0.5 mb-3" style={{ color: '#E8431A' }}>
+                <div className="flex gap-0.5 mb-3" style={{ color: '#0D6EFD' }}>
                   {'★'.repeat(stars)}
                 </div>
                 <p
@@ -66,12 +66,12 @@ export default function Testimonials() {
                 <div className="flex items-center gap-3">
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0"
-                    style={{ backgroundColor: '#E8431A' }}
+                    style={{ backgroundColor: '#0D6EFD' }}
                   >
                     {avatar}
                   </div>
                   <div>
-                    <p className="font-bold text-sm" style={{ color: '#E8431A', fontFamily: 'var(--font-tajawal)' }}>
+                    <p className="font-bold text-sm" style={{ color: '#0D6EFD', fontFamily: 'var(--font-tajawal)' }}>
                       {name}
                     </p>
                     <p className="text-xs" style={{ color: '#999999' }}>{wilaya}</p>
@@ -94,7 +94,7 @@ export default function Testimonials() {
               style={{ borderRadius: '16px' }}
             >
               {/* Stars */}
-              <div className="text-lg mb-4" style={{ color: '#E8431A' }}>
+              <div className="text-lg mb-4" style={{ color: '#0D6EFD' }}>
                 {'★'.repeat(stars)}
               </div>
 
@@ -114,14 +114,14 @@ export default function Testimonials() {
               <div className="flex items-center gap-3 pt-4 border-t" style={{ borderColor: '#EBEBEB' }}>
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0"
-                  style={{ backgroundColor: '#E8431A' }}
+                  style={{ backgroundColor: '#0D6EFD' }}
                 >
                   {avatar}
                 </div>
                 <div>
                   <p
                     className="font-bold text-sm"
-                    style={{ color: '#E8431A', fontFamily: 'var(--font-tajawal)' }}
+                    style={{ color: '#0D6EFD', fontFamily: 'var(--font-tajawal)' }}
                   >
                     {name}
                   </p>

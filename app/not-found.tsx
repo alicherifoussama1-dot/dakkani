@@ -30,7 +30,7 @@ export default function NotFound() {
           <Link
             href="/dashboard"
             className="inline-flex items-center justify-center font-bold rounded-xl h-11 px-6 text-sm text-white transition-all"
-            style={{ backgroundColor: '#E8431A', fontFamily: 'var(--font-tajawal)' }}
+            style={{ backgroundColor: '#0D6EFD', fontFamily: 'var(--font-tajawal)' }}
           >
             لوحة التحكم
           </Link>

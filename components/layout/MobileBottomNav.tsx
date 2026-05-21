@@ -39,7 +39,7 @@ export default function MobileBottomNav() {
               <Icon
                 size={21}
                 style={{
-                  color: active ? '#E8431A' : '#999999',
+                  color: active ? '#0D6EFD' : '#999999',
                   transition: 'color 150ms ease',
                   strokeWidth: active ? 2.2 : 1.8,
                 }}
@@ -47,7 +47,7 @@ export default function MobileBottomNav() {
               <span
                 className="text-[10px] font-medium leading-none"
                 style={{
-                  color: active ? '#E8431A' : '#999999',
+                  color: active ? '#0D6EFD' : '#999999',
                   fontFamily: 'var(--font-tajawal)',
                   transition: 'color 150ms ease',
                 }}
@@ -58,7 +58,7 @@ export default function MobileBottomNav() {
               {active && (
                 <span
                   className="absolute bottom-1 w-1 h-1 rounded-full"
-                  style={{ backgroundColor: '#E8431A' }}
+                  style={{ backgroundColor: '#0D6EFD' }}
                   aria-hidden="true"
                 />
               )}

@@ -17,8 +17,8 @@ export default async function CategoriesPage() {
     .order('sort_order')
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-3xl">
-      <h1 className="text-2xl font-bold text-gray-900">الفئات</h1>
+    <div className="p-4 md:p-6 max-w-3xl mx-auto" dir="rtl" style={{fontFamily:'var(--font-arabic)'}}>
+      <h1 className="page-title mb-5">الفئات</h1>
       <CategoriesManager storeId={store.id} initialCategories={categories ?? []} />
     </div>
   )

@@ -45,14 +45,14 @@ export default function OrderStatusBar({ currentStatus, steps, currentStep }: Pr
                 <div className={cn(
                   'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors',
                   done ? 'bg-green-500 text-white' :
-                  active ? 'bg-[#E8431A] text-white ring-4 ring-[#FFF0ED]' :
+                  active ? 'bg-[#0D6EFD] text-white ring-4 ring-[#EBF5FF]' :
                   'bg-gray-100 text-gray-400'
                 )}>
                   {done ? <Check className="w-4 h-4" /> : i + 1}
                 </div>
                 <span className={cn(
                   'text-xs font-medium whitespace-nowrap',
-                  active ? 'text-[#E8431A]' : done ? 'text-green-600' : 'text-gray-400'
+                  active ? 'text-[#0D6EFD]' : done ? 'text-green-600' : 'text-gray-400'
                 )}>
                   {STATUS_LABELS[step]}
                 </span>

@@ -126,7 +126,7 @@ export default function ProductForm({
         {...register(name, { valueAsNumber: type === 'number' })}
         type={type}
         placeholder={placeholder}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
+        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none"
       />
       {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name]?.message as string}</p>}
     </div>
@@ -138,7 +138,7 @@ export default function ProductForm({
         <p className="text-sm font-medium text-gray-700">{label}</p>
         {desc && <p className="text-xs text-gray-400">{desc}</p>}
       </div>
-      <input {...register(name)} type="checkbox" className="w-4 h-4 accent-[#E8431A]" />
+      <input {...register(name)} type="checkbox" className="w-4 h-4 accent-[#0D6EFD]" />
     </label>
   )
 
@@ -152,7 +152,7 @@ export default function ProductForm({
             type="button"
             onClick={() => setTab(t.id)}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
-              tab === t.id ? 'bg-white shadow text-[#E8431A]' : 'text-gray-500 hover:text-gray-700'
+              tab === t.id ? 'bg-white shadow text-[#0D6EFD]' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             {t.label}
@@ -173,7 +173,7 @@ export default function ProductForm({
               <div className="flex gap-2">
                 <input
                   {...register('slug')}
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none"
                   placeholder="cotton-shirt"
                 />
                 <button
@@ -190,7 +190,7 @@ export default function ProductForm({
               <textarea
                 {...register('description_ar')}
                 rows={3}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none resize-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none resize-none"
                 placeholder="اكتب وصف المنتج..."
               />
             </div>
@@ -204,7 +204,7 @@ export default function ProductForm({
                 <label className="block text-sm font-medium text-gray-700 mb-1">الفئة</label>
                 <select
                   {...register('category_id')}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none bg-white"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none bg-white"
                 >
                   <option value="">بدون فئة</option>
                   {categories.map(c => (
@@ -260,7 +260,7 @@ export default function ProductForm({
                 {...register('meta_description')}
                 rows={3}
                 maxLength={160}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#E8431A] outline-none resize-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none resize-none"
                 placeholder="وصف قصير يظهر في نتائج البحث (160 حرف)"
               />
             </div>
@@ -274,7 +274,7 @@ export default function ProductForm({
               <label className="block text-sm font-medium text-gray-700 mb-1">المستودع</label>
               <select
                 {...register('warehouse_id')}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#E8431A] outline-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#0D6EFD] outline-none"
               >
                 <option value="">اختر المستودع</option>
                 {warehouses.map(w => (
@@ -305,7 +305,7 @@ export default function ProductForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-[#E8431A] hover:bg-[#C73615] disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-lg transition"
+          className="bg-[#0D6EFD] hover:bg-[#0B5ED7] disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-lg transition"
         >
           {isSubmitting ? 'جارٍ الحفظ...' : productId ? 'حفظ التعديلات' : 'إضافة المنتج'}
         </button>
