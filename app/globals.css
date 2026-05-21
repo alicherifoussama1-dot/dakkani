@@ -214,6 +214,7 @@
 .animate-scale-in { animation: scale-in 0.2s ease forwards; }
 .animate-slide-up { animation: slide-up 0.4s ease forwards; }
 .animate-slide-down { animation: slide-down 0.4s ease forwards; }
+.animate-count-up { font-variant-numeric: tabular-nums; }
 
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
