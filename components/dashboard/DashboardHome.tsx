@@ -79,7 +79,7 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
           </div>
           <Link href="/products/new" className="btn btn-primary btn-sm gap-1.5">
             <Plus size={14} />
-            إنشاء صفحة هبوط
+            منتج جديد
           </Link>
         </div>
       </div>
