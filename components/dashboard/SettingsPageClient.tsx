@@ -35,6 +35,7 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
   })
 
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' })
+  const [pwError, setPwError] = useState(''), [pwSaved, setPwSaved] = useState(false)
 
   const saveStore = async () => {
     setLoading(true)
@@ -44,6 +45,20 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
     router.refresh()
+  }
+
+  const changePassword = async () => {
+    setPwError('')
+    if (passwordForm.new.length < 8) { setPwError('كلمة المرور يجب أن تكون 8 أحرف على الأقل'); return }
+    if (passwordForm.new !== passwordForm.confirm) { setPwError('كلمتا المرور غير متطابقتين'); return }
+    setLoading(true)
+    const sb = createClient()
+    const { error } = await sb.auth.updateUser({ password: passwordForm.new })
+    setLoading(false)
+    if (error) { setPwError(error.message); return }
+    setPwSaved(true)
+    setPasswordForm({ current: '', new: '', confirm: '' })
+    setTimeout(() => setPwSaved(false), 3000)
   }
 
   const Field = ({ label, name, type = 'text', placeholder = '', dir: d = 'rtl' }: any) => (
@@ -186,7 +201,11 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
                 </button>
               </div>
             ))}
-            <button className="btn btn-primary btn-sm" style={{ fontFamily: 'var(--font-arabic)' }}>تحديث كلمة المرور</button>
+            {pwError && <div className="text-xs p-2 rounded-lg" style={{background:'var(--color-error-soft)',color:'var(--color-error)',fontFamily:'var(--font-arabic)'}}>⚠️ {pwError}</div>}
+            {pwSaved && <div className="text-xs p-2 rounded-lg" style={{background:'var(--color-success-soft)',color:'var(--color-success)',fontFamily:'var(--font-arabic)'}}>✓ تم تحديث كلمة المرور</div>}
+            <button onClick={changePassword} disabled={loading || !passwordForm.new} className="btn btn-primary btn-sm" style={{ fontFamily: 'var(--font-arabic)' }}>
+              {loading ? 'جارٍ التحديث...' : pwSaved ? '✓ تم' : 'تحديث كلمة المرور'}
+            </button>
           </div>
 
           <div className="card p-5 border-red-200" style={{ border: '1px solid #FCA5A5' }}>
