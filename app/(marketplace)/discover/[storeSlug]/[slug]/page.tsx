@@ -1,194 +1,168 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import Navbar          from '@/components/layout/Navbar'
-import Footer          from '@/components/layout/Footer'
-import MobileBottomNav from '@/components/layout/MobileBottomNav'
-import WilayaSelector  from '@/components/ui/WilayaSelector'
-import PriceTag        from '@/components/ui/PriceTag'
-import { createClient } from '@/lib/supabase/client'
-import { Star, Truck, ShieldCheck, RefreshCw, Minus, Plus, ShoppingCart, ChevronRight, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
+import { ShoppingCart, Truck, Shield, RefreshCw, Minus, Plus, Star, ChevronRight, Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import WilayaSelector from '@/components/ui/WilayaSelector'
+import { formatDZD } from '@/lib/utils/format'
 
-export default function MarketplaceProductPage() {
+export default function DiscoverProductPage() {
   const { storeSlug, slug } = useParams<{ storeSlug: string; slug: string }>()
-  const [product, setProduct] = useState<any>(null)
-  const [store,   setStore]   = useState<any>(null)
-  const [qty,     setQty]     = useState(1)
-  const [wilaya,  setWilaya]  = useState<number | null>(null)
-  const [activeImg, setActiveImg] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [product,setProduct]=useState<any>(null),[store,setStore]=useState<any>(null)
+  const [loading,setLoading]=useState(true),[qty,setQty]=useState(1)
+  const [wilaya,setWilaya]=useState<number|null>(null),[activeImg,setActiveImg]=useState(0)
+  const [added,setAdded]=useState(false)
 
-  useEffect(() => {
-    const load = async () => {
-      const supabase = createClient()
-      const { data: s } = await supabase.from('stores').select('*').eq('slug', storeSlug).single()
-      if (!s) { setLoading(false); return }
+  useEffect(()=>{
+    const load=async()=>{
+      setLoading(true)
+      const sb=createClient()
+      const {data:s}=await sb.from('stores').select('*').eq('slug',storeSlug).single()
+      if(!s){setLoading(false);return}
       setStore(s)
-      const { data: p } = await supabase.from('products').select('*').eq('store_id', s.id).eq('slug', slug).single()
-      setProduct(p)
-      setLoading(false)
+      const {data:p}=await sb.from('products').select('*').eq('store_id',s.id).eq('slug',slug).single()
+      setProduct(p);setLoading(false)
     }
     load()
-  }, [storeSlug, slug])
+  },[storeSlug,slug])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FFFFFF' }}>
-        <div className="w-8 h-8 border-2 border-[#E8431A] border-t-transparent rounded-full animate-spin" />
+  if(loading) return(
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 size={28} className="animate-spin" style={{color:'var(--color-accent)'}}/>
+    </div>
+  )
+  if(!product||!store) return(
+    <div className="min-h-screen flex items-center justify-center text-center p-4" dir="rtl">
+      <div><p className="text-4xl mb-3">😕</p>
+      <p className="font-semibold" style={{color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)'}}>المنتج غير موجود</p>
+      <Link href="/discover" className="btn btn-primary btn-sm mt-4" style={{fontFamily:'var(--font-arabic)'}}>العودة للمنتجات</Link>
       </div>
-    )
-  }
+    </div>
+  )
 
-  if (!product || !store) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FFFFFF' }} dir="rtl">
-        <div className="text-center">
-          <p className="text-4xl mb-3">😕</p>
-          <p className="font-bold" style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}>المنتج غير موجود</p>
-          <Link href="/discover" className="text-sm mt-3 block" style={{ color: '#E8431A' }}>العودة للمنتجات</Link>
+  const images=(product.images as any[])??[]
+  const hasDisc=product.compare_price&&product.compare_price>product.price
+  const discPct=hasDisc?Math.round(((product.compare_price-product.price)/product.compare_price)*100):0
+  const storePhone=store.whatsapp??store.phone
+  const waUrl=storePhone?`https://wa.me/${storePhone.replace(/\D/g,'').replace(/^0/,'213')}?text=${encodeURIComponent(`أريد طلب: ${product.name_ar??product.name} — ${formatDZD(product.price)}`)}`:null
+
+  return(
+    <div className="min-h-screen bg-white" dir="rtl">
+      {/* Header */}
+      <header className="border-b sticky top-0 z-40 bg-white" style={{borderColor:'var(--color-border)'}}>
+        <div className="max-w-6xl mx-auto px-4 h-12 flex items-center gap-2">
+          <Link href="/discover" className="text-xs flex items-center gap-1" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
+            اكتشف
+          </Link>
+          <ChevronRight size={11} style={{color:'var(--color-text-muted)'}}/>
+          <span className="text-xs font-medium truncate max-w-[200px]" style={{color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)'}}>
+            {product.name_ar??product.name}
+          </span>
         </div>
-      </div>
-    )
-  }
+      </header>
 
-  const images    = product.images ?? []
-  const hasDisc   = product.compare_price && product.compare_price > product.price
-  const storePhone = store.whatsapp ?? store.phone
-
-  return (
-    <>
-      <Navbar />
-      <main className="min-h-screen pb-24" style={{ backgroundColor: '#FFFFFF' }} dir="rtl">
-        {/* Breadcrumb */}
-        <div className="pt-24 px-4 pb-3 border-b" style={{ borderColor: '#EBEBEB' }}>
-          <div className="max-w-6xl mx-auto flex items-center gap-1.5 text-xs flex-wrap" style={{ color: '#999999', fontFamily: 'var(--font-tajawal)' }}>
-            <Link href="/discover" style={{ color: '#999999' }}>اكتشف</Link>
-            <ChevronRight size={11} />
-            <span style={{ color: '#111111' }}>{product.name_ar ?? product.name}</span>
-          </div>
-        </div>
-
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
-            {/* Gallery */}
-            <div className="space-y-3">
-              <div
-                className="aspect-square rounded-2xl flex items-center justify-center overflow-hidden"
-                style={{ backgroundColor: '#F3F3F3', fontSize: '80px' }}
-              >
-                {images[activeImg]?.url
-                  ? <img src={images[activeImg].url} alt={product.name_ar ?? product.name} className="w-full h-full object-cover" />
-                  : '📦'
-                }
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Gallery */}
+          <div className="space-y-2">
+            <div className="aspect-square rounded-xl overflow-hidden border" style={{borderColor:'var(--color-border)',background:'var(--color-bg-soft)'}}>
+              {images[activeImg]?.url
+                ?<img src={images[activeImg].url} alt={product.name_ar??product.name} className="w-full h-full object-cover"/>
+                :<div className="w-full h-full flex items-center justify-center text-6xl">{(product.name_ar??product.name)?.[0]??'📦'}</div>
+              }
+            </div>
+            {images.length>1&&(
+              <div className="flex gap-2 overflow-x-auto scrollbar-none">
+                {images.map((img:any,i:number)=>(
+                  <button key={i} onClick={()=>setActiveImg(i)}
+                    className="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all"
+                    style={{borderColor:i===activeImg?'var(--color-accent)':'transparent',background:'var(--color-bg-soft)'}}>
+                    <img src={img.url} alt="" className="w-full h-full object-cover"/>
+                  </button>
+                ))}
               </div>
-              {images.length > 1 && (
-                <div className="flex gap-2">
-                  {images.map((img: any, i: number) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveImg(i)}
-                      className="w-16 h-16 rounded-xl overflow-hidden border-2 transition-all"
-                      style={{ borderColor: i === activeImg ? '#E8431A' : 'transparent', backgroundColor: '#F3F3F3' }}
-                    >
-                      <img src={img.url} alt="" className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center gap-1.5 mb-2">
+                {[1,2,3,4,5].map(s=><Star key={s} size={13} style={{color:'#FFC107',fill:'#FFC107'}}/>)}
+                <span className="text-xs" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-primary)'}}>(4.8)</span>
+              </div>
+              <h1 className="font-bold text-xl leading-snug" style={{color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)'}}>{product.name_ar??product.name}</h1>
             </div>
 
-            {/* Info */}
-            <div className="space-y-5">
-              <h1 className="font-black" style={{ fontSize: 'clamp(22px, 4vw, 30px)', color: '#111111', fontFamily: 'var(--font-tajawal)' }}>
-                {product.name_ar ?? product.name}
-              </h1>
+            <div className="flex items-end gap-3">
+              <span className="font-black text-3xl" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>{formatDZD(product.price)}</span>
+              {hasDisc&&<>
+                <span className="text-base line-through" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-primary)'}}>{formatDZD(product.compare_price)}</span>
+                <span className="badge badge-red">-{discPct}%</span>
+              </>}
+            </div>
 
-              <div className="flex items-center gap-2">
-                {[1,2,3,4,5].map(s => (
-                  <Star key={s} size={14} style={{ color: '#E8431A', fill: '#E8431A' }} />
-                ))}
-                <span className="text-sm" style={{ color: '#999999' }}>({Math.floor(Math.random() * 100) + 20})</span>
-              </div>
+            {product.description_ar&&(
+              <p className="text-sm leading-relaxed" style={{color:'var(--color-text-secondary)',fontFamily:'var(--font-arabic)'}}>{product.description_ar}</p>
+            )}
 
-              <PriceTag price={product.price} originalPrice={product.compare_price} size="lg" />
+            {/* Wilaya */}
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{color:'var(--color-text-secondary)',fontFamily:'var(--font-arabic)'}}>اختر ولاية التوصيل</label>
+              <WilayaSelector value={wilaya} onChange={w=>setWilaya(w?.id??null)}/>
+              {wilaya&&<p className="text-xs mt-1 flex items-center gap-1" style={{color:'var(--color-success)',fontFamily:'var(--font-arabic)'}}>
+                <Truck size={11}/>يصلك خلال 24-72 ساعة
+              </p>}
+            </div>
 
-              {product.description_ar && (
-                <p className="text-sm leading-relaxed" style={{ color: '#444444', fontFamily: 'var(--font-tajawal)' }}>
-                  {product.description_ar}
-                </p>
-              )}
+            {/* Qty */}
+            <div className="flex items-center gap-3">
+              <button onClick={()=>setQty(q=>Math.max(1,q-1))} className="w-9 h-9 rounded-lg border flex items-center justify-center transition-colors hover:bg-[#F8F9FA]" style={{borderColor:'var(--color-border)'}}>
+                <Minus size={14}/>
+              </button>
+              <span className="font-bold text-lg w-8 text-center" style={{fontFamily:'var(--font-primary)'}}>{qty}</span>
+              <button onClick={()=>setQty(q=>q+1)} className="w-9 h-9 rounded-lg border flex items-center justify-center transition-colors hover:bg-[#F8F9FA]" style={{borderColor:'var(--color-border)'}}>
+                <Plus size={14}/>
+              </button>
+            </div>
 
-              <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}>
-                  ولاية التوصيل
-                </label>
-                <WilayaSelector value={wilaya} onChange={w => setWilaya(w?.id ?? null)} />
-              </div>
+            {/* Trust badges */}
+            <div className="grid grid-cols-3 gap-2">
+              {[{Icon:Truck,text:'توصيل لكل الجزائر'},{Icon:Shield,text:'دفع عند الاستلام'},{Icon:RefreshCw,text:'إرجاع 7 أيام'}].map(b=>(
+                <div key={b.text} className="text-center p-2 rounded-lg border" style={{borderColor:'var(--color-border)',background:'var(--color-bg-soft)'}}>
+                  <b.Icon size={16} className="mx-auto mb-1" style={{color:'var(--color-accent)'}}/>
+                  <p className="text-[10px]" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>{b.text}</p>
+                </div>
+              ))}
+            </div>
 
-              <div className="flex items-center gap-3">
-                <button onClick={() => setQty(q => Math.max(1, q - 1))} className="w-10 h-10 rounded-xl border flex items-center justify-center" style={{ borderColor: '#EBEBEB', backgroundColor: '#F3F3F3' }}>
-                  <Minus size={16} style={{ color: qty <= 1 ? '#CCCCCC' : '#111111' }} />
-                </button>
-                <span className="font-bold text-lg w-8 text-center" style={{ fontFamily: 'var(--font-inter)', color: '#111111' }}>{qty}</span>
-                <button onClick={() => setQty(q => q + 1)} className="w-10 h-10 rounded-xl border flex items-center justify-center" style={{ borderColor: '#EBEBEB', backgroundColor: '#F3F3F3' }}>
-                  <Plus size={16} style={{ color: '#111111' }} />
-                </button>
-              </div>
-
-              {storePhone && (
-                <a
-                  href={`https://wa.me/${storePhone.replace(/\D/g,'').replace(/^0/,'213')}?text=${encodeURIComponent(`أريد طلب: ${product.name_ar ?? product.name} — ${product.price.toLocaleString('ar-DZ')} دج`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full h-12 rounded-2xl font-bold text-white transition-all"
-                  style={{ backgroundColor: '#25D366', fontFamily: 'var(--font-tajawal)' }}
-                >
-                  📱 اطلب عبر واتساب
+            {/* CTAs */}
+            <div className="flex gap-2 flex-col sm:flex-row">
+              {waUrl&&(
+                <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                  className="btn flex-1 gap-2 font-bold" style={{background:'#25D366',color:'#fff',fontFamily:'var(--font-arabic)'}}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884"/></svg>
+                  واتساب
                 </a>
               )}
-
-              <Link
-                href={`/${store.slug}/checkout?product_id=${product.id}`}
-                className="flex items-center justify-center gap-2 w-full h-12 rounded-2xl font-black text-white transition-all"
-                style={{ background: 'linear-gradient(135deg,#E8431A,#C73615)', fontFamily: 'var(--font-tajawal)' }}
-              >
-                <ShoppingCart size={18} />
-                اطلب الآن — {(product.price * qty).toLocaleString('ar-DZ')} دج
-              </Link>
-
-              <div className="grid grid-cols-3 gap-3 pt-2">
-                {[
-                  { Icon: Truck,       text: 'توصيل لكل الجزائر' },
-                  { Icon: ShieldCheck, text: 'دفع عند الاستلام' },
-                  { Icon: RefreshCw,   text: 'إرجاع 7 أيام' },
-                ].map(({ Icon, text }) => (
-                  <div key={text} className="flex flex-col items-center text-center gap-1.5">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#FFF0ED' }}>
-                      <Icon size={16} style={{ color: '#E8431A' }} />
-                    </div>
-                    <span className="text-xs" style={{ color: '#444444', fontFamily: 'var(--font-tajawal)' }}>{text}</span>
-                  </div>
-                ))}
-              </div>
+              <button
+                onClick={()=>setAdded(true)}
+                className="btn btn-primary flex-1 gap-2" style={{fontFamily:'var(--font-arabic)'}}>
+                {added?<>✓ أُضيف للسلة</>:<><ShoppingCart size={15}/>أضف للسلة — {formatDZD(product.price*qty)}</>}
+              </button>
             </div>
           </div>
         </div>
-      </main>
-
-      {/* Mobile sticky */}
-      <div className="fixed bottom-[60px] right-0 left-0 p-3 lg:hidden z-30" style={{ backgroundColor: '#FFFFFF', borderTop: '1px solid #EBEBEB' }}>
-        <Link
-          href={`/${store.slug}/checkout?product_id=${product.id}`}
-          className="flex items-center justify-center gap-2 w-full h-12 rounded-2xl font-black text-white"
-          style={{ background: 'linear-gradient(135deg,#E8431A,#C73615)', fontFamily: 'var(--font-tajawal)' }}
-        >
-          🛒 اطلب — {(product.price * qty).toLocaleString('ar-DZ')} دج
-        </Link>
       </div>
 
-      <Footer />
-      <MobileBottomNav />
-    </>
+      {/* Mobile sticky bar */}
+      <div className="fixed bottom-0 inset-x-0 bg-white border-t p-3 flex gap-2 md:hidden z-40" style={{borderColor:'var(--color-border)'}}>
+        {waUrl&&<a href={waUrl} target="_blank" className="flex-1 btn font-bold text-sm" style={{background:'#25D366',color:'#fff',fontFamily:'var(--font-arabic)'}}>📱 واتساب</a>}
+        <button className="flex-1 btn btn-primary text-sm" style={{fontFamily:'var(--font-arabic)'}} onClick={()=>setAdded(true)}>
+          🛒 اطلب — {formatDZD(product.price*qty)}
+        </button>
+      </div>
+    </div>
   )
 }
