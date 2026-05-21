@@ -441,8 +441,31 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       </div>
       <div className="card overflow-hidden">
         <table className="data-table" style={{fontFamily:'var(--font-arabic)'}}>
-          <thead><tr>{['الإجراءات','id','الاسم','الصورة','معرفة؟','المرجع','السعر','في المخزن'].map(h=><th key={h}>{h}</th>)}</tr></thead>
-          <tbody><tr><td colSpan={8} className="text-center py-12 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد منتجات</td></tr></tbody>
+          <thead><tr>{['الصورة','الاسم','المرجع','السعر','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr></thead>
+          <tbody>
+            {initialProducts.length === 0 ? (
+              <tr><td colSpan={5} className="text-center py-12 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد منتجات — أضف منتجاتك من صفحة المنتجات</td></tr>
+            ) : initialProducts.map((p: any) => (
+              <tr key={p.id}>
+                <td>
+                  <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center" style={{background:'var(--color-bg-soft)'}}>
+                    {(p.images as any[])?.[0]?.url
+                      ? <img src={(p.images as any[])[0].url} alt="" className="w-full h-full object-cover"/>
+                      : <span className="text-sm">{(p.name_ar??p.name)?.[0]??'📦'}</span>
+                    }
+                  </div>
+                </td>
+                <td className="font-medium text-sm" style={{color:'var(--color-text-primary)'}}>{p.name_ar??p.name}</td>
+                <td className="text-xs font-mono" style={{color:'var(--color-text-muted)'}}>{p.sku??'—'}</td>
+                <td className="font-semibold text-sm" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>{p.price?.toLocaleString('ar-DZ')} دج</td>
+                <td>
+                  <a href={`/products/${p.id}`} className="btn btn-sm" style={{background:'#EBF5FF',color:'var(--color-accent)'}}>
+                    <Edit2 size={12}/>تعديل
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
         </table>
       </div>
     </div>
