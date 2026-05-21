@@ -1,8 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Store, Shield, Truck, Bell, CreditCard, Loader2, Check, Eye, EyeOff } from 'lucide-react'
+import { Store, Shield, Truck, Bell, CreditCard, Loader2, Check, Eye, EyeOff, Camera } from 'lucide-react'
 import Link from 'next/link'
 
 const TABS = [
@@ -35,7 +35,28 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
   })
 
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' })
-  const [pwError, setPwError] = useState(''), [pwSaved, setPwSaved] = useState(false)
+  const [pwError, setPwError]       = useState(''), [pwSaved, setPwSaved] = useState(false)
+  const [logoLoading, setLogoLoading] = useState(false)
+  const [logoUrl, setLogoUrl]         = useState<string | null>(store.logo_url ?? null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
+
+  const uploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setLogoLoading(true)
+    const form = new FormData()
+    form.append('file', file)
+    form.append('folder', 'logos')
+    const res = await fetch('/api/upload', { method: 'POST', body: form })
+    if (res.ok) {
+      const data = await res.json()
+      setLogoUrl(data.url)
+      const sb = createClient()
+      await sb.from('stores').update({ logo_url: data.url }).eq('id', store.id)
+      router.refresh()
+    }
+    setLogoLoading(false)
+  }
 
   const saveStore = async () => {
     setLoading(true)
@@ -94,16 +115,24 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
 
             {/* Logo */}
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden"
+              <div
+                onClick={() => logoInputRef.current?.click()}
+                className="w-16 h-16 rounded-full border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden relative group transition-colors hover:border-[#0D6EFD]"
                 style={{ borderColor: 'var(--color-border)' }}>
-                {store.logo_url
-                  ? <img src={store.logo_url} alt="" className="w-full h-full object-cover" />
-                  : <span className="text-2xl font-black" style={{ color: 'var(--color-accent)' }}>{storeForm.name[0]}</span>
+                {logoLoading
+                  ? <Loader2 size={20} className="animate-spin" style={{color:'var(--color-accent)'}}/>
+                  : logoUrl
+                    ? <img src={logoUrl} alt="" className="w-full h-full object-cover" />
+                    : <span className="text-2xl font-black" style={{ color: 'var(--color-accent)' }}>{(storeForm.name[0] ?? '').toUpperCase()}</span>
                 }
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera size={16} className="text-white" />
+                </div>
               </div>
+              <input ref={logoInputRef} type="file" accept="image/*" className="sr-only" onChange={uploadLogo} />
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>شعار المتجر</p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>PNG أو JPG — 200×200px مناسب</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>اضغط للتغيير — PNG/JPG (max 5MB)</p>
               </div>
             </div>
 

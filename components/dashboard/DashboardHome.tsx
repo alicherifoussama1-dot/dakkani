@@ -59,10 +59,10 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-bold text-xl" style={{ color: 'var(--color-text-primary)' }}>
-            مرحباً {userName}، أهلاً بك! 👋
+            مرحباً {userName}! 👋
           </h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-            {new Date().toLocaleDateString('ar-DZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {storeName} · {new Date().toLocaleDateString('ar-DZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
