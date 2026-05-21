@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import WilayaSelector from '@/components/ui/WilayaSelector'
 import { SkeletonGrid } from '@/components/ui/SkeletonCard'
 import { formatDZD } from '@/lib/utils/format'
+import { useDebounce } from '@/hooks/useDebounce'
 
 const CATEGORIES = [
   {label:'الكل',slug:''},{label:'🧕 حجابات',slug:'hijab'},{label:'👗 ملابس',slug:'clothing'},
@@ -17,20 +18,21 @@ export default function DiscoverPage() {
   const [products,setProducts]=useState<any[]>([]),[loading,setLoading]=useState(true)
   const [search,setSearch]=useState(''),[wilaya,setWilaya]=useState<number|null>(null)
   const [sort,setSort]=useState('newest'),[category,setCategory]=useState('')
+  const debouncedSearch = useDebounce(search, 400)
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       const sb = createClient()
       let q = sb.from('products').select('id,name,name_ar,slug,price,compare_price,images,stores(slug)').eq('is_active',true).limit(24)
-      if (search) q = q.or(`name.ilike.%${search}%,name_ar.ilike.%${search}%`)
+      if (debouncedSearch) q = q.or(`name.ilike.%${debouncedSearch}%,name_ar.ilike.%${debouncedSearch}%`)
       if (sort==='cheapest') q = q.order('price',{ascending:true})
       else q = q.order('created_at',{ascending:false})
       const {data}=await q
       setProducts(data??[]); setLoading(false)
     }
     load()
-  },[search,sort,category])
+  },[debouncedSearch,sort,category])
 
   return (
     <div className="min-h-screen" style={{background:'var(--color-bg-soft)'}}>
