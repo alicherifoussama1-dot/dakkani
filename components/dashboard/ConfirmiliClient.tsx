@@ -130,6 +130,24 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
 
   const renderStatistics = () => {
     const tabs = ['احصائيات المداخيل','احصائيات التأكيد','إحصائيات التوصيل','أفضل 5 مؤشرات']
+
+    // Compute real revenue by day
+    const revenueByDay: Record<string, {income:number;delivery_cost:number;net:number;confirmed:number;failed:number;pending:number;cancelled:number}> = {}
+    initialOrders.forEach(o => {
+      const d = o.created_at?.slice(5,10) ?? 'unknown'
+      if (!revenueByDay[d]) revenueByDay[d] = {income:0,delivery_cost:0,net:0,confirmed:0,failed:0,pending:0,cancelled:0}
+      if (o.status === 'delivered') {
+        revenueByDay[d].income += o.total ?? 0
+        revenueByDay[d].delivery_cost += o.delivery_fee ?? 0
+        revenueByDay[d].net += (o.total ?? 0) - (o.delivery_fee ?? 0)
+      }
+      if (o.status === 'confirmed'||o.status === 'delivered') revenueByDay[d].confirmed++
+      if (o.status === 'cancelled') revenueByDay[d].cancelled++
+      if (o.status === 'new') revenueByDay[d].pending++
+    })
+    const chartData = Object.entries(revenueByDay).sort(([a],[b]) => a.localeCompare(b))
+      .map(([date, vals]) => ({date, ...vals}))
+
     return (
       <div>
         {/* Global filters */}
@@ -166,7 +184,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
             <div className="card p-4">
               <h3 className="font-semibold text-sm mb-3" style={{ fontFamily: 'var(--font-arabic)', color: 'var(--color-text-primary)' }}>تطور المداخيل</h3>
               <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={CHART_DEMO}>
+                <LineChart data={chartData.length > 0 ? chartData : CHART_DEMO}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5"/>
                   <XAxis dataKey="date" tick={{fontSize:10,fill:'#868E96'}}/>
                   <YAxis tick={{fontSize:10,fill:'#868E96'}}/>
@@ -206,7 +224,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
               <div className="card p-4">
                 <h3 className="font-semibold text-sm mb-3" style={{ fontFamily: 'var(--font-arabic)' }}>تطور التأكيدات</h3>
                 <ResponsiveContainer width="100%" height={180}>
-                  <LineChart data={CHART_DEMO}>
+                  <LineChart data={chartData.length > 0 ? chartData : CHART_DEMO}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5"/>
                     <XAxis dataKey="date" tick={{fontSize:10,fill:'#868E96'}}/>
                     <YAxis tick={{fontSize:10,fill:'#868E96'}}/>
@@ -240,7 +258,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
               <div className="card p-4">
                 <h3 className="font-semibold text-sm mb-3" style={{ fontFamily: 'var(--font-arabic)' }}>نسب التوصيل والإرجاع</h3>
                 <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={CHART_DEMO}>
+                  <LineChart data={chartData.length > 0 ? chartData : CHART_DEMO}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5"/>
                     <XAxis dataKey="date" tick={{fontSize:10}}/>
                     <YAxis tick={{fontSize:10}}/>
