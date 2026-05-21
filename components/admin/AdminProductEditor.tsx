@@ -67,9 +67,9 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'seo',      label: 'SEO',       icon: '🔍' },
   { id: 'stock',    label: 'المخزون',   icon: '📦' },
 ]
-const IC = 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] focus:border-transparent outline-none bg-white text-gray-900'
-const LC = 'block text-sm font-semibold text-gray-700 mb-1.5'
-const CC = 'bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4'
+const IC = 'input text-sm'
+const LC = 'block text-xs font-medium mb-1.5'
+const CC = 'card p-5 space-y-4'
 
 // ═══════════════════════════════════════════════════════════
 // PURE FIELD COMPONENTS — defined outside, never re-created
@@ -87,7 +87,7 @@ const Field = memo(function Field({
         className={IC}
         autoComplete="off"
       />
-      {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
+      {hint && <p className="text-xs mt-1">{hint}</p>}
       {errors[name] && <p className="text-red-500 text-xs mt-1">⚠️ {errors[name]?.message}</p>}
     </div>
   )
@@ -113,14 +113,14 @@ const Toggle = memo(function Toggle({
   label, name, desc, register,
 }: { label: string; name: string; desc?: string; register: any }) {
   return (
-    <label className="flex items-center justify-between cursor-pointer p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+    <label className="flex items-center justify-between cursor-pointer p-3 bg-[#F8F9FA] rounded-xl hover:bg-[#F8F9FA] transition">
       <div>
-        <p className="text-sm font-semibold text-gray-800">{label}</p>
-        {desc && <p className="text-xs text-gray-500 mt-0.5">{desc}</p>}
+        <p className="text-sm font-semibold" style={{color:'var(--color-text-primary)'}}>{label}</p>
+        {desc && <p className="text-xs mt-0.5">{desc}</p>}
       </div>
       <div className="relative">
         <input {...register(name)} type="checkbox" className="sr-only peer" />
-        <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-[#0D6EFD] transition-colors" />
+        <div className="w-11 h-6 bg-[#DEE2E6] rounded-full peer peer-checked:bg-[#0D6EFD] transition-colors" />
         <div className="absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-[-20px] transition-transform" />
       </div>
     </label>
@@ -145,7 +145,7 @@ const SlugPreview = memo(function SlugPreview({
   const hasName = nameAr || nameFr
 
   return (
-    <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+    <div className="flex items-center gap-2 text-xs mt-1">
       {slug
         ? <span className="font-mono text-green-600">✓ /{slug}</span>
         : <span className="font-mono text-red-400">⚠️ الرابط فارغ</span>
@@ -170,7 +170,7 @@ const PixelSection = memo(function PixelSection({
   const useStore = useWatch({ control, name: 'use_store_pixel' })
   return (
     <div className={CC}>
-      <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-2">البكسل والتتبع 📡</h3>
+      <h3 className="font-semibold text-sm pb-2 border-b" style={{color:"var(--color-text-primary)",borderColor:"var(--color-border)"}}>البكسل والتتبع 📡</h3>
       <Toggle
         label="استخدام بكسل المتجر الافتراضي"
         name="use_store_pixel"
@@ -206,7 +206,7 @@ const SeoPreview = memo(function SeoPreview({
   const desc  = useWatch({ control, name: 'meta_description' })
   return (
     <div className={CC}>
-      <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-2">تحسين محركات البحث 🔍</h3>
+      <h3 className="font-semibold text-sm pb-2 border-b" style={{color:"var(--color-text-primary)",borderColor:"var(--color-border)"}}>تحسين محركات البحث 🔍</h3>
       <div>
         <label className={LC}>عنوان SEO</label>
         <input {...register('meta_title')} placeholder="اسم المنتج | اسم المتجر" className={IC} />
@@ -220,14 +220,14 @@ const SeoPreview = memo(function SeoPreview({
           placeholder="وصف قصير يظهر في جوجل..."
           className={`${IC} resize-none`}
         />
-        <p className="text-xs text-gray-400 mt-1">{(desc ?? '').length}/160 حرف</p>
+        <p className="text-xs mt-1">{(desc ?? '').length}/160 حرف</p>
       </div>
       {/* Google preview */}
-      <div className="bg-white border border-gray-200 rounded-xl p-3">
-        <p className="text-xs text-gray-400 mb-1.5">معاينة في Google</p>
+      <div className="bg-white border border-[#DEE2E6] rounded-xl p-3">
+        <p className="text-xs mb-1.5">معاينة في Google</p>
         <p className="text-blue-700 text-sm font-medium truncate">{title || 'عنوان المنتج'}</p>
         <p className="text-green-700 text-xs">dakkani.vercel.app/store/.../</p>
-        <p className="text-gray-600 text-xs mt-0.5 line-clamp-2">{desc || 'الوصف يظهر هنا في نتائج البحث...'}</p>
+        <p className="text-sm text-xs mt-0.5 line-clamp-2">{desc || 'الوصف يظهر هنا في نتائج البحث...'}</p>
       </div>
     </div>
   )
@@ -247,19 +247,19 @@ const ImageGallery = memo(function ImageGallery({
 }) {
   return (
     <div className={CC}>
-      <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-2">صور المنتج 🖼️</h3>
-      <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-8 cursor-pointer transition ${uploading ? 'border-[#0D6EFD] bg-[#EBF5FF]' : 'border-gray-300 hover:border-gray-400'}`}>
+      <h3 className="font-semibold text-sm pb-2 border-b" style={{color:"var(--color-text-primary)",borderColor:"var(--color-border)"}}>صور المنتج 🖼️</h3>
+      <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-8 cursor-pointer transition ${uploading ? 'border-[#0D6EFD] bg-[#EBF5FF]' : 'border-[#DEE2E6] hover:border-[#0D6EFD]'}`}>
         <input type="file" multiple accept="image/*" onChange={onFileChange} className="sr-only" disabled={uploading} />
         {uploading
-          ? <><Loader2 className="w-8 h-8 text-[#0D6EFD] animate-spin mb-2" /><p className="text-sm text-gray-500">جارٍ الرفع...</p></>
-          : <><Upload className="w-8 h-8 text-gray-400 mb-2" /><p className="text-sm text-gray-500">اسحب الصور هنا أو اضغط للاختيار</p><p className="text-xs text-gray-400 mt-1">JPEG, PNG, WebP — max 5MB</p></>
+          ? <><Loader2 className="w-8 h-8 text-[#0D6EFD] animate-spin mb-2" /><p className="text-sm" style={{color:'var(--color-text-muted)'}}>جارٍ الرفع...</p></>
+          : <><Upload className="w-8 h-8 mb-2" style={{color:'var(--color-text-muted)'}} /><p className="text-sm" style={{color:'var(--color-text-muted)'}}>اسحب الصور هنا أو اضغط للاختيار</p><p className="text-xs mt-1" style={{color:'var(--color-text-muted)'}}>JPEG, PNG, WebP — max 5MB</p></>
         }
       </label>
 
       {images.length > 0 && (
         <div className="grid grid-cols-4 gap-3 mt-2">
           {images.map((img, idx) => (
-            <div key={`${img.url}-${idx}`} className="relative group aspect-square bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
+            <div key={`${img.url}-${idx}`} className="relative group aspect-square bg-[#F8F9FA] rounded-2xl overflow-hidden border border-[#DEE2E6]">
               <img src={img.url} alt="" className="w-full h-full object-cover" />
               {idx === 0 && (
                 <span className="absolute top-1.5 right-1.5 bg-[#0D6EFD] text-white text-xs px-1.5 py-0.5 rounded font-bold">رئيسية</span>
@@ -300,8 +300,8 @@ const VariantsSection = memo(function VariantsSection({
 
   return (
     <div className={CC}>
-      <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-        <h3 className="font-bold text-gray-900">المتغيرات 🎨</h3>
+      <div className="flex items-center justify-between border-b border-[#DEE2E6] pb-2">
+        <h3 className="font-semibold text-sm" style={{color:"var(--color-text-primary)"}}>المتغيرات 🎨</h3>
         <button type="button" onClick={() => append({ name: '', options: [''] })}
           className="flex items-center gap-1.5 text-xs bg-[#EBF5FF] text-[#0D6EFD] border border-[#EBF5FF] px-3 py-1.5 rounded-lg hover:bg-[#EBF5FF] transition">
           <Plus className="w-3.5 h-3.5" />إضافة متغير
@@ -309,19 +309,19 @@ const VariantsSection = memo(function VariantsSection({
       </div>
 
       {fields.length === 0 && (
-        <div className="text-center py-6 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+        <div className="text-center py-6 text-xs border-2 border-dashed border-[#DEE2E6] rounded-xl">
           <p className="text-sm">لا توجد متغيرات — أضف اللون أو المقاس</p>
         </div>
       )}
 
       <div className="space-y-3">
         {fields.map((field, gIdx) => (
-          <div key={field.id} className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+          <div key={field.id} className="bg-[#F8F9FA] border border-[#DEE2E6] rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <input
                 {...register(`variant_groups.${gIdx}.name`)}
                 placeholder="اسم المتغير (مثال: اللون)"
-                className="bg-transparent border-b border-gray-400 pb-1 text-sm font-semibold text-gray-800 focus:outline-none focus:border-[#0D6EFD] w-44"
+                className="bg-transparent border-b border-[#CED4DA] pb-1 text-sm font-semibold focus:outline-none focus:border-[#0D6EFD] w-44" style={{color:'var(--color-text-primary)'}}
               />
               <button type="button" onClick={() => remove(gIdx)} className="text-red-400 hover:text-red-600">
                 <Trash2 className="w-4 h-4" />
@@ -334,7 +334,7 @@ const VariantsSection = memo(function VariantsSection({
                   <input
                     {...register(`variant_groups.${gIdx}.options.${oIdx}`)}
                     placeholder={`الخيار ${oIdx + 1}`}
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-1 focus:ring-[#0D6EFD] outline-none"
+                    className="flex-1 border border-[#DEE2E6] rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-1 focus:ring-[#0D6EFD] outline-none"
                   />
                   <button type="button"
                     onClick={() => {
@@ -342,7 +342,7 @@ const VariantsSection = memo(function VariantsSection({
                       cur.splice(oIdx, 1)
                       setValue(`variant_groups.${gIdx}.options`, cur)
                     }}
-                    className="text-gray-400 hover:text-red-500">
+                    className="text-xs hover:text-red-500">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
@@ -543,11 +543,11 @@ export default function AdminProductEditor({
   return (
     <form onSubmit={handleSubmit(onSubmit)} dir="rtl" className="space-y-4 max-w-4xl pb-24">
       {/* Tab bar */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl w-fit flex-wrap">
+      <div className="flex gap-1 bg-[#F8F9FA] p-1 rounded-2xl w-fit flex-wrap">
         {TABS.map(t => (
           <button key={t.id} type="button" onClick={() => setTab(t.id)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition ${
-              tab === t.id ? 'bg-white shadow-sm text-[#0D6EFD] border border-[#EBF5FF]' : 'text-gray-500 hover:text-gray-800'
+              tab === t.id ? 'bg-white shadow-sm text-[#0D6EFD] border border-[#EBF5FF]' : 'text-[#495057] hover:text-[#212529]'
             }`}>
             <span>{t.icon}</span>{t.label}
           </button>
@@ -559,7 +559,7 @@ export default function AdminProductEditor({
         <div className="space-y-4">
           <div className={CC}>
             <div className="flex items-center justify-between mb-1">
-              <h3 className="font-bold text-gray-900">معلومات المنتج 📝</h3>
+              <h3 className="font-semibold text-sm" style={{color:"var(--color-text-primary)"}}>معلومات المنتج 📝</h3>
               <button type="button" onClick={generateDescription} disabled={aiLoading}
                 className="flex items-center gap-1.5 text-xs bg-purple-50 text-purple-600 border border-purple-200 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition disabled:opacity-50">
                 {aiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
@@ -602,7 +602,7 @@ export default function AdminProductEditor({
 
             <Field label="الوسوم (مفصولة بفاصلة)" name="tags" placeholder="صيف, قطن, رجالي" register={register} errors={errors} />
 
-            <div className="border-t border-gray-100 pt-3 space-y-1">
+            <div className="border-t border-[#DEE2E6] pt-3 space-y-1">
               <Toggle label="منتج نشط ومرئي" name="is_active" desc="يظهر في المتجر للعملاء" register={register} />
               <Toggle label="منتج مميز" name="is_featured" desc="يظهر في أعلى الصفحة الرئيسية" register={register} />
             </div>
@@ -641,23 +641,23 @@ export default function AdminProductEditor({
       {/* ── STOCK TAB ── */}
       {tab === 'stock' && (
         <div className={CC}>
-          <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-2">المخزون 📦</h3>
+          <h3 className="font-semibold text-sm pb-2 border-b" style={{color:"var(--color-text-primary)",borderColor:"var(--color-border)"}}>المخزون 📦</h3>
 
           {isEdit && stockData.length > 0 && (
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
+            <div className="border border-[#DEE2E6] rounded-xl overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[#F8F9FA]">
                   <tr>
                     {['المستودع', 'المتغير', 'الكمية', 'محجوز', 'متاح'].map(h => (
-                      <th key={h} className="px-3 py-2 text-right text-xs text-gray-500 font-semibold">{h}</th>
+                      <th key={h} className="px-3 py-2 text-right text-xs font-semibold">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {stockData.map((row, i) => (
                     <tr key={i}>
-                      <td className="px-3 py-2 text-xs text-gray-600">{warehouses.find(w => w.id === row.warehouse_id)?.name ?? 'مستودع'}</td>
-                      <td className="px-3 py-2 text-xs font-mono text-gray-500">{row.variant_key === 'default' ? '—' : row.variant_key}</td>
+                      <td className="px-3 py-2 text-xs text-sm">{warehouses.find(w => w.id === row.warehouse_id)?.name ?? 'مستودع'}</td>
+                      <td className="px-3 py-2 text-xs font-mono text-xs">{row.variant_key === 'default' ? '—' : row.variant_key}</td>
                       <td className="px-3 py-2 font-semibold">{row.quantity}</td>
                       <td className="px-3 py-2 text-yellow-600">{row.reserved}</td>
                       <td className="px-3 py-2 font-bold text-green-600">{row.quantity - row.reserved}</td>
@@ -688,14 +688,14 @@ export default function AdminProductEditor({
       )}
 
       {/* Save bar */}
-      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 px-6 py-3 flex items-center gap-3 z-20 shadow-lg">
+      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-[#DEE2E6] px-6 py-3 flex items-center gap-3 z-20 shadow-lg">
         <button type="submit" disabled={isSubmitting}
           className="flex items-center gap-2 bg-[#0D6EFD] hover:bg-[#0B5ED7] disabled:opacity-50 text-white font-black px-8 py-3 rounded-xl transition shadow-sm">
           {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
           {isSubmitting ? 'جارٍ الحفظ...' : isEdit ? '💾 حفظ التعديلات' : '✅ إضافة المنتج'}
         </button>
         {saved && <span className="text-green-600 font-bold text-sm flex items-center gap-1">✓ تم الحفظ!</span>}
-        <button type="button" onClick={() => router.back()} className="text-gray-500 hover:text-gray-700 text-sm mr-auto">
+        <button type="button" onClick={() => router.back()} className="text-xs hover:underline text-sm mr-auto">
           إلغاء
         </button>
       </div>
