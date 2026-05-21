@@ -45,12 +45,12 @@ const WILAYAS58 = [
 ]
 
 const STATS_TABS = ['احصائيات المداخيل','احصائيات التأكيد','إحصائيات التوصيل','أفضل 5 مؤشرات']
-const CONFIRM_STATUSES = [
-  { key:'confirmed', label:'المؤكدة',  color:'#198754', count:0 },
-  { key:'cancelled', label:'الملغاة',  color:'#DC3545', count:0 },
-  { key:'failed',    label:'الفاشلة',  color:'#FFC107', count:0 },
-  { key:'pending',   label:'المعلقة',  color:'#0DCAF0', count:0 },
-  { key:'postponed', label:'مؤجلة',    color:'#7B2FBE', count:0 },
+const CONFIRM_STATUSES_STATIC = [
+  { key:'confirmed', label:'المؤكدة',  color:'#198754' },
+  { key:'cancelled', label:'الملغاة',  color:'#DC3545' },
+  { key:'failed',    label:'الفاشلة',  color:'#FFC107' },
+  { key:'pending',   label:'المعلقة',  color:'#0DCAF0' },
+  { key:'postponed', label:'مؤجلة',    color:'#7B2FBE' },
   { key:'duplicate', label:'مكررة',    color:'#212529', count:0 },
 ]
 const PIE_COLORS = ['#198754','#DC3545','#FFC107','#0D6EFD']
@@ -80,7 +80,15 @@ const TUTORIALS = [
   {n:'19',title:'تقرير الإرسال'},
 ]
 
-export default function ConfirmiliClient() {
+interface Props {
+  storeId?: string
+  storeName?: string
+  plan?: string
+  initialOrders?: any[]
+  initialProducts?: any[]
+}
+
+export default function ConfirmiliClient({ storeId='', storeName='متجري', plan='free', initialOrders=[], initialProducts=[] }: Props) {
   const [activeTab,    setActiveTab]    = useState('statistics')
   const [statsTab,     setStatsTab]     = useState(0)
   const [notifOpen,    setNotifOpen]    = useState(false)
@@ -93,6 +101,22 @@ export default function ConfirmiliClient() {
   const [storeSubTab,  setStoreSubTab]  = useState(0)
   const [settingsTab,  setSettingsTab]  = useState(0)
   const [tutSearch,    setTutSearch]    = useState('')
+  const [orderSearch,  setOrderSearch]  = useState('')
+
+  // Computed real stats from initialOrders
+  const delivered  = initialOrders.filter(o => o.status === 'delivered')
+  const cancelled  = initialOrders.filter(o => o.status === 'cancelled')
+  const confirmed  = initialOrders.filter(o => o.status === 'confirmed')
+  const totalRevenue      = delivered.reduce((s,o) => s+o.total,0)
+  const totalDeliveryFee  = delivered.reduce((s,o) => s+o.delivery_fee,0)
+  const netRevenue        = totalRevenue - totalDeliveryFee
+  const confirmedPct      = initialOrders.length ? Math.round((confirmed.length+delivered.length)/initialOrders.length*100) : 0
+  const cancelPct         = initialOrders.length ? Math.round(cancelled.length/initialOrders.length*100) : 0
+  const filteredOrders    = orderSearch ? initialOrders.filter(o =>
+    o.customer_name?.toLowerCase().includes(orderSearch.toLowerCase()) ||
+    o.customer_phone?.includes(orderSearch) ||
+    o.order_number?.toLowerCase().includes(orderSearch.toLowerCase())
+  ) : initialOrders
 
   const TabBar = ({ tabs, active, onChange }: { tabs: string[]; active: number; onChange: (i: number) => void }) => (
     <div className="tab-bar mb-4">
@@ -126,9 +150,9 @@ export default function ConfirmiliClient() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
-                { label:'إجمالي الدخل', value:'0 دج', icon:'💲' },
-                { label:'مصاريف التوصيل', value:'0 دج', icon:'🚚' },
-                { label:'صافي الدخل', value:'0 دج', icon:'📈' },
+                { label:'إجمالي الدخل', value:`${totalRevenue.toLocaleString('ar-DZ')} دج`, icon:'💲' },
+                { label:'مصاريف التوصيل', value:`${totalDeliveryFee.toLocaleString('ar-DZ')} دج`, icon:'🚚' },
+                { label:'صافي الدخل', value:`${netRevenue.toLocaleString('ar-DZ')} دج`, icon:'📈' },
               ].map(c => (
                 <div key={c.label} className="card p-4 flex items-center gap-3">
                   <div className="text-2xl">{c.icon}</div>
@@ -163,17 +187,20 @@ export default function ConfirmiliClient() {
               <select className="input text-sm h-8 w-36"><option>عامل</option></select>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {CONFIRM_STATUSES.map(s => (
+              {CONFIRM_STATUSES_STATIC.map(s => {
+                const count = initialOrders.filter(o => o.status === s.key).length
+                return (
                 <div key={s.key} className="card p-4 flex items-center justify-between">
                   <div>
-                    <p className="font-bold text-xl" style={{ color: s.color, fontFamily: 'var(--font-primary)' }}>{s.count}</p>
+                    <p className="font-bold text-xl" style={{ color: s.color, fontFamily: 'var(--font-primary)' }}>{count}</p>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-arabic)' }}>{s.label}</p>
                   </div>
                   <button className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                    <Trash2 size={12}/>({s.count})
+                    <Trash2 size={12}/>({count})
                   </button>
                 </div>
-              ))}
+              )
+              })}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="card p-4">
@@ -323,7 +350,7 @@ export default function ConfirmiliClient() {
         <div className="flex-1"/>
         <div className="relative">
           <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2" style={{color:'var(--color-text-muted)'}}/>
-          <input placeholder="بحث..." className="input pr-8 text-sm h-8 w-48"/>
+          <input value={orderSearch} onChange={e=>setOrderSearch(e.target.value)} placeholder="بحث..." className="input pr-8 text-sm h-8 w-48"/>
         </div>
       </div>
 
@@ -333,11 +360,31 @@ export default function ConfirmiliClient() {
             <thead>
               <tr>
                 <th><input type="checkbox" className="w-3.5 h-3.5 accent-[#0D6EFD]"/></th>
-                {['المصدر','رقم الطلبية','التاريخ','الإسم','الهاتف','تحقق','الحالة','العنوان','ش.ت','الولاية','المنتج','السعر الكلي','المتغيرات','إجراءات'].map(h=><th key={h}>{h}</th>)}
+                {['المصدر','رقم الطلبية','التاريخ','الإسم','الهاتف','الحالة','الولاية','المنتج','السعر الكلي','إجراءات'].map(h=><th key={h}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
-              <tr><td colSpan={15} className="text-center py-12 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد طلبات بعد</td></tr>
+              {filteredOrders.length === 0 ? (
+                <tr><td colSpan={11} className="text-center py-12 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد طلبات بعد</td></tr>
+              ) : filteredOrders.slice(0, ordersPerPage).map(o => (
+                <tr key={o.id}>
+                  <td><input type="checkbox" className="w-3.5 h-3.5 accent-[#0D6EFD]"/></td>
+                  <td className="text-xs" style={{color:'var(--color-text-muted)'}}>{o.source ?? 'direct'}</td>
+                  <td className="font-mono text-xs font-medium" style={{color:'var(--color-accent)'}}>{o.order_number}</td>
+                  <td className="text-xs" style={{color:'var(--color-text-muted)'}}>{new Date(o.created_at).toLocaleDateString('ar-DZ')}</td>
+                  <td className="text-sm font-medium" style={{color:'var(--color-text-primary)'}}>{o.customer_name}</td>
+                  <td className="text-xs font-mono" style={{color:'var(--color-text-secondary)'}}>{o.customer_phone}</td>
+                  <td><StatusBadge status={o.status}/></td>
+                  <td className="text-xs" style={{color:'var(--color-text-secondary)'}}>{(o.wilaya as any)?.name_ar ?? '—'}</td>
+                  <td className="text-xs" style={{color:'var(--color-text-muted)'}}>{(o.items?.[0] as any)?.product_name?.slice(0,20) ?? '—'}</td>
+                  <td className="font-semibold text-sm" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>{o.total?.toLocaleString('ar-DZ')} دج</td>
+                  <td>
+                    <a href={`/orders/${o.id}`} className="p-1.5 rounded hover:bg-[#EBF5FF] transition-colors inline-block">
+                      <Eye size={12} style={{color:'var(--color-accent)'}}/>
+                    </a>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -346,7 +393,7 @@ export default function ConfirmiliClient() {
             <select value={ordersPerPage} onChange={e=>setOrdersPP(+e.target.value)} className="input h-7 text-xs px-2 w-16">
               {[10,20,50,100].map(n=><option key={n}>{n}</option>)}
             </select>
-            <span className="text-xs" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>1 - {ordersPerPage} من 0</span>
+            <span className="text-xs" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>عرض {Math.min(ordersPerPage,filteredOrders.length)} من {filteredOrders.length}</span>
           </div>
           <div className="flex gap-1">
             {['«','‹','›','»'].map(b=><button key={b} className="w-7 h-7 flex items-center justify-center rounded text-xs border disabled:opacity-40" style={{borderColor:'var(--color-border)'}}>{b}</button>)}
