@@ -1,200 +1,88 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { Loader2, Eye, EyeOff } from 'lucide-react'
-import WilayaSelector from '@/components/ui/WilayaSelector'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import WilayaSelector from '@/components/ui/WilayaSelector'
 import { slugify } from '@/lib/utils/format'
 
-export default function RegisterPage() {
+export default function AuthRegisterPage() {
   const router = useRouter()
-  const [form,    setForm]    = useState({ name: '', email: '', phone: '', password: '' })
-  const [wilaya,  setWilaya]  = useState<number | null>(null)
-  const [showPw,  setShowPw]  = useState(false)
+  const [form, setForm] = useState({ storeName:'', email:'', phone:'', password:'' })
+  const [wilaya, setWilaya] = useState<number|null>(null)
   const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState('')
-
+  const [error, setError] = useState('')
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    if (!form.name || !form.email || !form.password) {
-      setError('يرجى ملء جميع الحقول الإلزامية')
-      return
-    }
-    setLoading(true)
-    const supabase = createClient()
-    const { data: auth, error: authErr } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-    })
-    if (authErr || !auth.user) { setError(authErr?.message ?? 'خطأ في التسجيل'); setLoading(false); return }
-
-    const slug = slugify(form.name) || `store-${Date.now()}`
-    await supabase.from('stores').insert({
-      owner_id: auth.user.id,
-      name:     form.name,
-      name_ar:  form.name,
-      slug,
-      phone:    form.phone,
-      currency: 'DZD',
-      plan:     'free',
-      is_active: true,
-    })
-
-    setLoading(false)
-    router.push('/dashboard')
-    router.refresh()
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setError(''); setLoading(true)
+    const sb = createClient()
+    const { data: auth, error: authErr } = await sb.auth.signUp({ email: form.email, password: form.password })
+    if (authErr || !auth.user) { setError(authErr?.message ?? 'خطأ'); setLoading(false); return }
+    const slug = slugify(form.storeName) || `store-${Date.now()}`
+    await sb.from('stores').insert({ owner_id: auth.user.id, name: form.storeName, name_ar: form.storeName, slug, phone: form.phone, currency:'DZD', plan:'free', is_active:true })
+    setLoading(false); router.push('/dashboard'); router.refresh()
   }
 
-  const fields = [
-    { key: 'name',     label: 'الاسم الكامل',        placeholder: 'محمد بن علي',       type: 'text',     required: true },
-    { key: 'email',    label: 'البريد الإلكتروني',   placeholder: 'example@email.com', type: 'email',    required: true, dir: 'ltr' },
-    { key: 'phone',    label: 'رقم الهاتف',          placeholder: '0555 xx xx xx',     type: 'tel',      required: false },
-  ]
-
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ backgroundColor: '#F9F9F9' }}
-      dir="rtl"
-    >
-      <div
-        className="w-full max-w-md rounded-3xl p-8 border"
-        style={{ backgroundColor: '#FFFFFF', borderColor: '#EBEBEB', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}
-      >
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link
-            href="/"
-            className="inline-block font-black text-3xl mb-3"
-            style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}
-          >
-            دكاني<span style={{ color: '#E8431A' }}>.</span>
-          </Link>
-          <h1
-            className="font-bold text-xl"
-            style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}
-          >
-            إنشاء حساب مجاني
-          </h1>
-          <p className="text-sm mt-1" style={{ color: '#999999', fontFamily: 'var(--font-tajawal)' }}>
-            ابدأ البيع أونلاين في أقل من دقيقتين
+    <div className="min-h-screen flex" dir="rtl">
+      <div className="hidden lg:flex flex-col justify-between w-1/2 p-12" style={{ background:'linear-gradient(135deg,#0D6EFD 0%,#0B5ED7 100%)' }}>
+        <div>
+          <div className="flex items-center gap-3 mb-10">
+            <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center font-black text-white text-xl">د</div>
+            <span className="font-black text-white text-xl">دكاني</span>
+          </div>
+          <h2 className="text-3xl font-black text-white leading-tight mb-4" style={{ fontFamily:'var(--font-arabic)' }}>انضم لآلاف<br/>التجار الجزائريين</h2>
+          <ul className="space-y-3 mt-6">
+            {['متجر إلكتروني احترافي في دقائق','توصيل لكل الولايات الـ 48','ردود AI بالدارجة الجزائرية','إحصائيات وتحليلات متقدمة'].map(f => (
+              <li key={f} className="flex items-center gap-2 text-white/80 text-sm" style={{ fontFamily:'var(--font-arabic)' }}>
+                <span className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-xs text-white flex-shrink-0">✓</span>
+                {f}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="text-white/50 text-xs" style={{ fontFamily:'var(--font-arabic)' }}>انضم لأكثر من 12,000 تاجر نشط</p>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center p-6 bg-white overflow-y-auto">
+        <div className="w-full max-w-sm py-6">
+          <div className="flex items-center gap-2 mb-8 lg:hidden">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-white" style={{ background:'var(--color-accent)' }}>د</div>
+            <span className="font-black text-xl" style={{ color:'var(--color-text-primary)' }}>دكاني</span>
+          </div>
+          <h1 className="font-bold text-2xl mb-1" style={{ color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)' }}>إنشاء حساب مجاني 🚀</h1>
+          <p className="text-sm mb-6" style={{ color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)' }}>ابدأ البيع في أقل من 5 دقائق</p>
+          <form onSubmit={submit} className="space-y-3.5">
+            {[
+              { key:'storeName', label:'اسم المتجر *',         ph:'متجري الجزائري' },
+              { key:'email',     label:'البريد الإلكتروني *',  ph:'example@email.com', dir:'ltr', type:'email' },
+              { key:'phone',     label:'رقم الهاتف *',         ph:'0555 xx xx xx' },
+              { key:'password',  label:'كلمة المرور *',        ph:'8 أحرف على الأقل', type:'password', dir:'ltr' },
+            ].map(f => (
+              <div key={f.key}>
+                <label className="block text-xs font-medium mb-1.5" style={{ color:'var(--color-text-secondary)',fontFamily:'var(--font-arabic)' }}>{f.label}</label>
+                <input type={(f as any).type??'text'} value={form[f.key as keyof typeof form]} onChange={e=>set(f.key,e.target.value)}
+                  placeholder={f.ph} dir={(f as any).dir??'rtl'} required className="input text-sm" minLength={f.key==='password'?8:undefined}/>
+              </div>
+            ))}
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color:'var(--color-text-secondary)',fontFamily:'var(--font-arabic)' }}>الولاية</label>
+              <WilayaSelector value={wilaya} onChange={w=>setWilaya(w?.id??null)} />
+            </div>
+            {error && <div className="text-sm p-3 rounded-lg" style={{ background:'var(--color-error-soft)',color:'var(--color-error)',fontFamily:'var(--font-arabic)' }}>⚠️ {error}</div>}
+            <p className="text-xs" style={{ color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)' }}>
+              بالتسجيل توافق على <Link href="#" style={{ color:'var(--color-accent)' }}>شروط الاستخدام</Link> و <Link href="#" style={{ color:'var(--color-accent)' }}>سياسة الخصوصية</Link>
+            </p>
+            <button type="submit" disabled={loading} className="btn btn-primary w-full gap-2" style={{ fontFamily:'var(--font-arabic)' }}>
+              {loading?<><Loader2 size={15} className="animate-spin"/>جارٍ الإنشاء...</>:'إنشاء حساب مجاناً ←'}
+            </button>
+          </form>
+          <p className="text-center text-sm mt-4" style={{ color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)' }}>
+            لديك حساب؟ <Link href="/auth/login" style={{ color:'var(--color-accent)',fontWeight:600 }}>سجّل دخولك</Link>
           </p>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Text fields */}
-          {fields.map(f => (
-            <div key={f.key}>
-              <label
-                htmlFor={f.key}
-                className="block text-sm font-semibold mb-1.5"
-                style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}
-              >
-                {f.label}{f.required && <span style={{ color: '#E8431A' }}>  *</span>}
-              </label>
-              <input
-                id={f.key}
-                type={f.type}
-                value={(form as any)[f.key]}
-                onChange={e => set(f.key, e.target.value)}
-                placeholder={f.placeholder}
-                required={f.required}
-                dir={(f as any).dir ?? 'rtl'}
-                autoComplete={f.key === 'email' ? 'email' : f.key === 'phone' ? 'tel' : 'name'}
-                className="input"
-              />
-            </div>
-          ))}
-
-          {/* Wilaya */}
-          <div>
-            <label
-              className="block text-sm font-semibold mb-1.5"
-              style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}
-            >
-              الولاية
-            </label>
-            <WilayaSelector value={wilaya} onChange={w => setWilaya(w?.id ?? null)} />
-          </div>
-
-          {/* Password */}
-          <div>
-            <label
-              htmlFor="reg-password"
-              className="block text-sm font-semibold mb-1.5"
-              style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}
-            >
-              كلمة المرور <span style={{ color: '#E8431A' }}>*</span>
-            </label>
-            <div className="relative">
-              <input
-                id="reg-password"
-                type={showPw ? 'text' : 'password'}
-                value={form.password}
-                onChange={e => set('password', e.target.value)}
-                placeholder="••••••••  (8 أحرف على الأقل)"
-                required
-                minLength={8}
-                dir="ltr"
-                autoComplete="new-password"
-                className="input pl-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw(s => !s)}
-                className="absolute left-3 top-1/2 -translate-y-1/2"
-                style={{ color: '#999999' }}
-              >
-                {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Error */}
-          {error && (
-            <p
-              className="text-sm p-3 rounded-xl"
-              style={{ backgroundColor: '#FFF0ED', color: '#E8431A', fontFamily: 'var(--font-tajawal)' }}
-            >
-              ⚠️ {error}
-            </p>
-          )}
-
-          {/* Terms */}
-          <p className="text-xs" style={{ color: '#999999', fontFamily: 'var(--font-tajawal)' }}>
-            بالتسجيل توافق على{' '}
-            <Link href="#terms" style={{ color: '#E8431A' }}>شروط الاستخدام</Link>
-            {' '}و{' '}
-            <Link href="#privacy" style={{ color: '#E8431A' }}>سياسة الخصوصية</Link>
-          </p>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn btn-accent w-full h-12 text-base rounded-xl"
-            style={{ fontFamily: 'var(--font-tajawal)' }}
-          >
-            {loading
-              ? <><Loader2 size={18} className="animate-spin ml-2" />جارٍ الإنشاء...</>
-              : 'إنشاء حساب مجاناً ←'
-            }
-          </button>
-        </form>
-
-        <p
-          className="text-center mt-5 text-sm"
-          style={{ color: '#999999', fontFamily: 'var(--font-tajawal)' }}
-        >
-          عندك حساب؟{' '}
-          <Link href="/auth/login" className="font-semibold" style={{ color: '#E8431A' }}>
-            سجّل دخولك
-          </Link>
-        </p>
       </div>
     </div>
   )
