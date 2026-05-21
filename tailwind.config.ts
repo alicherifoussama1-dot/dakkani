@@ -109,6 +109,10 @@ const config: Config = {
         shimmer:'shimmer 1.5s linear infinite',
       },
       transitionTimingFunction: { spring:'cubic-bezier(0.34,1.56,0.64,1)', smooth:'cubic-bezier(0.16,1,0.3,1)' },
+      backgroundImage: {
+        'gradient-hero': 'linear-gradient(135deg, #0D6EFD 0%, #0B5ED7 100%)',
+        'gradient-hero-dark': 'linear-gradient(135deg, #0950B5 0%, #074293 100%)',
+      },
     },
   },
   plugins: [require('tailwindcss-animate')],
