@@ -1,154 +1,113 @@
 'use client'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
 import { Mail, ArrowRight, CheckCircle, Loader2, AlertCircle } from 'lucide-react'
 
-const schema = z.object({
-  email: z.string().email('البريد الإلكتروني غير صالح'),
-})
-type F = z.infer<typeof schema>
-
 export default function ForgotPasswordPage() {
-  const [sent,     setSent]     = useState(false)
-  const [error,    setError]    = useState('')
+  const [email, setEmail]   = useState('')
+  const [sent,  setSent]    = useState(false)
+  const [error, setError]   = useState('')
+  const [loading, setLoading] = useState(false)
   const [debugLink, setDebugLink] = useState('')
 
-  const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<F>({
-    resolver: zodResolver(schema),
-  })
-
-  const onSubmit = async ({ email }: F) => {
-    setError('')
-    setDebugLink('')
-
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(''); setLoading(true)
     const res = await fetch('/api/auth/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     })
-
     const data = await res.json()
-
-    if (!res.ok) {
-      setError(data.error ?? 'حدث خطأ، حاول مرة أخرى')
-      return
-    }
-
-    // Dev mode: show link directly if no email provider
+    setLoading(false)
+    if (!res.ok) { setError(data.error ?? 'حدث خطأ، حاول مرة أخرى'); return }
     if (data.debug_link) setDebugLink(data.debug_link)
-
     setSent(true)
   }
 
   if (sent) {
     return (
-      <div className="flex flex-col items-center text-center py-2">
-        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-5">
-          <CheckCircle className="w-10 h-10 text-green-500" />
+      <div className="w-full max-w-md card p-8 text-center" dir="rtl">
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{background:'#D1E7DD'}}>
+          <CheckCircle size={28} style={{color:'#198754'}} />
         </div>
-        <h2 className="text-2xl font-black text-gray-900 mb-3">تحقق من بريدك! 📬</h2>
-        <p className="text-gray-500 text-sm mb-2">أرسلنا رابط إعادة تعيين كلمة المرور إلى:</p>
-        <p className="font-bold text-gray-800 bg-gray-100 px-4 py-2 rounded-xl text-sm mb-5">
-          {getValues('email')}
+        <h2 className="font-black text-xl mb-2" style={{color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)'}}>تحقق من بريدك! 📬</h2>
+        <p className="text-sm mb-1" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
+          أرسلنا رابط إعادة التعيين إلى:
+        </p>
+        <p className="font-bold text-sm px-4 py-2 rounded-lg mb-4" style={{color:'var(--color-text-primary)',background:'var(--color-bg-soft)',fontFamily:'var(--font-primary)'}}>
+          {email}
         </p>
 
-        {/* Debug link — shows only in dev if no email provider */}
         {debugLink && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-right w-full mb-4">
-            <p className="font-bold text-yellow-800 mb-2">🔧 وضع التطوير — رابط الاسترداد:</p>
-            <a href={debugLink} className="text-blue-600 underline text-xs break-all">{debugLink}</a>
+          <div className="rounded-xl p-3 text-sm text-right mb-4 border" style={{background:'#FFF3CD',borderColor:'#FFC107'}}>
+            <p className="font-bold text-yellow-800 mb-1.5">🔧 وضع التطوير:</p>
+            <a href={debugLink} className="text-xs break-all" style={{color:'var(--color-accent)'}}>{debugLink}</a>
           </div>
         )}
 
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700 text-right w-full mb-5">
-          <p className="font-bold mb-2">💡 لم يصلك الإيميل؟</p>
-          <ul className="space-y-1 text-xs list-none">
-            <li>• تحقق من مجلد <strong>Spam</strong> أو <strong>Junk</strong></li>
+        <div className="rounded-xl p-3 text-sm text-right mb-4" style={{background:'#FFF3CD',fontFamily:'var(--font-arabic)'}}>
+          <p className="font-bold text-yellow-800 mb-1.5">لم يصلك الإيميل؟</p>
+          <ul className="space-y-0.5 text-xs text-yellow-700">
+            <li>• تحقق من مجلد Spam أو Junk</li>
             <li>• انتظر دقيقتين وأعد التحقق</li>
-            <li>• تأكد من كتابة البريد بشكل صحيح</li>
-            <li>• تأكد من إضافة <strong>RESEND_API_KEY</strong> في Vercel</li>
           </ul>
         </div>
 
-        <button
-          onClick={() => { setSent(false); setError(''); setDebugLink('') }}
-          className="text-sm font-semibold mb-3 hover:underline"
-          style={{ color: '#1B4332' }}
-        >
+        <button onClick={() => { setSent(false); setError(''); setDebugLink('') }}
+          className="text-sm font-semibold mb-2" style={{color:'var(--color-accent)',fontFamily:'var(--font-arabic)'}}>
           إعادة الإرسال
         </button>
-        <Link href="/login" className="text-sm text-gray-500 hover:underline">
-          ← العودة لتسجيل الدخول
+        <br/>
+        <Link href="/login" className="text-sm" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
+          العودة لتسجيل الدخول
         </Link>
       </div>
     )
   }
 
   return (
-    <>
-      <div className="mb-6">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
-          style={{ background: 'rgba(27,67,50,0.1)' }}>
-          <Mail className="w-6 h-6" style={{ color: '#1B4332' }} />
-        </div>
-        <h2 className="text-2xl font-black text-gray-900">نسيت كلمة المرور؟</h2>
-        <p className="text-gray-500 text-sm mt-1">
-          أدخل بريدك الإلكتروني وسنرسل لك رابط الاسترداد
-        </p>
+    <div className="w-full max-w-md card p-8" dir="rtl">
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style={{background:'var(--color-accent-soft)'}}>
+        <Mail size={20} style={{color:'var(--color-accent)'}} />
       </div>
+      <h1 className="font-black text-xl mb-1" style={{color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)'}}>
+        نسيت كلمة المرور؟
+      </h1>
+      <p className="text-sm mb-6" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
+        أدخل بريدك الإلكتروني وسنرسل لك رابط الاستعادة
+      </p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" dir="rtl">
+      <form onSubmit={submit} className="space-y-4">
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+          <label className="block text-xs font-medium mb-1.5" style={{color:'var(--color-text-secondary)',fontFamily:'var(--font-arabic)'}}>
             البريد الإلكتروني
           </label>
           <input
-            {...register('email')}
-            type="email"
-            placeholder="example@email.com"
-            autoComplete="email"
-            dir="ltr"
-            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none transition"
-            style={{ fontFamily: 'monospace' }}
-            onFocus={e => e.target.style.borderColor = '#1B4332'}
-            onBlur={e => e.target.style.borderColor = '#E5E7EB'}
+            type="email" value={email} onChange={e=>setEmail(e.target.value)}
+            required placeholder="example@email.com" dir="ltr" autoComplete="email"
+            className="input text-sm"
           />
-          {errors.email && (
-            <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              {errors.email.message}
-            </p>
-          )}
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <span>{error}</span>
+          <div className="text-sm p-3 rounded-lg flex items-start gap-2" style={{background:'var(--color-error-soft)',color:'var(--color-error)',fontFamily:'var(--font-arabic)'}}>
+            <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+            {error}
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full font-black py-3.5 rounded-xl transition text-white disabled:opacity-50 flex items-center justify-center gap-2"
-          style={{ background: 'linear-gradient(135deg,#1B4332,#2D6A4F)' }}
-        >
-          {isSubmitting
-            ? <><Loader2 className="w-4 h-4 animate-spin" />جارٍ الإرسال...</>
-            : <>إرسال رابط الاسترداد <ArrowRight className="w-4 h-4" /></>
+        <button type="submit" disabled={loading || !email} className="btn btn-primary w-full gap-2" style={{fontFamily:'var(--font-arabic)'}}>
+          {loading
+            ? <><Loader2 size={15} className="animate-spin"/>جارٍ الإرسال...</>
+            : <>إرسال رابط الاستعادة<ArrowRight size={14}/></>
           }
         </button>
 
-        <div className="text-center pt-1">
-          <Link href="/login" className="text-sm text-gray-500 hover:underline transition">
-            ← العودة لتسجيل الدخول
-          </Link>
-        </div>
+        <p className="text-center text-sm" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
+          <Link href="/login" style={{color:'var(--color-accent)',fontWeight:600}}>العودة لتسجيل الدخول</Link>
+        </p>
       </form>
-    </>
+    </div>
   )
 }
