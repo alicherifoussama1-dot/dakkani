@@ -171,6 +171,20 @@
 
   .page-title { font-size: 18px; font-weight: 700; color: var(--color-text-primary); }
 
+  /* Landing page helpers */
+  .btn-accent { background: var(--color-accent); color: #fff; box-shadow: var(--shadow-blue); }
+  .btn-accent:hover { background: var(--color-accent-dark); }
+  .btn-white { background: #fff; color: var(--color-text-primary); border: 1px solid var(--color-border); }
+  .btn-white:hover { background: var(--color-bg-soft); }
+  .btn-outline-accent { background: transparent; color: var(--color-accent); border: 1px solid var(--color-accent); }
+  .btn-outline-accent:hover { background: var(--color-accent-soft); }
+  .section-title { font-size: clamp(22px,4vw,32px); font-weight: 800; color: var(--color-text-primary); font-family: var(--font-arabic); }
+  .section-subtitle { font-size: 15px; color: var(--color-text-muted); font-family: var(--font-arabic); margin-top: 4px; }
+
+  /* Animate float for hero mockup */
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .animate-float { animation: float 4s ease-in-out infinite; }
+
   .stat-card { @apply card p-4 flex flex-col gap-2; }
   .stat-value { font-size: 24px; font-weight: 700; font-family: var(--font-primary); color: var(--color-text-primary); }
   .stat-label { font-size: 13px; color: var(--color-text-muted); }
@@ -188,6 +202,12 @@
 }
 
 @keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
+@keyframes fade-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes scale-in { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+@keyframes slide-up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.animate-fade-in { animation: fade-in 0.3s ease forwards; }
+.animate-scale-in { animation: scale-in 0.2s ease forwards; }
+.animate-slide-up { animation: slide-up 0.4s ease forwards; }
 
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
