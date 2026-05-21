@@ -2,7 +2,8 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/onboarding']
+const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/onboarding',
+  '/auth/login', '/auth/register', '/discover']
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } })
@@ -37,14 +38,17 @@ export async function middleware(request: NextRequest) {
   const isPublic = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
 
   if (isPublic) {
-    if (user && (pathname === '/login' || pathname === '/register')) {
+    if (user && ['/login','/register','/auth/login','/auth/register'].includes(pathname)) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     return response
   }
 
   // Require auth for dashboard & admin
-  if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/products') || pathname.startsWith('/orders') || pathname.startsWith('/settings') || pathname.startsWith('/categories') || pathname.startsWith('/warehouses') || pathname.startsWith('/coupons') || pathname.startsWith('/customers') || pathname.startsWith('/analytics') || pathname.startsWith('/landing-pages'))) {
+  const PROTECTED = ['/dashboard','/admin','/products','/orders','/settings','/categories',
+    '/warehouses','/coupons','/customers','/analytics','/landing-pages','/tracking',
+    '/apps','/billing','/confirmili']
+  if (!user && PROTECTED.some(p => pathname.startsWith(p))) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
