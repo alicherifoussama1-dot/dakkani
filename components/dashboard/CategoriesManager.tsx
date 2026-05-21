@@ -148,7 +148,7 @@ export default function CategoriesManager({ storeId, initialCategories }: Props)
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => toggleActive(cat)}
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${cat.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${cat.is_active ? 'bg-green-100 text-green-700' : 'bg-[#F8F9FA] text-[#868E96]'}`}>
                       {cat.is_active ? 'نشط' : 'مخفي'}
                     </button>
                     <button onClick={() => startEdit(cat)} className="p-1.5 rounded hover:bg-[#EBF5FF] transition-colors">

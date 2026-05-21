@@ -181,7 +181,7 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
                   onChange={e => setPasswordForm(p => ({ ...p, [f.key]: e.target.value }))}
                   className="input text-sm pl-10" dir="ltr"
                 />
-                <button onClick={() => setShowPw(s => !s)} className="absolute left-3 bottom-2.5 text-gray-400 hover:text-gray-600">
+                <button onClick={() => setShowPw(s => !s)} className="absolute left-3 bottom-2.5 text-gray-400 hover:text-[#495057]">
                   {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>

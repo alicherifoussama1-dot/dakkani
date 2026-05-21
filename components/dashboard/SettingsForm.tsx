@@ -60,20 +60,20 @@ export default function SettingsForm({ store }: { store: Store & { store_setting
   }
 
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm space-y-4">
-      <h2 className="font-bold text-gray-900 border-b border-gray-100 pb-2">{title}</h2>
+    <div className="bg-white rounded-xl border border-[#DEE2E6] p-5 shadow-sm space-y-4">
+      <h2 className="font-bold text-[#212529] border-b border-[#DEE2E6] pb-2">{title}</h2>
       {children}
     </div>
   )
 
   const Field = ({ label, name, type = 'text', placeholder = '' }: any) => (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-[#495057] mb-1">{label}</label>
       <input
         {...register(name)}
         type={type}
         placeholder={placeholder}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none"
+        className="w-full border border-[#DEE2E6] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none"
       />
     </div>
   )
@@ -81,8 +81,8 @@ export default function SettingsForm({ store }: { store: Store & { store_setting
   const Toggle = ({ label, name, description }: any) => (
     <label className="flex items-center justify-between cursor-pointer">
       <div>
-        <p className="text-sm font-medium text-gray-700">{label}</p>
-        {description && <p className="text-xs text-gray-500">{description}</p>}
+        <p className="text-sm font-medium text-[#495057]">{label}</p>
+        {description && <p className="text-xs text-[#868E96]">{description}</p>}
       </div>
       <input {...register(name)} type="checkbox" className="w-4 h-4 accent-[#0D6EFD]" />
     </label>
@@ -111,15 +111,15 @@ export default function SettingsForm({ store }: { store: Store & { store_setting
 
       <Section title="مكافحة الاحتيال">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">حد حظر الاحتيال التلقائي (%)</label>
+          <label className="block text-sm font-medium text-[#495057] mb-1">حد حظر الاحتيال التلقائي (%)</label>
           <input {...register('fraud_auto_block_score', { valueAsNumber: true })} type="number" min="0" max="100"
-            className="w-32 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none" />
-          <p className="text-xs text-gray-500 mt-1">الطلبات التي تتجاوز هذا الحد تُحظر تلقائياً</p>
+            className="w-32 border border-[#DEE2E6] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none" />
+          <p className="text-xs text-[#868E96] mt-1">الطلبات التي تتجاوز هذا الحد تُحظر تلقائياً</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">الحد الأقصى لمحاولات الاتصال</label>
+          <label className="block text-sm font-medium text-[#495057] mb-1">الحد الأقصى لمحاولات الاتصال</label>
           <input {...register('max_call_attempts', { valueAsNumber: true })} type="number" min="1" max="10"
-            className="w-32 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none" />
+            className="w-32 border border-[#DEE2E6] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none" />
         </div>
       </Section>
 

@@ -38,10 +38,10 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 const SECTION = ({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) => (
-  <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-    <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+  <div className="bg-white border border-[#DEE2E6] rounded-2xl overflow-hidden shadow-sm">
+    <div className="px-5 py-4 border-b border-[#DEE2E6] flex items-center gap-2">
       <span className="text-xl">{icon}</span>
-      <h2 className="font-bold text-gray-900">{title}</h2>
+      <h2 className="font-bold text-[#212529]">{title}</h2>
     </div>
     <div className="p-5 space-y-4">{children}</div>
   </div>
@@ -130,7 +130,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
     label: string; name: keyof FormData; type?: string; placeholder?: string; hint?: string
   }) => (
     <div>
-      <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
+      <label className="block text-sm font-semibold text-[#495057] mb-1.5">{label}</label>
       <input
         {...register(name, type === 'number' ? { valueAsNumber: true } : {})}
         type={type}
@@ -143,10 +143,10 @@ export default function FullSettingsForm({ store }: { store: any }) {
   )
 
   const Toggle = ({ label, name, desc }: { label: string; name: keyof FormData; desc?: string }) => (
-    <label className="flex items-center justify-between cursor-pointer p-3 rounded-xl hover:bg-gray-50 transition">
+    <label className="flex items-center justify-between cursor-pointer p-3 rounded-xl hover:bg-[#F8F9FA] transition">
       <div>
-        <p className="text-sm font-semibold text-gray-800">{label}</p>
-        {desc && <p className="text-xs text-gray-500 mt-0.5">{desc}</p>}
+        <p className="text-sm font-semibold text-[#212529]">{label}</p>
+        {desc && <p className="text-xs text-[#868E96] mt-0.5">{desc}</p>}
       </div>
       <input {...register(name)} type="checkbox" className="w-4 h-4 accent-[#0D6EFD]" />
     </label>
@@ -187,7 +187,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
           <Field label="Nom en français" name="name" placeholder="Mon Magasin" />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">وصف المتجر</label>
+          <label className="block text-sm font-semibold text-[#495057] mb-1.5">وصف المتجر</label>
           <textarea
             {...register('description_ar')}
             rows={2}
@@ -213,7 +213,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+            <label className="block text-sm font-semibold text-[#495057] mb-1.5 flex items-center gap-2">
               <span className="text-blue-600">f</span> Meta Pixel ID (Facebook/Instagram)
             </label>
             <input
@@ -229,8 +229,8 @@ export default function FullSettingsForm({ store }: { store: any }) {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
-              <span className="text-gray-900">TT</span> TikTok Pixel ID
+            <label className="block text-sm font-semibold text-[#495057] mb-1.5 flex items-center gap-2">
+              <span className="text-[#212529]">TT</span> TikTok Pixel ID
             </label>
             <input
               {...register('tiktok_pixel_id')}
@@ -239,13 +239,13 @@ export default function FullSettingsForm({ store }: { store: any }) {
               className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-[#0D6EFD] outline-none"
             />
             <a href="https://ads.tiktok.com/i18n/events/manager" target="_blank" rel="noopener noreferrer"
-              className="text-xs text-gray-500 hover:underline mt-1 block">
+              className="text-xs text-[#868E96] hover:underline mt-1 block">
               احصل عليه من TikTok Ads Manager ↗
             </a>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Google Tag ID</label>
+            <label className="block text-sm font-semibold text-[#495057] mb-1.5">Google Tag ID</label>
             <input
               {...register('google_tag_id')}
               placeholder="G-XXXXXXXXXX"
@@ -255,7 +255,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Snapchat Pixel ID</label>
+            <label className="block text-sm font-semibold text-[#495057] mb-1.5">Snapchat Pixel ID</label>
             <input
               {...register('snapchat_pixel_id')}
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx"
@@ -296,7 +296,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
       <SECTION title="مكافحة الاحتيال" icon="🛡️">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label className="block text-sm font-semibold text-[#495057] mb-1.5">
               حد الحظر التلقائي (%)
             </label>
             <input
@@ -309,7 +309,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
             <p className="text-xs text-gray-400 mt-1">الطلبات التي تتجاوز هذا الحد تُحظر تلقائياً</p>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label className="block text-sm font-semibold text-[#495057] mb-1.5">
               الحد الأقصى لمحاولات الاتصال
             </label>
             <input
@@ -329,7 +329,7 @@ export default function FullSettingsForm({ store }: { store: any }) {
       )}
 
       {/* Save bar */}
-      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 px-6 py-4 flex items-center gap-4 z-20 shadow-lg">
+      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-[#DEE2E6] px-6 py-4 flex items-center gap-4 z-20 shadow-lg">
         <button
           type="submit"
           disabled={isSubmitting}

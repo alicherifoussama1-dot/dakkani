@@ -12,7 +12,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   shipped:    { label: 'شُحن',   color: 'bg-purple-100 text-purple-700' },
   delivered:  { label: 'سُلّم',  color: 'bg-emerald-100 text-emerald-700' },
   returned:   { label: 'مُرجع',  color: 'bg-red-100 text-red-700' },
-  cancelled:  { label: 'ملغى',   color: 'bg-gray-100 text-gray-600' },
+  cancelled:  { label: 'ملغى',   color: 'bg-[#F8F9FA] text-[#495057]' },
   failed:     { label: 'فاشل',   color: 'bg-red-100 text-red-700' },
 }
 
@@ -33,21 +33,21 @@ export default function RecentOrders({ storeId }: { storeId: string }) {
   return (
     <div className="space-y-2">
       {orders.map(o => {
-        const s = STATUS_LABELS[o.status] ?? { label: o.status, color: 'bg-gray-100 text-gray-600' }
+        const s = STATUS_LABELS[o.status] ?? { label: o.status, color: 'bg-[#F8F9FA] text-[#495057]' }
         return (
           <Link
             key={o.id}
             href={`/orders/${o.id}`}
-            className="flex items-center justify-between p-2.5 hover:bg-gray-50 rounded-lg transition group"
+            className="flex items-center justify-between p-2.5 hover:bg-[#F8F9FA] rounded-lg transition group"
           >
             <div>
-              <p className="text-sm font-semibold text-gray-900 group-hover:text-[#0D6EFD]">
+              <p className="text-sm font-semibold text-[#212529] group-hover:text-[#0D6EFD]">
                 {o.order_number}
               </p>
-              <p className="text-xs text-gray-500">{o.customer_name}</p>
+              <p className="text-xs text-[#868E96]">{o.customer_name}</p>
             </div>
             <div className="text-left">
-              <p className="text-sm font-bold text-gray-900">{formatDZD(o.total)}</p>
+              <p className="text-sm font-bold text-[#212529]">{formatDZD(o.total)}</p>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.color}`}>{s.label}</span>
             </div>
           </Link>

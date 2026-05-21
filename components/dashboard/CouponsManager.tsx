@@ -162,7 +162,7 @@ export default function CouponsManager({
                 <td>
                   <button onClick={() => toggleActive(c)}
                     className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
-                      c.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                      c.is_active ? 'bg-green-100 text-green-700' : 'bg-[#F8F9FA] text-[#868E96]'
                     }`}>
                     {c.is_active ? 'نشط' : 'معطل'}
                   </button>
