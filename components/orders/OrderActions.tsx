@@ -1,16 +1,16 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Printer, Truck, Phone, CheckCircle, XCircle, ChevronDown } from 'lucide-react'
+import { Printer, Phone, CheckCircle, XCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { generateA6Label, orderToLabelData } from '@/lib/labels/generator'
 import type { Order, Store } from '@/types'
 
-const STATUS_TRANSITIONS: Record<string, { label: string; next: string; color: string }[]> = {
-  new:        [{ label: 'تأكيد الطلب', next: 'confirmed', color: 'bg-green-500 hover:bg-green-600' }],
-  confirmed:  [{ label: 'بدء المعالجة', next: 'processing', color: 'bg-blue-500 hover:bg-blue-600' }],
-  processing: [{ label: 'تم الشحن', next: 'shipped', color: 'bg-purple-500 hover:bg-purple-600' }],
-  shipped:    [{ label: 'تم التسليم', next: 'delivered', color: 'bg-green-500 hover:bg-green-600' }],
+const STATUS_TRANSITIONS: Record<string, { label: string; next: string; bg: string }[]> = {
+  new:        [{ label: 'تأكيد الطلب',    next: 'confirmed',  bg: 'bg-green-500 hover:bg-green-600' }],
+  confirmed:  [{ label: 'بدء المعالجة',   next: 'processing', bg: 'bg-purple-500 hover:bg-purple-600' }],
+  processing: [{ label: 'تم الشحن',        next: 'shipped',    bg: 'bg-orange-500 hover:bg-orange-600' }],
+  shipped:    [{ label: 'تم التسليم',      next: 'delivered',  bg: 'bg-green-600 hover:bg-green-700' }],
 }
 
 const CANCEL_ELIGIBLE = ['new', 'confirmed', 'processing']
@@ -20,7 +20,6 @@ interface Props { order: Order & { wilaya?: any; commune?: any; items?: any[] };
 export default function OrderActions({ order, store }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
-  const [showDropdown, setShowDropdown] = useState(false)
   const [trackingInput, setTrackingInput] = useState(order.tracking_number ?? '')
 
   const supabase = createClient()
@@ -29,7 +28,7 @@ export default function OrderActions({ order, store }: Props) {
     setLoading(newStatus)
     const updates: Record<string, unknown> = { status: newStatus }
     if (newStatus === 'confirmed') updates.confirmed_at = new Date().toISOString()
-    if (newStatus === 'shipped') updates.shipped_at = new Date().toISOString()
+    if (newStatus === 'shipped')   updates.shipped_at   = new Date().toISOString()
     if (newStatus === 'delivered') updates.delivered_at = new Date().toISOString()
     await supabase.from('orders').update(updates).eq('id', order.id)
     router.refresh()
@@ -39,7 +38,7 @@ export default function OrderActions({ order, store }: Props) {
   const logCallAttempt = async () => {
     setLoading('call')
     await supabase.from('orders').update({
-      call_attempts: order.call_attempts + 1,
+      call_attempts: (order.call_attempts ?? 0) + 1,
       last_call_at: new Date().toISOString(),
     }).eq('id', order.id)
     router.refresh()
@@ -59,55 +58,45 @@ export default function OrderActions({ order, store }: Props) {
   }
 
   const transitions = STATUS_TRANSITIONS[order.status] ?? []
-  const canCancel = CANCEL_ELIGIBLE.includes(order.status)
+  const canCancel   = CANCEL_ELIGIBLE.includes(order.status)
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {/* Tracking number input */}
-      <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center gap-2" style={{fontFamily:'var(--font-arabic)'}}>
+      {/* Tracking input */}
+      <div className="flex items-center gap-1.5">
         <input
           value={trackingInput}
           onChange={e => setTrackingInput(e.target.value)}
           placeholder="رقم التتبع..."
-          className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-36 focus:ring-2 focus:ring-[#0D6EFD] outline-none"
+          className="input text-sm w-36 h-8"
+          dir="ltr"
         />
-        <button
-          onClick={saveTracking}
-          disabled={loading === 'tracking'}
-          className="text-xs bg-gray-100 hover:bg-gray-200 px-2.5 py-1.5 rounded-lg text-gray-700 transition"
-        >
+        <button onClick={saveTracking} disabled={loading === 'tracking'}
+          className="btn btn-ghost btn-sm">
           {loading === 'tracking' ? '...' : 'حفظ'}
         </button>
       </div>
 
-      {/* Log call attempt */}
-      <button
-        onClick={logCallAttempt}
-        disabled={loading === 'call'}
-        className="flex items-center gap-1.5 text-sm px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition text-gray-600"
-      >
-        <Phone className="w-4 h-4" />
-        <span>اتصال ({order.call_attempts})</span>
+      {/* Call attempt */}
+      <button onClick={logCallAttempt} disabled={loading === 'call'}
+        className="btn btn-sm gap-1.5" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>
+        <Phone size={13} />
+        اتصال ({order.call_attempts ?? 0})
       </button>
 
-      {/* Print label */}
-      <button
-        onClick={printLabel}
-        className="flex items-center gap-1.5 text-sm px-3 py-1.5 border border-[#EBF5FF] rounded-lg hover:bg-[#EBF5FF] transition text-[#0D6EFD]"
-      >
-        <Printer className="w-4 h-4" />
-        <span>طباعة الفاتورة</span>
+      {/* Print */}
+      <button onClick={printLabel}
+        className="btn btn-sm gap-1.5" style={{background:'#EBF5FF',color:'var(--color-accent)',border:'1px solid var(--color-accent-soft)'}}>
+        <Printer size={13} />
+        طباعة الفاتورة
       </button>
 
       {/* Status transitions */}
       {transitions.map(t => (
-        <button
-          key={t.next}
-          onClick={() => updateStatus(t.next)}
-          disabled={!!loading}
-          className={`flex items-center gap-1.5 text-sm px-3 py-1.5 text-white rounded-lg transition disabled:opacity-50 ${t.color}`}
-        >
-          <CheckCircle className="w-4 h-4" />
+        <button key={t.next} onClick={() => updateStatus(t.next)} disabled={!!loading}
+          className={`btn btn-sm gap-1.5 text-white ${t.bg} disabled:opacity-50`}
+          style={{border:'none'}}>
+          <CheckCircle size={13} />
           {loading === t.next ? 'جارٍ...' : t.label}
         </button>
       ))}
@@ -115,12 +104,10 @@ export default function OrderActions({ order, store }: Props) {
       {/* Cancel */}
       {canCancel && (
         <button
-          onClick={() => confirm('تأكيد إلغاء الطلب؟') && updateStatus('cancelled')}
+          onClick={() => { if (confirm('تأكيد إلغاء الطلب؟')) updateStatus('cancelled') }}
           disabled={!!loading}
-          className="flex items-center gap-1.5 text-sm px-3 py-1.5 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition disabled:opacity-50"
-        >
-          <XCircle className="w-4 h-4" />
-          إلغاء
+          className="btn btn-sm gap-1.5 disabled:opacity-50" style={{background:'#FEE2E2',color:'#DC3545',border:'none'}}>
+          <XCircle size={13} />إلغاء
         </button>
       )}
     </div>
