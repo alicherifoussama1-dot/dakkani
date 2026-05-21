@@ -7,7 +7,8 @@
   "regions": ["cdg1"],
 
   "env": {
-    "DISABLE_PWA": "false"
+    "DISABLE_PWA": "false",
+    "NODE_OPTIONS": "--max-old-space-size=8192"
   },
 
   "functions": {
@@ -49,6 +50,7 @@
     { "source": "/store/:slug", "destination": "/:slug" },
     { "source": "/store/:slug/product/:product", "destination": "/:slug/product/:product" },
     { "source": "/store/:slug/products", "destination": "/:slug/products" },
-    { "source": "/store/:slug/checkout", "destination": "/:slug/checkout" }
+    { "source": "/store/:slug/checkout", "destination": "/:slug/checkout" },
+    { "source": "/store/:slug/order-confirmation", "destination": "/:slug/order-confirmation" }
   ]
 }
