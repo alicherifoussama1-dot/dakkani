@@ -16,7 +16,7 @@ export default function TrustSection() {
           {TRUST.map(item => (
             <div key={item.title}
               className="bg-[#FAFAF8] rounded-2xl p-6 text-center border border-gray-100 hover:border-primary/20 transition-all hover:-translate-y-1 hover:shadow-card group">
-              <div className="w-14 h-14 bg-gradient-primary rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 shadow-green group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-gradient-primary rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform">
                 {item.icon}
               </div>
               <h3 className="font-black text-[#111827] mb-2">{item.title}</h3>
