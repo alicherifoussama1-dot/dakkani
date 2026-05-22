@@ -129,7 +129,8 @@
   .badge-teal   { background: #CFF4FC; color: #0A7A82; }
   .badge-purple { background: #EEE5FF; color: #7B2FBE; }
   .badge-orange { background: #FFF0E0; color: #C76B00; }
-  .badge-black  { background: #212529; color: #fff; }
+  .badge-black   { background: #212529; color: #fff; }
+  .badge-outline { background: transparent; border: 1px solid var(--color-border); color: var(--color-text-secondary); }
 
   .data-table { @apply w-full text-sm; border-collapse: collapse; }
   .data-table th {
@@ -194,6 +195,7 @@
   .float-anim { animation: float-y 4s ease-in-out infinite; }
   .dot-blink { animation: dot-blink 1.5s ease-in-out infinite; }
   .touch-target { min-width: 44px; min-height: 44px; }
+  .product-img { position: relative; overflow: hidden; }
   @keyframes marquee-rtl { from{transform:translateX(0)} to{transform:translateX(-50%)} }
   .marquee-rtl { display: flex; animation: marquee-rtl 25s linear infinite; width: max-content; }
 
