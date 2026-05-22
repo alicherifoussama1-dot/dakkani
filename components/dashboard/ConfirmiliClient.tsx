@@ -623,10 +623,20 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
               <select className="input text-sm h-8 w-40"><option>شركة التوصيل</option></select>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                {label:'جميع الطلبيات',v:'0'},{label:'مؤكدة',v:'0 (0%)'},{label:'ملغاة',v:'0 (0%)'},{label:'قيد التأكيد',v:'0 (0%)'},
-                {label:'مؤكدة مرسلة',v:'0 (0%)'},{label:'مسلمة',v:'0 (0%)'},{label:'مرجعة',v:'0 (0%)'},{label:'قيد التوصيل',v:'0 (0%)'},
-              ].map(c => (
+              {(() => {
+                const n = initialOrders.length
+                const pct = (v:number) => n ? `${v} (${Math.round(v/n*100)}%)` : '0 (0%)'
+                return [
+                  {label:'جميع الطلبيات',v:String(n)},
+                  {label:'مؤكدة',v:pct(confirmed.length)},
+                  {label:'ملغاة',v:pct(cancelled.length)},
+                  {label:'قيد التأكيد',v:pct(initialOrders.filter(o=>o.status==='new').length)},
+                  {label:'مؤكدة مرسلة',v:pct(initialOrders.filter(o=>['shipped','in_transit'].includes(o.status)).length)},
+                  {label:'مسلمة',v:pct(delivered.length)},
+                  {label:'مرجعة',v:pct(initialOrders.filter(o=>o.status==='returned').length)},
+                  {label:'قيد التوصيل',v:pct(initialOrders.filter(o=>o.status==='processing').length)},
+                ]
+              })().map(c => (
                 <div key={c.label} className="card p-3 text-center">
                   <p className="font-bold text-base" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>{c.v}</p>
                   <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>{c.label}</p>
