@@ -62,7 +62,7 @@ export async function POST(req: Request) {
 
         <!-- Header -->
         <tr>
-          <td style="background:linear-gradient(135deg,#1B4332,#2D6A4F);padding:32px;text-align:center">
+          <td style="background:linear-gradient(135deg,#0D6EFD,#0B5ED7);padding:32px;text-align:center">
             <h1 style="color:white;margin:0;font-size:28px;font-weight:900">دكاني</h1>
             <p style="color:rgba(255,255,255,0.75);margin:8px 0 0;font-size:14px">منصة التجارة الإلكترونية الجزائرية</p>
           </td>
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
               <tr>
                 <td align="center" style="padding:8px 0 32px">
                   <a href="${resetLink}"
-                     style="background:linear-gradient(135deg,#1B4332,#2D6A4F);color:white;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:bold;font-size:16px;display:inline-block;letter-spacing:0.3px">
+                     style="background:linear-gradient(135deg,#0D6EFD,#0B5ED7);color:white;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:bold;font-size:16px;display:inline-block;letter-spacing:0.3px">
                     إعادة تعيين كلمة المرور
                   </a>
                 </td>
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
 
             <p style="color:#9CA3AF;font-size:12px;margin:24px 0 0;line-height:1.6">
               إذا لم يعمل الزر، انسخ هذا الرابط في المتصفح:<br>
-              <a href="${resetLink}" style="color:#1B4332;word-break:break-all">${resetLink}</a>
+              <a href="${resetLink}" style="color:#0D6EFD;word-break:break-all">${resetLink}</a>
             </p>
           </td>
         </tr>
