@@ -263,7 +263,7 @@ export default function DashboardShell({ children, store, user }: Props) {
                       <div className="flex items-center justify-between px-3 py-2">
                         <span className="text-sm" style={{ color: 'var(--color-text-secondary)', fontFamily: 'var(--font-arabic)' }}>الإشعارات</span>
                         <button onClick={() => setNotifOn(o => !o)} className="toggle-wrap">
-                          <span className={`inline-block w-9 h-5 rounded-full transition-colors duration-200 ${notifOn ? 'bg-blue-500' : 'bg-gray-300'}`}>
+                          <span className={`inline-block w-9 h-5 rounded-full transition-colors duration-200 ${notifOn ? 'bg-[#0D6EFD]' : 'bg-[#DEE2E6]'}`}>
                             <span className={`block w-4 h-4 bg-white rounded-full shadow mt-0.5 transition-transform duration-200 ${notifOn ? 'translate-x-[-16px] mr-0.5' : 'mr-0.5'}`} />
                           </span>
                         </button>

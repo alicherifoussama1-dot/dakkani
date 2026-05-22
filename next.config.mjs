@@ -6,9 +6,8 @@ const pwaConfig = withPWA({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development" || process.env.DISABLE_PWA === "true",
-  fallbacks: {
-    document: "/offline.html",
-  },
+  // Note: 'fallbacks.document' is not supported in App Router (requires Pages Router _document)
+  // Use the catch-all runtimeCaching rule below for offline support
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,

@@ -51,7 +51,7 @@ const CONFIRM_STATUSES_STATIC = [
   { key:'failed',    label:'الفاشلة',  color:'#FFC107' },
   { key:'pending',   label:'المعلقة',  color:'#0DCAF0' },
   { key:'postponed', label:'مؤجلة',    color:'#7B2FBE' },
-  { key:'duplicate', label:'مكررة',    color:'#212529', count:0 },
+  { key:'duplicate', label:'مكررة',    color:'#212529' },
 ]
 const PIE_COLORS = ['#198754','#DC3545','#FFC107','#0D6EFD']
 const CHART_DEMO = Array.from({length:8},(_,i) => ({
