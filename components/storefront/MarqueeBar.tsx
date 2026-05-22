@@ -13,7 +13,7 @@ const ITEMS = [
 export default function MarqueeBar() {
   const doubled = [...ITEMS, ...ITEMS]
   return (
-    <div className="bg-[#1B4332] py-3 overflow-hidden">
+    <div className="bg-[#0D6EFD] py-3 overflow-hidden">
       <div className="marquee-rtl">
         {doubled.map((item, i) => (
           <span key={i} className="flex items-center gap-6 px-8 text-white/90 text-sm font-semibold whitespace-nowrap">

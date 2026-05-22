@@ -41,10 +41,10 @@ export default function FlashSaleSection({ products, storeSlug }: { products: Pr
             <span className="text-sm text-gray-500 font-medium">ينتهي في:</span>
             {[pad(h), pad(m), pad(s)].map((v, i) => (
               <span key={i} className="flex items-center gap-1">
-                <span className="bg-[#1B4332] text-white font-black text-lg px-3 py-1.5 rounded-xl min-w-[2.5rem] text-center tabular-nums transition-all">
+                <span className="bg-[#0D6EFD] text-white font-black text-lg px-3 py-1.5 rounded-xl min-w-[2.5rem] text-center tabular-nums transition-all">
                   {v}
                 </span>
-                {i < 2 && <span className="text-[#1B4332] font-black text-lg">:</span>}
+                {i < 2 && <span className="text-[#0D6EFD] font-black text-lg">:</span>}
               </span>
             ))}
           </div>
@@ -74,7 +74,7 @@ export default function FlashSaleSection({ products, storeSlug }: { products: Pr
                   )}
                   {/* Quick buy on hover */}
                   <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 p-2">
-                    <span className="block w-full text-center bg-[#1B4332] text-white font-bold py-2 rounded-xl text-xs shadow-green">
+                    <span className="block w-full text-center bg-[#0D6EFD] text-white font-bold py-2 rounded-xl text-xs shadow-green">
                       اطلب الآن
                     </span>
                   </div>

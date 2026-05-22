@@ -28,7 +28,7 @@ export default function Header({ store, user }: { store: Store; user: SupabaseUs
         <Link
           href="/products/new"
           className="hidden md:flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl text-white transition-all shadow-green"
-          style={{ background: 'linear-gradient(135deg,#1B4332,#2D6A4F)' }}
+          style={{ background: 'linear-gradient(135deg,#0D6EFD,#0B5ED7)' }}
         >
           <Plus className="w-3.5 h-3.5" />
           منتج جديد
@@ -69,7 +69,7 @@ export default function Header({ store, user }: { store: Store; user: SupabaseUs
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors"
           >
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-black"
-              style={{ background: 'linear-gradient(135deg,#1B4332,#F59E0B)' }}>
+              style={{ background: 'linear-gradient(135deg,#0D6EFD,#F59E0B)' }}>
               {initial}
             </div>
             <span className="text-sm font-semibold text-gray-700 hidden md:block">{user.email?.split('@')[0]}</span>

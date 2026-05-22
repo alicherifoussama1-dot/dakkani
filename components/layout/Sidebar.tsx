@@ -61,9 +61,9 @@ export default function Sidebar({ store }: { store: Store }) {
     pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
 
   return (
-    <aside className="w-60 bg-[#0D2B1E] flex flex-col overflow-hidden border-l border-[#1B4332]/50">
+    <aside className="w-60 bg-[#0D2B1E] flex flex-col overflow-hidden border-l border-[#0D6EFD]/50">
       {/* Logo */}
-      <div className="px-4 py-5 border-b border-[#1B4332]/50">
+      <div className="px-4 py-5 border-b border-[#0D6EFD]/50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-gradient-to-br from-accent to-accent-dark rounded-xl flex items-center justify-center text-white font-black text-lg shadow-amber flex-shrink-0">
             {store.logo_url
@@ -95,14 +95,14 @@ export default function Sidebar({ store }: { store: Store }) {
                     className={cn(
                       'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
                       active
-                        ? 'bg-[#1B4332] text-white'
-                        : 'text-white/50 hover:bg-[#1B4332]/40 hover:text-white/90'
+                        ? 'bg-[#0D6EFD] text-white'
+                        : 'text-white/50 hover:bg-[#0D6EFD]/40 hover:text-white/90'
                     )}
                   >
                     {active && (
                       <motion.div
                         layoutId="sidebar-active"
-                        className="absolute inset-0 bg-[#1B4332] rounded-xl"
+                        className="absolute inset-0 bg-[#0D6EFD] rounded-xl"
                         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                       />
                     )}
@@ -123,12 +123,12 @@ export default function Sidebar({ store }: { store: Store }) {
       </nav>
 
       {/* Store link */}
-      <div className="p-3 border-t border-[#1B4332]/50">
+      <div className="p-3 border-t border-[#0D6EFD]/50">
         <a
           href={`/store/${store.slug}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 px-3 py-2.5 text-xs text-white/40 hover:text-accent hover:bg-[#1B4332]/40 rounded-xl transition-all group"
+          className="flex items-center gap-2 px-3 py-2.5 text-xs text-white/40 hover:text-accent hover:bg-[#0D6EFD]/40 rounded-xl transition-all group"
         >
           <ExternalLink className="w-3.5 h-3.5 group-hover:text-accent transition-colors" />
           <span className="font-medium">عرض المتجر</span>

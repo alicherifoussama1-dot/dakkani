@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 interface Category { id: string; name: string; name_ar?: string; image_url?: string; slug: string }
 
 const BENTO_COLORS = [
-  'from-[#1B4332] to-[#2D6A4F]',
+  'from-[#0D6EFD] to-[#0B5ED7]',
   'from-[#D97706] to-[#F59E0B]',
   'from-[#1e293b] to-[#334155]',
   'from-[#7C3AED] to-[#A78BFA]',

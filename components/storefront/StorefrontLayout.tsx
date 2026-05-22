@@ -39,7 +39,7 @@ export default function StorefrontLayout({ store, children }: Props) {
                 {store.name[0]}
               </div>
             )}
-            <span className={`font-black text-lg hidden sm:block transition-colors ${scrolled ? 'text-white' : 'text-[#1B4332]'}`}>
+            <span className={`font-black text-lg hidden sm:block transition-colors ${scrolled ? 'text-white' : 'text-[#0D6EFD]'}`}>
               {store.name_ar ?? store.name}
             </span>
           </Link>
@@ -52,7 +52,7 @@ export default function StorefrontLayout({ store, children }: Props) {
             ].map(link => (
               <Link key={link.href} href={link.href}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                  scrolled ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-[#1B4332] hover:bg-primary/5'
+                  scrolled ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-[#0D6EFD] hover:bg-primary/5'
                 }`}>
                 {link.label}
               </Link>
@@ -62,11 +62,11 @@ export default function StorefrontLayout({ store, children }: Props) {
           {/* Icons */}
           <div className="flex items-center gap-2">
             <button onClick={() => setSearchOpen(true)}
-              className={`p-2 rounded-xl transition-colors ${scrolled ? 'text-white/80 hover:bg-white/10' : 'text-[#1B4332] hover:bg-primary/5'}`}>
+              className={`p-2 rounded-xl transition-colors ${scrolled ? 'text-white/80 hover:bg-white/10' : 'text-[#0D6EFD] hover:bg-primary/5'}`}>
               <Search className="w-5 h-5" />
             </button>
             <button onClick={() => setMobileOpen(!mobileOpen)}
-              className={`md:hidden p-2 rounded-xl ${scrolled ? 'text-white' : 'text-[#1B4332]'}`}>
+              className={`md:hidden p-2 rounded-xl ${scrolled ? 'text-white' : 'text-[#0D6EFD]'}`}>
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>

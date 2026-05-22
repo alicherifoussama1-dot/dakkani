@@ -50,10 +50,10 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               {images.length > 1 && (
                 <>
                   <button onClick={prev} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ChevronRight className="w-5 h-5 text-[#1B4332]" />
+                    <ChevronRight className="w-5 h-5 text-[#0D6EFD]" />
                   </button>
                   <button onClick={next} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ChevronLeft className="w-5 h-5 text-[#1B4332]" />
+                    <ChevronLeft className="w-5 h-5 text-[#0D6EFD]" />
                   </button>
                 </>
               )}
@@ -194,7 +194,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
         <Link
           href={`/store/${store.slug}/checkout?product_id=${product.id}`}
           className="flex-1 flex items-center justify-center py-3 font-black text-white rounded-2xl text-sm"
-          style={{ background: 'linear-gradient(135deg,#1B4332,#2D6A4F)' }}
+          style={{ background: 'linear-gradient(135deg,#0D6EFD,#0B5ED7)' }}
         >
           🛒 اطلب — {formatDZD(product.price)}
         </Link>
