@@ -35,7 +35,7 @@ export default function StorefrontLayout({ store, children }: Props) {
               <img src={store.logo_url} alt={store.name} className="w-9 h-9 rounded-xl object-cover" />
             ) : (
               <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-lg"
-                style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)' }}>
+                style={{ background: 'linear-gradient(135deg,#0D6EFD,#0B5ED7)' }}>
                 {store.name[0]}
               </div>
             )}

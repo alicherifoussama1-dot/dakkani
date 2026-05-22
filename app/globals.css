@@ -175,6 +175,15 @@
   .section-soft { background: var(--color-bg-soft); }
   .shadow-nav { box-shadow: 0 1px 20px rgba(0,0,0,0.08); }
 
+  /* Storefront navbar */
+  .nav-blur {
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  .shadow-float { box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+
   /* Landing page helpers */
   .btn-accent { background: var(--color-accent); color: #fff; box-shadow: var(--shadow-blue); }
   .btn-accent:hover { background: var(--color-accent-dark); }
