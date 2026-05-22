@@ -193,6 +193,8 @@
   @keyframes dot-blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .float-anim { animation: float-y 4s ease-in-out infinite; }
   .dot-blink { animation: dot-blink 1.5s ease-in-out infinite; }
+  @keyframes marquee-rtl { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  .marquee-rtl { display: flex; animation: marquee-rtl 25s linear infinite; width: max-content; }
 
   /* Landing page helpers */
   .btn-accent { background: var(--color-accent); color: #fff; box-shadow: var(--shadow-blue); }
