@@ -9,7 +9,6 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from 'recharts'
-import StatCard from '@/components/ui/StatCard'
 import { formatDZD } from '@/lib/utils/format'
 
 // TikTok icon (not in lucide)
