@@ -107,6 +107,19 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   const delivered  = initialOrders.filter(o => o.status === 'delivered')
   const cancelled  = initialOrders.filter(o => o.status === 'cancelled')
   const confirmed  = initialOrders.filter(o => o.status === 'confirmed')
+
+  // Wilaya stats
+  const wilayaStats = initialOrders.reduce((acc: Record<string, {delivered:number;returned:number;total:number}>, o) => {
+    const name = (o.wilaya as any)?.name_ar ?? 'غير محدد'
+    if (!acc[name]) acc[name] = {delivered:0,returned:0,total:0}
+    acc[name].total++
+    if (o.status === 'delivered') acc[name].delivered++
+    if (o.status === 'returned') acc[name].returned++
+    return acc
+  }, {})
+  const wilayaRows = Object.entries(wilayaStats)
+    .sort(([,a],[,b]) => b.total - a.total)
+    .slice(0, 20)
   const totalRevenue      = delivered.reduce((s,o) => s+o.total,0)
   const totalDeliveryFee  = delivered.reduce((s,o) => s+o.delivery_fee,0)
   const netRevenue        = totalRevenue - totalDeliveryFee
@@ -293,21 +306,25 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                     </tr>
                   </thead>
                   <tbody>
-                    {WILAYAS58.map(w => (
-                      <tr key={w}>
-                        <td className="font-medium">{w}</td>
-                        <td>0</td>
-                        <td>0</td>
+                    {wilayaRows.length === 0 ? (
+                      <tr><td colSpan={4} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد بيانات توصيل بعد</td></tr>
+                    ) : wilayaRows.map(([name, stats]) => {
+                      const rate = stats.total > 0 ? Math.round(stats.delivered / stats.total * 100) : 0
+                      return (
+                      <tr key={name}>
+                        <td className="font-medium">{name}</td>
+                        <td className="text-sm" style={{color:'#198754',fontFamily:'var(--font-primary)'}}>{stats.delivered}</td>
+                        <td className="text-sm" style={{color:'#DC3545',fontFamily:'var(--font-primary)'}}>{stats.returned}</td>
                         <td>
                           <div className="flex items-center gap-2">
                             <div className="flex-1 h-1.5 rounded-full" style={{background:'#F1F3F5'}}>
-                              <div className="h-1.5 rounded-full" style={{width:'0%',background:'#198754'}}/>
+                              <div className="h-1.5 rounded-full" style={{width:`${rate}%`,background:'#198754'}}/>
                             </div>
-                            <span className="text-xs" style={{fontFamily:'var(--font-primary)'}}>0%</span>
+                            <span className="text-xs" style={{fontFamily:'var(--font-primary)'}}>{rate}%</span>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    )})}
                   </tbody>
                 </table>
               </div>
