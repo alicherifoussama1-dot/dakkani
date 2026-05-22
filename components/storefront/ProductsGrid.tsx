@@ -27,7 +27,7 @@ function ProductCard({ product, storeSlug }: { product: Product; storeSlug: stri
           </button>
           <div className="absolute bottom-0 inset-x-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out p-3">
             <button onClick={e => e.preventDefault()}
-              className="w-full flex items-center justify-center gap-2 bg-[#0D6EFD] hover:bg-[#0B5ED7] text-white font-bold py-2.5 rounded-xl text-sm transition-colors shadow-green">
+              className="w-full flex items-center justify-center gap-2 bg-[#0D6EFD] hover:bg-[#0B5ED7] text-white font-bold py-2.5 rounded-xl text-sm transition-colors" style={{boxShadow:'0 4px 12px rgba(13,110,253,0.3)'}}>
               <ShoppingCart className="w-4 h-4" /> اطلب الآن
             </button>
           </div>
