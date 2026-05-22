@@ -185,6 +185,15 @@
   .shadow-float { box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
   .page-enter { animation: fade-in 0.3s ease forwards; }
 
+  /* Storefront-specific utilities */
+  .glass { background: rgba(255,255,255,0.12); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2); }
+  .shadow-amber { box-shadow: 0 8px 24px rgba(13,110,253,0.4); }
+  .gradient-text-gold { background: linear-gradient(135deg,#FFC107,#FFD54F); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  @keyframes float-y { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  @keyframes dot-blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .float-anim { animation: float-y 4s ease-in-out infinite; }
+  .dot-blink { animation: dot-blink 1.5s ease-in-out infinite; }
+
   /* Landing page helpers */
   .btn-accent { background: var(--color-accent); color: #fff; box-shadow: var(--shadow-blue); }
   .btn-accent:hover { background: var(--color-accent-dark); }
