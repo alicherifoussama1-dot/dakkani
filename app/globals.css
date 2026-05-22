@@ -183,6 +183,7 @@
     border-bottom: 1px solid rgba(0,0,0,0.05);
   }
   .shadow-float { box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+  .page-enter { animation: fade-in 0.3s ease forwards; }
 
   /* Landing page helpers */
   .btn-accent { background: var(--color-accent); color: #fff; box-shadow: var(--shadow-blue); }

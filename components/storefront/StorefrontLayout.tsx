@@ -112,7 +112,7 @@ export default function StorefrontLayout({ store, children }: Props) {
                     window.location.href = `${storeUrl}/products?q=${encodeURIComponent(searchQuery)}`
                 }}
                 placeholder="ابحث عن منتج..."
-                className="w-full border-2 border-gray-100 focus:border-primary rounded-2xl pr-12 pl-4 py-4 text-base outline-none transition"
+                className="w-full border-2 border-[#DEE2E6] focus:border-[#0D6EFD] rounded-2xl pr-12 pl-4 py-4 text-base outline-none transition"
               />
             </div>
             <p className="text-xs text-gray-400 mt-3 text-center">اضغط Enter للبحث</p>
@@ -124,7 +124,7 @@ export default function StorefrontLayout({ store, children }: Props) {
       <main className="page-enter">{children}</main>
 
       {/* Footer */}
-      <footer className="bg-[#0D2B1E] text-white mt-16">
+      <footer className="bg-[#1A2B3C] text-white mt-16">
         <div className="max-w-6xl mx-auto px-4 py-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
