@@ -727,10 +727,15 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                 </div>
                 <p className="text-xs" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>انقر لتغيير الصورة</p>
               </div>
-              {['الإسم','اللقب','البريد الإلكتروني','إسم المتجر'].map(l => (
-                <div key={l}>
-                  <label className="block text-xs mb-1" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>{l}</label>
-                  <input className="input text-sm h-9"/>
+              {[
+                {l:'الإسم',v:''},
+                {l:'اللقب',v:''},
+                {l:'البريد الإلكتروني',v:'',dir:'ltr'},
+                {l:'إسم المتجر',v:storeName},
+              ].map(f => (
+                <div key={f.l}>
+                  <label className="block text-xs mb-1" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>{f.l}</label>
+                  <input className="input text-sm h-9" defaultValue={f.v} dir={(f as any).dir ?? 'rtl'}/>
                 </div>
               ))}
               <button className="btn btn-sm" style={{background:'var(--color-success)',color:'#fff',fontFamily:'var(--font-arabic)'}}>حفظ</button>
