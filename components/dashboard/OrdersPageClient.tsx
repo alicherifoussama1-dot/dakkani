@@ -7,7 +7,8 @@ import { formatDZD, formatDateShort } from '@/lib/utils/format'
 import StatusBadge from '@/components/ui/StatusBadge'
 
 const ORDER_TYPES    = ['الكل','نظيف','قيد المراجعة','مهجور']
-const ORDER_STATUSES = ['الكل','خطأ في الإرسال','جارٍ الإرسال','أُرسل للمورد','أُرسل للشيت','قيد التأكيد','بدون حالة']
+const ORDER_STATUSES = ['الكل','جديد','مؤكد','يُعالج','شُحن','مُسلَّم','ملغى','مُرجَع']
+const STATUS_VALUES: Record<string,string> = {'الكل':'','جديد':'new','مؤكد':'confirmed','يُعالج':'processing','شُحن':'shipped','مُسلَّم':'delivered','ملغى':'cancelled','مُرجَع':'returned'}
 
 interface Props {
   initialOrders: any[]
@@ -46,8 +47,8 @@ export default function OrdersPageClient({
       <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
         <h1 className="page-title">الطلبات</h1>
         <div className="flex items-center gap-2">
-          <button className="btn btn-sm gap-1.5" style={{ background: '#FFC107', color: '#000', border: 'none' }}>
-            <RefreshCw size={13} />مزامنة
+          <button onClick={() => router.refresh()} className="btn btn-sm gap-1.5" style={{ background: '#FFC107', color: '#000', border: 'none' }}>
+            <RefreshCw size={13} />تحديث
           </button>
           <Link href="/orders/new" className="btn btn-primary btn-sm gap-1.5">
             <Plus size={13} />إنشاء طلب
@@ -86,7 +87,7 @@ export default function OrdersPageClient({
         </select>
 
         {/* Status */}
-        <select value={sit} onChange={e => setSit(e.target.value)} className="input text-sm w-44">
+        <select value={sit} onChange={e => { setSit(e.target.value); push({ status: STATUS_VALUES[e.target.value] || undefined }) }} className="input text-sm w-44">
           {ORDER_STATUSES.map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
