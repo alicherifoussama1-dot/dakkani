@@ -44,15 +44,30 @@ export default function ProductsPageClient({
         </Link>
       </div>
 
-      {/* Search */}
-      <div className="relative mb-4 max-w-xs">
-        <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }} />
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="ابحث عن المنتجات..."
-          className="input pr-8 text-sm"
-        />
+      {/* Stats + Search row */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }} />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="ابحث عن المنتجات..."
+            className="input pr-8 text-sm"
+          />
+        </div>
+        {categories.length > 0 && (
+          <select className="input text-sm w-44">
+            <option value="">كل الفئات</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name_ar ?? c.name}</option>)}
+          </select>
+        )}
+        <div className="flex gap-3 text-xs" style={{color:'var(--color-text-muted)'}}>
+          <span>{initialProducts.length} منتج</span>
+          <span>|</span>
+          <span style={{color:'#198754'}}>{initialProducts.filter(p=>p.is_active).length} نشط</span>
+          <span>|</span>
+          <span style={{color:'#DC3545'}}>{initialProducts.filter(p=>!p.is_active).length} مخفي</span>
+        </div>
       </div>
 
       {/* Table */}
