@@ -35,6 +35,21 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
   })
 
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' })
+  const [freeThreshold, setFreeThreshold] = useState<string>(String(store.store_settings?.free_delivery_threshold ?? ''))
+  const [delivSaved, setDelivSaved] = useState(false)
+
+  const saveDelivery = async () => {
+    setLoading(true)
+    const sb = createClient()
+    await sb.from('store_settings').upsert({
+      store_id: store.id,
+      free_delivery_threshold: freeThreshold ? parseFloat(freeThreshold) : null,
+    }, { onConflict: 'store_id' })
+    setLoading(false)
+    setDelivSaved(true)
+    setTimeout(() => setDelivSaved(false), 3000)
+    router.refresh()
+  }
   const [pwError, setPwError]       = useState(''), [pwSaved, setPwSaved] = useState(false)
   const [logoLoading, setLogoLoading] = useState(false)
   const [logoUrl, setLogoUrl]         = useState<string | null>(store.logo_url ?? null)
@@ -261,9 +276,14 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
           </div>
           <div>
             <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-secondary)' }}>حد التوصيل المجاني (دج)</label>
-            <input type="number" placeholder="مثال: 5000" className="input text-sm w-48" dir="ltr" />
+            <input type="number" value={freeThreshold} onChange={e => setFreeThreshold(e.target.value)} placeholder="مثال: 5000" className="input text-sm w-48" dir="ltr" />
+            <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-arabic)' }}>
+              الطلبات التي تتجاوز هذا المبلغ يُعفى من رسوم التوصيل
+            </p>
           </div>
-          <button className="btn btn-primary" style={{ fontFamily: 'var(--font-arabic)' }}>حفظ إعدادات التوصيل</button>
+          <button onClick={saveDelivery} disabled={loading} className="btn btn-primary btn-sm" style={{ fontFamily: 'var(--font-arabic)' }}>
+            {loading ? 'جارٍ الحفظ...' : delivSaved ? '✓ تم الحفظ' : 'حفظ إعدادات التوصيل'}
+          </button>
         </div>
       )}
 
