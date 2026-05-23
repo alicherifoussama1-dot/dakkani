@@ -1,7 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { formatDZD } from '@/lib/utils/format'
 import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts'
-import { TrendingUp, ShoppingCart, Percent, Truck } from 'lucide-react'
+import { TrendingUp, ShoppingCart, Percent, Truck, Users, PackageX, BarChart2, DollarSign } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'الإحصائيات' }
@@ -14,39 +14,52 @@ export default async function AnalyticsPage() {
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-  const [ordersRes] = await Promise.all([
+  const [ordersRes, customersRes] = await Promise.all([
     supabase.from('orders')
-      .select('total, status, created_at, wilaya_id, delivery_fee, discount_amount')
+      .select('total, status, created_at, wilaya_id, delivery_fee, discount_amount, customer_phone')
+      .eq('store_id', store.id)
+      .gte('created_at', thirtyDaysAgo),
+    supabase.from('orders')
+      .select('customer_phone', { count: 'exact', head: false })
       .eq('store_id', store.id)
       .gte('created_at', thirtyDaysAgo),
   ])
 
-  const orders = ordersRes.data ?? []
+  const orders    = ordersRes.data ?? []
   const delivered = orders.filter(o => o.status === 'delivered')
-  const revenue = delivered.reduce((s, o) => s + o.total, 0)
+  const cancelled = orders.filter(o => o.status === 'cancelled')
+  const returned  = orders.filter(o => o.status === 'returned')
+  const revenue   = delivered.reduce((s, o) => s + o.total, 0)
   const deliveryRevenue = delivered.reduce((s, o) => s + o.delivery_fee, 0)
-  const avgOrder = delivered.length ? revenue / delivered.length : 0
-  const convRate = orders.length ? Math.round((delivered.length / orders.length) * 100) : 0
+  const avgOrder  = delivered.length ? revenue / delivered.length : 0
+  const convRate  = orders.length ? Math.round((delivered.length / orders.length) * 100) : 0
+  const cancelRate = orders.length ? Math.round(((cancelled.length + returned.length) / orders.length) * 100) : 0
+  const uniqueCustomers = new Set(orders.map(o => o.customer_phone)).size
+  const grossProfit = revenue - deliveryRevenue
 
   const kpis = [
-    { label: 'إجمالي الإيرادات', sub: 'آخر 30 يوم', value: formatDZD(revenue),      Icon: TrendingUp, color: '#0D6EFD' },
-    { label: 'متوسط قيمة الطلب',  sub: 'المُسلَّمة فقط', value: formatDZD(avgOrder), Icon: ShoppingCart, color: '#2BBFAD' },
-    { label: 'معدل التسليم',       sub: 'من إجمالي الطلبات', value: `${convRate}%`,  Icon: Percent,      color: '#28A745' },
-    { label: 'إيرادات التوصيل',    sub: 'آخر 30 يوم', value: formatDZD(deliveryRevenue), Icon: Truck, color: '#6F42C1' },
+    { label: 'إجمالي الإيرادات',   sub: 'آخر 30 يوم',          value: formatDZD(revenue),          Icon: TrendingUp,  color: '#0D6EFD' },
+    { label: 'صافي الربح',          sub: 'بعد رسوم التوصيل',     value: formatDZD(grossProfit),       Icon: DollarSign,  color: '#28A745' },
+    { label: 'متوسط قيمة الطلب',   sub: 'المُسلَّمة فقط',       value: formatDZD(avgOrder),          Icon: ShoppingCart, color: '#2BBFAD' },
+    { label: 'معدل التسليم',        sub: 'من إجمالي الطلبات',   value: `${convRate}%`,               Icon: Percent,      color: '#6F42C1' },
+    { label: 'معدل الإلغاء',        sub: 'ملغى + مُرجَع',        value: `${cancelRate}%`,             Icon: PackageX,     color: '#DC3545' },
+    { label: 'إيرادات التوصيل',     sub: 'آخر 30 يوم',          value: formatDZD(deliveryRevenue),   Icon: Truck,        color: '#FFC107' },
+    { label: 'إجمالي الطلبات',      sub: `آخر 30 يوم`,          value: String(orders.length),        Icon: BarChart2,    color: '#17A2B8' },
+    { label: 'الزبائن الفريدون',    sub: 'آخر 30 يوم',          value: String(uniqueCustomers),      Icon: Users,        color: '#6F42C1' },
   ]
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6" dir="rtl" style={{fontFamily:'var(--font-arabic)'}}>
       <div>
         <h1 className="page-title">الإحصائيات</h1>
-        <p className="text-sm mt-1" style={{color:'var(--color-text-muted)'}}>آخر 30 يوم</p>
+        <p className="text-sm mt-1" style={{color:'var(--color-text-muted)'}}>آخر 30 يوم — {orders.length.toLocaleString('ar-DZ')} طلب</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map(k => (
           <div key={k.label} className="card p-4">
             <div className="flex items-start justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{background:`${k.color}15`}}>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{background:`${k.color}18`}}>
                 <k.Icon size={16} style={{color:k.color}} />
               </div>
             </div>
