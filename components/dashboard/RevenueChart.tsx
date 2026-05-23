@@ -35,15 +35,15 @@ export default function RevenueChart({ storeId }: { storeId: string }) {
       <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
         <defs>
           <linearGradient id="revenue" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#f97316" stopOpacity={0.15} />
-            <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+            <stop offset="5%" stopColor="#0D6EFD" stopOpacity={0.15} />
+            <stop offset="95%" stopColor="#0D6EFD" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
         <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={d => d.slice(5)} />
         <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
         <Tooltip formatter={(v: number) => [`${v.toLocaleString()} دج`, 'الإيرادات']} />
-        <Area type="monotone" dataKey="revenue" stroke="#f97316" strokeWidth={2} fill="url(#revenue)" />
+        <Area type="monotone" dataKey="revenue" stroke="#0D6EFD" strokeWidth={2} fill="url(#revenue)" />
       </AreaChart>
     </ResponsiveContainer>
   )
