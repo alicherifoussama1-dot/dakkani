@@ -210,11 +210,11 @@ export default function DashboardShell({ children, store, user }: Props) {
               <Coins size={13} />
               <span>0 كريدت</span>
             </button>
-            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"
-              className="p-2 rounded-md hover:bg-[#F8F9FA] transition-colors" title="يوتيوب">
+            <Link href="/learn"
+              className="p-2 rounded-md hover:bg-[#F8F9FA] transition-colors" title="تعلم">
               <Youtube size={16} style={{ color: '#FF0000' }} />
-            </a>
-            <a href="https://wa.me" target="_blank" rel="noopener noreferrer"
+            </Link>
+            <a href="https://wa.me/213000000000?text=مرحبا، أحتاج مساعدة في دكاني" target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 px-2.5 h-8 rounded-md border text-xs font-medium hover:bg-[#F8F9FA] transition-colors"
               style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
               <HelpCircle size={13} />
