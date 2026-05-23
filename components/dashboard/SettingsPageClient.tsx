@@ -36,6 +36,21 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
 
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' })
   const [freeThreshold, setFreeThreshold] = useState<string>(String(store.store_settings?.free_delivery_threshold ?? ''))
+  const [notifSettings, setNotifSettings] = useState({
+    order_email: store.store_settings?.order_email ?? true,
+    order_sms:   store.store_settings?.order_sms ?? false,
+    low_stock_alert: store.store_settings?.low_stock_alert ?? true,
+  })
+  const [notifSaved, setNotifSaved] = useState(false)
+
+  const saveNotifications = async () => {
+    setLoading(true)
+    const sb = createClient()
+    await sb.from('store_settings').upsert({ store_id: store.id, ...notifSettings }, { onConflict: 'store_id' })
+    setLoading(false)
+    setNotifSaved(true)
+    setTimeout(() => setNotifSaved(false), 3000)
+  }
   const [delivSaved, setDelivSaved] = useState(false)
 
   const saveDelivery = async () => {
@@ -292,18 +307,24 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
         <div className="card p-5 space-y-3">
           <h2 className="font-semibold text-sm mb-2" style={{ color: 'var(--color-text-primary)' }}>إعدادات الإشعارات</h2>
           {[
-            { label: 'إشعار بريد إلكتروني عند كل طلب', key: 'order_email' },
-            { label: 'إشعار SMS عند كل طلب',           key: 'order_sms' },
-            { label: 'تنبيه المخزون المنخفض',           key: 'low_stock_alert' },
+            { label: 'إشعار بريد إلكتروني عند كل طلب', key: 'order_email' as const },
+            { label: 'إشعار SMS عند كل طلب',           key: 'order_sms' as const },
+            { label: 'تنبيه المخزون المنخفض',           key: 'low_stock_alert' as const },
           ].map(n => (
             <div key={n.key} className="flex items-center justify-between py-2.5 border-b" style={{ borderColor: 'var(--color-border)' }}>
               <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{n.label}</span>
-              <div className="w-9 h-5 rounded-full relative cursor-pointer" style={{ background: 'var(--color-accent)' }}>
-                <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-white rounded-full shadow" />
-              </div>
+              <button
+                onClick={() => setNotifSettings(s => ({ ...s, [n.key]: !s[n.key] }))}
+                className="w-9 h-5 rounded-full relative transition-colors duration-200 cursor-pointer"
+                style={{ background: notifSettings[n.key] ? 'var(--color-accent)' : '#DEE2E6' }}>
+                <span className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200"
+                  style={{ right: notifSettings[n.key] ? '2px' : 'calc(100% - 18px)' }} />
+              </button>
             </div>
           ))}
-          <button className="btn btn-primary mt-2" style={{ fontFamily: 'var(--font-arabic)' }}>حفظ الإشعارات</button>
+          <button onClick={saveNotifications} disabled={loading} className="btn btn-primary btn-sm mt-2" style={{ fontFamily: 'var(--font-arabic)' }}>
+            {loading ? 'جارٍ الحفظ...' : notifSaved ? '✓ تم الحفظ' : 'حفظ الإشعارات'}
+          </button>
         </div>
       )}
 
