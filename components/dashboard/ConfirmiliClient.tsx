@@ -759,10 +759,15 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
             <div className="card p-5 space-y-3">
               <h3 className="font-semibold text-sm" style={{fontFamily:'var(--font-arabic)'}}>ملخص الرصيد</h3>
               <div className="grid grid-cols-2 gap-3">
-                {['الرصيد','المبلغ المستحق','المدفوع','الخطة'].map(l => (
+                {[
+                  {l:'إجمالي الإيرادات',v:`${totalRevenue.toLocaleString('ar-DZ')} دج`},
+                  {l:'طلبات مسلمة',v:String(delivered.length)},
+                  {l:'طلبات مؤكدة',v:String(confirmed.length)},
+                  {l:'الخطة',v:plan.toUpperCase()},
+                ].map(({l,v}) => (
                   <div key={l} className="p-3 rounded-lg text-center" style={{background:'var(--color-bg-soft)'}}>
-                    <p className="font-bold text-lg" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>0</p>
-                    <p className="text-xs" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>{l}</p>
+                    <p className="font-bold text-sm" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>{v}</p>
+                    <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>{l}</p>
                   </div>
                 ))}
               </div>
