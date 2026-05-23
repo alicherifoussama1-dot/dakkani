@@ -34,9 +34,10 @@ interface Props {
   children: React.ReactNode
   store?: { name: string; slug?: string; plan?: string } | null
   user?: { name?: string; email?: string; avatar?: string } | null
+  newOrdersCount?: number
 }
 
-export default function DashboardShell({ children, store, user }: Props) {
+export default function DashboardShell({ children, store, user, newOrdersCount = 0 }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
   const [sidebarOpen,  setSidebarOpen]  = useState(true)
@@ -60,18 +61,17 @@ export default function DashboardShell({ children, store, user }: Props) {
     router.refresh()
   }
 
-  const NavItem = ({ item }: { item: { href: string; label: string; icon: any; badge?: string } }) => {
+  const NavItem = ({ item, count }: { item: { href: string; label: string; icon: any; badge?: string }; count?: number }) => {
     const active = isActive(item.href)
     return (
-      <Link
-        href={item.href}
-        className={`sidebar-item ${active ? 'active' : ''}`}
-      >
+      <Link href={item.href} className={`sidebar-item ${active ? 'active' : ''}`}>
         <item.icon size={16} className="icon flex-shrink-0" />
         <span className="flex-1 truncate">{item.label}</span>
-        {item.badge && (
+        {count && count > 0 ? (
+          <span className="badge badge-red text-[10px] h-[18px] px-1.5">{count > 99 ? '99+' : count}</span>
+        ) : item.badge ? (
           <span className="badge badge-blue text-[10px] h-[18px] px-1.5">{item.badge}</span>
-        )}
+        ) : null}
       </Link>
     )
   }
@@ -88,7 +88,9 @@ export default function DashboardShell({ children, store, user }: Props) {
 
       {/* Nav */}
       <div className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5 scrollbar-none">
-        {NAV_MAIN.map(item => <NavItem key={item.href} item={item} />)}
+        {NAV_MAIN.map(item => (
+          <NavItem key={item.href} item={item} count={item.href === '/orders' ? newOrdersCount : undefined} />
+        ))}
 
         <div className="pt-3 pb-1 px-2">
           <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>

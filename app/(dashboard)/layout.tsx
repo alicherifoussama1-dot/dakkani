@@ -17,10 +17,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   if (!store) redirect('/onboarding')
 
+  // Fetch new orders count for notification badge
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const { count: newOrdersToday } = await supabase
+    .from('orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('store_id', store.id)
+    .eq('status', 'new')
+    .gte('created_at', today.toISOString())
+
   return (
     <DashboardShell
       store={{ name: store.name, slug: store.slug ?? undefined, plan: store.plan ?? 'free' }}
       user={{ name: user.email?.split('@')[0], email: user.email }}
+      newOrdersCount={newOrdersToday ?? 0}
     >
       {children}
     </DashboardShell>
