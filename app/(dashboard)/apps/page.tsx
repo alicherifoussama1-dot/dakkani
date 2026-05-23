@@ -5,13 +5,13 @@ import Link from 'next/link'
 import { CheckCircle2, Clock } from 'lucide-react'
 
 const CONNECTED = [
-  { name:'JustForm',                desc:'أفضل نموذج عملاء آمن',                          icon:'📋', href:'/dashboard/settings' },
-  { name:'Meta Pixel',              desc:'تتبع تفاعلات المستخدم للتسويق',                   icon:'📊', href:'/dashboard/tracking' },
-  { name:'TikTok Pixel',            desc:'بكسل تيك توك للإعلانات',                          icon:'🎵', href:'/dashboard/tracking' },
-  { name:'Google Webdev',           desc:'أدوات مطور جوجل',                                 icon:'🔧', href:'/dashboard/settings' },
-  { name:'Google Analytics',        desc:'تحليلات جوجل لموقعك',                             icon:'📈', href:'/dashboard/settings' },
-  { name:'Google Spreadsheet',      desc:'إرسال الطلبات لجوجل شيت تلقائياً',                icon:'📄', href:'/dashboard/settings' },
-  { name:'Cloudflare Turnstile',    desc:'حماية CAPTCHA لنماذجك',                           icon:'🛡️', href:'/dashboard/settings' },
+  { name:'JustForm',                desc:'أفضل نموذج عملاء آمن',                          icon:'📋', href:'/settings' },
+  { name:'Meta Pixel',              desc:'تتبع تفاعلات المستخدم للتسويق',                   icon:'📊', href:'/tracking' },
+  { name:'TikTok Pixel',            desc:'بكسل تيك توك للإعلانات',                          icon:'🎵', href:'/tracking' },
+  { name:'Google Webdev',           desc:'أدوات مطور جوجل',                                 icon:'🔧', href:'/settings' },
+  { name:'Google Analytics',        desc:'تحليلات جوجل لموقعك',                             icon:'📈', href:'/analytics' },
+  { name:'Google Spreadsheet',      desc:'إرسال الطلبات لجوجل شيت تلقائياً',                icon:'📄', href:'/settings' },
+  { name:'Cloudflare Turnstile',    desc:'حماية CAPTCHA لنماذجك',                           icon:'🛡️', href:'/settings' },
 ]
 
 const DELIVERY_COMPANIES = [
