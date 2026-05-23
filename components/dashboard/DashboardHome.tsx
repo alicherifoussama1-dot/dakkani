@@ -189,11 +189,21 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td colSpan={4} className="text-center py-10 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                  لا توجد بيانات — أضف منتجاً للبدء
-                </td>
-              </tr>
+              {todayStats.total === 0 ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-10">
+                    <Link href="/products/new" className="btn btn-primary btn-sm gap-1.5">
+                      <Plus size={13} />أضف منتجاً للبدء
+                    </Link>
+                  </td>
+                </tr>
+              ) : (
+                <tr>
+                  <td colSpan={4} className="text-center py-10 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                    <Link href="/products" style={{ color: 'var(--color-accent)' }}>عرض المنتجات ←</Link>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
