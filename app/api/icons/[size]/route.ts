@@ -10,8 +10,8 @@ export async function GET(_req: NextRequest, { params }: { params: { size: strin
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">
   <defs>
     <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#f97316"/>
-      <stop offset="100%" style="stop-color:#ea580c"/>
+      <stop offset="0%" style="stop-color:#0D6EFD"/>
+      <stop offset="100%" style="stop-color:#0B5ED7"/>
     </linearGradient>
   </defs>
   <rect width="${s}" height="${s}" rx="${Math.round(size * 0.22)}" fill="url(#g)"/>
