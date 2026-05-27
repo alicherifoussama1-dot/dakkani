@@ -20,8 +20,13 @@ export default function AuthRegisterPage() {
     const sb = createClient()
     const { data: auth, error: authErr } = await sb.auth.signUp({ email: form.email, password: form.password })
     if (authErr || !auth.user) { setError(authErr?.message ?? 'خطأ'); setLoading(false); return }
-    const slug = slugify(form.storeName) || `store-${Date.now()}`
-    await sb.from('stores').insert({ owner_id: auth.user.id, name: form.storeName, name_ar: form.storeName, slug, phone: form.phone, currency:'DZD', plan:'free', is_active:true })
+    const baseSlug = slugify(form.storeName) || `store-${Date.now()}`
+    let slug = baseSlug
+    const { error: insertErr } = await sb.from('stores').insert({ owner_id: auth.user.id, name: form.storeName, name_ar: form.storeName, slug, phone: form.phone, currency:'DZD', plan:'free', is_active:true })
+    if (insertErr?.message?.includes('unique')) {
+      slug = `${baseSlug}-${Math.random().toString(36).slice(2,6)}`
+      await sb.from('stores').insert({ owner_id: auth.user.id, name: form.storeName, name_ar: form.storeName, slug, phone: form.phone, currency:'DZD', plan:'free', is_active:true })
+    }
     setLoading(false); router.push('/dashboard'); router.refresh()
   }
 
