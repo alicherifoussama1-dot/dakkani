@@ -75,7 +75,7 @@ export default function CustomersPageClient({ customers }: { customers: Customer
                   </td>
                 </tr>
               ) : filtered.map(c => (
-                <tr key={c.phone}>
+                <tr key={c.phone} className="cursor-pointer" onClick={() => window.location.href=`/customers/${encodeURIComponent(c.phone)}`}>
                   <td>
                     <div className="flex items-center gap-2.5">
                       <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{background:'var(--color-accent)'}}>
