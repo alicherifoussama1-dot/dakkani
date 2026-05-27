@@ -332,33 +332,60 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
           </div>
         )}
 
-        {statsTab === 3 && (
+        {statsTab === 3 && (() => {
+          // Top wilayas by order count
+          const wilayaCount = initialOrders.reduce((acc: Record<string,number>, o) => {
+            const n = (o.wilaya as any)?.name_ar ?? 'غير محدد'
+            acc[n] = (acc[n] ?? 0) + 1; return acc
+          }, {})
+          const topWilayas = Object.entries(wilayaCount).sort(([,a],[,b]) => b-a).slice(0,5)
+          // Top sources
+          const srcCount = initialOrders.reduce((acc: Record<string,number>, o) => {
+            const s = o.utm_source ?? o.source ?? 'مباشر'
+            acc[s] = (acc[s] ?? 0) + 1; return acc
+          }, {})
+          const topSources = Object.entries(srcCount).sort(([,a],[,b]) => b-a).slice(0,5)
+          // Top products
+          const prodCount: Record<string,number> = {}
+          initialOrders.forEach(o => {
+            (o.items as any[] ?? []).forEach((i: any) => {
+              prodCount[i.product_name] = (prodCount[i.product_name] ?? 0) + (i.quantity ?? 1)
+            })
+          })
+          const topProducts = Object.entries(prodCount).sort(([,a],[,b]) => b-a).slice(0,5)
+
+          const Bar = ({label,count,max}:{label:string,count:number,max:number}) => (
+            <div className="flex items-center gap-2">
+              <span className="text-xs truncate w-24 flex-shrink-0" style={{color:'var(--color-text-secondary)'}}>{label}</span>
+              <div className="flex-1 h-2 rounded-full" style={{background:'#F1F3F5'}}>
+                <div className="h-2 rounded-full" style={{width:`${max?count/max*100:0}%`,background:'var(--color-accent)'}}/>
+              </div>
+              <span className="text-xs w-6 text-left" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-primary)'}}>{count}</span>
+            </div>
+          )
+          const maxW = topWilayas[0]?.[1] ?? 1
+          const maxS = topSources[0]?.[1] ?? 1
+          const maxP = topProducts[0]?.[1] ?? 1
+
+          return (
           <div className="space-y-4">
-            <div className="flex gap-2 mb-3">
-              {['حسب عدد الطلبات','حسب معدل التأكيد','حسب معدل التسليم'].map(t => (
-                <button key={t} className="btn btn-sm" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)',fontFamily:'var(--font-arabic)'}}>
-                  {t}
-                </button>
-              ))}
-            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {['افضل الولايات','افضل المصادر','افضل شركات توصيل'].map(title => (
-                <div key={title} className="card p-4">
-                  <h3 className="font-semibold text-sm mb-3" style={{fontFamily:'var(--font-arabic)',color:'var(--color-text-primary)'}}>{title}</h3>
-                  <div className="text-center py-6 text-sm" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>لا توجد بيانات</div>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {['افضل منتوجات','افضل أعضاء'].map(title => (
-                <div key={title} className="card p-4">
-                  <h3 className="font-semibold text-sm mb-3" style={{fontFamily:'var(--font-arabic)'}}>{title}</h3>
-                  <div className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>لا توجد بيانات</div>
-                </div>
-              ))}
+              <div className="card p-4">
+                <h3 className="font-semibold text-sm mb-3" style={{fontFamily:'var(--font-arabic)',color:'var(--color-text-primary)'}}>أفضل الولايات</h3>
+                {topWilayas.length ? topWilayas.map(([w,c]) => <Bar key={w} label={w} count={c} max={maxW}/>) : <p className="text-xs text-center py-4" style={{color:'var(--color-text-muted)'}}>لا توجد بيانات</p>}
+              </div>
+              <div className="card p-4">
+                <h3 className="font-semibold text-sm mb-3" style={{fontFamily:'var(--font-arabic)',color:'var(--color-text-primary)'}}>أفضل المصادر</h3>
+                {topSources.length ? topSources.map(([s,c]) => <Bar key={s} label={s} count={c} max={maxS}/>) : <p className="text-xs text-center py-4" style={{color:'var(--color-text-muted)'}}>لا توجد بيانات</p>}
+              </div>
+              <div className="card p-4">
+                <h3 className="font-semibold text-sm mb-3" style={{fontFamily:'var(--font-arabic)',color:'var(--color-text-primary)'}}>أفضل المنتجات</h3>
+                {topProducts.length ? topProducts.map(([p,c]) => <Bar key={p} label={p.slice(0,18)} count={c} max={maxP}/>) : <p className="text-xs text-center py-4" style={{color:'var(--color-text-muted)'}}>لا توجد بيانات</p>}
+              </div>
             </div>
           </div>
-        )}
+          )
+        })()}
       </div>
     )
   }
