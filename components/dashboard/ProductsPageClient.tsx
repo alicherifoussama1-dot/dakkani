@@ -38,10 +38,18 @@ export default function ProductsPageClient({
     <div className="p-4 md:p-6 max-w-7xl mx-auto" dir="rtl" style={{ fontFamily: 'var(--font-arabic)' }}>
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
-        <h1 className="page-title">المنتجات</h1>
-        <Link href="/products/new" className="btn btn-primary btn-sm gap-1.5">
-          <Plus size={14} />إنشاء منتج
-        </Link>
+        <div>
+          <h1 className="page-title">المنتجات</h1>
+          <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)'}}>{initialProducts.length} منتج مسجل</p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/categories" className="btn btn-sm btn-ghost gap-1.5" style={{border:'1px solid var(--color-border)'}}>
+            الفئات
+          </Link>
+          <Link href="/products/new" className="btn btn-primary btn-sm gap-1.5">
+            <Plus size={14} />إنشاء منتج
+          </Link>
+        </div>
       </div>
 
       {/* Stats + Search row */}
