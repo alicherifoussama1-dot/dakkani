@@ -77,10 +77,10 @@ export default function AppsPage() {
         <h2 className="font-semibold text-sm mb-3" style={{ color: 'var(--color-text-primary)' }}>🟢 شركات التوصيل المتاحة</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {DELIVERY_COMPANIES.map(co => (
-            <div key={co} className="card p-3 text-center">
+            <Link key={co} href="/settings" className="card p-3 text-center hover:shadow-md transition-shadow group">
               <p className="font-medium text-xs" style={{ color: 'var(--color-text-primary)' }}>{co}</p>
-              <button className="mt-2 text-xs font-medium" style={{ color: 'var(--color-accent)' }}>ربط</button>
-            </div>
+              <p className="mt-2 text-xs font-medium group-hover:underline" style={{ color: 'var(--color-accent)' }}>ربط</p>
+            </Link>
           ))}
         </div>
       </div>
