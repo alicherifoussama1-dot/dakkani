@@ -94,10 +94,14 @@ export default function OrdersPageClient({
           {products.map(p => <option key={p.id} value={p.id}>{p.name_ar ?? p.name}</option>)}
         </select>
 
-        {/* Date */}
-        <button className="btn btn-sm gap-1.5" style={{ border: '1px solid var(--color-border)', background: '#fff', color: 'var(--color-text-secondary)' }}>
-          <Calendar size={13} />التاريخ
-        </button>
+        {/* Date range */}
+        <div className="flex items-center gap-1">
+          <input type="date" onChange={e => push({ from: e.target.value || undefined })}
+            className="input text-xs h-8 w-36" dir="ltr" title="من" />
+          <span className="text-xs" style={{color:'var(--color-text-muted)'}}>—</span>
+          <input type="date" onChange={e => push({ to: e.target.value || undefined })}
+            className="input text-xs h-8 w-36" dir="ltr" title="إلى" />
+        </div>
 
         {/* Type */}
         <select value={type} onChange={e => setType(e.target.value)} className="input text-sm w-40">

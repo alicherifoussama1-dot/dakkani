@@ -6,7 +6,7 @@ import OrdersPageClient from '@/components/dashboard/OrdersPageClient'
 
 export default async function OrdersPage({
   searchParams,
-}: { searchParams: { status?: string; search?: string; page?: string; per_page?: string } }) {
+}: { searchParams: { status?: string; search?: string; page?: string; per_page?: string; from?: string; to?: string } }) {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -20,12 +20,14 @@ export default async function OrdersPage({
 
   let q = supabase
     .from('orders')
-    .select('*, wilaya:wilayas(name_ar), items:order_items(product_name,quantity)', { count: 'exact' })
+    .select('*, wilaya:wilayas(name_ar), commune:communes(name_ar), items:order_items(product_name,quantity)', { count: 'exact' })
     .eq('store_id', store.id)
     .order('created_at', { ascending: false })
     .range(from, from + perPage - 1)
 
-  if (searchParams.status) q = q.eq('status', searchParams.status)
+  if (searchParams.status)  q = q.eq('status', searchParams.status)
+  if (searchParams.from)    q = q.gte('created_at', searchParams.from)
+  if (searchParams.to)      q = q.lte('created_at', searchParams.to + 'T23:59:59')
   if (searchParams.search) {
     q = q.or(`customer_name.ilike.%${searchParams.search}%,customer_phone.ilike.%${searchParams.search}%,order_number.ilike.%${searchParams.search}%`)
   }
