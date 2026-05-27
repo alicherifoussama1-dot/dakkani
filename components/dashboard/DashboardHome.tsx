@@ -32,7 +32,7 @@ interface Props {
   storeName:  string
   storeId:    string
   userName:   string
-  todayStats: { total: number; facebook: number; tiktok: number; other: number; revenue: number }
+  todayStats: { total: number; facebook: number; tiktok: number; other: number; revenue: number; productCount?: number }
 }
 
 export default function DashboardHome({ storeName, storeId, userName, todayStats }: Props) {
