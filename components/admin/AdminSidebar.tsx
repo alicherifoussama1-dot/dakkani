@@ -35,7 +35,7 @@ export default function AdminSidebar({ store }: { store: Store }) {
           return (
             <Link key={item.href} href={item.href} className={cn(
               'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition',
-              active ? 'bg-[#0D6EFD]/20 text-[#F96540]' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
+              active ? 'bg-[#0D6EFD]/20 text-[#93C5FD]' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
             )}>
               <item.icon className="w-4 h-4" />
               {item.label}

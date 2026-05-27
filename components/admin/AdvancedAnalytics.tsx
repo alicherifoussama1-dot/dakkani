@@ -146,7 +146,7 @@ export default function AdvancedAnalytics({ orders, items }: Props) {
       label:  'صافي الربح',
       value:  formatDZD(metrics.netProfit),
       icon:   metrics.netProfit >= 0 ? TrendingUp : TrendingDown,
-      color:  metrics.netProfit >= 0 ? 'text-[#F96540]' : 'text-red-400',
+      color:  metrics.netProfit >= 0 ? 'text-[#60A5FA]' : 'text-red-400',
       bg:     metrics.netProfit >= 0 ? 'bg-[#0D6EFD]/10' : 'bg-red-500/10',
       border: metrics.netProfit >= 0 ? 'border-[#0D6EFD]/20' : 'border-red-500/20',
       note:   'الإيرادات - التكلفة - الإعلانات - التوصيل - المرتجعات',
@@ -204,7 +204,7 @@ export default function AdvancedAnalytics({ orders, items }: Props) {
           </label>
           <button
             onClick={() => setCompare(c => !c)}
-            className={`text-xs px-3 py-1.5 rounded-lg border transition ${compare ? 'bg-[#0D6EFD]/20 text-[#F96540] border-[#0D6EFD]/30' : 'bg-gray-800 text-gray-500 border-gray-700'}`}
+            className={`text-xs px-3 py-1.5 rounded-lg border transition ${compare ? 'bg-[#0D6EFD]/20 text-[#60A5FA] border-[#0D6EFD]/30' : 'bg-gray-800 text-gray-500 border-gray-700'}`}
           >
             مقارنة الأسابيع
           </button>
@@ -246,7 +246,7 @@ export default function AdvancedAnalytics({ orders, items }: Props) {
           ))}
         </div>
         <div className="mt-3 text-center">
-          <span className={`text-xl font-black ${metrics.netProfit >= 0 ? 'text-[#F96540]' : 'text-red-400'}`}>
+          <span className={`text-xl font-black ${metrics.netProfit >= 0 ? 'text-[#60A5FA]' : 'text-red-400'}`}>
             صافي الربح: {formatDZD(metrics.netProfit)}
           </span>
         </div>

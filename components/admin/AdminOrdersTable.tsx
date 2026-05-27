@@ -196,7 +196,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
           {newOrderCount > 0 && (
             <button
               onClick={() => { setNew(0); router.refresh() }}
-              className="flex items-center gap-1.5 text-xs bg-[#0D6EFD]/20 text-[#F96540] border border-[#0D6EFD]/30 px-2.5 py-1 rounded-lg animate-pulse"
+              className="flex items-center gap-1.5 text-xs bg-[#0D6EFD]/20 text-[#60A5FA] border border-[#0D6EFD]/30 px-2.5 py-1 rounded-lg animate-pulse"
             >
               <Bell className="w-3.5 h-3.5" />
               {newOrderCount} طلب جديد
@@ -287,7 +287,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
       {/* ── Bulk Actions ───────────────────────────────── */}
       {selected.size > 0 && (
         <div className="px-6 py-2 bg-[#0D6EFD]/10 border-b border-[#0D6EFD]/20 flex items-center gap-3">
-          <span className="text-sm text-[#F96540] font-medium">{selected.size} طلب محدد</span>
+          <span className="text-sm text-[#60A5FA] font-medium">{selected.size} طلب محدد</span>
           {[
             { id: 'confirm', label: 'تأكيد', icon: CheckCircle, cls: 'text-green-400 hover:bg-green-500/10' },
             { id: 'ship',    label: 'إرسال للتوصيل', icon: Truck, cls: 'text-blue-400 hover:bg-blue-500/10' },
@@ -354,7 +354,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
                   </td>
                   <td className="px-3 py-3 text-gray-600 text-xs">{(page - 1) * pageSize + idx + 1}</td>
                   <td className="px-3 py-3">
-                    <Link href={`/admin/orders/${order.id}`} className="font-mono text-[#F96540] hover:text-[#FDBA74] font-bold text-xs">
+                    <Link href={`/admin/orders/${order.id}`} className="font-mono text-[#60A5FA] hover:text-[#FDBA74] font-bold text-xs">
                       {order.order_number}
                     </Link>
                   </td>
@@ -385,7 +385,7 @@ export default function AdminOrdersTable({ orders: initialOrders, total, page, p
                   <td className="px-3 py-3">
                     <Link
                       href={`/admin/orders/${order.id}`}
-                      className="text-xs text-[#0D6EFD] hover:text-[#F96540] font-medium"
+                      className="text-xs text-[#0D6EFD] hover:text-[#60A5FA] font-medium"
                     >
                       إدارة
                     </Link>
