@@ -263,7 +263,7 @@ export default function AdvancedAnalytics({ orders, items }: Props) {
               {chartConfig.yAxis()}
               {chartConfig.tooltip}
               <Legend formatter={(v: string) => v === 'thisWeek' ? 'هذا الأسبوع' : 'الأسبوع الماضي'} />
-              <Bar dataKey="thisWeek" fill="#f97316" radius={[4, 4, 0, 0]} name="thisWeek" />
+              <Bar dataKey="thisWeek" fill="#0D6EFD" radius={[4, 4, 0, 0]} name="thisWeek" />
               <Bar dataKey="lastWeek" fill="#64748b" radius={[4, 4, 0, 0]} name="lastWeek" />
             </BarChart>
           </ResponsiveContainer>
@@ -281,7 +281,7 @@ export default function AdvancedAnalytics({ orders, items }: Props) {
               {chartConfig.xAxis('date')}
               {chartConfig.yAxis()}
               {chartConfig.tooltip}
-              <Line type="monotone" dataKey="revenue" stroke="#f97316" strokeWidth={2} dot={false} name="الإيرادات" />
+              <Line type="monotone" dataKey="revenue" stroke="#0D6EFD" strokeWidth={2} dot={false} name="الإيرادات" />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -331,7 +331,7 @@ export default function AdvancedAnalytics({ orders, items }: Props) {
               <XAxis type="number" tick={{ fill: '#64748b', fontSize: 9 }} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
               <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} width={80} />
               {chartConfig.tooltip}
-              <Bar dataKey="revenue" fill="#f97316" radius={[0, 4, 4, 0]} name="الإيرادات" />
+              <Bar dataKey="revenue" fill="#0D6EFD" radius={[0, 4, 4, 0]} name="الإيرادات" />
             </BarChart>
           </ResponsiveContainer>
         </div>

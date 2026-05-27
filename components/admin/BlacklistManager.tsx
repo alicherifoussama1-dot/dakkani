@@ -93,7 +93,7 @@ export default function BlacklistManager({ storeId, blacklist, candidates }: Pro
       <div className="flex items-center gap-3 flex-wrap">
         <button
           onClick={() => setAdding(!adding)}
-          className="flex items-center gap-1.5 text-xs bg-[#0D6EFD]/20 text-[#F96540] border border-[#0D6EFD]/30 px-3 py-1.5 rounded-lg hover:bg-[#0D6EFD]/30 transition"
+          className="flex items-center gap-1.5 text-xs bg-[#0D6EFD]/20 text-[#60A5FA] border border-[#0D6EFD]/30 px-3 py-1.5 rounded-lg hover:bg-[#0D6EFD]/30 transition"
         >
           <Plus className="w-3.5 h-3.5" />
           إضافة يدوياً

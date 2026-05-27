@@ -294,7 +294,7 @@ export default function POSTerminal({ storeId, storeName, cashierId, products: s
                   }
                 </div>
                 <p className="text-xs font-medium text-gray-300 line-clamp-2">{p.name_ar ?? p.name}</p>
-                <p className="text-sm font-black text-[#F96540] mt-1">{formatDZD(p.price)}</p>
+                <p className="text-sm font-black text-[#60A5FA] mt-1">{formatDZD(p.price)}</p>
                 {inCart && (
                   <div className="absolute top-2 left-2 w-5 h-5 bg-[#0D6EFD] rounded-full text-white text-xs font-black flex items-center justify-center">
                     {inCart.quantity}
@@ -327,7 +327,7 @@ export default function POSTerminal({ storeId, storeName, cashierId, products: s
             <div key={item.productId} className="bg-gray-800 rounded-xl p-3 flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-gray-200 line-clamp-1">{item.productName}</p>
-                <p className="text-xs text-[#F96540] font-bold">{formatDZD(item.price)}</p>
+                <p className="text-xs text-[#60A5FA] font-bold">{formatDZD(item.price)}</p>
               </div>
               <div className="flex items-center gap-1.5">
                 <button onClick={() => updateQty(item.productId, -1)} className="w-6 h-6 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center justify-center transition">
@@ -384,7 +384,7 @@ export default function POSTerminal({ storeId, storeName, cashierId, products: s
             </div>
           )}
           <div className="flex justify-between font-black text-white text-lg">
-            <span>الإجمالي</span><span className="text-[#F96540]">{formatDZD(total)}</span>
+            <span>الإجمالي</span><span className="text-[#60A5FA]">{formatDZD(total)}</span>
           </div>
         </div>
 

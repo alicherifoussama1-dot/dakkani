@@ -163,7 +163,7 @@ export default function InventoryManager({ storeId, stock, warehouses, products,
             <button
               key={v}
               onClick={() => setFilter(v as any)}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition ${filter===v ? 'bg-[#0D6EFD]/20 text-[#F96540] border-[#0D6EFD]/30' : 'bg-gray-800 text-gray-500 border-gray-700'}`}
+              className={`text-xs px-3 py-1.5 rounded-lg border transition ${filter===v ? 'bg-[#0D6EFD]/20 text-[#60A5FA] border-[#0D6EFD]/30' : 'bg-gray-800 text-gray-500 border-gray-700'}`}
             >
               {l}
             </button>
@@ -227,7 +227,7 @@ export default function InventoryManager({ storeId, stock, warehouses, products,
                     ) : (
                       <button
                         onClick={() => setEditQty({ id: row.id, val: String(row.quantity) })}
-                        className="font-bold text-gray-200 hover:text-[#F96540] transition"
+                        className="font-bold text-gray-200 hover:text-[#60A5FA] transition"
                       >
                         {row.quantity}
                       </button>

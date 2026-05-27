@@ -40,7 +40,7 @@ interface Props {
 }
 
 const SECTION_CATALOG: { type: SectionType; label: string; icon: string; default: Record<string, unknown> }[] = [
-  { type: 'hero-banner',      label: 'بانر رئيسي',       icon: '🖼️', default: { title: 'عنوان رئيسي', subtitle: 'وصف قصير', ctaText: 'اطلب الآن', bgColor: '#f97316', textColor: '#ffffff' } },
+  { type: 'hero-banner',      label: 'بانر رئيسي',       icon: '🖼️', default: { title: 'عنوان رئيسي', subtitle: 'وصف قصير', ctaText: 'اطلب الآن', bgColor: '#0D6EFD', textColor: '#ffffff' } },
   { type: 'product-gallery',  label: 'معرض الصور',        icon: '🖼️', default: { images: [], autoPlay: true } },
   { type: 'features-grid',    label: 'مميزات المنتج',     icon: '✨', default: { features: [{ icon: '✅', title: 'جودة ممتازة', desc: '' }, { icon: '🚚', title: 'توصيل سريع', desc: '' }, { icon: '💳', title: 'COD', desc: '' }] } },
   { type: 'reviews-carousel', label: 'آراء العملاء',      icon: '⭐', default: { reviews: [{ name: 'أحمد', rating: 5, text: 'منتج ممتاز' }] } },
@@ -49,8 +49,8 @@ const SECTION_CATALOG: { type: SectionType; label: string; icon: string; default
   { type: 'video-embed',      label: 'فيديو',              icon: '🎬', default: { url: '', autoPlay: false } },
   { type: 'trust-badges',     label: 'شارات الثقة',        icon: '🏅', default: { badges: ['الدفع عند الاستلام', 'فتح قبل الدفع', 'توصيل لكل الجزائر', 'ضمان الاسترجاع'] } },
   { type: 'size-guide',       label: 'دليل المقاسات',      icon: '📏', default: { sizes: ['38','40','42','44','46','48','50','52','54','56','58'], columns: ['المقاس','الصدر cm','الخصر cm','الورك cm'], rows: [] } },
-  { type: 'checkout-form',    label: 'نموذج الطلب السريع', icon: '🛒', default: { buttonText: 'اطلب الآن والدفع عند الاستلام ✓', buttonColor: '#f97316' } },
-  { type: 'sticky-buy-button',label: 'زر شراء ثابت',      icon: '📌', default: { text: '🛒 اطلب الآن', color: '#f97316' } },
+  { type: 'checkout-form',    label: 'نموذج الطلب السريع', icon: '🛒', default: { buttonText: 'اطلب الآن والدفع عند الاستلام ✓', buttonColor: '#0D6EFD' } },
+  { type: 'sticky-buy-button',label: 'زر شراء ثابت',      icon: '📌', default: { text: '🛒 اطلب الآن', color: '#0D6EFD' } },
 ]
 
 // ── Sortable Section Item ─────────────────────────────────
@@ -71,7 +71,7 @@ function SortableSection({
         <p className="text-sm font-medium text-gray-200">{section.label || cat?.label}</p>
         <p className="text-xs text-gray-600">{section.type}</p>
       </div>
-      <button onClick={() => onEdit(section)} className="text-xs text-[#0D6EFD] hover:text-[#F96540] px-2 py-1 bg-[#0D6EFD]/10 rounded-lg transition">
+      <button onClick={() => onEdit(section)} className="text-xs text-[#0D6EFD] hover:text-[#60A5FA] px-2 py-1 bg-[#0D6EFD]/10 rounded-lg transition">
         تعديل
       </button>
       <button onClick={() => onRemove(section.id)} className="text-gray-600 hover:text-red-400 transition">
@@ -154,7 +154,7 @@ export default function PageBuilder({ storeId, storeMeta, existingPage, products
 
       // Generate default section structure
       const aiSections: Section[] = [
-        { id: crypto.randomUUID(), type: 'hero-banner',      label: 'بانر رئيسي',       data: { title: data.title_ar, subtitle: data.description_ar?.slice(0, 100), ctaText: 'اطلب الآن', bgColor: '#f97316' } },
+        { id: crypto.randomUUID(), type: 'hero-banner',      label: 'بانر رئيسي',       data: { title: data.title_ar, subtitle: data.description_ar?.slice(0, 100), ctaText: 'اطلب الآن', bgColor: '#0D6EFD' } },
         { id: crypto.randomUUID(), type: 'product-gallery',  label: 'معرض الصور',        data: { images: product.images } },
         { id: crypto.randomUUID(), type: 'features-grid',    label: 'المميزات',           data: { features: (data.features ?? []).slice(0,4).map((f: string) => ({ icon: '✅', title: f, desc: '' })) } },
         { id: crypto.randomUUID(), type: 'checkout-form',    label: 'نموذج الطلب',       data: { buttonText: 'اطلب الآن والدفع عند الاستلام ✓' } },
@@ -203,7 +203,7 @@ export default function PageBuilder({ storeId, storeMeta, existingPage, products
         <div className="p-4 border-b border-gray-800 flex items-center justify-between">
           <h2 className="font-bold text-white text-sm">EcoBuilder</h2>
           <div className="flex gap-2">
-            <button onClick={() => setPreview(!preview)} className="p-1.5 text-gray-500 hover:text-[#F96540] transition">
+            <button onClick={() => setPreview(!preview)} className="p-1.5 text-gray-500 hover:text-[#60A5FA] transition">
               <Eye className="w-4 h-4" />
             </button>
             <button onClick={savePage} disabled={saving} className="flex items-center gap-1.5 text-xs bg-[#0D6EFD] text-white px-3 py-1.5 rounded-lg hover:bg-[#0B5ED7] transition disabled:opacity-50">
@@ -282,7 +282,7 @@ export default function PageBuilder({ storeId, storeMeta, existingPage, products
             {/* Add section */}
             <button
               onClick={() => setShowCatalog(!showCatalog)}
-              className="w-full flex items-center justify-center gap-2 py-2 border-2 border-dashed border-gray-700 text-gray-600 hover:border-[#0D6EFD] hover:text-[#F96540] rounded-xl text-xs transition"
+              className="w-full flex items-center justify-center gap-2 py-2 border-2 border-dashed border-gray-700 text-gray-600 hover:border-[#0D6EFD] hover:text-[#60A5FA] rounded-xl text-xs transition"
             >
               <Plus className="w-3.5 h-3.5" />
               إضافة قسم
@@ -344,7 +344,7 @@ function SectionPreview({ section }: { section: Section }) {
   switch (section.type) {
     case 'hero-banner':
       return (
-        <div style={{ background: d.bgColor ?? '#f97316', color: d.textColor ?? '#fff' }} className="p-8 text-center">
+        <div style={{ background: d.bgColor ?? '#0D6EFD', color: d.textColor ?? '#fff' }} className="p-8 text-center">
           <h2 className="text-xl font-black">{d.title || 'عنوان البانر'}</h2>
           {d.subtitle && <p className="text-sm mt-1 opacity-80">{d.subtitle}</p>}
           <button style={{ background: 'rgba(255,255,255,0.2)' }} className="mt-3 px-6 py-2 rounded-xl text-sm font-bold">
@@ -380,7 +380,7 @@ function SectionPreview({ section }: { section: Section }) {
             {['الاسم الكامل', 'رقم الهاتف', 'اختر الولاية'].map(pl => (
               <div key={pl} className="border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-400 bg-white">{pl}</div>
             ))}
-            <button style={{ background: d.buttonColor ?? '#f97316' }} className="w-full text-white font-black py-3 rounded-xl text-sm">
+            <button style={{ background: d.buttonColor ?? '#0D6EFD' }} className="w-full text-white font-black py-3 rounded-xl text-sm">
               {d.buttonText ?? 'اطلب الآن والدفع عند الاستلام ✓'}
             </button>
           </div>
@@ -441,7 +441,7 @@ function SectionEditor({ section, onSave, onClose }: {
             {[['bgColor','لون الخلفية'],['textColor','لون النص']].map(([k,l]) => (
               <div key={k} className="flex items-center gap-3">
                 <label className="text-xs text-gray-500 w-24">{l}</label>
-                <input type="color" value={(data as any)[k] ?? '#f97316'} onChange={e => set(k, e.target.value)} className="w-10 h-8 rounded cursor-pointer" />
+                <input type="color" value={(data as any)[k] ?? '#0D6EFD'} onChange={e => set(k, e.target.value)} className="w-10 h-8 rounded cursor-pointer" />
               </div>
             ))}
           </>
@@ -483,7 +483,7 @@ function SectionEditor({ section, onSave, onClose }: {
             </div>
             <div className="flex items-center gap-3">
               <label className="text-xs text-gray-500">لون الزر</label>
-              <input type="color" value={(data as any).buttonColor ?? '#f97316'} onChange={e => set('buttonColor', e.target.value)} className="w-10 h-8 rounded cursor-pointer" />
+              <input type="color" value={(data as any).buttonColor ?? '#0D6EFD'} onChange={e => set('buttonColor', e.target.value)} className="w-10 h-8 rounded cursor-pointer" />
             </div>
           </>
         )
