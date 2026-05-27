@@ -143,10 +143,18 @@ export default function BillingPlansClient({ storeName, currentPlan }: Props) {
               ))}
             </ul>
             <button
-              className={`btn w-full mt-auto ${plan.featured ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => {
+                if (plan.key === currentPlan) return
+                if (plan.key === 'free') return
+                // Link to contact for elite, show subscribe flow for others
+                if (plan.key === 'elite') { window.open('https://wa.me/213000000000?text=أريد الاشتراك في خطة Elite', '_blank'); return }
+                alert('ميزة الدفع ستكون متاحة قريباً عبر SlickPay و Chargily')
+              }}
+              disabled={plan.key === currentPlan}
+              className={`btn w-full mt-auto ${plan.key === currentPlan ? 'btn-ghost opacity-50 cursor-default' : plan.featured ? 'btn-primary' : 'btn-outline'}`}
               style={{ fontFamily: 'var(--font-arabic)' }}
             >
-              {plan.cta}
+              {plan.key === currentPlan ? '✓ خطتك الحالية' : plan.cta}
             </button>
           </div>
         ))}
