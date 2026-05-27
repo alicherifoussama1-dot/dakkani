@@ -1,10 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { RefreshCw, Plus, Search, Filter, Calendar, ChevronDown, Edit2 } from 'lucide-react'
 import { formatDZD, formatDateShort } from '@/lib/utils/format'
 import StatusBadge from '@/components/ui/StatusBadge'
+import { useDebounce } from '@/hooks/useDebounce'
 
 const ORDER_TYPES    = ['الكل','نظيف','قيد المراجعة','مهجور']
 const ORDER_STATUSES = ['الكل','جديد','مؤكد','يُعالج','شُحن','مُسلَّم','ملغى','مُرجَع']
@@ -31,6 +32,7 @@ export default function OrdersPageClient({
   const [type,    setType]    = useState('الكل')
   const [sit,     setSit]     = useState('الكل')
   const [pp,      setPp]      = useState(perPage)
+  const debouncedSearch = useDebounce(search, 400)
 
   const push = (updates: Record<string, string | undefined>) => {
     const p = new URLSearchParams(params.toString())
@@ -38,6 +40,12 @@ export default function OrdersPageClient({
     p.delete('page')
     router.push(`${pathname}?${p}`)
   }
+
+  // Auto-search when debounced search changes
+  useEffect(() => {
+    push({ search: debouncedSearch || undefined })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch])
 
   const totalPages = Math.ceil(total / perPage)
 
@@ -64,7 +72,6 @@ export default function OrdersPageClient({
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && push({ search })}
             placeholder="ابحث في الطلبات..."
             className="input pr-8 text-sm"
           />
