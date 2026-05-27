@@ -14,12 +14,14 @@ import { useRouter } from 'next/navigation'
 
 // ── Nav structure ─────────────────────────────────────────
 const NAV_MAIN = [
-  { href: '/dashboard',   label: 'الرئيسية',    icon: Home },
-  { href: '/orders',      label: 'الطلبات',     icon: ShoppingCart },
-  { href: '/products',    label: 'المنتجات',    icon: Package },
-  { href: '/apps',        label: 'التطبيقات',   icon: Plug },
-  { href: '/customers',   label: 'الزبائن',     icon: Users },
-  { href: '/tracking',    label: 'التتبع',      icon: Navigation2 },
+  { href: '/dashboard',      label: 'الرئيسية',    icon: Home },
+  { href: '/orders',         label: 'الطلبات',     icon: ShoppingCart },
+  { href: '/products',       label: 'المنتجات',    icon: Package },
+  { href: '/customers',      label: 'الزبائن',     icon: Users },
+  { href: '/analytics',      label: 'الإحصائيات', icon: BarChart2 },
+  { href: '/landing-pages',  label: 'صفحات الهبوط', icon: Globe },
+  { href: '/apps',           label: 'التطبيقات',   icon: Plug },
+  { href: '/tracking',       label: 'التتبع',      icon: Navigation2 },
 ]
 const NAV_FEATURES = [
   { href: '/confirmili',  label: 'Confirmili',  icon: Phone,         badge: 'جديد' },
