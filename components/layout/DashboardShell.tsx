@@ -34,7 +34,7 @@ const NAV_BILLING = [
 
 interface Props {
   children: React.ReactNode
-  store?: { name: string; slug?: string; plan?: string } | null
+  store?: { name: string; slug?: string; plan?: string; logo_url?: string } | null
   user?: { name?: string; email?: string; avatar?: string } | null
   newOrdersCount?: number
 }
@@ -129,9 +129,15 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
       <div className="flex-shrink-0 border-t p-3 space-y-2" style={{ borderColor: 'var(--color-sidebar-border)' }}>
         {store && (
           <div className="flex items-center justify-between px-1">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold truncate" style={{ color: 'var(--color-text-primary)' }}>{store.name}</p>
-              {store.plan && <span className="badge badge-blue text-[10px]">{store.plan}</span>}
+            <div className="flex items-center gap-2 min-w-0">
+              {store.logo_url
+                ? <img src={store.logo_url} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0 border" style={{borderColor:'var(--color-border)'}} />
+                : <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{background:'var(--color-accent)'}}>{store.name[0]}</div>
+              }
+              <div className="min-w-0">
+                <p className="text-xs font-semibold truncate" style={{ color: 'var(--color-text-primary)' }}>{store.name}</p>
+                {store.plan && <span className="badge badge-blue text-[10px]">{store.plan}</span>}
+              </div>
             </div>
             {store.slug && (
               <a href={`/store/${store.slug}`} target="_blank" rel="noopener noreferrer"

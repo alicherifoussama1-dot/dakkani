@@ -11,7 +11,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: store } = await supabase
     .from('stores')
-    .select('id, name, slug, plan')
+    .select('id, name, slug, plan, logo_url')
     .eq('owner_id', user.id)
     .single()
 
@@ -29,7 +29,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <DashboardShell
-      store={{ name: store.name, slug: store.slug ?? undefined, plan: store.plan ?? 'free' }}
+      store={{ name: store.name, slug: store.slug ?? undefined, plan: store.plan ?? 'free', logo_url: store.logo_url ?? undefined }}
       user={{ name: user.email?.split('@')[0], email: user.email }}
       newOrdersCount={newOrdersToday ?? 0}
     >
