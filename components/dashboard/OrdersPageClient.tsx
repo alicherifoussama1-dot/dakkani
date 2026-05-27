@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { RefreshCw, Plus, Search, Filter, Calendar, ChevronDown, Edit2 } from 'lucide-react'
+import { RefreshCw, Plus, Search, Filter, Calendar, ChevronDown, Edit2, Download } from 'lucide-react'
 import { formatDZD, formatDateShort } from '@/lib/utils/format'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -57,6 +57,17 @@ export default function OrdersPageClient({
         <div className="flex items-center gap-2">
           <button onClick={() => router.refresh()} className="btn btn-sm gap-1.5" style={{ background: '#FFC107', color: '#000', border: 'none' }}>
             <RefreshCw size={13} />تحديث
+          </button>
+          <button
+            onClick={() => {
+              const rows = [['رقم الطلب','الاسم','الهاتف','المبلغ','الحالة','التاريخ']]
+              initialOrders.forEach(o => rows.push([o.order_number,o.customer_name,o.customer_phone,String(o.total),o.status,o.created_at?.slice(0,10)]))
+              const csv = rows.map(r => r.join(',')).join('\n')
+              const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}))
+              a.download = `orders-${new Date().toISOString().slice(0,10)}.csv`; a.click()
+            }}
+            className="btn btn-sm gap-1.5" style={{ border: '1px solid var(--color-border)', background: '#fff', color: 'var(--color-text-secondary)' }}>
+            <Download size={13} />تصدير CSV
           </button>
           <Link href="/orders/new" className="btn btn-primary btn-sm gap-1.5">
             <Plus size={13} />إنشاء طلب
