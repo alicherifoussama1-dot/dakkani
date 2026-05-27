@@ -10,6 +10,7 @@ import {
   ResponsiveContainer, Legend,
 } from 'recharts'
 import { formatDZD } from '@/lib/utils/format'
+import RecentOrders from '@/components/dashboard/RecentOrders'
 
 // TikTok icon (not in lucide)
 const TikTokIcon = () => (
@@ -166,6 +167,19 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
           </div>
         </div>
       </div>
+
+      {/* Recent Orders */}
+      {todayStats.total > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>آخر الطلبات</h2>
+            <Link href="/orders" className="text-xs" style={{ color: 'var(--color-accent)', fontFamily: 'var(--font-arabic)' }}>
+              عرض الكل ←
+            </Link>
+          </div>
+          <RecentOrders storeId={storeId} />
+        </div>
+      )}
 
       {/* Products Table */}
       <div className="card overflow-hidden">
