@@ -53,7 +53,10 @@ export default function OrdersPageClient({
     <div className="p-4 md:p-6 max-w-7xl mx-auto" dir="rtl" style={{ fontFamily: 'var(--font-arabic)' }}>
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
-        <h1 className="page-title">الطلبات</h1>
+        <div>
+          <h1 className="page-title">الطلبات</h1>
+          <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)'}}>{total.toLocaleString('ar-DZ')} طلب إجمالاً</p>
+        </div>
         <div className="flex items-center gap-2">
           <button onClick={() => router.refresh()} className="btn btn-sm gap-1.5" style={{ background: '#FFC107', color: '#000', border: 'none' }}>
             <RefreshCw size={13} />تحديث

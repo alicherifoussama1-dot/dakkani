@@ -18,6 +18,13 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   delivered:   { label: 'مُسلَّم',       color: '#28A745', bg: '#E8F5E9' },
   cancelled:   { label: 'ملغى',          color: '#DC3545', bg: '#FDECEA' },
   returned:    { label: 'مُرجَع',        color: '#6C757D', bg: '#F8F9FA' },
+  failed:      { label: 'فاشل',          color: '#FFA500', bg: '#FFF3CD' },
+  failed_1:    { label: 'فاشلة 01',      color: '#FFA500', bg: '#FFF3CD' },
+  failed_2:    { label: 'فاشلة 02',      color: '#FF8C00', bg: '#FFE8C0' },
+  failed_3:    { label: 'فاشلة 03',      color: '#DC3545', bg: '#FDECEA' },
+  postponed:   { label: 'مؤجلة',         color: '#7B2FBE', bg: '#EEE5FF' },
+  duplicate:   { label: 'مكررة',         color: '#212529', bg: '#F8F9FA' },
+  in_transit:  { label: 'في الطريق',     color: '#FD7E14', bg: '#FFF3E0' },
 }
 
 const STATUS_STEPS = ['new','confirmed','processing','shipped','delivered']
