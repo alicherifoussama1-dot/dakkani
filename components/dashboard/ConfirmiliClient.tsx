@@ -623,7 +623,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
           className="btn btn-sm gap-1" style={{border:'1px solid var(--color-border)',background:showTrash?'var(--color-accent)':'#fff',color:showTrash?'#fff':'var(--color-text-secondary)'}}>
           <Trash2 size={13}/>سلة المهملات ({trashedOrders.size})
         </button>
-        <button onClick={() => { setLocalOrders(initialOrders); setTrashedOrders(new Set()); setSelectedOrders(new Set()); setCurrentPage(1) }}
+        <button onClick={() => { router.refresh(); setLocalOrders(initialOrders); setTrashedOrders(new Set<string>()); setSelectedOrders(new Set<string>()); setCurrentPage(1) }}
           className="btn btn-sm p-2" style={{border:'1px solid var(--color-border)',background:'#fff'}}>
           <RefreshCw size={13}/>
         </button>
