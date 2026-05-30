@@ -11,6 +11,7 @@
 7. `007_public_read_policies.sql` — Public read access for storefront pages
 8. `008_additional_indexes.sql` — Performance indexes + missing columns
 9. `009_extend_order_statuses.sql` — **REQUIRED for Confirmili**: Add failed_1/2/3, postponed, duplicate statuses
+10. `010_confirmili_features.sql` — **REQUIRED**: order_history, notifications, delivery tables, decrement_product_stock function, Realtime
 
 ## Required Supabase Setup:
 
