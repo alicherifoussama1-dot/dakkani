@@ -7,13 +7,45 @@ import { generateA6Label, orderToLabelData } from '@/lib/labels/generator'
 import type { Order, Store } from '@/types'
 
 const STATUS_TRANSITIONS: Record<string, { label: string; next: string; bg: string }[]> = {
-  new:        [{ label: 'تأكيد الطلب',    next: 'confirmed',  bg: 'bg-green-500 hover:bg-green-600' }],
-  confirmed:  [{ label: 'بدء المعالجة',   next: 'processing', bg: 'bg-purple-500 hover:bg-purple-600' }],
-  processing: [{ label: 'تم الشحن',        next: 'shipped',    bg: 'bg-orange-500 hover:bg-orange-600' }],
-  shipped:    [{ label: 'تم التسليم',      next: 'delivered',  bg: 'bg-green-600 hover:bg-green-700' }],
+  new:        [
+    { label: 'تأكيد الطلب ✅',   next: 'confirmed',  bg: 'bg-green-500 hover:bg-green-600' },
+    { label: 'إلغاء ❌',          next: 'cancelled',  bg: 'bg-red-500 hover:bg-red-600' },
+    { label: 'فاشلة 01 📵',       next: 'failed_1',   bg: 'bg-yellow-500 hover:bg-yellow-600' },
+    { label: 'مؤجلة 🕐',          next: 'postponed',  bg: 'bg-purple-400 hover:bg-purple-500' },
+    { label: 'مكررة 👥',          next: 'duplicate',  bg: 'bg-gray-500 hover:bg-gray-600' },
+  ],
+  confirmed:  [
+    { label: 'شحن الطلب 🚚',     next: 'processing', bg: 'bg-purple-500 hover:bg-purple-600' },
+    { label: 'إلغاء ❌',          next: 'cancelled',  bg: 'bg-red-400 hover:bg-red-500' },
+  ],
+  processing: [
+    { label: 'تم الشحن 📦',       next: 'shipped',    bg: 'bg-orange-500 hover:bg-orange-600' },
+  ],
+  shipped:    [
+    { label: 'تم التسليم ✅',     next: 'delivered',  bg: 'bg-green-600 hover:bg-green-700' },
+    { label: 'مرجوع 🔄',          next: 'returned',   bg: 'bg-red-500 hover:bg-red-600' },
+  ],
+  failed_1:   [
+    { label: 'تأكيد الطلب ✅',   next: 'confirmed',  bg: 'bg-green-500 hover:bg-green-600' },
+    { label: 'فاشلة 02 📵',       next: 'failed_2',   bg: 'bg-yellow-600 hover:bg-yellow-700' },
+    { label: 'إلغاء ❌',          next: 'cancelled',  bg: 'bg-red-500 hover:bg-red-600' },
+  ],
+  failed_2:   [
+    { label: 'تأكيد الطلب ✅',   next: 'confirmed',  bg: 'bg-green-500 hover:bg-green-600' },
+    { label: 'فاشلة 03 📵',       next: 'failed_3',   bg: 'bg-red-500 hover:bg-red-600' },
+    { label: 'إلغاء ❌',          next: 'cancelled',  bg: 'bg-red-600 hover:bg-red-700' },
+  ],
+  failed_3:   [
+    { label: 'تأكيد الطلب ✅',   next: 'confirmed',  bg: 'bg-green-500 hover:bg-green-600' },
+    { label: 'إلغاء نهائي ❌',    next: 'cancelled',  bg: 'bg-red-700 hover:bg-red-800' },
+  ],
+  postponed:  [
+    { label: 'تأكيد الطلب ✅',   next: 'confirmed',  bg: 'bg-green-500 hover:bg-green-600' },
+    { label: 'إلغاء ❌',          next: 'cancelled',  bg: 'bg-red-500 hover:bg-red-600' },
+  ],
 }
 
-const CANCEL_ELIGIBLE = ['new', 'confirmed', 'processing']
+const CANCEL_ELIGIBLE: string[] = [] // Cancel now handled in STATUS_TRANSITIONS per state
 
 interface Props { order: Order & { wilaya?: any; commune?: any; items?: any[] }; store: Store }
 
@@ -101,14 +133,15 @@ export default function OrderActions({ order, store }: Props) {
         </button>
       ))}
 
-      {/* Cancel */}
-      {canCancel && (
-        <button
-          onClick={() => { if (confirm('تأكيد إلغاء الطلب؟')) updateStatus('cancelled') }}
-          disabled={!!loading}
-          className="btn btn-sm gap-1.5 disabled:opacity-50" style={{background:'#FEE2E2',color:'#DC3545',border:'none'}}>
-          <XCircle size={13} />إلغاء
-        </button>
+      {/* WhatsApp */}
+      {(order as any).customer_phone && (
+        <a
+          href={`https://wa.me/${((order as any).customer_phone ?? '').replace(/\D/g,'').replace(/^0/,'213')}?text=${encodeURIComponent(`السلام عليكم ${(order as any).customer_name}، نتصل بخصوص طلبكم ${order.order_number}`)}`}
+          target="_blank" rel="noopener noreferrer"
+          className="btn btn-sm gap-1.5" style={{background:'#25D366',color:'#fff',border:'none'}}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>
+          واتساب
+        </a>
       )}
     </div>
   )
