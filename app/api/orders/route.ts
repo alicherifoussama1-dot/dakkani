@@ -148,6 +148,8 @@ export async function POST(req: Request) {
     const { data: orderNum } = await supabase.rpc('generate_order_number', { p_store_id: data.store_id })
 
     // 7. Determine final status
+    // Note: 'duplicate' status requires migration 009 to be run
+    // If not run yet, use 'new' as fallback (constraint will reject 'duplicate')
     let finalStatus = 'new'
     if (fraudResult.shouldBlock) finalStatus = 'failed'
     else if (isDuplicate) finalStatus = 'duplicate'
@@ -188,6 +190,55 @@ export async function POST(req: Request) {
       .single()
 
     if (orderErr || !order) {
+      // If constraint violation on 'duplicate' status, retry with 'new'
+      if (orderErr?.message?.includes('check') && finalStatus === 'duplicate') {
+        const { data: order2, error: orderErr2 } = await supabase
+          .from('orders')
+          .insert({
+            store_id: data.store_id,
+            order_number: orderNum,
+            customer_name: data.customer_name,
+            customer_phone: data.customer_phone,
+            customer_phone2: data.customer_phone2,
+            delivery_type: data.delivery_type,
+            wilaya_id: data.wilaya_id,
+            commune_id: data.commune_id,
+            address: data.address,
+            stopdesk_code: data.stopdesk_code,
+            delivery_fee: deliveryFee,
+            declared_delivery_fee: deliveryFee,
+            subtotal,
+            discount_amount: discountAmount,
+            coupon_id: couponId,
+            coupon_code: data.coupon_code?.toUpperCase(),
+            total,
+            payment_method: data.payment_method,
+            fraud_score: fraudResult.score,
+            is_blacklisted: fraudResult.isBlacklisted,
+            status: 'new', // fallback
+            delivery_company_id: autoDeliveryCompanyId,
+            source: data.source ?? 'storefront',
+            utm_source: data.utm_source,
+            utm_medium: data.utm_medium,
+            utm_campaign: data.utm_campaign,
+            notes: data.notes ? `${data.notes} [مكرر]` : '[مكرر]',
+          })
+          .select()
+          .single()
+        if (orderErr2 || !order2) {
+          return NextResponse.json({ error: 'فشل في إنشاء الطلب' }, { status: 500 })
+        }
+        // Use order2 for rest of flow
+        return NextResponse.json({
+          success: true,
+          order_id: order2.id,
+          order_number: order2.order_number,
+          total: order2.total,
+          fraud_score: fraudResult.score,
+          fraud_blocked: fraudResult.shouldBlock,
+          is_duplicate: true,
+        })
+      }
       return NextResponse.json({ error: 'فشل في إنشاء الطلب' }, { status: 500 })
     }
 

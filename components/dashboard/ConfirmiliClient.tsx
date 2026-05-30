@@ -287,11 +287,21 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     const newAttempts = (currentAttempts ?? 0) + 1
     const newStatus = `failed_${Math.min(newAttempts, 3)}`
     try {
+      // Update via API for history tracking
+      await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: newStatus,
+          changed_by: 'confirmili',
+          notes: `محاولة اتصال رقم ${newAttempts}`,
+        }),
+      })
+      // Also update call_attempts directly
       const sb = createClient()
       await sb.from('orders').update({
         call_attempts: newAttempts,
         last_call_at: new Date().toISOString(),
-        status: newStatus,
       }).eq('id', orderId)
       setLocalOrders(prev => prev.map(o => o.id === orderId
         ? { ...o, call_attempts: newAttempts, status: newStatus } : o))
