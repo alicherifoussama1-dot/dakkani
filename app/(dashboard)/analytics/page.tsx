@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { formatDZD } from '@/lib/utils/format'
 import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts'
+import Link from 'next/link'
 import { TrendingUp, ShoppingCart, Percent, Truck, Users, PackageX, BarChart2, DollarSign } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -50,9 +51,15 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6" dir="rtl" style={{fontFamily:'var(--font-arabic)'}}>
-      <div>
-        <h1 className="page-title">الإحصائيات</h1>
-        <p className="text-sm mt-1" style={{color:'var(--color-text-muted)'}}>آخر 30 يوم — {orders.length.toLocaleString('ar-DZ')} طلب</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="page-title">الإحصائيات</h1>
+          <p className="text-sm mt-1" style={{color:'var(--color-text-muted)'}}>آخر 30 يوم — {orders.length.toLocaleString('ar-DZ')} طلب</p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/orders" className="btn btn-sm btn-outline" style={{fontFamily:'var(--font-arabic)'}}>عرض الطلبات</Link>
+          <Link href="/confirmili" className="btn btn-sm btn-primary" style={{fontFamily:'var(--font-arabic)'}}>Confirmili</Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
