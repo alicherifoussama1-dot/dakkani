@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Search, SlidersHorizontal, Grid3X3, List, ShoppingCart, Star } from 'lucide-react'
+import { Search, ShoppingCart, Star } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import WilayaSelector from '@/components/ui/WilayaSelector'
 import { SkeletonGrid } from '@/components/ui/SkeletonCard'
@@ -15,6 +16,7 @@ const CATEGORIES = [
 ]
 
 export default function DiscoverPage() {
+  const router = useRouter()
   const [products,setProducts]=useState<any[]>([]),[loading,setLoading]=useState(true)
   const [search,setSearch]=useState(''),[wilaya,setWilaya]=useState<number|null>(null)
   const [sort,setSort]=useState('newest'),[category,setCategory]=useState('')
@@ -24,11 +26,15 @@ export default function DiscoverPage() {
     const load = async () => {
       setLoading(true)
       const sb = createClient()
-      let q = sb.from('products').select('id,name,name_ar,slug,price,compare_price,images,stores(slug)').eq('is_active',true).limit(24)
+      let q = sb.from('products').select('id,name,name_ar,slug,price,compare_price,images,stores(slug),categories:category_id(slug)').eq('is_active',true).limit(24)
       if (debouncedSearch) q = q.or(`name.ilike.%${debouncedSearch}%,name_ar.ilike.%${debouncedSearch}%`)
       if (sort==='cheapest') q = q.order('price',{ascending:true})
       else q = q.order('created_at',{ascending:false})
-      const {data}=await q
+      const {data: rawData}=await q
+      // Client-side category filter (since category slugs are in related table)
+      const data = category
+        ? rawData?.filter((p: any) => (p.categories as any)?.slug === category)
+        : rawData
       setProducts(data??[]); setLoading(false)
     }
     load()
@@ -114,9 +120,16 @@ export default function DiscoverPage() {
                       <span className="font-bold text-xs" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>{p.price.toLocaleString('ar-DZ')} دج</span>
                       {hasDisc&&<span className="text-[10px] line-through" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-primary)'}}>{p.compare_price.toLocaleString('ar-DZ')}</span>}
                     </div>
-                    <button className="w-full mt-2 h-7 rounded-lg text-xs font-medium text-white flex items-center justify-center gap-1 transition-colors"
+                    <button
+                      onClick={e => {
+                        e.preventDefault()
+                        if (storeSlug && p.slug) {
+                          router.push(`/store/${storeSlug}/product/${p.slug}`)
+                        }
+                      }}
+                      className="w-full mt-2 h-7 rounded-lg text-xs font-medium text-white flex items-center justify-center gap-1 transition-colors"
                       style={{background:'var(--color-accent)',fontFamily:'var(--font-arabic)'}}>
-                      <ShoppingCart size={11}/>أضف للسلة
+                      <ShoppingCart size={11}/>اطلب الآن
                     </button>
                   </div>
                 </Link>

@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ShoppingCart, Truck, Shield, RefreshCw, Minus, Plus, Star, ChevronRight, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -9,10 +9,16 @@ import { formatDZD } from '@/lib/utils/format'
 
 export default function DiscoverProductPage() {
   const { storeSlug, slug } = useParams<{ storeSlug: string; slug: string }>()
+  const router = useRouter()
   const [product,setProduct]=useState<any>(null),[store,setStore]=useState<any>(null)
   const [loading,setLoading]=useState(true),[qty,setQty]=useState(1)
   const [wilaya,setWilaya]=useState<number|null>(null),[activeImg,setActiveImg]=useState(0)
   const [added,setAdded]=useState(false)
+
+  const goToCheckout = () => {
+    // Navigate to the storefront checkout for this product
+    router.push(`/store/${storeSlug}/product/${slug}`)
+  }
 
   useEffect(()=>{
     const load=async()=>{
@@ -147,9 +153,9 @@ export default function DiscoverProductPage() {
                 </a>
               )}
               <button
-                onClick={()=>setAdded(true)}
+                onClick={goToCheckout}
                 className="btn btn-primary flex-1 gap-2" style={{fontFamily:'var(--font-arabic)'}}>
-                {added?<>✓ أُضيف للسلة</>:<><ShoppingCart size={15}/>أضف للسلة — {formatDZD(product.price*qty)}</>}
+                <ShoppingCart size={15}/>اطلب الآن — {formatDZD(product.price*qty)}
               </button>
             </div>
           </div>
@@ -159,7 +165,7 @@ export default function DiscoverProductPage() {
       {/* Mobile sticky bar */}
       <div className="fixed bottom-0 inset-x-0 bg-white border-t p-3 flex gap-2 md:hidden z-40" style={{borderColor:'var(--color-border)'}}>
         {waUrl&&<a href={waUrl} target="_blank" className="flex-1 btn font-bold text-sm" style={{background:'#25D366',color:'#fff',fontFamily:'var(--font-arabic)'}}>📱 واتساب</a>}
-        <button className="flex-1 btn btn-primary text-sm" style={{fontFamily:'var(--font-arabic)'}} onClick={()=>setAdded(true)}>
+        <button className="flex-1 btn btn-primary text-sm" style={{fontFamily:'var(--font-arabic)'}} onClick={goToCheckout}>
           🛒 اطلب — {formatDZD(product.price*qty)}
         </button>
       </div>

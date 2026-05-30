@@ -21,15 +21,16 @@ function ProductCard({ product, storeSlug }: { product: Product; storeSlug: stri
           {hasDisc && (
             <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-black px-2.5 py-1.5 rounded-xl shadow-md">-{discPct}%</span>
           )}
-          <button onClick={e => e.preventDefault()}
+          <button onClick={e => { e.preventDefault(); e.stopPropagation() }}
             className="absolute top-3 left-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50">
             <Heart className="w-4 h-4 text-gray-400 hover:text-red-500 transition-colors" />
           </button>
           <div className="absolute bottom-0 inset-x-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out p-3">
-            <button onClick={e => e.preventDefault()}
-              className="w-full flex items-center justify-center gap-2 bg-[#0D6EFD] hover:bg-[#0B5ED7] text-white font-bold py-2.5 rounded-xl text-sm transition-colors" style={{boxShadow:'0 4px 12px rgba(13,110,253,0.3)'}}>
+            <div
+              className="w-full flex items-center justify-center gap-2 bg-[#0D6EFD] hover:bg-[#0B5ED7] text-white font-bold py-2.5 rounded-xl text-sm transition-colors cursor-pointer"
+              style={{boxShadow:'0 4px 12px rgba(13,110,253,0.3)'}}>
               <ShoppingCart className="w-4 h-4" /> اطلب الآن
-            </button>
+            </div>
           </div>
         </div>
         <div className="p-4">
