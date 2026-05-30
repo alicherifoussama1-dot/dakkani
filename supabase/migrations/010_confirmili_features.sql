@@ -141,6 +141,31 @@ CREATE POLICY "tenant_isolation" ON confirmili_send_reports USING (
   store_id IN (SELECT id FROM stores WHERE owner_id = auth.uid())
 );
 
+-- ── Decrement product stock function ────────────────────────
+CREATE OR REPLACE FUNCTION decrement_product_stock(
+  p_store_id   UUID,
+  p_product_id UUID,
+  p_quantity   INT
+) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  -- Find the primary warehouse stock row and decrement
+  UPDATE warehouse_stock
+  SET quantity = quantity - p_quantity,
+      updated_at = NOW()
+  WHERE product_id = p_product_id
+    AND store_id   = p_store_id
+    AND warehouse_id = (
+      SELECT ws2.warehouse_id
+      FROM warehouse_stock ws2
+      JOIN warehouses w ON ws2.warehouse_id = w.id
+      WHERE ws2.product_id = p_product_id
+        AND ws2.store_id   = p_store_id
+      ORDER BY w.is_default DESC, ws2.quantity DESC
+      LIMIT 1
+    );
+END;
+$$;
+
 -- Realtime enable for notifications and orders
 ALTER PUBLICATION supabase_realtime ADD TABLE confirmili_notifications;
 ALTER PUBLICATION supabase_realtime ADD TABLE orders;
