@@ -32,10 +32,12 @@ export default async function EditLandingPage({ params }: { params: { id: string
           </div>
         </div>
         <div className="flex gap-2">
-          <a href={`/store/${store.slug}/${page.slug}`} target="_blank" rel="noopener noreferrer"
-            className="btn btn-sm gap-1.5" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>
-            <Eye size={13} />معاينة
-          </a>
+          {(page.product as any)?.slug && (
+            <a href={`/store/${store.slug}/product/${(page.product as any).slug}`} target="_blank" rel="noopener noreferrer"
+              className="btn btn-sm gap-1.5" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>
+              <Eye size={13} />معاينة المنتج
+            </a>
+          )}
         </div>
       </div>
 
