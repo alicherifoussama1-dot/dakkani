@@ -121,10 +121,38 @@ export async function POST(req: Request) {
       orderTotal: total,
     }, settings?.fraud_auto_block_score ?? 80)
 
+    // 5b. Duplicate detection: same phone in last 24h → status "duplicate"
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const { data: recentOrders } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('store_id', data.store_id)
+      .eq('customer_phone', data.customer_phone)
+      .gte('created_at', oneDayAgo)
+      .limit(1)
+    const isDuplicate = (recentOrders?.length ?? 0) > 0
+
+    // 5c. Wilaya → delivery company auto-routing
+    let autoDeliveryCompanyId: string | null = null
+    try {
+      const { data: wilayaMap } = await supabase
+        .from('confirmili_wilaya_company_map')
+        .select('company_id')
+        .eq('store_id', data.store_id)
+        .eq('wilaya_id', data.wilaya_id)
+        .maybeSingle()
+      autoDeliveryCompanyId = wilayaMap?.company_id ?? null
+    } catch {}
+
     // 6. Generate order number
     const { data: orderNum } = await supabase.rpc('generate_order_number', { p_store_id: data.store_id })
 
-    // 7. Create order
+    // 7. Determine final status
+    let finalStatus = 'new'
+    if (fraudResult.shouldBlock) finalStatus = 'failed'
+    else if (isDuplicate) finalStatus = 'duplicate'
+
+    // 7b. Create order
     const { data: order, error: orderErr } = await supabase
       .from('orders')
       .insert({
@@ -139,6 +167,7 @@ export async function POST(req: Request) {
         address: data.address,
         stopdesk_code: data.stopdesk_code,
         delivery_fee: deliveryFee,
+        declared_delivery_fee: deliveryFee,
         subtotal,
         discount_amount: discountAmount,
         coupon_id: couponId,
@@ -147,8 +176,9 @@ export async function POST(req: Request) {
         payment_method: data.payment_method,
         fraud_score: fraudResult.score,
         is_blacklisted: fraudResult.isBlacklisted,
-        status: fraudResult.shouldBlock ? 'failed' : 'new',
-        source: data.source,
+        status: finalStatus,
+        delivery_company_id: autoDeliveryCompanyId,
+        source: data.source ?? 'storefront',
         utm_source: data.utm_source,
         utm_medium: data.utm_medium,
         utm_campaign: data.utm_campaign,
@@ -165,6 +195,64 @@ export async function POST(req: Request) {
     await supabase.from('order_items').insert(
       orderItems.map(i => ({ ...i, order_id: order.id, store_id: data.store_id }))
     )
+
+    // 8b. Decrement product stock + stock alert notifications
+    for (const item of data.items) {
+      const p = productMap[item.product_id]
+      // Decrement stock (can go negative) — direct update
+      try {
+        const { data: stock } = await supabase.from('warehouse_stock')
+          .select('quantity, warehouse_id')
+          .eq('product_id', item.product_id)
+          .eq('store_id', data.store_id)
+          .limit(1)
+        if (stock && stock.length > 0) {
+          const s = stock[0]
+          await supabase.from('warehouse_stock')
+            .update({ quantity: (s.quantity ?? 0) - item.quantity })
+            .eq('product_id', item.product_id)
+            .eq('warehouse_id', s.warehouse_id)
+        }
+      } catch { /* stock update is non-critical */ }
+
+      // Stock alert notification
+      const { data: stockRow } = await supabase
+        .from('warehouse_stock')
+        .select('quantity')
+        .eq('product_id', item.product_id)
+        .limit(1)
+        .maybeSingle()
+      const minAlert = (p as any).min_stock_alert ?? 5
+      if (stockRow && stockRow.quantity < minAlert) {
+        await supabase.from('confirmili_notifications').insert({
+          store_id: data.store_id,
+          type: 'stock',
+          title: 'تنبيه المخزون',
+          message: `تنبيه حول المخزون : ${p.name}`,
+          is_read: false,
+        }).then(() => {})
+      }
+    }
+
+    // 8c. Order creation notification
+    await supabase.from('confirmili_notifications').insert({
+      store_id: data.store_id,
+      type: 'order',
+      title: 'طلبية جديدة',
+      message: `لديك طلبية جديدة : ${order.order_number}`,
+      order_id: order.id,
+      is_read: false,
+    }).then(() => {})
+
+    // 8d. Order history entry
+    await supabase.from('order_history').insert({
+      order_id: order.id,
+      store_id: data.store_id,
+      old_status: null,
+      new_status: finalStatus,
+      changed_by: 'system',
+      notes: `تم إنشاء الطلب من ${data.source ?? 'storefront'}${isDuplicate ? ' (مكرر)' : ''}`,
+    }).then(() => {})
 
     // 9. Update coupon usage
     if (couponId) {

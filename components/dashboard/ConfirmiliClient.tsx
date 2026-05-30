@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -9,7 +9,8 @@ import {
   Filter, Plus, Search, RefreshCw, Trash2, Edit2, Eye, Download,
   SlidersHorizontal, Calendar, AlignLeft, ChevronRight, ChevronLeft,
   AlertTriangle, CheckCircle, XCircle, Clock, PhoneCall, Copy, RotateCcw,
-  MessageCircle, ChevronDown,
+  MessageCircle, ChevronDown, History, Languages, Headphones, FileSpreadsheet,
+  Globe, Pencil, Table,
 } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -77,15 +78,63 @@ const COMING_SOON = (
   </div>
 )
 
+// ── i18n translations ────────────────────────────────────────
+const T: Record<string, Record<string, string>> = {
+  ar: {
+    statistics: 'الإحصائيات', orders: 'الطلبات', tracking: 'التتبع',
+    validation: 'التحقق', products: 'المخزون', delivery: 'التوصيل',
+    store_integration: 'قنوات البيع', finances: 'الحسابات', team: 'الفريق',
+    settings_tab: 'الإعدادات', tutorials: 'الفيديوهات', ai: 'الذكاء الاصطناعي',
+    new: 'جديد', confirmed: 'مؤكدة', cancelled: 'ملغاة', delivered: 'مسلمة',
+    action: 'إجراء', search: 'بحث...', refresh: 'تحديث', export_csv: 'تصدير CSV',
+    today: 'اليوم', yesterday: 'الأمس', week: 'أسبوع', month: 'شهر', all_time: 'كل وقت',
+    trash: 'سلة المهملات', confirm_all: 'تأكيد الكل', cancel_all: 'إلغاء الكل',
+    whatsapp: 'واتساب', call_attempt: 'محاولة اتصال', move_to_trash: 'نقل للسلة',
+    restore: 'استعادة', order_history: 'سجل الطلبية', status_history: 'تاريخ التغييرات',
+    no_history: 'لا يوجد سجل لهذه الطلبية', close: 'إغلاق',
+    source_dakkani: 'دكاني', source_manual: 'يدوي', source_sheet: 'شيت',
+  },
+  fr: {
+    statistics: 'Statistiques', orders: 'Commandes', tracking: 'Suivi',
+    validation: 'Validation', products: 'Stock', delivery: 'Livraison',
+    store_integration: 'Intégrations', finances: 'Finances', team: 'Équipe',
+    settings_tab: 'Paramètres', tutorials: 'Tutoriels', ai: 'Intelligence AI',
+    new: 'Nouveau', confirmed: 'Confirmé', cancelled: 'Annulé', delivered: 'Livré',
+    action: 'Action', search: 'Rechercher...', refresh: 'Actualiser', export_csv: 'Export CSV',
+    today: "Auj.", yesterday: 'Hier', week: 'Semaine', month: 'Mois', all_time: 'Tout',
+    trash: 'Corbeille', confirm_all: 'Tout confirmer', cancel_all: 'Tout annuler',
+    whatsapp: 'WhatsApp', call_attempt: 'Tentative appel', move_to_trash: 'Mettre à la corbeille',
+    restore: 'Restaurer', order_history: 'Historique', status_history: 'Historique des statuts',
+    no_history: 'Aucun historique', close: 'Fermer',
+    source_dakkani: 'Dakkani', source_manual: 'Manuel', source_sheet: 'Tableur',
+  },
+  en: {
+    statistics: 'Statistics', orders: 'Orders', tracking: 'Tracking',
+    validation: 'Validation', products: 'Stock', delivery: 'Delivery',
+    store_integration: 'Integrations', finances: 'Finances', team: 'Team',
+    settings_tab: 'Settings', tutorials: 'Tutorials', ai: 'AI',
+    new: 'New', confirmed: 'Confirmed', cancelled: 'Cancelled', delivered: 'Delivered',
+    action: 'Action', search: 'Search...', refresh: 'Refresh', export_csv: 'Export CSV',
+    today: 'Today', yesterday: 'Yesterday', week: 'Week', month: 'Month', all_time: 'All time',
+    trash: 'Trash', confirm_all: 'Confirm all', cancel_all: 'Cancel all',
+    whatsapp: 'WhatsApp', call_attempt: 'Call attempt', move_to_trash: 'Move to trash',
+    restore: 'Restore', order_history: 'Order history', status_history: 'Status history',
+    no_history: 'No history found', close: 'Close',
+    source_dakkani: 'Dakkani', source_manual: 'Manual', source_sheet: 'Sheet',
+  },
+}
+
 interface Props {
   storeId?: string
   storeName?: string
   plan?: string
+  planOrderLimit?: number
+  planOrdersUsed?: number
   initialOrders?: any[]
   initialProducts?: any[]
 }
 
-export default function ConfirmiliClient({ storeId='', storeName='متجري', plan='free', initialOrders=[], initialProducts=[] }: Props) {
+export default function ConfirmiliClient({ storeId='', storeName='متجري', plan='free', planOrderLimit=1000, planOrdersUsed=0, initialOrders=[], initialProducts=[] }: Props) {
   const router = useRouter()
   const [activeTab,     setActiveTab]    = useState('statistics')
   const [statsTab,      setStatsTab]     = useState(0)
@@ -99,6 +148,93 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   const [settingsTab,   setSettingsTab]  = useState(0)
   const [tutSearch,     setTutSearch]    = useState('')
   const [orderSearch,   setOrderSearch]  = useState('')
+  // Language switcher
+  const [lang,          setLang]         = useState<'ar'|'fr'|'en'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('confirmili_lang') as 'ar'|'fr'|'en') ?? 'ar'
+    }
+    return 'ar'
+  })
+  // Order history modal
+  const [historyModal,  setHistoryModal] = useState<{orderId:string;orderNum:string}|null>(null)
+  const [orderHistory,  setOrderHistory] = useState<any[]>([])
+  const [loadingHistory,setLoadingHistory]= useState(false)
+  // Notifications
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [unreadCount,   setUnreadCount]   = useState(0)
+  // Realtime subscription ref
+  const realtimeRef = useRef<any>(null)
+
+  // i18n helper
+  const t = useCallback((key: string) => T[lang]?.[key] ?? T.ar[key] ?? key, [lang])
+  const setLanguage = (l: 'ar'|'fr'|'en') => {
+    setLang(l)
+    if (typeof window !== 'undefined') localStorage.setItem('confirmili_lang', l)
+  }
+
+  // ─── LOAD NOTIFICATIONS ─────────────────────────────────
+  const loadNotifications = useCallback(async () => {
+    try {
+      const res = await fetch('/api/notifications')
+      if (res.ok) {
+        const data = await res.json()
+        setNotifications(data.notifications ?? [])
+        setUnreadCount(data.unread ?? 0)
+      }
+    } catch {}
+  }, [])
+
+  // ─── ORDER HISTORY MODAL ────────────────────────────────
+  const openHistory = useCallback(async (orderId: string, orderNum: string) => {
+    setHistoryModal({ orderId, orderNum })
+    setLoadingHistory(true)
+    try {
+      const res = await fetch(`/api/orders/${orderId}/history`)
+      if (res.ok) {
+        const data = await res.json()
+        setOrderHistory(data.history ?? [])
+      }
+    } catch {}
+    setLoadingHistory(false)
+  }, [])
+
+  // ─── REALTIME SUBSCRIPTION ───────────────────────────────
+  useEffect(() => {
+    loadNotifications()
+
+    if (!storeId) return
+    const sb = createClient()
+
+    // Subscribe to new orders in real-time
+    const channel = sb.channel(`confirmili-${storeId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'orders',
+        filter: `store_id=eq.${storeId}`,
+      }, (payload: any) => {
+        // New order arrived — prepend to local orders
+        setLocalOrders(prev => [payload.new, ...prev])
+        // Increment unread count
+        setUnreadCount(c => c + 1)
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'confirmili_notifications',
+        filter: `store_id=eq.${storeId}`,
+      }, () => {
+        loadNotifications()
+      })
+      .subscribe()
+
+    realtimeRef.current = channel
+
+    return () => {
+      sb.removeChannel(channel)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeId])
 
   // ─── ORDER STATE ─────────────────────────────────────────
   // Local mirror of orders so UI updates instantly
@@ -118,27 +254,26 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     setUpdating(orderId)
     setActionMenu(null)
     try {
-      const sb = createClient()
-      const { error } = await sb.from('orders').update({
-        status: newStatus,
-        ...(newStatus === 'confirmed' ? { confirmed_at: new Date().toISOString() } : {}),
-        ...(newStatus === 'delivered' ? { delivered_at: new Date().toISOString() } : {}),
-        ...(newStatus === 'shipped'   ? { shipped_at:   new Date().toISOString() } : {}),
-      }).eq('id', orderId)
+      // Use API route for history tracking + auto-send
+      const res = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, changed_by: 'confirmili' }),
+      })
 
-      if (error) {
-        // If constraint violation, try with 'failed' for failed_X statuses
-        if (error.message?.includes('check') && newStatus.startsWith('failed_')) {
-          await sb.from('orders').update({ status: 'failed' }).eq('id', orderId)
-          setLocalOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
-        } else {
-          console.error('Status update error:', error.message)
-          return
-        }
-      } else {
-        // Instant local update
-        setLocalOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
+      if (!res.ok) {
+        // Fallback: direct DB update
+        const sb = createClient()
+        await sb.from('orders').update({
+          status: newStatus,
+          ...(newStatus === 'confirmed' ? { confirmed_at: new Date().toISOString() } : {}),
+          ...(newStatus === 'delivered' ? { delivered_at: new Date().toISOString() } : {}),
+          ...(newStatus === 'shipped'   ? { shipped_at:   new Date().toISOString() } : {}),
+        }).eq('id', orderId)
       }
+
+      // Instant local update
+      setLocalOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
     } catch (e) {
       console.error(e)
     } finally {
@@ -199,7 +334,8 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   }, [])
 
   // ─── DATE FILTERING ──────────────────────────────────────
-  const getDateRange = (filter: typeof dateFilter) => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const getDateRange = useCallback((filter: string) => {
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     switch (filter) {
@@ -209,7 +345,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       case 'month':     return [new Date(today.getTime() - 30*86400000), now]
       default:          return null
     }
-  }
+  }, [])
 
   // ─── FILTERED ORDERS ─────────────────────────────────────
   const filteredOrders = useMemo(() => {
@@ -297,6 +433,45 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     </div>
   )
 
+  // ─── SOURCE ICONS ────────────────────────────────────────
+  const SourceIcon = ({ source }: { source: string }) => {
+    if (!source || source === 'direct' || source === 'manual') {
+      return <span title="يدوي" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#EEE5FF',color:'#7B2FBE'}}>✎</span>
+    }
+    if (source === 'storefront' || source === 'Dakkani') {
+      return <span title="دكاني" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#EBF5FF',color:'#0D6EFD'}}>د</span>
+    }
+    if (source?.includes('sheet') || source?.includes('Sheet')) {
+      return <span title="Google Sheet" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#D1E7DD',color:'#198754'}}>📊</span>
+    }
+    if (source?.includes('facebook') || source === 'fb') {
+      return <span title="Facebook" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#EBF5FF',color:'#1877F2'}}>f</span>
+    }
+    return <span title={source} className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#F1F3F5',color:'#495057'}}>{source[0]?.toUpperCase()}</span>
+  }
+
+  // ─── TRACKING BADGE (SD/HM) ──────────────────────────────
+  const TrackingBadge = ({ trackingNum, deliveryType }: { trackingNum: string; deliveryType: string }) => {
+    const [copied, setCopied] = useState(false)
+    const prefix = deliveryType === 'stopdesk' ? 'SD' : 'HM'
+    const prefixBg = deliveryType === 'stopdesk' ? '#EEE5FF' : '#EBF5FF'
+    const prefixColor = deliveryType === 'stopdesk' ? '#7B2FBE' : '#0D6EFD'
+    const copy = () => {
+      navigator.clipboard.writeText(trackingNum)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+    return (
+      <div className="flex items-center gap-1">
+        <span className="text-[9px] font-black px-1 py-0.5 rounded" style={{background:prefixBg,color:prefixColor}}>{prefix}</span>
+        <span className="font-mono text-xs">{trackingNum}</span>
+        <button onClick={copy} title={copied ? 'تم النسخ ✓' : 'نسخ'} className="p-0.5 rounded hover:bg-[#F8F9FA]">
+          {copied ? <CheckCircle size={10} style={{color:'#198754'}}/> : <Copy size={10} style={{color:'#868E96'}}/>}
+        </button>
+      </div>
+    )
+  }
+
   // ─── ACTION DROPDOWN ─────────────────────────────────────
   const ActionDropdown = ({ order }: { order: any }) => {
     const isOpen = actionMenu === order.id
@@ -343,6 +518,15 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                 style={{ color: '#0D6EFD', fontFamily: 'var(--font-arabic)' }}
               >
                 <PhoneCall size={13}/>محاولة اتصال ({order.call_attempts ?? 0})
+              </button>
+              <div className="h-px" style={{ background: 'var(--color-border)' }}/>
+              {/* History */}
+              <button
+                onClick={() => { openHistory(order.id, order.order_number); setActionMenu(null) }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-[#F8F9FA] transition-colors text-right"
+                style={{ color: '#495057', fontFamily: 'var(--font-arabic)' }}
+              >
+                <History size={13}/>سجل الطلبية
               </button>
               <div className="h-px" style={{ background: 'var(--color-border)' }}/>
               {/* Trash */}
@@ -681,8 +865,35 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                     {showTrash ? 'سلة المهملات فارغة' : dateFilter !== 'all' ? 'لا توجد طلبات في هذه الفترة' : 'لا توجد طلبات بعد'}
                   </td>
                 </tr>
-              ) : pagedOrders.map(o => (
-                <tr key={o.id} className={selectedOrders.has(o.id) ? 'bg-[#EBF5FF]' : ''}>
+              ) : (() => {
+                // ── Date group separators (9.12) ──────────────────────
+                const rows: React.ReactNode[] = []
+                let lastDate = ''
+                pagedOrders.forEach(o => {
+                  const dateKey = o.created_at?.slice(0,10) ?? ''
+                  if (dateKey !== lastDate) {
+                    lastDate = dateKey
+                    const dateObj = new Date(o.created_at)
+                    const dayLabel = dateObj.toLocaleDateString('ar-DZ', {
+                      weekday:'long', year:'numeric', month:'long', day:'numeric'
+                    })
+                    rows.push(
+                      <tr key={`date-${dateKey}`} style={{background:'var(--color-bg-muted)'}}>
+                        <td colSpan={13} className="text-center py-1.5 text-xs font-semibold" style={{color:'var(--color-text-muted)'}}>
+                          {dayLabel}
+                        </td>
+                      </tr>
+                    )
+                  }
+
+                  // Verify counter (9.8) — compute from all orders by this phone
+                  const samePhone = localOrders.filter(x => x.customer_phone === o.customer_phone)
+                  const verifyRed = samePhone.filter(x => ['returned','failed','failed_1','failed_2','failed_3','cancelled'].includes(x.status)).length
+                  const verifyGreen = samePhone.filter(x => x.status === 'delivered').length
+                  const riskRatio = samePhone.length > 0 ? Math.round(verifyGreen / samePhone.length * 100) : 100
+
+                  rows.push(
+                  <tr key={o.id} className={selectedOrders.has(o.id) ? 'bg-[#EBF5FF]' : ''}>
                   <td>
                     <input type="checkbox"
                       checked={selectedOrders.has(o.id)}
@@ -696,7 +907,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                       className="w-3.5 h-3.5 accent-[#0D6EFD]"
                     />
                   </td>
-                  <td className="text-xs" style={{color:'var(--color-text-muted)'}}>{o.source ?? 'مباشر'}</td>
+                  <td><SourceIcon source={o.source ?? o.utm_source ?? ''}/></td>
                   <td className="font-mono text-xs font-medium" style={{color:'var(--color-accent)'}}>{o.order_number}</td>
                   <td className="text-xs" style={{color:'var(--color-text-muted)'}}>{new Date(o.created_at).toLocaleDateString('ar-DZ')}</td>
                   <td className="text-sm font-medium" style={{color:'var(--color-text-primary)'}}>{o.customer_name}</td>
@@ -709,6 +920,12 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                       <MessageCircle size={11}/>
                       {o.customer_phone}
                     </button>
+                    {/* Verify counter (9.8) */}
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="text-[9px] px-1 rounded font-bold" style={{background:'#D1E7DD',color:'#198754'}}>{verifyGreen}✓</span>
+                      <span className="text-[9px] px-1 rounded font-bold" style={{background:'#F8D7DA',color:'#DC3545'}}>{verifyRed}✗</span>
+                      <span className="text-[9px]" style={{color: riskRatio >= 70 ? '#198754' : riskRatio >= 40 ? '#FFA500' : '#DC3545'}}>{riskRatio}%</span>
+                    </div>
                   </td>
                   <td><StatusBadge status={o.status}/></td>
                   <td className="text-xs" style={{color:'var(--color-text-secondary)'}}>{(o.wilaya as any)?.name_ar ?? '—'}</td>
@@ -730,7 +947,10 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                     </div>
                   </td>
                 </tr>
-              ))}
+                  )
+                })
+                return rows
+              })()}
             </tbody>
           </table>
         </div>
@@ -764,26 +984,43 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   )
 
   // ─── TRACKING ────────────────────────────────────────────
-  const renderTracking = () => (
+  const renderTracking = () => {
+    const trackingOrders = localOrders.filter(o =>
+      ['shipped','in_transit','out_for_delivery','with_driver','at_stopdesk'].includes(o.status) &&
+      !trashedOrders.has(o.id)
+    )
+    return (
     <div className="space-y-3">
       <div className="flex gap-2 mb-3">
         {['شركة التوصيل','رجل التوصيل'].map((t,i) => (
           <button key={t} className={`tab-item ${i===0?'active':''}`}>{t}</button>
         ))}
       </div>
+      {/* 9.10 Empty state for رجل التوصيل */}
       <div className="card overflow-hidden">
         <table className="data-table" style={{fontFamily:'var(--font-arabic)'}}>
-          <thead><tr>{['الحالة','الهاتف','الاسم','المنتج','الولاية','الإجمالي','إجراء'].map(h=><th key={h}>{h}</th>)}</tr></thead>
+          <thead>
+            <tr>{['رقم التتبع','الحالة','الهاتف','الاسم','المنتج','الولاية','الإجمالي','إجراء'].map(h=><th key={h}>{h}</th>)}</tr>
+          </thead>
           <tbody>
-            {localOrders.filter(o => ['shipped','in_transit','out_for_delivery'].includes(o.status)).length === 0
-              ? <tr><td colSpan={7} className="text-center py-12 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد طلبات في التوصيل</td></tr>
-              : localOrders.filter(o => ['shipped','in_transit','out_for_delivery'].includes(o.status)).slice(0,50).map(o => (
+            {trackingOrders.length === 0
+              ? <tr><td colSpan={8} className="text-center py-12 text-sm" style={{color:'var(--color-text-muted)'}}>
+                  لا توجد طلبات للتتبع — الطلبات المشحونة تظهر هنا
+                </td></tr>
+              : trackingOrders.slice(0,50).map(o => (
                 <tr key={o.id}>
+                  {/* 9.2 — Tracking number badges (SD/HM) + copy */}
+                  <td>
+                    {o.tracking_number
+                      ? <TrackingBadge trackingNum={o.tracking_number} deliveryType={o.delivery_type ?? 'home'}/>
+                      : <span className="text-xs" style={{color:'var(--color-text-muted)'}}>—</span>
+                    }
+                  </td>
                   <td><StatusBadge status={o.status}/></td>
                   <td><button onClick={()=>openWhatsApp(o.customer_phone,o.customer_name)} className="text-xs" style={{color:'#25D366'}}>{o.customer_phone}</button></td>
                   <td className="font-medium text-sm">{o.customer_name}</td>
-                  <td className="text-xs">{o.items?.[0]?.product_name?.slice(0,16) ?? '—'}</td>
-                  <td className="text-xs">{o.wilaya?.name_ar ?? '—'}</td>
+                  <td className="text-xs">{(o.items?.[0] as any)?.product_name?.slice(0,16) ?? '—'}</td>
+                  <td className="text-xs">{(o.wilaya as any)?.name_ar ?? '—'}</td>
                   <td className="font-semibold text-sm" style={{color:'var(--color-accent)'}}>{o.total?.toLocaleString('ar-DZ')} دج</td>
                   <td><ActionDropdown order={o}/></td>
                 </tr>
@@ -792,7 +1029,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
         </table>
       </div>
     </div>
-  )
+  )}
 
   const renderValidation = () => (
     <div>
@@ -838,14 +1075,91 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       <div>
         <TabBar tabs={dTabs} active={delivSubTab} onChange={setDelivSubTab}/>
         {delivSubTab === 0 && (
+          <div className="space-y-3">
+            <div className="flex items-start gap-2 p-3 rounded-lg border" style={{borderColor:'var(--color-info)',background:'var(--color-info-soft)'}}>
+              <AlertTriangle size={13} style={{color:'var(--color-info)',marginTop:1,flexShrink:0}}/>
+              <p className="text-xs" style={{color:'var(--color-info)'}}>
+                عمود &quot;تلقائي&quot; يعني: عند تأكيد طلب مرتبط بهذه الشركة، يُرسل تلقائياً دون النقر على زر الإرسال.
+              </p>
+            </div>
+            <div className="card overflow-hidden">
+              <table className="data-table">
+                <thead>
+                  <tr>{['اسم الشركة','الاسم القصير','تلقائي ⚡','جماعي؟','الحالة','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {[
+                    {name:'Yalidine Express', short:'YLD', auto:false, bulk:false},
+                    {name:'ZR Express',        short:'ZR',  auto:false, bulk:false},
+                    {name:'Maystro Delivery',  short:'MYS', auto:false, bulk:true },
+                  ].map((co, i) => (
+                    <tr key={co.short}>
+                      <td className="font-medium text-sm">{co.name}</td>
+                      <td className="font-mono text-xs" style={{color:'var(--color-accent)'}}>{co.short}</td>
+                      <td>
+                        {/* 9.1 — Automatic sending checkbox */}
+                        <label className="flex items-center gap-2 cursor-pointer" title="إرسال تلقائي عند التأكيد">
+                          <div className={`w-8 h-4 rounded-full transition-colors ${co.auto ? 'bg-[#0D6EFD]' : 'bg-[#DEE2E6]'} relative cursor-pointer`}>
+                            <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all ${co.auto ? 'right-0.5' : 'right-4.5'}`}/>
+                          </div>
+                          <span className="text-xs" style={{color: co.auto ? 'var(--color-accent)' : 'var(--color-text-muted)'}}>
+                            {co.auto ? 'مفعّل' : 'يدوي'}
+                          </span>
+                        </label>
+                      </td>
+                      <td>
+                        <span className={`badge ${co.bulk ? 'badge-blue' : 'badge-gray'} text-[10px]`}>{co.bulk ? 'نعم' : 'لا'}</span>
+                      </td>
+                      <td><span className="badge badge-gray text-[10px]">غير مضبوط</span></td>
+                      <td>
+                        <button className="btn btn-sm" style={{background:'#EBF5FF',color:'var(--color-accent)'}}>إعداد</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        {delivSubTab === 1 && (
+          <div className="space-y-3">
+            <div className="p-3 rounded-lg border flex items-start gap-2" style={{borderColor:'var(--color-error)',background:'var(--color-error-soft)'}}>
+              <AlertTriangle size={14} style={{color:'var(--color-error)',flexShrink:0,marginTop:1}}/>
+              <p className="text-xs" style={{color:'var(--color-error)'}}>
+                أسعار التوصيل المعلنة هي الأسعار التي تُعلنها لزبائنك وتُضاف لمجموع الطلبية. تختلف عن الأسعار الحقيقية المستخدمة لحساب الأرباح.
+              </p>
+            </div>
+            <div className="card overflow-hidden">
+              <table className="data-table">
+                <thead><tr><th>الولاية</th><th>مكتب (دج)</th><th>المنزل (دج)</th></tr></thead>
+                <tbody>
+                  <tr><td colSpan={3} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد قوائم أسعار — أضف قائمة جديدة</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        {delivSubTab === 2 && (
           <div className="card overflow-hidden">
             <table className="data-table">
-              <thead><tr>{['اسم الشركة','الاسم القصير','جماعي؟','الحالة','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr></thead>
-              <tbody><tr><td colSpan={5} className="text-center py-12 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد شركات توصيل مضبوطة</td></tr></tbody>
+              <thead><tr><th>الولاية</th><th>شركة التوصيل</th><th>إجراءات</th></tr></thead>
+              <tbody><tr><td colSpan={3} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد تعيينات — كل ولاية تستخدم الشركة الافتراضية</td></tr></tbody>
             </table>
           </div>
         )}
-        {delivSubTab > 0 && COMING_SOON}
+        {delivSubTab === 3 && (
+          <div className="space-y-2">
+            <div className="p-3 rounded-lg" style={{background:'var(--color-warning-soft)'}}>
+              <p className="text-xs" style={{color:'#856404'}}>أسعار التوصيل الحقيقية تُستخدم فقط في حساب الأرباح (لا تُضاف للزبون).</p>
+            </div>
+            <div className="card overflow-hidden">
+              <table className="data-table">
+                <thead><tr><th>الولاية</th><th>مكتب (دج)</th><th>المنزل (دج)</th></tr></thead>
+                <tbody><tr><td colSpan={3} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد أسعار حقيقية</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -878,11 +1192,48 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
 
   const renderFinances = () => {
     const fTabs = ['حساب الأرباح','حسابات التأكيد و التتبع','حسابات التوصيل','تنظيم مدير الأعمال']
+
+    // 9.6 — Declared vs Real prices logic
+    // Declared delivery fee = what customer paid (stored in orders.delivery_fee or declared_delivery_fee)
+    // Real delivery fee = actual carrier cost (stored in orders.real_delivery_fee)
+    // Revenue = product price * qty + declared_delivery_fee (what customer paid)
+    // Net profit = Revenue - real_delivery_fee - cost_price
+    const deliveredOrders = localOrders.filter(o => o.status === 'delivered' && !trashedOrders.has(o.id))
+    const grossRevenue       = deliveredOrders.reduce((s,o) => s + (o.total ?? 0), 0)
+    const declaredDelivery   = deliveredOrders.reduce((s,o) => s + (o.declared_delivery_fee ?? o.delivery_fee ?? 0), 0)
+    const realDelivery       = deliveredOrders.reduce((s,o) => s + (o.real_delivery_fee ?? o.delivery_fee ?? 0), 0)
+    const productRevenue     = grossRevenue - declaredDelivery // pure product revenue
+    const netProfit          = productRevenue - realDelivery   // after actual carrier cost
+
     return (
       <div>
         <TabBar tabs={fTabs} active={financeSubTab} onChange={setFinanceSubTab}/>
         {financeSubTab === 0 && (
           <div className="space-y-4">
+            {/* (9.6) Declared vs Real breakdown */}
+            <div className="card p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Calculator size={15} style={{color:'var(--color-accent)'}}/>
+                <h3 className="font-semibold text-sm" style={{color:'var(--color-text-primary)'}}>حساب الأرباح الدقيق</h3>
+                <span className="badge badge-blue text-[10px]">مسلمة فقط</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {[
+                  {label:'إجمالي المبيعات', v:`${grossRevenue.toLocaleString('ar-DZ')} دج`, color:'var(--color-accent)', tip:'السعر الكلي المدفوع من الزبون'},
+                  {label:'رسوم التوصيل المعلنة', v:`${declaredDelivery.toLocaleString('ar-DZ')} دج`, color:'#FFA500', tip:'رسوم التوصيل المضافة للزبون'},
+                  {label:'دخل المنتجات', v:`${productRevenue.toLocaleString('ar-DZ')} دج`, color:'#0D6EFD', tip:'إجمالي - رسوم التوصيل المعلنة'},
+                  {label:'رسوم التوصيل الحقيقية', v:`${realDelivery.toLocaleString('ar-DZ')} دج`, color:'#DC3545', tip:'التكلفة الحقيقية للشركة'},
+                  {label:'صافي الربح', v:`${netProfit.toLocaleString('ar-DZ')} دج`, color:'#198754', tip:'دخل المنتجات - رسوم الشركة'},
+                  {label:'نسبة الربح', v:`${grossRevenue > 0 ? Math.round(netProfit/grossRevenue*100) : 0}%`, color:'#198754', tip:''},
+                ].map(c => (
+                  <div key={c.label} className="p-3 rounded-lg" style={{background:'var(--color-bg-soft)'}}>
+                    <p className="font-black text-base" style={{color:c.color,fontFamily:'var(--font-primary)'}}>{c.v}</p>
+                    <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)'}}>{c.label}</p>
+                    {c.tip && <p className="text-[9px] mt-0.5" style={{color:'var(--color-text-muted)',fontStyle:'italic'}}>{c.tip}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {(() => {
                 const n = localOrders.filter(o=>!trashedOrders.has(o.id)).length
@@ -892,10 +1243,10 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                   {label:'مؤكدة',v:pct(localOrders.filter(o=>o.status==='confirmed').length)},
                   {label:'ملغاة',v:pct(localOrders.filter(o=>o.status==='cancelled').length)},
                   {label:'قيد التأكيد',v:pct(localOrders.filter(o=>o.status==='new').length)},
-                  {label:'مسلمة',v:pct(delivered.length)},
+                  {label:'مسلمة',v:pct(deliveredOrders.length)},
                   {label:'مرجعة',v:pct(localOrders.filter(o=>o.status==='returned').length)},
-                  {label:'إجمالي الدخل',v:`${totalRevenue.toLocaleString('ar-DZ')} دج`},
-                  {label:'صافي الدخل',v:`${netRevenue.toLocaleString('ar-DZ')} دج`},
+                  {label:'مكررة',v:pct(localOrders.filter(o=>o.status==='duplicate').length)},
+                  {label:'فاشلة',v:pct(localOrders.filter(o=>o.status?.startsWith('failed')).length)},
                 ].map(c => (
                   <div key={c.label} className="card p-3 text-center">
                     <p className="font-bold text-base" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>{c.v}</p>
@@ -911,7 +1262,47 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
             </div>
           </div>
         )}
-        {financeSubTab > 0 && COMING_SOON}
+        {financeSubTab === 1 && COMING_SOON}
+        {financeSubTab === 2 && (
+          <div className="space-y-3">
+            <div className="card p-4">
+              <h3 className="font-semibold text-sm mb-3" style={{fontFamily:'var(--font-arabic)'}}>مقارنة أسعار التوصيل (معلنة vs حقيقية)</h3>
+              <div className="overflow-x-auto">
+                <table className="data-table">
+                  <thead><tr><th>الولاية</th><th>المعلنة (دج)</th><th>الحقيقية (دج)</th><th>الفرق</th></tr></thead>
+                  <tbody>
+                    {(() => {
+                      const byWilaya: Record<string, {declared:number;real:number;count:number}> = {}
+                      deliveredOrders.forEach(o => {
+                        const w = (o.wilaya as any)?.name_ar ?? 'غير محدد'
+                        if (!byWilaya[w]) byWilaya[w] = {declared:0,real:0,count:0}
+                        byWilaya[w].declared += o.declared_delivery_fee ?? o.delivery_fee ?? 0
+                        byWilaya[w].real += o.real_delivery_fee ?? o.delivery_fee ?? 0
+                        byWilaya[w].count++
+                      })
+                      const rows = Object.entries(byWilaya).sort(([,a],[,b]) => b.count - a.count).slice(0,15)
+                      if (rows.length === 0) return <tr><td colSpan={4} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد بيانات</td></tr>
+                      return rows.map(([w, s]) => {
+                        const diff = s.declared - s.real
+                        return (
+                          <tr key={w}>
+                            <td className="font-medium text-sm">{w}</td>
+                            <td className="text-sm" style={{color:'#FFA500'}}>{(s.declared/Math.max(1,s.count)).toFixed(0)} دج</td>
+                            <td className="text-sm" style={{color:'#DC3545'}}>{(s.real/Math.max(1,s.count)).toFixed(0)} دج</td>
+                            <td className="text-sm font-semibold" style={{color: diff >= 0 ? '#198754' : '#DC3545'}}>
+                              {diff >= 0 ? '+' : ''}{(diff/Math.max(1,s.count)).toFixed(0)} دج
+                            </td>
+                          </tr>
+                        )
+                      })
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+        {financeSubTab === 3 && COMING_SOON}
       </div>
     )
   }
@@ -1023,8 +1414,74 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     qr:                () => COMING_SOON,
   }
 
+  // ── ORDER HISTORY MODAL ─────────────────────────────────
+  const HistoryModal = () => {
+    if (!historyModal) return null
+    const STATUS_AR: Record<string, string> = {
+      new:'جديد', confirmed:'مؤكدة', cancelled:'ملغاة', delivered:'مسلمة',
+      processing:'يُعالج', shipped:'شُحن', returned:'مرجعة', failed:'فاشل',
+      failed_1:'فاشلة 01', failed_2:'فاشلة 02', failed_3:'فاشلة 03',
+      postponed:'مؤجلة', duplicate:'مكررة', null:'—',
+    }
+    return (
+      <>
+        <div className="fixed inset-0 bg-black/60 z-50" onClick={() => setHistoryModal(null)}/>
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl z-50 overflow-hidden"
+          dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+          <div className="flex items-center justify-between p-4 border-b" style={{borderColor:'var(--color-border)'}}>
+            <h3 className="font-bold text-sm" style={{color:'var(--color-text-primary)'}}>{t('order_history')} — {historyModal.orderNum}</h3>
+            <button onClick={() => setHistoryModal(null)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><X size={16}/></button>
+          </div>
+          <div className="p-4 max-h-80 overflow-y-auto">
+            {loadingHistory ? (
+              <div className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>جارٍ التحميل...</div>
+            ) : orderHistory.length === 0 ? (
+              <div className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>{t('no_history')}</div>
+            ) : (
+              <div className="space-y-0">
+                {orderHistory.map((h, i) => (
+                  <div key={h.id} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{background:'var(--color-accent)'}}/>
+                      {i < orderHistory.length - 1 && <div className="w-0.5 flex-1 mt-1" style={{background:'var(--color-border)'}}/>}
+                    </div>
+                    <div className="pb-4 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {h.old_status && <span className="text-xs px-1.5 py-0.5 rounded" style={{background:'#F1F3F5',color:'#495057'}}>{STATUS_AR[h.old_status] ?? h.old_status}</span>}
+                        {h.old_status && <span className="text-xs" style={{color:'var(--color-text-muted)'}}>→</span>}
+                        <span className="text-xs font-semibold px-1.5 py-0.5 rounded" style={{background:'var(--color-accent-soft)',color:'var(--color-accent)'}}>{STATUS_AR[h.new_status] ?? h.new_status}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px]" style={{color:'var(--color-text-muted)'}}>
+                          {new Date(h.created_at).toLocaleString('ar-DZ', {weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+                        </span>
+                        <span className="text-[10px]" style={{color:'var(--color-text-muted)'}}>· {h.changed_by}</span>
+                      </div>
+                      {h.notes && <p className="text-xs mt-0.5" style={{color:'var(--color-text-secondary)'}}>{h.notes}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </>
+    )
+  }
+
   return (
-    <div className="flex flex-col h-full" dir="rtl" onClick={() => actionMenu && setActionMenu(null)}>
+    <div className="flex flex-col h-full" dir={lang === 'ar' ? 'rtl' : 'ltr'} onClick={() => actionMenu && setActionMenu(null)}>
+      {/* HistoryModal */}
+      <HistoryModal />
+
+      {/* Floating support button (9.5) */}
+      <a href="https://wa.me/213555000000?text=مرحبا، أحتاج دعم في Confirmili" target="_blank" rel="noopener noreferrer"
+        className="fixed bottom-6 left-6 z-50 w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-transform hover:scale-110"
+        style={{background:'#25D366',color:'#fff'}}
+        title="دعم Confirmili">
+        <Headphones size={22}/>
+      </a>
+
       {/* Teal announcement banner */}
       <div className="flex items-center justify-center gap-3 px-4 py-2 text-white text-xs" style={{background:'#2BBFAD',fontFamily:'var(--font-arabic)'}}>
         <span>Confirmili — إدارة الطلبات الاحترافية مع تأكيد وإلغاء مباشر</span>
@@ -1036,9 +1493,9 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
           <div className="relative">
             <button onClick={e=>{e.stopPropagation();setNotifOpen(o=>!o)}} className="relative p-1.5 rounded-md hover:bg-[#F8F9FA] transition-colors">
               <Bell size={16} style={{color:'var(--color-text-secondary)'}}/>
-              {localOrders.filter(o=>o.status==='new'&&!trashedOrders.has(o.id)).length > 0 && (
+              {(unreadCount > 0 || localOrders.filter(o=>o.status==='new'&&!trashedOrders.has(o.id)).length > 0) && (
                 <span className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center" style={{background:'var(--color-error)'}}>
-                  {localOrders.filter(o=>o.status==='new'&&!trashedOrders.has(o.id)).length}
+                  {Math.max(unreadCount, localOrders.filter(o=>o.status==='new'&&!trashedOrders.has(o.id)).length)}
                 </span>
               )}
             </button>
@@ -1053,18 +1510,38 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                   </div>
                   <div className="p-3 space-y-2 max-h-60 overflow-y-auto">
                     {notifTab === 0
-                      ? localOrders.filter(o=>o.status==='new'&&!trashedOrders.has(o.id)).slice(0,5).map(o => (
-                          <div key={o.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-[#F8F9FA]">
-                            <div>
-                              <p className="text-xs font-medium" style={{color:'var(--color-text-primary)'}}>{o.customer_name}</p>
-                              <p className="text-[10px]" style={{color:'var(--color-text-muted)'}}>{o.order_number} — {o.total?.toLocaleString('ar-DZ')} دج</p>
+                      ? (() => {
+                          const newOrders = localOrders.filter(o=>o.status==='new'&&!trashedOrders.has(o.id)).slice(0,5)
+                          if (newOrders.length === 0) return <p className="text-center text-xs py-4" style={{color:'var(--color-text-muted)'}}>لا توجد طلبات جديدة</p>
+                          return newOrders.map(o => (
+                            <div key={o.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-[#F8F9FA]">
+                              <div>
+                                <p className="text-xs font-medium" style={{color:'var(--color-text-primary)'}}>{o.customer_name}</p>
+                                <p className="text-[10px]" style={{color:'var(--color-text-muted)'}}>{o.order_number} — {o.total?.toLocaleString('ar-DZ')} دج</p>
+                              </div>
+                              <button onClick={()=>{updateOrderStatus(o.id,'confirmed');setNotifOpen(false)}}
+                                className="text-[10px] px-2 py-1 rounded" style={{background:'#D1E7DD',color:'#198754'}}>تأكيد</button>
                             </div>
-                            <button onClick={()=>{updateOrderStatus(o.id,'confirmed');setNotifOpen(false)}}
-                              className="text-[10px] px-2 py-1 rounded" style={{background:'#D1E7DD',color:'#198754'}}>تأكيد</button>
-                          </div>
-                        ))
-                      : <p className="text-center text-xs py-4" style={{color:'var(--color-text-muted)'}}>لا توجد تنبيهات</p>
+                          ))
+                        })()
+                      : (() => {
+                          const alertNotifs = notifications.filter(n => n.type !== 'order').slice(0,5)
+                          if (alertNotifs.length === 0) return <p className="text-center text-xs py-4" style={{color:'var(--color-text-muted)'}}>لا توجد تنبيهات</p>
+                          return alertNotifs.map(n => (
+                            <div key={n.id} className="p-2 rounded-lg hover:bg-[#F8F9FA]">
+                              <p className="text-xs font-medium" style={{color:'var(--color-text-primary)'}}>{n.title}</p>
+                              <p className="text-[10px]" style={{color:'var(--color-text-muted)'}}>{n.message}</p>
+                              <p className="text-[9px] mt-0.5" style={{color:'var(--color-text-muted)'}}>{new Date(n.created_at).toLocaleTimeString('ar-DZ')}</p>
+                            </div>
+                          ))
+                        })()
                     }
+                    {/* Mark all read */}
+                    <button onClick={() => { fetch('/api/notifications', {method:'PATCH'}); setUnreadCount(0); loadNotifications() }}
+                      className="w-full text-center text-[10px] py-1.5 hover:bg-[#F8F9FA] transition-colors"
+                      style={{color:'var(--color-accent)'}}>
+                      تحديد الكل كمقروء
+                    </button>
                   </div>
                 </div>
               </>
@@ -1081,6 +1558,26 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
           </div>
           <div className="text-xs" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
             إيرادات: <strong style={{color:'var(--color-accent)'}}>{totalRevenue.toLocaleString('ar-DZ')} دج</strong>
+          </div>
+          {/* Quota display (9.9) */}
+          <div className="text-xs flex items-center gap-1" style={{color: planOrdersUsed/planOrderLimit > 0.8 ? '#DC3545' : 'var(--color-text-muted)'}}>
+            <span>الطلبات المتبقية:</span>
+            <strong style={{color: planOrdersUsed/planOrderLimit > 0.8 ? '#DC3545' : 'var(--color-accent)'}}>
+              {Math.max(0, planOrderLimit - planOrdersUsed).toLocaleString('ar-DZ')}/{planOrderLimit.toLocaleString('ar-DZ')}
+            </strong>
+          </div>
+          {/* Language switcher (9.4) */}
+          <div className="flex items-center gap-1 border rounded-lg overflow-hidden" style={{borderColor:'var(--color-border)'}}>
+            {(['ar','fr','en'] as const).map(l => (
+              <button key={l} onClick={() => setLanguage(l)}
+                className="px-2 py-1 text-[10px] font-bold transition-colors"
+                style={{
+                  background: lang===l ? 'var(--color-accent)' : '#fff',
+                  color: lang===l ? '#fff' : 'var(--color-text-muted)',
+                }}>
+                {l === 'ar' ? '🇩🇿' : l === 'fr' ? '🇫🇷' : '🇺🇸'}
+              </button>
+            ))}
           </div>
         </div>
       </div>
