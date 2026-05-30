@@ -10,6 +10,7 @@
 6. `006_auth_config.sql` — Supabase Auth configuration
 7. `007_public_read_policies.sql` — Public read access for storefront pages
 8. `008_additional_indexes.sql` — Performance indexes + missing columns
+9. `009_extend_order_statuses.sql` — **REQUIRED for Confirmili**: Add failed_1/2/3, postponed, duplicate statuses
 
 ## Required Supabase Setup:
 

@@ -119,14 +119,26 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     setActionMenu(null)
     try {
       const sb = createClient()
-      await sb.from('orders').update({
+      const { error } = await sb.from('orders').update({
         status: newStatus,
         ...(newStatus === 'confirmed' ? { confirmed_at: new Date().toISOString() } : {}),
         ...(newStatus === 'delivered' ? { delivered_at: new Date().toISOString() } : {}),
         ...(newStatus === 'shipped'   ? { shipped_at:   new Date().toISOString() } : {}),
       }).eq('id', orderId)
-      // Instant local update
-      setLocalOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
+
+      if (error) {
+        // If constraint violation, try with 'failed' for failed_X statuses
+        if (error.message?.includes('check') && newStatus.startsWith('failed_')) {
+          await sb.from('orders').update({ status: 'failed' }).eq('id', orderId)
+          setLocalOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
+        } else {
+          console.error('Status update error:', error.message)
+          return
+        }
+      } else {
+        // Instant local update
+        setLocalOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
+      }
     } catch (e) {
       console.error(e)
     } finally {
