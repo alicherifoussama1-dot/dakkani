@@ -4,7 +4,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { formatDZD, formatDateShort } from '@/lib/utils/format'
 import StatusBadge from '@/components/ui/StatusBadge'
-import { ArrowRight, Phone, MapPin, ShoppingCart } from 'lucide-react'
+import { ArrowRight, Phone, MapPin, ShoppingCart, MessageCircle } from 'lucide-react'
 
 export async function generateMetadata({ params }: { params: { phone: string } }) {
   return { title: `الزبون ${decodeURIComponent(params.phone)}` }
@@ -41,12 +41,18 @@ export default async function CustomerDetailPage({ params }: { params: { phone: 
         <Link href="/customers" className="p-1.5 rounded hover:bg-[#F8F9FA] transition-colors">
           <ArrowRight size={16} style={{color:'var(--color-text-muted)'}} />
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="page-title">{customer.customer_name}</h1>
           <p className="text-xs flex items-center gap-1 mt-0.5" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-primary)'}}>
             <Phone size={10} />{phone}
           </p>
         </div>
+        <a
+          href={`https://wa.me/${phone.replace(/\D/g,'').replace(/^0/,'213')}?text=${encodeURIComponent(`السلام عليكم ${customer.customer_name}`)}`}
+          target="_blank" rel="noopener noreferrer"
+          className="btn btn-sm gap-1.5" style={{background:'#25D366',color:'#fff',border:'none'}}>
+          <MessageCircle size={13}/>واتساب
+        </a>
       </div>
 
       {/* KPIs */}
