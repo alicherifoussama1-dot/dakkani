@@ -383,6 +383,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     }
 
     return orders
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localOrders, showTrash, trashedOrders, dateFilter, orderSearch])
 
   const totalPages   = Math.ceil(filteredOrders.length / ordersPerPage)
@@ -403,6 +404,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       const d = new Date(o.created_at)
       return d >= range[0] && d < range[1]
     })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localOrders, statsDateFilter, trashedOrders])
 
   const delivered    = statsOrders.filter(o => o.status === 'delivered')
@@ -1041,12 +1043,24 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     </div>
   )}
 
-  const renderValidation = () => (
-    <div>
-      <TabBar tabs={['التحقق من الارسال','التحقق من الارجاع','التحقق من الدفع']} active={0} onChange={()=>{}} />
-      {COMING_SOON}
-    </div>
-  )
+  const renderValidation = () => {
+    // 9.10 — Exact empty states for validation tabs
+    const COMING_SOON_CARD = (
+      <div className="flex flex-col items-center justify-center py-16 rounded-2xl border-2 border-dashed" style={{borderColor:'var(--color-border)'}}>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{background:'var(--color-accent-soft)'}}>
+          <CheckSquare size={28} style={{color:'var(--color-accent)'}}/>
+        </div>
+        <p className="font-black text-lg mb-1" style={{color:'var(--color-text-primary)'}}>COMING SOON...</p>
+        <p className="text-sm" style={{color:'var(--color-text-muted)'}}>نطبخ منتجنا 🍳</p>
+      </div>
+    )
+    return (
+      <div>
+        <TabBar tabs={['التحقق من الارسال','التحقق من الارجاع','التحقق من الدفع']} active={0} onChange={()=>{}} />
+        {COMING_SOON_CARD}
+      </div>
+    )
+  }
 
   const renderProducts = () => (
     <div className="space-y-3">
@@ -1065,7 +1079,10 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                   <td><div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center" style={{background:'var(--color-bg-soft)'}}>
                     {(p.images as any[])?.[0]?.url
                       ? <img src={(p.images as any[])[0].url} alt="" className="w-full h-full object-cover"/>
-                      : <span className="text-sm">{(p.name_ar??p.name)?.[0]??'📦'}</span>}
+                      : <div className="w-full h-full flex flex-col items-center justify-center gap-0.5" style={{background:'var(--color-bg-muted)'}}>
+                          <Package size={14} style={{color:'var(--color-text-muted)'}}/>
+                          <span className="text-[8px]" style={{color:'var(--color-text-muted)'}}>لا توجد صورة</span>
+                        </div>}
                   </div></td>
                   <td className="font-medium text-sm">{p.name_ar??p.name}</td>
                   <td className="text-xs font-mono" style={{color:'var(--color-text-muted)'}}>{p.sku??'—'}</td>
@@ -1194,8 +1211,31 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
             </table>
           </div>
         )}
-        {storeSubTab === 1 && COMING_SOON}
-        {storeSubTab === 2 && COMING_SOON}
+        {storeSubTab === 1 && (
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <button className="btn btn-sm" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>+ حساب Google</button>
+              <button className="btn btn-sm" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>+ شيت</button>
+            </div>
+            <div className="card overflow-hidden">
+              <table className="data-table">
+                <thead><tr><th>اسم الشيت</th><th>الحساب</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+                <tbody>
+                  <tr><td colSpan={4} className="text-center py-10 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد شيتات — أضف أول شيت لإرسال الطلبيات تلقائياً</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        {storeSubTab === 2 && (
+          <div className="flex flex-col items-center justify-center py-16 rounded-2xl border-2 border-dashed" style={{borderColor:'var(--color-border)'}}>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{background:'var(--color-accent-soft)'}}>
+              <Link2 size={28} style={{color:'var(--color-accent)'}}/>
+            </div>
+            <p className="font-black text-lg mb-1" style={{color:'var(--color-text-primary)'}}>COMING SOON...</p>
+            <p className="text-sm" style={{color:'var(--color-text-muted)'}}>ربط فيسبوك leads — نطبخ منتجنا 🍳</p>
+          </div>
+        )}
       </div>
     )
   }
@@ -1272,7 +1312,45 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
             </div>
           </div>
         )}
-        {financeSubTab === 1 && COMING_SOON}
+        {financeSubTab === 1 && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {/* Team confirmation stats */}
+              {[
+                {label:'معدل التأكيد', v: localOrders.length ? `${Math.round((localOrders.filter(o=>['confirmed','delivered'].includes(o.status)).length/localOrders.length)*100)}%` : '0%'},
+                {label:'متوسط وقت التأكيد', v:'—'},
+                {label:'أعلى معدل تأكيد', v:'اليوم'},
+                {label:'نسبة الرد على الاتصالات', v: localOrders.filter(o=>o.call_attempts>0).length > 0 ? `${Math.round((localOrders.filter(o=>['confirmed','delivered'].includes(o.status)&&o.call_attempts>0).length/localOrders.filter(o=>o.call_attempts>0).length)*100)}%` : '—'},
+              ].map(c => (
+                <div key={c.label} className="card p-3 text-center">
+                  <p className="font-bold text-base" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>{c.v}</p>
+                  <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)'}}>{c.label}</p>
+                </div>
+              ))}
+            </div>
+            <div className="card overflow-hidden">
+              <div className="px-4 py-3 border-b font-semibold text-sm" style={{borderColor:'var(--color-border)'}}>محاولات الاتصال حسب الحالة</div>
+              <table className="data-table">
+                <thead><tr><th>عدد المحاولات</th><th>طلبات مؤكدة</th><th>طلبات ملغاة</th><th>المجموع</th></tr></thead>
+                <tbody>
+                  {[1,2,3].map(n => {
+                    const withN = localOrders.filter(o => o.call_attempts === n)
+                    const confirmed = withN.filter(o => ['confirmed','delivered'].includes(o.status)).length
+                    const cancelled = withN.filter(o => o.status === 'cancelled').length
+                    return (
+                      <tr key={n}>
+                        <td className="font-semibold">{n} {n === 1 ? 'محاولة' : 'محاولات'}</td>
+                        <td style={{color:'#198754'}}>{confirmed}</td>
+                        <td style={{color:'#DC3545'}}>{cancelled}</td>
+                        <td>{withN.length}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
         {financeSubTab === 2 && (
           <div className="space-y-3">
             <div className="card p-4">
@@ -1312,22 +1390,88 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
             </div>
           </div>
         )}
-        {financeSubTab === 3 && COMING_SOON}
+        {financeSubTab === 3 && (
+          <div className="card p-5 space-y-4">
+            <h3 className="font-semibold text-sm" style={{color:'var(--color-text-primary)'}}>تنظيم مدير الأعمال</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                {label:'ميزانية الإعلانات', ph:'0 دج'},
+                {label:'تكلفة التأكيد (لكل طلب)', ph:'0 دج'},
+                {label:'تكلفة التغليف (لكل طلب)', ph:'0 دج'},
+                {label:'مصاريف أخرى', ph:'0 دج'},
+              ].map(f => (
+                <div key={f.label}>
+                  <label className="block text-xs font-medium mb-1.5" style={{color:'var(--color-text-secondary)'}}>{f.label}</label>
+                  <input type="number" placeholder={f.ph} className="input text-sm" dir="ltr"/>
+                </div>
+              ))}
+            </div>
+            <button className="btn btn-primary btn-sm">حفظ وحساب الأرباح</button>
+            <div className="p-3 rounded-lg" style={{background:'var(--color-bg-soft)'}}>
+              <p className="text-xs" style={{color:'var(--color-text-muted)'}}>💡 هذه المصاريف تُطرح من صافي الربح في تبويب &quot;حساب الأرباح&quot;</p>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
 
   const renderTeam = () => {
     const tTabs = ['فريق التأكيد و التتبع','فريق التوصيل','عضو ↔ مسير']
+    const EmptyTeam = ({ role }: { role: string }) => (
+      <div className="text-center py-12">
+        <Users size={28} className="mx-auto mb-2" style={{color:'var(--color-text-muted)',opacity:0.4}}/>
+        <p className="text-sm font-medium mb-1" style={{color:'var(--color-text-muted)'}}>لا يوجد أعضاء في {role}</p>
+        <p className="text-xs mb-4" style={{color:'var(--color-text-muted)'}}>أضف عضواً جديداً لبدء إدارة الفريق</p>
+        <button className="btn btn-primary btn-sm gap-1.5">
+          <Plus size={13}/>إضافة عضو
+        </button>
+      </div>
+    )
     return (
       <div>
         <TabBar tabs={tTabs} active={teamSubTab} onChange={setTeamSubTab}/>
-        <div className="card overflow-hidden">
-          <table className="data-table">
-            <thead><tr>{['الاسم','الهاتف','البريد','الحالة','الدور','تاريخ البداية','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr></thead>
-            <tbody><tr><td colSpan={7} className="text-center py-12 text-sm" style={{color:'var(--color-text-muted)'}}>لا يوجد أعضاء</td></tr></tbody>
-          </table>
-        </div>
+        {teamSubTab < 2 && (
+          <div className="space-y-3">
+            <div className="flex justify-end">
+              <button className="btn btn-primary btn-sm gap-1.5"><Plus size={13}/>إضافة عضو</button>
+            </div>
+            <div className="card overflow-hidden">
+              <table className="data-table">
+                <thead>
+                  <tr>{['الاسم','الهاتف','البريد الإلكتروني','الحالة','الدور','تاريخ البداية','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  <tr><td colSpan={7}>
+                    <EmptyTeam role={teamSubTab === 0 ? 'فريق التأكيد' : 'فريق التوصيل'}/>
+                  </td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        {teamSubTab === 2 && (
+          <div className="card p-5 space-y-3">
+            <h3 className="font-semibold text-sm" style={{color:'var(--color-text-primary)'}}>تعيين عضو لمسير</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{color:'var(--color-text-secondary)'}}>اختر عضو</label>
+                <select className="input text-sm"><option>لا يوجد أعضاء</option></select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{color:'var(--color-text-secondary)'}}>اختر مسير</label>
+                <select className="input text-sm"><option>لا يوجد مسيرين</option></select>
+              </div>
+            </div>
+            <button className="btn btn-primary btn-sm" disabled>تعيين</button>
+            <div className="card overflow-hidden mt-3">
+              <table className="data-table">
+                <thead><tr><th>العضو</th><th>المسير</th><th>الدور</th><th>تاريخ التعيين</th></tr></thead>
+                <tbody><tr><td colSpan={4} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد علاقات مدير-عضو</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -1420,8 +1564,44 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     team:              renderTeam,
     settings:          renderSettings,
     tutorials:         renderTutorials,
-    ai:                () => COMING_SOON,
-    qr:                () => COMING_SOON,
+    ai: () => (
+      <div className="space-y-6">
+        <div className="flex flex-col items-center justify-center py-16 rounded-2xl border-2 border-dashed" style={{borderColor:'var(--color-border)'}}>
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6" style={{background:'linear-gradient(135deg,#EEE5FF,#EBF5FF)'}}>
+            <Bot size={36} style={{color:'var(--color-accent)'}}/>
+          </div>
+          <p className="font-black text-xl mb-2" style={{color:'var(--color-text-primary)'}}>الذكاء الاصطناعي 🤖</p>
+          <p className="text-sm mb-4" style={{color:'var(--color-text-muted)'}}>ردود تلقائية بالدارجة الجزائرية — قريباً</p>
+          <div className="grid grid-cols-3 gap-4 max-w-lg mt-4">
+            {['ردود WhatsApp تلقائية','تحليل أسباب الإلغاء','توقع الطلبيات'].map(f => (
+              <div key={f} className="p-3 rounded-xl text-center" style={{background:'var(--color-bg-soft)'}}>
+                <p className="text-xs font-medium" style={{color:'var(--color-text-secondary)'}}>{f}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    ),
+    qr: () => (
+      <div className="flex flex-col items-center justify-center py-12 gap-4">
+        <p className="text-sm font-semibold mb-2" style={{color:'var(--color-text-muted)'}}>امسح QR لتأكيد التسليم</p>
+        <div className="w-56 h-56 border-2 border-dashed rounded-2xl flex items-center justify-center relative" style={{borderColor:'var(--color-border)'}}>
+          <div className="absolute inset-4 border-2 rounded-xl" style={{borderColor:'var(--color-accent)',opacity:0.3}}/>
+          <div className="text-center">
+            <QrCode size={48} style={{color:'var(--color-text-muted)'}} className="mx-auto mb-2"/>
+            <p className="text-xs" style={{color:'var(--color-text-muted)'}}>كاميرا المسح</p>
+          </div>
+          {/* Scanner animation */}
+          <div className="absolute inset-x-4 h-0.5 animate-bounce" style={{background:'var(--color-accent)',opacity:0.7,top:'50%'}}/>
+        </div>
+        <div className="card p-3 text-center w-64">
+          <p className="text-sm font-medium" style={{fontFamily:'var(--font-arabic)',color:'var(--color-text-secondary)'}}>النتيجة: لا توجد نتيجة بعد!</p>
+        </div>
+        <p className="text-xs text-center max-w-xs" style={{color:'var(--color-text-muted)'}}>
+          امسح رمز QR الخاص بالطلبية لتأكيد التسليم تلقائياً
+        </p>
+      </div>
+    ),
   }
 
   // ── ORDER HISTORY MODAL ─────────────────────────────────
