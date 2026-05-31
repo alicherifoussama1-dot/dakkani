@@ -42,26 +42,48 @@ export default function NewOrderClient({ storeId, products, wilayas }: Props) {
   const save = async () => {
     if (!form.customer_name || !form.customer_phone || !form.wilaya_id || items.length === 0) return
     setSaving(true)
-    const sb = createClient()
 
-    const orderNum = `ORD-${Date.now().toString(36).toUpperCase()}`
-    const { data: order, error } = await sb.from('orders').insert({
-      store_id: storeId,
-      order_number: orderNum,
-      customer_name: form.customer_name,
-      customer_phone: form.customer_phone,
-      customer_phone2: form.customer_phone2 || null,
-      wilaya_id: +form.wilaya_id,
-      delivery_type: form.delivery_type,
-      address: form.address || null,
-      notes: form.notes || null,
-      subtotal,
-      delivery_fee: deliveryFee,
-      discount_amount: 0,
-      total,
-      status: 'new',
-      source: 'manual',
-    }).select('id').single()
+    try {
+      // Use /api/orders for proper notifications, history, stock decrement
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_id: storeId,
+          customer_name: form.customer_name,
+          customer_phone: form.customer_phone,
+          customer_phone2: form.customer_phone2 || undefined,
+          wilaya_id: +form.wilaya_id,
+          delivery_type: form.delivery_type,
+          address: form.address || undefined,
+          notes: form.notes || undefined,
+          source: 'manual',
+          payment_method: 'cod',
+          items: items.map(i => ({
+            product_id: i.productId,
+            quantity: i.qty,
+            variant_key: 'default',
+          })),
+        }),
+      })
+      const data = await res.json()
+      if (data.success && data.order_id) {
+        router.push(`/orders/${data.order_id}`)
+        return
+      }
+
+      // Fallback: direct insert if API fails
+      const sb = createClient()
+      const orderNum = `ORD-${Date.now().toString(36).toUpperCase()}`
+      const { data: order, error } = await sb.from('orders').insert({
+        store_id: storeId, order_number: orderNum,
+        customer_name: form.customer_name, customer_phone: form.customer_phone,
+        customer_phone2: form.customer_phone2 || null,
+        wilaya_id: +form.wilaya_id, delivery_type: form.delivery_type,
+        address: form.address || null, notes: form.notes || null,
+        subtotal, delivery_fee: deliveryFee, discount_amount: 0,
+        total, status: 'new', source: 'manual',
+      }).select('id').single()
 
     if (!error && order) {
       await sb.from('order_items').insert(
@@ -73,7 +95,11 @@ export default function NewOrderClient({ storeId, products, wilayas }: Props) {
       )
       router.push(`/orders/${order.id}`)
     }
-    setSaving(false)
+    } catch (e) {
+      console.error('Order creation error:', e)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
