@@ -49,9 +49,16 @@ const FEATURE_LABELS = [
   'Confirmili','الفريق','النطاقات المخصصة','الإحصائيات والتحليلات',
 ]
 
-interface Props { storeName: string; currentPlan: string }
+const PLAN_LIMITS: Record<string, {orders:number;products:number;members:number}> = {
+  free: {orders:100,products:20,members:1},
+  starter: {orders:500,products:50,members:2},
+  pro: {orders:5000,products:100,members:3},
+  enterprise: {orders:50000,products:999,members:10},
+}
 
-export default function BillingPlansClient({ storeName, currentPlan }: Props) {
+interface Props { storeName: string; currentPlan: string; ordersThisMonth?: number; productCount?: number }
+
+export default function BillingPlansClient({ storeName, currentPlan, ordersThisMonth=0, productCount=0 }: Props) {
   const [billing, setBilling] = useState<'monthly'|'annual'>('monthly')
 
   return (
@@ -75,14 +82,17 @@ export default function BillingPlansClient({ storeName, currentPlan }: Props) {
             <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>مشترك في خطة <strong className="text-accent">{currentPlan === 'pro' ? 'Pro' : currentPlan === 'elite' ? 'Elite' : 'أساسي'}</strong></p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-            {[
-              { label:'أيام متبقية', val:'30' },
-              { label:'المنتجات', val:'0/100' },
-              { label:'الطلبات', val:'0/5000' },
-              { label:'الأعضاء', val:'1/3' },
-            ].map(s => (
-              <div key={s.label} className="p-2 rounded-lg bg-white border" style={{ borderColor: 'var(--color-border)' }}>
-                <p className="font-bold text-sm" style={{ color: 'var(--color-accent)', fontFamily: 'var(--font-primary)' }}>{s.val}</p>
+            {(()=>{
+              const lim = PLAN_LIMITS[currentPlan] ?? PLAN_LIMITS.free
+              return [
+                {label:'أيام متبقية', val:'30', warn:false},
+                {label:'المنتجات', val:`${productCount}/${lim.products}`, warn:productCount>=lim.products},
+                {label:'الطلبات', val:`${ordersThisMonth}/${lim.orders}`, warn:lim.orders>0&&ordersThisMonth/lim.orders>0.8},
+                {label:'الأعضاء', val:`1/${lim.members}`, warn:false},
+              ]
+            })().map(s => (
+              <div key={s.label} className="p-2 rounded-lg bg-white border" style={{ borderColor: s.warn ? 'var(--color-error)' : 'var(--color-border)' }}>
+                <p className="font-bold text-sm" style={{ color: s.warn ? 'var(--color-error)' : 'var(--color-accent)', fontFamily: 'var(--font-primary)' }}>{s.val}</p>
                 <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{s.label}</p>
               </div>
             ))}
