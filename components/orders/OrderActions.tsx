@@ -58,11 +58,25 @@ export default function OrderActions({ order, store }: Props) {
 
   const updateStatus = async (newStatus: string) => {
     setLoading(newStatus)
-    const updates: Record<string, unknown> = { status: newStatus }
-    if (newStatus === 'confirmed') updates.confirmed_at = new Date().toISOString()
-    if (newStatus === 'shipped')   updates.shipped_at   = new Date().toISOString()
-    if (newStatus === 'delivered') updates.delivered_at = new Date().toISOString()
-    await supabase.from('orders').update(updates).eq('id', order.id)
+    try {
+      // Use API route for history tracking
+      const res = await fetch(`/api/orders/${order.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, changed_by: 'dashboard' }),
+      })
+      if (!res.ok) {
+        // Fallback: direct DB update
+        const updates: Record<string, unknown> = { status: newStatus }
+        if (newStatus === 'confirmed') updates.confirmed_at = new Date().toISOString()
+        if (newStatus === 'shipped')   updates.shipped_at   = new Date().toISOString()
+        if (newStatus === 'delivered') updates.delivered_at = new Date().toISOString()
+        await supabase.from('orders').update(updates).eq('id', order.id)
+      }
+    } catch {
+      const updates: Record<string, unknown> = { status: newStatus }
+      await supabase.from('orders').update(updates).eq('id', order.id)
+    }
     router.refresh()
     setLoading(null)
   }
