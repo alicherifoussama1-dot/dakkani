@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
-import { Search, Users, Phone, MapPin, TrendingUp } from 'lucide-react'
+import { Search, Users, Phone, MapPin, TrendingUp, Download } from 'lucide-react'
 import { formatDZD, formatDateShort } from '@/lib/utils/format'
 
 interface Customer {
@@ -10,6 +10,16 @@ interface Customer {
 
 export default function CustomersPageClient({ customers }: { customers: Customer[] }) {
   const [q, setQ] = useState('')
+
+  const exportCSV = () => {
+    const rows = [['الاسم','الهاتف','الولاية','البلدية','عدد الطلبات','إجمالي الإنفاق','أول طلب','آخر طلب']]
+    filtered.forEach(c => rows.push([c.name, c.phone, c.wilaya??'', c.commune??'', String(c.orders), String(c.spent), c.first?.slice(0,10)??'', c.last?.slice(0,10)??'']))
+    const csv = '﻿' + rows.map(r => r.join(',')).join('\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}))
+    a.download = `customers-${new Date().toISOString().slice(0,10)}.csv`
+    a.click()
+  }
 
   const filtered = useMemo(() => {
     if (!q.trim()) return customers
@@ -44,15 +54,20 @@ export default function CustomersPageClient({ customers }: { customers: Customer
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-xs">
-        <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2" style={{color:'var(--color-text-muted)'}} />
-        <input
-          value={q}
-          onChange={e => setQ(e.target.value)}
-          placeholder="ابحث عن زبون، هاتف، ولاية..."
-          className="input pr-8 text-sm"
-        />
+      {/* Search + Export */}
+      <div className="flex items-center gap-3">
+        <div className="relative max-w-xs flex-1">
+          <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2" style={{color:'var(--color-text-muted)'}} />
+          <input
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            placeholder="ابحث عن زبون، هاتف، ولاية..."
+            className="input pr-8 text-sm"
+          />
+        </div>
+        <button onClick={exportCSV} className="btn btn-sm gap-1.5" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>
+          <Download size={13}/>تصدير CSV
+        </button>
       </div>
 
       {/* Table */}
