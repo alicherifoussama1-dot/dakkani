@@ -45,6 +45,13 @@ export default async function OrderDetailPage({ params }: { params: { id: string
 
   if (!order) notFound()
 
+  // Fetch order history
+  const { data: history } = await supabase
+    .from('order_history')
+    .select('*')
+    .eq('order_id', params.id)
+    .order('created_at', { ascending: false })
+
   const statusInfo = STATUS_MAP[order.status] ?? { label: order.status, color: '#6C757D', bg: '#F8F9FA' }
   const currentStep = STATUS_STEPS.indexOf(order.status)
 
@@ -232,6 +239,47 @@ export default async function OrderDetailPage({ params }: { params: { id: string
             <div className="rounded-xl p-4 border" style={{background:'#FFFBEB',borderColor:'#FEF3C7'}}>
               <p className="text-sm font-medium text-yellow-800">ملاحظة العميل</p>
               <p className="text-sm text-yellow-700 mt-1">{order.notes}</p>
+            </div>
+          )}
+
+          {/* Order History Timeline */}
+          {(history ?? []).length > 0 && (
+            <div className="card p-4">
+              <h2 className="font-semibold text-sm mb-3" style={{color:'var(--color-text-primary)'}}>
+                سجل التغييرات
+              </h2>
+              <div className="space-y-0">
+                {(history ?? []).map((h: any, i: number) => {
+                  const STATUS_AR: Record<string,string> = {
+                    new:'جديد', confirmed:'مؤكد', cancelled:'ملغى', delivered:'مُسلَّم',
+                    processing:'يُعالج', shipped:'شُحن', returned:'مُرجَع', failed:'فاشل',
+                    failed_1:'فاشلة 01', failed_2:'فاشلة 02', failed_3:'فاشلة 03',
+                    postponed:'مؤجلة', duplicate:'مكررة',
+                  }
+                  return (
+                  <div key={h.id} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style={{background:'var(--color-accent)'}}/>
+                      {i < (history ?? []).length - 1 && (
+                        <div className="w-0.5 flex-1 mt-1" style={{background:'var(--color-border)'}}/>
+                      )}
+                    </div>
+                    <div className="pb-3 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {h.old_status && <span className="text-xs px-1.5 py-0.5 rounded" style={{background:'#F1F3F5',color:'#495057'}}>{STATUS_AR[h.old_status] ?? h.old_status}</span>}
+                        {h.old_status && <span className="text-xs" style={{color:'var(--color-text-muted)'}}>→</span>}
+                        <span className="text-xs font-semibold px-1.5 py-0.5 rounded" style={{background:'var(--color-accent-soft)',color:'var(--color-accent)'}}>{STATUS_AR[h.new_status] ?? h.new_status}</span>
+                        <span className="text-xs" style={{color:'var(--color-text-muted)'}}>{h.changed_by}</span>
+                      </div>
+                      {h.notes && <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)'}}>{h.notes}</p>}
+                      <p className="text-[10px] mt-0.5" style={{color:'var(--color-text-muted)'}}>
+                        {new Date(h.created_at).toLocaleString('ar-DZ',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+                      </p>
+                    </div>
+                  </div>
+                  )
+                })}
+              </div>
             </div>
           )}
         </div>
