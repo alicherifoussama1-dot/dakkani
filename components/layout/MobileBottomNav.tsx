@@ -2,17 +2,19 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Grid3X3, Search, ShoppingCart, User } from 'lucide-react'
+import { useCart } from '@/lib/store/cart'
 
 const ITEMS = [
   { href: '/',           label: 'الرئيسية', Icon: Home },
   { href: '/discover',   label: 'المنتجات', Icon: Grid3X3 },
-  { href: '/discover',   label: 'البحث',    Icon: Search },
-  { href: '/checkout',   label: 'طلباتي',   Icon: ShoppingCart },
-  { href: '/dashboard',  label: 'حسابي',    Icon: User },
+  { href: '/discover',      label: 'البحث',    Icon: Search },
+  { href: '/discover/cart', label: 'السلة',    Icon: ShoppingCart },
+  { href: '/dashboard',     label: 'حسابي',    Icon: User },
 ]
 
 export default function MobileBottomNav() {
   const pathname = usePathname()
+  const { count } = useCart()
 
   return (
     <nav
@@ -36,14 +38,23 @@ export default function MobileBottomNav() {
               aria-label={label}
               aria-current={active ? 'page' : undefined}
             >
-              <Icon
-                size={21}
-                style={{
-                  color: active ? '#0D6EFD' : '#999999',
-                  transition: 'color 150ms ease',
-                  strokeWidth: active ? 2.2 : 1.8,
-                }}
-              />
+              <div className="relative">
+                <Icon
+                  size={21}
+                  style={{
+                    color: active ? '#0D6EFD' : '#999999',
+                    transition: 'color 150ms ease',
+                    strokeWidth: active ? 2.2 : 1.8,
+                  }}
+                />
+                {/* Cart badge */}
+                {href === '/discover/cart' && count() > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[8px] font-black text-white flex items-center justify-center"
+                    style={{background:'#0D6EFD'}}>
+                    {count()}
+                  </span>
+                )}
+              </div>
               <span
                 className="text-[10px] font-medium leading-none"
                 style={{
