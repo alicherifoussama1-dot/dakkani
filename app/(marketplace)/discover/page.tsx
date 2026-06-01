@@ -56,7 +56,13 @@ export default function DiscoverPage() {
             <Search size={14} className="absolute right-3 top-1/2 -translate-y-1/2" style={{color:'var(--color-text-muted)'}}/>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="ابحث عن منتجاتك..." className="input pr-9 text-sm h-9 w-full"/>
           </div>
-          <Link href="/dashboard" className="btn btn-primary btn-sm hidden sm:flex" style={{fontFamily:'var(--font-arabic)'}}>لوحة التحكم</Link>
+          {cartCount() > 0 && (
+            <Link href="/discover/cart" className="btn btn-sm gap-1.5 relative" style={{background:'var(--color-accent)',color:'#fff',fontFamily:'var(--font-arabic)'}}>
+              <ShoppingCart size={14}/>
+              <span className="w-5 h-5 rounded-full bg-white text-xs font-black flex items-center justify-center" style={{color:'var(--color-accent)'}}>{cartCount()}</span>
+            </Link>
+          )}
+          <Link href="/dashboard" className="btn btn-sm btn-outline hidden sm:flex" style={{fontFamily:'var(--font-arabic)'}}>لوحة التحكم</Link>
         </div>
       </header>
 
