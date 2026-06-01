@@ -41,18 +41,19 @@ export default function AppsPage() {
         <h2 className="font-semibold text-sm mb-3" style={{ color: 'var(--color-text-primary)' }}>✅ متصل</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {CONNECTED.map(app => (
-            <div key={app.name} className="card p-4 flex items-start gap-3">
+            <Link key={app.name} href={app.href} className="card p-4 flex items-start gap-3 hover:shadow-md transition-shadow group">
               <span className="text-2xl flex-shrink-0">{app.icon}</span>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{app.name}</p>
+                <p className="font-semibold text-sm group-hover:text-[#0D6EFD] transition-colors" style={{ color: 'var(--color-text-primary)' }}>{app.name}</p>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{app.desc}</p>
               </div>
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 flex items-center gap-2">
+                <CheckCircle2 size={14} style={{color:'#198754'}}/>
                 <div className="w-9 h-5 rounded-full flex items-center bg-blue-500 transition-colors cursor-pointer">
                   <div className="w-4 h-4 bg-white rounded-full shadow mx-0.5 translate-x-[-8px]" />
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
