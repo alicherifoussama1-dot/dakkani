@@ -75,11 +75,13 @@ export default function DiscoverProductPage() {
       {/* Header */}
       <header className="border-b sticky top-0 z-40 bg-white" style={{borderColor:'var(--color-border)'}}>
         <div className="max-w-6xl mx-auto px-4 h-12 flex items-center gap-2">
-          <Link href="/discover" className="text-xs flex items-center gap-1" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
-            اكتشف
+          <Link href="/discover" className="text-xs flex items-center gap-1" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>اكتشف</Link>
+          <ChevronRight size={11} style={{color:'var(--color-text-muted)'}}/>
+          <Link href={`/discover/${storeSlug}`} className="text-xs flex items-center gap-1" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
+            {store.name_ar ?? store.name}
           </Link>
           <ChevronRight size={11} style={{color:'var(--color-text-muted)'}}/>
-          <span className="text-xs font-medium truncate max-w-[200px]" style={{color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)'}}>
+          <span className="text-xs font-medium truncate max-w-[150px]" style={{color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)'}}>
             {product.name_ar??product.name}
           </span>
         </div>
