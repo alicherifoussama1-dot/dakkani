@@ -47,7 +47,7 @@ export async function middleware(request: NextRequest) {
   // Require auth for dashboard & admin
   const PROTECTED = ['/dashboard','/admin','/products','/orders','/settings','/categories',
     '/warehouses','/coupons','/customers','/analytics','/landing-pages','/tracking',
-    '/apps','/billing','/confirmili','/justad','/learn']
+    '/apps','/billing','/confirmili','/justad','/learn','/reviews']
   if (!user && PROTECTED.some(p => pathname.startsWith(p))) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
