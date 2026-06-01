@@ -2,14 +2,16 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ShoppingCart, Truck, Shield, RefreshCw, Minus, Plus, Star, ChevronRight, Loader2 } from 'lucide-react'
+import { ShoppingCart, Truck, Shield, RefreshCw, Minus, Plus, Star, ChevronRight, Loader2, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import WilayaSelector from '@/components/ui/WilayaSelector'
 import { formatDZD } from '@/lib/utils/format'
+import { useCart } from '@/lib/store/cart'
 
 export default function DiscoverProductPage() {
   const { storeSlug, slug } = useParams<{ storeSlug: string; slug: string }>()
   const router = useRouter()
+  const { add: addToCart, count: cartCount } = useCart()
   const [product,setProduct]=useState<any>(null),[store,setStore]=useState<any>(null)
   const [loading,setLoading]=useState(true),[qty,setQty]=useState(1)
   const [wilaya,setWilaya]=useState<number|null>(null),[activeImg,setActiveImg]=useState(0)
@@ -18,6 +20,21 @@ export default function DiscoverProductPage() {
   const goToCheckout = () => {
     // Navigate to the storefront checkout for this product
     router.push(`/store/${storeSlug}/product/${slug}`)
+  }
+
+  const handleAddToCart = () => {
+    if (!product) return
+    addToCart({
+      productId: product.id,
+      storeSlug: storeSlug as string,
+      productSlug: slug as string,
+      name: product.name_ar ?? product.name,
+      price: product.price,
+      image: (product.images as any[])?.[0]?.url,
+      qty,
+    })
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2000)
   }
 
   useEffect(()=>{
@@ -153,9 +170,17 @@ export default function DiscoverProductPage() {
                 </a>
               )}
               <button
-                onClick={goToCheckout}
-                className="btn btn-primary flex-1 gap-2" style={{fontFamily:'var(--font-arabic)'}}>
-                <ShoppingCart size={15}/>اطلب الآن — {formatDZD(product.price*qty)}
+                onClick={handleAddToCart}
+                className="btn flex-1 gap-2 transition-all"
+                style={{
+                  background: added ? '#198754' : 'var(--color-accent)',
+                  color:'#fff',
+                  fontFamily:'var(--font-arabic)',
+                }}>
+                {added
+                  ? <><Check size={15}/>أُضيف للسلة ✓</>
+                  : <><ShoppingCart size={15}/>أضف للسلة — {formatDZD(product.price*qty)}</>
+                }
               </button>
             </div>
           </div>
@@ -165,9 +190,18 @@ export default function DiscoverProductPage() {
       {/* Mobile sticky bar */}
       <div className="fixed bottom-0 inset-x-0 bg-white border-t p-3 flex gap-2 md:hidden z-40" style={{borderColor:'var(--color-border)'}}>
         {waUrl&&<a href={waUrl} target="_blank" className="flex-1 btn font-bold text-sm" style={{background:'#25D366',color:'#fff',fontFamily:'var(--font-arabic)'}}>📱 واتساب</a>}
-        <button className="flex-1 btn btn-primary text-sm" style={{fontFamily:'var(--font-arabic)'}} onClick={goToCheckout}>
-          🛒 اطلب — {formatDZD(product.price*qty)}
+        <button className="flex-1 btn text-sm" style={{
+          background: added ? '#198754' : 'var(--color-accent)',
+          color:'#fff',
+          fontFamily:'var(--font-arabic)',
+        }} onClick={handleAddToCart}>
+          {added ? '✓ أُضيف للسلة' : `🛒 أضف للسلة — ${formatDZD(product.price*qty)}`}
         </button>
+        {cartCount() > 0 && (
+          <button onClick={goToCheckout} className="flex-1 btn btn-primary text-sm" style={{fontFamily:'var(--font-arabic)'}}>
+            🚀 اطلب الآن ({cartCount()})
+          </button>
+        )}
       </div>
     </div>
   )
