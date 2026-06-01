@@ -1,8 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Search, ShoppingCart, Star } from 'lucide-react'
+import { Search, ShoppingCart, Star, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useCart } from '@/lib/store/cart'
 import { createClient } from '@/lib/supabase/client'
 import WilayaSelector from '@/components/ui/WilayaSelector'
 import { SkeletonGrid } from '@/components/ui/SkeletonCard'
@@ -17,6 +18,8 @@ const CATEGORIES = [
 
 export default function DiscoverPage() {
   const router = useRouter()
+  const { add: addToCart, count: cartCount } = useCart()
+  const [addedId, setAddedId] = useState<string|null>(null)
   const [products,setProducts]=useState<any[]>([]),[loading,setLoading]=useState(true)
   const [search,setSearch]=useState(''),[wilaya,setWilaya]=useState<number|null>(null)
   const [sort,setSort]=useState('newest'),[category,setCategory]=useState('')
@@ -124,12 +127,24 @@ export default function DiscoverPage() {
                       onClick={e => {
                         e.preventDefault()
                         if (storeSlug && p.slug) {
-                          router.push(`/store/${storeSlug}/product/${p.slug}`)
+                          addToCart({
+                            productId: p.id,
+                            storeSlug,
+                            productSlug: p.slug,
+                            name: p.name_ar ?? p.name,
+                            price: p.price,
+                            image: (p.images as any[])?.[0]?.url,
+                          })
+                          setAddedId(p.id)
+                          setTimeout(() => setAddedId(null), 1500)
                         }
                       }}
-                      className="w-full mt-2 h-7 rounded-lg text-xs font-medium text-white flex items-center justify-center gap-1 transition-colors"
-                      style={{background:'var(--color-accent)',fontFamily:'var(--font-arabic)'}}>
-                      <ShoppingCart size={11}/>اطلب الآن
+                      className="w-full mt-2 h-7 rounded-lg text-xs font-medium text-white flex items-center justify-center gap-1 transition-all"
+                      style={{
+                        background: addedId === p.id ? '#198754' : 'var(--color-accent)',
+                        fontFamily:'var(--font-arabic)',
+                      }}>
+                      {addedId === p.id ? <><Check size={11}/>أُضيف!</> : <><ShoppingCart size={11}/>أضف للسلة</>}
                     </button>
                   </div>
                 </Link>
@@ -138,6 +153,28 @@ export default function DiscoverPage() {
           </div>
         )}
       </div>
+
+      {/* Floating cart button */}
+      {cartCount() > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <button
+            onClick={() => {
+              // Navigate to store checkout - use items[0] storeSlug
+              const { items } = useCart.getState()
+              if (items.length > 0) {
+                router.push(`/store/${items[0].storeSlug}/checkout`)
+              }
+            }}
+            className="flex items-center gap-3 px-6 py-3 rounded-full shadow-xl font-bold text-white transition-all hover:scale-105"
+            style={{background:'var(--color-accent)',boxShadow:'0 8px 24px rgba(13,110,253,0.4)',fontFamily:'var(--font-arabic)'}}>
+            <ShoppingCart size={18}/>
+            <span>عرض السلة</span>
+            <span className="w-6 h-6 rounded-full bg-white text-xs font-black flex items-center justify-center" style={{color:'var(--color-accent)'}}>
+              {cartCount()}
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   )
 }
