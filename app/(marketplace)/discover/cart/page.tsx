@@ -117,12 +117,20 @@ export default function CartPage() {
           </div>
 
           {/* Checkout button */}
-          {storeSlug && (
+          {storeSlug && items.length > 0 && (
             <button
-              onClick={() => router.push(`/store/${storeSlug}/checkout`)}
+              onClick={() => {
+                // If single product, go to product page checkout
+                if (items.length === 1) {
+                  router.push(`/store/${storeSlug}/checkout?product_id=${items[0].productId}&qty=${items[0].qty}`)
+                } else {
+                  // Multiple items — go to store checkout (will show product selector)
+                  router.push(`/store/${storeSlug}/checkout?product_id=${items[0].productId}&qty=${items[0].qty}`)
+                }
+              }}
               className="btn btn-primary w-full gap-2 mt-2" style={{fontFamily:'var(--font-arabic)'}}>
               <ShoppingCart size={16}/>
-              متابعة الطلب
+              متابعة الطلب ({items.length} منتج)
               <ChevronRight size={14}/>
             </button>
           )}
