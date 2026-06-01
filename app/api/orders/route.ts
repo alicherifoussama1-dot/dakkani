@@ -345,6 +345,7 @@ export async function POST(req: Request) {
       total: order.total,
       fraud_score: fraudResult.score,
       fraud_blocked: fraudResult.shouldBlock,
+      is_duplicate: isDuplicate,
       chargily_url: chargilyUrl,
     })
   } catch (err) {
