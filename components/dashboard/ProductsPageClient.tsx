@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, Eye, Pencil, ExternalLink, Package } from 'lucide-react'
+import { Plus, Search, Eye, Pencil, ExternalLink, Package, Trash2, Download } from 'lucide-react'
 import { formatDZD } from '@/lib/utils/format'
 import { createClient } from '@/lib/supabase/client'
 
@@ -20,6 +20,38 @@ export default function ProductsPageClient({
 }: Props) {
   const router = useRouter()
   const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [deleting, setDeleting] = useState(false)
+
+  const bulkDelete = async () => {
+    if (selected.size === 0 || !confirm(`حذف ${selected.size} منتج؟`)) return
+    setDeleting(true)
+    const sb = createClient()
+    const ids = Array.from(selected.values())
+    await sb.from('products').delete().in('id', ids)
+    setSelected(new Set())
+    router.refresh()
+    setDeleting(false)
+  }
+
+  const bulkToggle = async (active: boolean) => {
+    if (selected.size === 0) return
+    const sb = createClient()
+    const ids = Array.from(selected.values())
+    await sb.from('products').update({ is_active: active }).in('id', ids)
+    setSelected(new Set())
+    router.refresh()
+  }
+
+  const exportProducts = () => {
+    const rows = [['الاسم','الاسم العربي','SKU','السعر','الحالة']]
+    filtered.forEach(p => rows.push([p.name, p.name_ar??'', p.sku??'', String(p.price), p.is_active?'نشط':'مخفي']))
+    const csv = '﻿' + rows.map(r => r.join(',')).join('\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}))
+    a.download = `products-${new Date().toISOString().slice(0,10)}.csv`
+    a.click()
+  }
 
   const filtered = initialProducts.filter(p =>
     !search || (p.name_ar ?? p.name)?.toLowerCase().includes(search.toLowerCase()) || p.sku?.includes(search)
@@ -42,10 +74,24 @@ export default function ProductsPageClient({
           <h1 className="page-title">المنتجات</h1>
           <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)'}}>{initialProducts.length} منتج مسجل</p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/categories" className="btn btn-sm btn-ghost gap-1.5" style={{border:'1px solid var(--color-border)'}}>
-            الفئات
-          </Link>
+        <div className="flex gap-2 flex-wrap">
+          {selected.size > 0 && (
+            <>
+              <button onClick={() => bulkToggle(true)} className="btn btn-sm" style={{background:'#D1E7DD',color:'#198754',border:'none'}}>
+                تفعيل ({selected.size})
+              </button>
+              <button onClick={() => bulkToggle(false)} className="btn btn-sm" style={{background:'#FFF3CD',color:'#856404',border:'none'}}>
+                إخفاء ({selected.size})
+              </button>
+              <button onClick={bulkDelete} disabled={deleting} className="btn btn-sm" style={{background:'#F8D7DA',color:'#DC3545',border:'none'}}>
+                <Trash2 size={12}/>حذف
+              </button>
+            </>
+          )}
+          <button onClick={exportProducts} className="btn btn-sm btn-ghost gap-1" style={{border:'1px solid var(--color-border)'}}>
+            <Download size={13}/>CSV
+          </button>
+          <Link href="/categories" className="btn btn-sm btn-ghost gap-1.5" style={{border:'1px solid var(--color-border)'}}>الفئات</Link>
           <Link href="/products/new" className="btn btn-primary btn-sm gap-1.5">
             <Plus size={14} />إنشاء منتج
           </Link>
@@ -84,6 +130,16 @@ export default function ProductsPageClient({
           <table className="data-table">
             <thead>
               <tr>
+                <th>
+                  <input type="checkbox"
+                    checked={filtered.length > 0 && filtered.every(p => selected.has(p.id))}
+                    onChange={e => {
+                      if (e.target.checked) setSelected(new Set(filtered.map(p => p.id)))
+                      else setSelected(new Set())
+                    }}
+                    className="w-3.5 h-3.5 accent-[#0D6EFD]"
+                  />
+                </th>
                 {['المنتج','سعر البيع','SKU','المخزون','الحالة','إجراءات'].map(h => (
                   <th key={h}>{h}</th>
                 ))}
@@ -92,7 +148,7 @@ export default function ProductsPageClient({
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-14">
+                  <td colSpan={7} className="text-center py-14">
                     <div className="flex flex-col items-center gap-2">
                       <Package size={28} style={{ color: 'var(--color-text-muted)' }} />
                       <p className="text-sm" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-arabic)' }}>
@@ -108,7 +164,20 @@ export default function ProductsPageClient({
                 const stock  = stockOf(p)
                 const img    = (p.images as any[])?.[0]?.url
                 return (
-                  <tr key={p.id}>
+                  <tr key={p.id} className={selected.has(p.id) ? 'bg-[#EBF5FF]' : ''}>
+                    <td>
+                      <input type="checkbox"
+                        checked={selected.has(p.id)}
+                        onChange={e => {
+                          setSelected(prev => {
+                            const s = new Set(prev)
+                            e.target.checked ? s.add(p.id) : s.delete(p.id)
+                            return s
+                          })
+                        }}
+                        className="w-3.5 h-3.5 accent-[#0D6EFD]"
+                      />
+                    </td>
                     <td>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center"
