@@ -7,6 +7,7 @@ import StorefrontLayout    from '@/components/storefront/StorefrontLayout'
 import WhatsAppFloat       from '@/components/storefront/WhatsAppFloat'
 import ProductPageClient   from '@/components/storefront/ProductPageClient'
 import ProductPagePixels   from '@/components/storefront/ProductPagePixels'
+import ReviewForm          from '@/components/storefront/ReviewForm'
 import { FadeUp, StaggerContainer, StaggerItem } from '@/components/ui/animations'
 import { formatDZD } from '@/lib/utils/format'
 import Link from 'next/link'
@@ -143,6 +144,13 @@ export default async function ProductPage({ params }: Props) {
             </StaggerContainer>
           </section>
         )}
+
+        {/* Review Form */}
+        <section className="max-w-6xl mx-auto px-4 py-12 border-t border-gray-100">
+          <div className="max-w-lg mx-auto bg-white rounded-3xl shadow-card p-8">
+            <ReviewForm storeId={store.id} productId={product.id} />
+          </div>
+        </section>
 
         {/* Related */}
         {(relatedRes.data?.length ?? 0) > 0 && (
