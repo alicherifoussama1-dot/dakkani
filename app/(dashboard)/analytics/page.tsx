@@ -17,7 +17,7 @@ export default async function AnalyticsPage() {
 
   const [ordersRes, customersRes] = await Promise.all([
     supabase.from('orders')
-      .select('total, status, created_at, wilaya_id, delivery_fee, discount_amount, customer_phone')
+      .select('total, status, created_at, wilaya_id, delivery_fee, discount_amount, customer_phone, wilaya:wilayas(name_ar)')
       .eq('store_id', store.id)
       .gte('created_at', thirtyDaysAgo),
     supabase.from('orders')
@@ -78,6 +78,52 @@ export default async function AnalyticsPage() {
       </div>
 
       <AnalyticsCharts storeId={store.id} />
+
+      {/* Wilaya breakdown */}
+      {orders.length > 0 && (
+        <div className="card overflow-hidden">
+          <div className="px-4 py-3 border-b font-semibold text-sm flex items-center justify-between" style={{borderColor:'var(--color-border)',color:'var(--color-text-primary)'}}>
+            <span>أكثر الولايات مبيعاً</span>
+            <span className="text-xs font-normal" style={{color:'var(--color-text-muted)'}}>آخر 30 يوم</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="data-table" style={{fontFamily:'var(--font-arabic)'}}>
+              <thead>
+                <tr>{['الولاية','الطلبات','نسبة التسليم','الإيرادات'].map(h=><th key={h}>{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const byWilaya: Record<string, {total:number;delivered:number;revenue:number}> = {}
+                  orders.forEach((o: any) => {
+                    const w = o.wilaya_id ?? 0
+                    if (!byWilaya[w]) byWilaya[w] = {total:0,delivered:0,revenue:0}
+                    byWilaya[w].total++
+                    if (o.status === 'delivered') { byWilaya[w].delivered++; byWilaya[w].revenue += o.total }
+                  })
+                  return Object.entries(byWilaya)
+                    .sort(([,a],[,b]) => b.total - a.total)
+                    .slice(0,10)
+                    .map(([w, s]) => {
+                      const rate = s.total > 0 ? Math.round(s.delivered/s.total*100) : 0
+                      return (
+                        <tr key={w}>
+                          <td className="font-medium">ولاية {w}</td>
+                          <td className="font-semibold" style={{fontFamily:'var(--font-primary)'}}>{s.total}</td>
+                          <td>
+                            <span className="text-xs font-semibold" style={{color: rate >= 70 ? '#198754' : rate >= 40 ? '#FFA500' : '#DC3545'}}>
+                              {rate}%
+                            </span>
+                          </td>
+                          <td className="font-semibold" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>{formatDZD(s.revenue)}</td>
+                        </tr>
+                      )
+                    })
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
