@@ -88,6 +88,14 @@ export default async function CataloguePage({ params, searchParams }: Props) {
 
             {/* Products */}
             <main className="flex-1 min-w-0">
+              {/* Mobile search bar */}
+              <form method="GET" action={`/store/${store.slug}/products`} className="md:hidden mb-4 flex gap-2">
+                {searchParams.category && <input type="hidden" name="category" value={searchParams.category} />}
+                <input name="q" defaultValue={searchParams.q} placeholder="ابحث عن منتج..." dir="rtl"
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 outline-none bg-white"/>
+                <button type="submit" className="bg-primary text-white px-4 py-2.5 rounded-xl font-bold text-sm">بحث</button>
+              </form>
+
               {/* Toolbar */}
               <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                 {searchParams.q && (
