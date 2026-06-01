@@ -4,12 +4,18 @@ export const metadata = { title: 'تعلم' }
 import { Play, BookOpen, Clock } from 'lucide-react'
 
 const VIDEOS = [
-  { title: 'كيف تنشئ متجرك في 5 دقائق', duration: '5:30', level: 'مبتدئ', thumb: '🏪' },
-  { title: 'إضافة منتجاتك وصورها',       duration: '8:15', level: 'مبتدئ', thumb: '📦' },
-  { title: 'ربط فيسبوك بكسل',            duration: '6:00', level: 'متوسط', thumb: '📊' },
-  { title: 'إعداد التوصيل وأسعاره',      duration: '7:45', level: 'متوسط', thumb: '🚚' },
-  { title: 'تحليل الإحصائيات والمبيعات', duration: '10:20', level: 'متقدم', thumb: '📈' },
-  { title: 'استخدام Confirmili للمتابعة', duration: '12:00', level: 'متقدم', thumb: '📱' },
+  { title: 'كيف تنشئ متجرك في 5 دقائق',      duration: '5:30',  level: 'مبتدئ', thumb: '🏪' },
+  { title: 'إضافة منتجاتك وصورها',            duration: '8:15',  level: 'مبتدئ', thumb: '📦' },
+  { title: 'إعداد الكوبونات والعروض',          duration: '4:20',  level: 'مبتدئ', thumb: '🎫' },
+  { title: 'إعداد التوصيل وأسعاره',           duration: '7:45',  level: 'متوسط', thumb: '🚚' },
+  { title: 'ربط فيسبوك بكسل',               duration: '6:00',  level: 'متوسط', thumb: '📊' },
+  { title: 'ربط TikTok Pixel',              duration: '5:45',  level: 'متوسط', thumb: '🎵' },
+  { title: 'تحليل الإحصائيات والمبيعات',    duration: '10:20', level: 'متقدم', thumb: '📈' },
+  { title: 'استخدام Confirmili للمتابعة',    duration: '12:00', level: 'متقدم', thumb: '📱' },
+  { title: 'إدارة المخزون والمستودعات',      duration: '9:30',  level: 'متقدم', thumb: '🏭' },
+  { title: 'إعداد صفحات الهبوط الاحترافية', duration: '15:00', level: 'متقدم', thumb: '🚀' },
+  { title: 'تفعيل الدفع الإلكتروني',        duration: '8:00',  level: 'متوسط', thumb: '💳' },
+  { title: 'استخدام ذكاء اصطناعي لوصف المنتجات', duration: '6:30', level: 'مبتدئ', thumb: '🤖' },
 ]
 
 const LEVEL_COLORS: Record<string, string> = {
