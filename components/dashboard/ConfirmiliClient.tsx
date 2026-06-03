@@ -499,12 +499,14 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
 
       // Instant local update
       setLocalOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
+      setToast(`✓ ${statusLabel(newStatus, lang)}`)
     } catch (e) {
       console.error(e)
+      setToast('❌ خطأ في تغيير الحالة')
     } finally {
       setUpdating(null)
     }
-  }, [])
+  }, [lang, setToast])
 
   const updateCallAttempt = useCallback(async (orderId: string, currentAttempts: number) => {
     setUpdating(orderId)
@@ -530,12 +532,13 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       }).eq('id', orderId)
       setLocalOrders(prev => prev.map(o => o.id === orderId
         ? { ...o, call_attempts: newAttempts, status: newStatus } : o))
+      setToast(`📞 محاولة ${newAttempts} — ${statusLabel(newStatus, lang)}`)
     } catch (e) {
       console.error(e)
     } finally {
       setUpdating(null)
     }
-  }, [])
+  }, [lang, setToast])
 
   const bulkUpdateStatus = useCallback(async (newStatus: string) => {
     if (selectedOrders.size === 0) return
@@ -546,12 +549,13 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       await sb.from('orders').update({ status: newStatus }).in('id', ids)
       setLocalOrders(prev => prev.map(o => ids.includes(o.id) ? { ...o, status: newStatus } : o))
       setSelectedOrders(new Set<string>())
+      setToast(`✓ ${ids.length} طلبية — ${statusLabel(newStatus, lang)}`)
     } catch (e) {
-      console.error(e)
+      console.error(e); setToast('❌ خطأ في التحديث الجماعي')
     } finally {
       setBulkUpdating(false)
     }
-  }, [selectedOrders])
+  }, [selectedOrders, lang, setToast])
 
   const softDelete = useCallback((orderId: string) => {
     setActionMenu(null)
