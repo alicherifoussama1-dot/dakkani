@@ -564,13 +564,15 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     // persist (column added in migration 011 — best-effort)
     createClient().from('orders').update({ is_trashed: true }).eq('id', orderId).then(()=>{}, ()=>{})
     setToast('تم النقل إلى سلة المهملات')
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setToast])
 
   const restoreOrder = useCallback((orderId: string) => {
     setTrashedOrders(prev => { const s = new Set(prev); s.delete(orderId); return s })
     createClient().from('orders').update({ is_trashed: false }).eq('id', orderId).then(()=>{}, ()=>{})
     setToast('تمت الاستعادة')
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setToast])
 
   const openWhatsApp = useCallback((phone: string, customerName: string) => {
     const clean = (phone ?? '').replace(/\D/g, '').replace(/^0/, '213')
@@ -706,6 +708,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     const copy = () => {
       navigator.clipboard.writeText(trackingNum)
       setCopied(true)
+      setToast(`✓ تم نسخ: ${trackingNum}`)
       setTimeout(() => setCopied(false), 2000)
     }
     return (
@@ -1912,46 +1915,93 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     )
   }
 
+  // ─── SETTINGS CONTENT (password change + account info) ──
+  const SettingsContent = () => {
+    const [pw, setPw] = useState({old:'',new_:'',confirm:''})
+    const [showPw, setShowPw] = useState(false)
+    const [savingPw, setSavingPw] = useState(false)
+    const changePassword = async () => {
+      if (pw.new_ !== pw.confirm) { setToast('كلمتا المرور غير متطابقتين'); return }
+      if (pw.new_.length < 8)     { setToast('كلمة المرور يجب أن تكون 8 أحرف على الأقل'); return }
+      setSavingPw(true)
+      const sb = createClient()
+      const { error } = await sb.auth.updateUser({ password: pw.new_ })
+      setSavingPw(false)
+      if (error) setToast(`❌ ${error.message}`)
+      else { setToast('✓ تم تغيير كلمة المرور'); setPw({old:'',new_:'',confirm:''}) }
+    }
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{fontFamily:'var(--font-arabic)'}}>
+        <div className="card p-5 space-y-4">
+          <h3 className="font-semibold text-sm" style={{color:'var(--color-text-primary)'}}>معلومات المتجر</h3>
+          <div>
+            <label className="block text-xs mb-1" style={{color:'var(--color-text-muted)'}}>اسم المتجر</label>
+            <div className="flex gap-2">
+              <input className="input text-sm flex-1" defaultValue={storeName} readOnly/>
+              <button onClick={() => { navigator.clipboard.writeText(storeName); setToast('✓ تم نسخ الاسم') }} className="btn btn-sm" style={{border:'1px solid var(--color-border)',background:'#fff'}}>
+                <Copy size={12}/>
+              </button>
+            </div>
+          </div>
+          <div><label className="block text-xs mb-1" style={{color:'var(--color-text-muted)'}}>الخطة الحالية</label>
+            <input className="input text-sm" value={plan.toUpperCase()} readOnly/>
+          </div>
+          <a href="/settings" className="btn btn-sm w-full justify-center gap-1.5" style={{background:'var(--color-accent)',color:'#fff'}}>⚙️ إعدادات المتجر الكاملة ↗</a>
+        </div>
+        <div className="card p-5 space-y-4">
+          <h3 className="font-semibold text-sm" style={{color:'var(--color-text-primary)'}}>تغيير كلمة المرور</h3>
+          {[{l:'كلمة المرور الجديدة',k:'new_'},{l:'تأكيد كلمة المرور',k:'confirm'}].map(f => (
+            <div key={f.k}>
+              <label className="block text-xs mb-1" style={{color:'var(--color-text-muted)'}}>{f.l}</label>
+              <div className="relative">
+                <input type={showPw ? 'text' : 'password'} className="input text-sm h-9 w-full pr-9"
+                  value={(pw as any)[f.k]} onChange={e=>setPw(p=>({...p,[f.k]:e.target.value}))} placeholder="••••••••"/>
+                <button onClick={()=>setShowPw(v=>!v)} className="absolute left-2 top-1/2 -translate-y-1/2 text-xs" style={{color:'var(--color-text-muted)'}}>
+                  {showPw ? '🙈' : '👁'}
+                </button>
+              </div>
+            </div>
+          ))}
+          <button onClick={changePassword} disabled={savingPw || !pw.new_ || !pw.confirm} className="btn btn-primary btn-sm w-full gap-1.5">
+            {savingPw ? 'جارٍ الحفظ...' : '✓ تغيير كلمة المرور'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const renderSettings = () => {
     const sTabs = ['معلومات المستخدم','الدفع']
     return (
       <div>
         <TabBar tabs={sTabs} active={settingsTab} onChange={setSettingsTab}/>
-        {settingsTab === 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="card p-5 space-y-4">
-              <h3 className="font-semibold text-sm" style={{fontFamily:'var(--font-arabic)'}}>تغيير كلمة السر</h3>
-              {['كلمة السر القديمة','كلمة السر الجديدة','تأكيد كلمة السر'].map(l => (
-                <div key={l}><label className="block text-xs mb-1" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>{l}</label>
-                <input type="password" className="input text-sm h-9"/></div>
-              ))}
-              <a href="/settings" className="btn btn-sm" style={{background:'var(--color-success)',color:'#fff',fontFamily:'var(--font-arabic)'}}>الإعدادات ←</a>
-            </div>
-            <div className="card p-5 space-y-4">
-              <h3 className="font-semibold text-sm" style={{fontFamily:'var(--font-arabic)'}}>معلومات الحساب</h3>
-              {[{l:'إسم المتجر',v:storeName},{l:'الخطة',v:plan.toUpperCase()}].map(f => (
-                <div key={f.l}><label className="block text-xs mb-1" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>{f.l}</label>
-                <input className="input text-sm h-9" defaultValue={f.v} dir="rtl"/></div>
-              ))}
-              <a href="/settings" className="btn btn-sm" style={{background:'var(--color-success)',color:'#fff',fontFamily:'var(--font-arabic)'}}>حفظ الإعدادات ←</a>
-            </div>
-          </div>
-        )}
+        {settingsTab === 0 && <SettingsContent />}
         {settingsTab === 1 && (
-          <div className="card p-5 space-y-3">
-            <h3 className="font-semibold text-sm" style={{fontFamily:'var(--font-arabic)'}}>ملخص الرصيد</h3>
-            <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                {l:'إجمالي الإيرادات',v:`${totalRevenue.toLocaleString('ar-DZ')} دج`},
-                {l:'طلبات مسلمة',v:String(delivered.length)},
-                {l:'طلبات مؤكدة',v:String(confirmedArr.length)},
-                {l:'الخطة',v:plan.toUpperCase()},
-              ].map(({l,v}) => (
-                <div key={l} className="p-3 rounded-lg text-center" style={{background:'var(--color-bg-soft)'}}>
-                  <p className="font-bold text-sm" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>{v}</p>
+                {l:'إجمالي الإيرادات', v:`${totalRevenue.toLocaleString('ar-DZ')} دج`, color:'var(--color-accent)'},
+                {l:'طلبات مسلمة',       v:String(delivered.length),                     color:'#22C55E'},
+                {l:'طلبات مؤكدة',       v:String(confirmedArr.length),                  color:'#0D6EFD'},
+                {l:'الخطة الحالية',     v:plan.toUpperCase(),                           color:'#9D76C1'},
+              ].map(({l,v,color}) => (
+                <div key={l} className="card p-4 text-center">
+                  <p className="font-bold text-lg" style={{color,fontFamily:'var(--font-primary)'}}>{v}</p>
                   <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>{l}</p>
                 </div>
               ))}
+            </div>
+            <div className="card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-sm" style={{fontFamily:'var(--font-arabic)'}}>تاريخ المدفوعات</h3>
+                <a href="/billing/plans" className="btn btn-primary btn-sm" style={{fontFamily:'var(--font-arabic)'}}>ترقية الخطة ↗</a>
+              </div>
+              <table className="data-table">
+                <thead><tr>{['التاريخ','المبلغ','الحالة'].map(h=><th key={h}>{h}</th>)}</tr></thead>
+                <tbody>
+                  <tr><td colSpan={3} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد مدفوعات</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
         )}
