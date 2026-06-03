@@ -2452,44 +2452,48 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
               <>
                 <div className="fixed inset-0 z-10" onClick={()=>setNotifOpen(false)}/>
                 <div className="absolute top-full mt-1 right-0 w-72 bg-white border rounded-xl shadow-lg z-20 overflow-hidden" style={{borderColor:'var(--color-border)'}}>
+                  {/* 3 tabs: الكل / تنبيه المخزون / طلبات */}
                   <div className="flex border-b" style={{borderColor:'var(--color-border)'}}>
-                    {['طلبات جديدة','تنبيهات'].map((t,i)=>(
-                      <button key={t} onClick={()=>setNotifTab(i)} className={`flex-1 py-2.5 text-xs font-medium ${notifTab===i?'text-[#0D6EFD] border-b-2 border-[#0D6EFD]':'text-[#868E96]'}`}>{t}</button>
+                    {[
+                      {label:'الكل', count: notifications.filter(n=>!n.is_read).length},
+                      {label:'المخزون', count: notifications.filter(n=>n.type==='stock'&&!n.is_read).length},
+                      {label:'طلبات', count: notifications.filter(n=>n.type==='order'&&!n.is_read).length},
+                    ].map(({label,count},i)=>(
+                      <button key={label} onClick={()=>setNotifTab(i)}
+                        className={`flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1 ${notifTab===i?'text-[#0D6EFD] border-b-2 border-[#0D6EFD]':'text-[#868E96]'}`}>
+                        {label}
+                        {count > 0 && <span className="w-4 h-4 rounded-full text-[8px] font-bold text-white flex items-center justify-center" style={{background:'#0D6EFD'}}>{count}</span>}
+                      </button>
                     ))}
                   </div>
-                  <div className="p-3 space-y-2 max-h-60 overflow-y-auto">
-                    {notifTab === 0
-                      ? (() => {
-                          const newOrders = localOrders.filter(o=>o.status==='new'&&!trashedOrders.has(o.id)).slice(0,5)
-                          if (newOrders.length === 0) return <p className="text-center text-xs py-4" style={{color:'var(--color-text-muted)'}}>لا توجد طلبات جديدة</p>
-                          return newOrders.map(o => (
-                            <div key={o.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-[#F8F9FA]">
-                              <div>
-                                <p className="text-xs font-medium" style={{color:'var(--color-text-primary)'}}>{o.customer_name}</p>
-                                <p className="text-[10px]" style={{color:'var(--color-text-muted)'}}>{o.order_number} — {o.total?.toLocaleString('ar-DZ')} دج</p>
-                              </div>
-                              <button onClick={()=>{updateOrderStatus(o.id,'confirmed');setNotifOpen(false)}}
-                                className="text-[10px] px-2 py-1 rounded" style={{background:'#D1E7DD',color:'#198754'}}>تأكيد</button>
-                            </div>
-                          ))
-                        })()
-                      : (() => {
-                          const alertNotifs = notifications.filter(n => n.type !== 'order').slice(0,5)
-                          if (alertNotifs.length === 0) return <p className="text-center text-xs py-4" style={{color:'var(--color-text-muted)'}}>لا توجد تنبيهات</p>
-                          return alertNotifs.map(n => (
-                            <div key={n.id} className="p-2 rounded-lg hover:bg-[#F8F9FA]">
-                              <p className="text-xs font-medium" style={{color:'var(--color-text-primary)'}}>{n.title}</p>
-                              <p className="text-[10px]" style={{color:'var(--color-text-muted)'}}>{n.message}</p>
-                              <p className="text-[9px] mt-0.5" style={{color:'var(--color-text-muted)'}}>{new Date(n.created_at).toLocaleTimeString('ar-DZ')}</p>
-                            </div>
-                          ))
-                        })()
-                    }
-                    {/* Mark all read */}
-                    <button onClick={() => { fetch('/api/notifications', {method:'PATCH'}); setUnreadCount(0); loadNotifications() }}
-                      className="w-full text-center text-[10px] py-1.5 hover:bg-[#F8F9FA] transition-colors"
-                      style={{color:'var(--color-accent)'}}>
-                      تحديد الكل كمقروء
+                  <div className="p-2 space-y-1 max-h-60 overflow-y-auto">
+                    {(() => {
+                      const filtered = notifTab === 0 ? notifications
+                        : notifTab === 1 ? notifications.filter(n=>n.type==='stock')
+                        : notifications.filter(n=>n.type==='order')
+                      if (filtered.length === 0) return (
+                        <p className="text-center text-xs py-6" style={{color:'var(--color-text-muted)'}}>
+                          {notifTab === 1 ? 'لا توجد تنبيهات مخزون' : notifTab === 2 ? 'لا توجد طلبات جديدة' : 'لا توجد إشعارات'}
+                        </p>
+                      )
+                      return filtered.map(n => (
+                        <div key={n.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-[#F8F9FA] transition-colors">
+                          <span className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{background: n.is_read ? '#DEE2E6' : '#0D6EFD'}}/>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate" style={{color:'var(--color-text-primary)'}}>{n.title ?? n.message}</p>
+                            {n.message && n.message !== n.title && <p className="text-[10px] truncate" style={{color:'var(--color-text-muted)'}}>{n.message}</p>}
+                            <p className="text-[9px] mt-0.5" style={{color:'var(--color-text-muted)'}}>{new Date(n.created_at).toLocaleTimeString('ar-DZ')}</p>
+                          </div>
+                          {n.type === 'order' && n.is_read === false && (
+                            <button onClick={()=>{setActiveTab('orders');setNotifOpen(false)}}
+                              className="text-[9px] px-1.5 py-0.5 rounded flex-shrink-0" style={{background:'#EBF5FF',color:'#0D6EFD'}}>عرض</button>
+                          )}
+                        </div>
+                      ))
+                    })()}
+                    <button onClick={() => { fetch('/api/notifications', {method:'PATCH'}); setUnreadCount(0); setNotifications(prev=>prev.map(n=>({...n,is_read:true}))) }}
+                      className="w-full text-center text-[10px] py-1.5 hover:bg-[#F8F9FA] transition-colors border-t mt-1" style={{color:'var(--color-accent)',borderColor:'var(--color-border)'}}>
+                      ✓ تحديد الكل كمقروء
                     </button>
                   </div>
                 </div>
@@ -2508,13 +2512,22 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
           <div className="text-xs" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
             إيرادات: <strong style={{color:'var(--color-accent)'}}>{totalRevenue.toLocaleString('ar-DZ')} دج</strong>
           </div>
-          {/* Quota display (9.9) */}
-          <div className="text-xs flex items-center gap-1" style={{color: planOrdersUsed/planOrderLimit > 0.8 ? '#DC3545' : 'var(--color-text-muted)'}}>
-            <span>الطلبات المتبقية:</span>
-            <strong style={{color: planOrdersUsed/planOrderLimit > 0.8 ? '#DC3545' : 'var(--color-accent)'}}>
-              {Math.max(0, planOrderLimit - planOrdersUsed).toLocaleString('ar-DZ')}/{planOrderLimit.toLocaleString('ar-DZ')}
-            </strong>
-          </div>
+          {/* Quota display (9.9) — red when remaining < 20% */}
+          {(() => {
+            const remaining = Math.max(0, planOrderLimit - planOrdersUsed)
+            const pct = planOrderLimit > 0 ? remaining / planOrderLimit : 1
+            const isLow = pct < 0.2
+            return (
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs"
+                style={{ background: isLow ? '#FEE2E2' : 'var(--color-bg-soft)', color: isLow ? '#DC3545' : 'var(--color-text-muted)', fontFamily:'var(--font-arabic)' }}>
+                {isLow && <AlertTriangle size={10} style={{color:'#DC3545'}}/>}
+                <span>المتبقية:</span>
+                <strong style={{ fontFamily:'var(--font-primary)', color: isLow ? '#DC3545' : 'var(--color-accent)' }}>
+                  {remaining.toLocaleString('ar-DZ')}/{planOrderLimit.toLocaleString('ar-DZ')}
+                </strong>
+              </div>
+            )
+          })()}
           {/* Language switcher (9.4) */}
           <div className="flex items-center gap-1 border rounded-lg overflow-hidden" style={{borderColor:'var(--color-border)'}}>
             {(['ar','fr','en'] as const).map(l => (
