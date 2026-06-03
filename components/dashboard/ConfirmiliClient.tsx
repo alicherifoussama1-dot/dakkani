@@ -176,6 +176,29 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   const [companyForm,   setCompanyForm]   = useState<any|null>(null)
   // Finance config (costs that feed profit calc)
   const [financeCfg,    setFinanceCfg]    = useState<any>({ monthly_ad_cost:0, confirmation_price:0, confirmation_price_mode:'per_confirmed', packaging_price:0, tracking_price:0 })
+  // Product CRUD modal
+  const [prodForm,      setProdForm]      = useState<any|null>(null) // null=closed, {}=add, {id}=edit
+  const [prodSearch,    setProdSearch]    = useState('')
+  const [prodList,      setProdList]      = useState<any[]>(initialProducts)
+  // Column settings modal (persist to localStorage)
+  const DEFAULT_COLS = ['source','order_number','date','name','phone','verify','status','wilaya','product','total','call_attempts','actions']
+  const [showColSettings, setShowColSettings] = useState(false)
+  const [visibleCols, setVisibleCols] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set(DEFAULT_COLS)
+    try { const s = localStorage.getItem('confirmili_cols'); return s ? new Set(JSON.parse(s)) : new Set(DEFAULT_COLS) } catch { return new Set(DEFAULT_COLS) }
+  })
+  // Manual order modal
+  const [showManual, setShowManual] = useState(false)
+  const [manualForm, setManualForm] = useState<any>({})
+  const [savingManual, setSavingManual] = useState(false)
+  // Send report modal
+  const [showSendReport, setShowSendReport] = useState(false)
+  const [sendReports,    setSendReports]    = useState<any[]>([])
+  // QR
+  const [qrResult, setQrResult] = useState<string|null>(null)
+  // Store integrations (confirmili_store_integrations)
+  const [integrations,   setIntegrations]   = useState<any[]>([])
+  const [integForm,      setIntegForm]      = useState<any|null>(null)
   // Realtime subscription ref
   const realtimeRef = useRef<any>(null)
 
@@ -229,7 +252,104 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     setToast('تم حفظ إعدادات التكاليف')
   }, [storeId, financeCfg, setToast])
 
-  useEffect(() => { loadTeam(); loadCompanies(); loadFinanceCfg() }, [loadTeam, loadCompanies, loadFinanceCfg])
+  // ─── LOAD STORE INTEGRATIONS ────────────────────────────
+  const loadIntegrations = useCallback(async () => {
+    if (!storeId) return
+    const sb = createClient()
+    const { data } = await sb.from('confirmili_store_integrations').select('*').eq('store_id', storeId).order('created_at', { ascending: false })
+    setIntegrations(data ?? [])
+  }, [storeId])
+
+  const saveIntegration = useCallback(async () => {
+    if (!integForm?.name) return
+    const sb = createClient()
+    const payload = { store_id: storeId, name: integForm.name, platform: integForm.platform ?? 'youcan', status: integForm.status ?? true, config: integForm.config ?? {} }
+    if (integForm.id) await sb.from('confirmili_store_integrations').update(payload).eq('id', integForm.id)
+    else              await sb.from('confirmili_store_integrations').insert(payload)
+    setIntegForm(null); setToast('تم الحفظ'); loadIntegrations()
+  }, [integForm, storeId, setToast, loadIntegrations])
+
+  const toggleIntegration = useCallback(async (it: any) => {
+    const sb = createClient()
+    await sb.from('confirmili_store_integrations').update({ status: !it.status }).eq('id', it.id)
+    setIntegrations(prev => prev.map(x => x.id === it.id ? { ...x, status: !x.status } : x))
+  }, [])
+
+  const deleteIntegration = useCallback(async (id: string) => {
+    if (!window.confirm('حذف هذا التكامل؟')) return
+    const sb = createClient()
+    await sb.from('confirmili_store_integrations').delete().eq('id', id)
+    setIntegrations(prev => prev.filter(x => x.id !== id)); setToast('تم الحذف')
+  }, [setToast])
+
+  // ─── LOAD SEND REPORTS ──────────────────────────────────
+  const loadSendReports = useCallback(async () => {
+    if (!storeId) return
+    const sb = createClient()
+    const { data } = await sb.from('confirmili_send_reports').select('*').eq('store_id', storeId).order('sent_at', { ascending: false }).limit(50)
+    setSendReports(data ?? [])
+  }, [storeId])
+
+  // ─── COLUMN SETTINGS SAVE ───────────────────────────────
+  const saveColSettings = useCallback((cols: Set<string>) => {
+    setVisibleCols(cols)
+    if (typeof window !== 'undefined') localStorage.setItem('confirmili_cols', JSON.stringify(Array.from(cols)))
+    setShowColSettings(false); setToast('تم حفظ إعدادات الأعمدة')
+  }, [setToast])
+
+  // ─── MANUAL ORDER ───────────────────────────────────────
+  const saveManualOrder = useCallback(async () => {
+    if (!manualForm.customer_name || !manualForm.customer_phone) return
+    setSavingManual(true)
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_id: storeId, source: 'manual', payment_method: 'cod',
+          customer_name: manualForm.customer_name, customer_phone: manualForm.customer_phone,
+          wilaya_id: manualForm.wilaya_id ? +manualForm.wilaya_id : 1,
+          delivery_type: manualForm.delivery_type ?? 'home',
+          notes: manualForm.notes ?? '',
+          items: manualForm.product_id ? [{ product_id: manualForm.product_id, quantity: manualForm.qty ?? 1, variant_key:'default' }] : [],
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setShowManual(false); setManualForm({})
+        setToast('تم إنشاء الطلبية'); // reload
+      } else setToast(data.error ?? 'خطأ في الحفظ')
+    } catch { setToast('خطأ في الشبكة') }
+    finally { setSavingManual(false) }
+  }, [manualForm, storeId, setToast])
+
+  // ─── PRODUCT CRUD ───────────────────────────────────────
+  const saveProd = useCallback(async () => {
+    if (!prodForm?.name && !prodForm?.name_ar) return
+    const sb = createClient()
+    const patch: any = {
+      name: prodForm.name ?? prodForm.name_ar,
+      name_ar: prodForm.name_ar ?? prodForm.name,
+      price: +(prodForm.price ?? 0),
+      sku: prodForm.sku ?? null,
+      min_stock_alert: +(prodForm.min_stock_alert ?? 5),
+      confirmili_is_known: prodForm.confirmili_is_known ?? true,
+      confirmili_team_note: prodForm.confirmili_team_note ?? null,
+    }
+    if (prodForm.id) await sb.from('products').update(patch).eq('id', prodForm.id)
+    else             await sb.from('products').insert({ ...patch, store_id: storeId, is_active: true })
+    const { data } = await sb.from('products').select('id,name,name_ar,sku,price,cost_price,images,min_stock_alert,confirmili_is_known,confirmili_team_note').eq('store_id', storeId).eq('is_active', true).order('name')
+    setProdList(data ?? []); setProdForm(null); setToast('تم حفظ المنتج')
+  }, [prodForm, storeId, setToast])
+
+  const deleteProd = useCallback(async (id: string) => {
+    if (!window.confirm('حذف هذا المنتج؟')) return
+    const sb = createClient()
+    await sb.from('products').update({ is_active: false }).eq('id', id)
+    setProdList(prev => prev.filter(x => x.id !== id)); setToast('تم الحذف')
+  }, [setToast])
+
+  useEffect(() => { loadTeam(); loadCompanies(); loadFinanceCfg(); loadIntegrations() }, [loadTeam, loadCompanies, loadFinanceCfg, loadIntegrations])
 
   // ─── TEAM CRUD ──────────────────────────────────────────
   const saveTeamMember = useCallback(async () => {
@@ -1007,6 +1127,19 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
           </button>
         )}
 
+        <button onClick={()=>setShowColSettings(true)}
+          className="btn btn-sm gap-1" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>
+          <SlidersHorizontal size={12}/>الأعمدة
+        </button>
+        <button onClick={()=>{setShowSendReport(true);loadSendReports()}}
+          className="btn btn-sm gap-1" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>
+          📊 تقرير الإرسال
+        </button>
+        <button onClick={()=>{setShowManual(true);setManualForm({})}}
+          className="btn btn-primary btn-sm gap-1">
+          <Plus size={13}/>طلبية يدوية
+        </button>
+
         <div className="flex-1"/>
         <div className="relative">
           <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2" style={{color:'var(--color-text-muted)'}}/>
@@ -1226,39 +1359,71 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     )
   }
 
-  const renderProducts = () => (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <button className="w-8 h-8 rounded-full flex items-center justify-center text-white" style={{background:'#2BBFAD'}}><Plus size={14}/></button>
-        <button className="btn btn-sm" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)',fontFamily:'var(--font-arabic)'}}>استيراد</button>
+  const renderProducts = () => {
+    const shown = prodList.filter(p => !prodSearch || (p.name_ar??p.name??'').toLowerCase().includes(prodSearch.toLowerCase()) || (p.sku??'').includes(prodSearch))
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1 max-w-xs">
+            <Search size={12} className="absolute right-3 top-1/2 -translate-y-1/2" style={{color:'var(--color-text-muted)'}}/>
+            <input value={prodSearch} onChange={e=>setProdSearch(e.target.value)} placeholder="ابحث..." className="input pr-8 text-sm h-9 w-full"/>
+          </div>
+          <button onClick={()=>setProdForm({ confirmili_is_known:true })} className="btn btn-primary btn-sm gap-1.5"><Plus size={13}/>إضافة منتج</button>
+          <a href="/products/new" className="btn btn-sm gap-1.5" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>
+            ربط منتج موجود →
+          </a>
+        </div>
+        <div className="card overflow-hidden">
+          <table className="data-table" style={{fontFamily:'var(--font-arabic)'}}>
+            <thead>
+              <tr>{['الصورة','الاسم','المرجع','السعر','معرفة؟','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {shown.length === 0
+                ? <tr><td colSpan={6} className="text-center py-14">
+                    <Package size={28} className="mx-auto mb-2" style={{color:'var(--color-text-muted)',opacity:0.4}}/>
+                    <p className="text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد منتجات — أضف منتجاتك</p>
+                  </td></tr>
+                : shown.map((p: any) => (
+                  <tr key={p.id}>
+                    <td>
+                      <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center" style={{background:'var(--color-bg-soft)'}}>
+                        {(p.images as any[])?.[0]?.url
+                          ? <img src={(p.images as any[])[0].url} alt="" className="w-full h-full object-cover"/>
+                          : <div className="w-full h-full flex flex-col items-center justify-center gap-0.5" style={{background:'var(--color-bg-muted)'}}>
+                              <Package size={12} style={{color:'var(--color-text-muted)'}}/>
+                              <span className="text-[8px]" style={{color:'var(--color-text-muted)'}}>لا توجد صورة</span>
+                            </div>}
+                      </div>
+                    </td>
+                    <td>
+                      <p className="font-medium text-sm">{p.name_ar??p.name}</p>
+                      {p.confirmili_team_note && <p className="text-[10px] mt-0.5" style={{color:'var(--color-text-muted)'}}>{p.confirmili_team_note}</p>}
+                    </td>
+                    <td className="text-xs font-mono" style={{color:'var(--color-text-muted)'}}>{p.sku??'—'}</td>
+                    <td className="font-semibold text-sm" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>{p.price?.toLocaleString('ar-DZ')} دج</td>
+                    <td>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                        style={{ background: p.confirmili_is_known ? '#D1E7DD' : '#F8D7DA', color: p.confirmili_is_known ? '#198754' : '#DC3545' }}>
+                        {p.confirmili_is_known ? '✓ معروف' : '✗ غير معروف'}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-1">
+                        <button onClick={()=>setProdForm(p)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><Edit2 size={12} style={{color:'var(--color-text-muted)'}}/></button>
+                        <button onClick={()=>openHistory(p.id, p.name_ar??p.name)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><Clock size={12} style={{color:'var(--color-text-muted)'}}/></button>
+                        <button onClick={()=>deleteProd(p.id)} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={12} style={{color:'#DC3545'}}/></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div className="card overflow-hidden">
-        <table className="data-table" style={{fontFamily:'var(--font-arabic)'}}>
-          <thead><tr>{['الصورة','الاسم','المرجع','السعر','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr></thead>
-          <tbody>
-            {initialProducts.length === 0
-              ? <tr><td colSpan={5} className="text-center py-12 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد منتجات — أضف منتجاتك من صفحة المنتجات</td></tr>
-              : initialProducts.map((p: any) => (
-                <tr key={p.id}>
-                  <td><div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center" style={{background:'var(--color-bg-soft)'}}>
-                    {(p.images as any[])?.[0]?.url
-                      ? <img src={(p.images as any[])[0].url} alt="" className="w-full h-full object-cover"/>
-                      : <div className="w-full h-full flex flex-col items-center justify-center gap-0.5" style={{background:'var(--color-bg-muted)'}}>
-                          <Package size={14} style={{color:'var(--color-text-muted)'}}/>
-                          <span className="text-[8px]" style={{color:'var(--color-text-muted)'}}>لا توجد صورة</span>
-                        </div>}
-                  </div></td>
-                  <td className="font-medium text-sm">{p.name_ar??p.name}</td>
-                  <td className="text-xs font-mono" style={{color:'var(--color-text-muted)'}}>{p.sku??'—'}</td>
-                  <td className="font-semibold text-sm" style={{color:'var(--color-accent)'}}>{p.price?.toLocaleString('ar-DZ')} دج</td>
-                  <td><a href={`/products/${p.id}`} className="btn btn-sm" style={{background:'#EBF5FF',color:'var(--color-accent)'}}><Edit2 size={12}/>تعديل</a></td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
+    )
+  }
 
   const renderDelivery = () => {
     const dTabs = ['شركة التوصيل','أسعار التوصيل المعلنة','الولاية ↔ شركة التوصيل','أسعار التوصيل الحقيقية']
@@ -1363,47 +1528,89 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
 
   const renderStoreIntegration = () => {
     const sTabs = ['ربط المتاجر','قوقل شيت','فيسبوك ليدس']
+    const PLATFORM_ICONS: Record<string,string> = { youcan:'🛒', shopify:'🏪', woocommerce:'⚙️', google_sheet:'📊', dakkani:'🔵' }
     return (
       <div>
         <TabBar tabs={sTabs} active={storeSubTab} onChange={setStoreSubTab}/>
         {storeSubTab === 0 && (
-          <div className="card overflow-hidden">
-            <table className="data-table">
-              <thead><tr>{['المنصة','الاسم','الحالة','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr></thead>
-              <tbody>
-                <tr>
-                  <td><div className="flex items-center gap-2"><span>🏪</span><span className="font-medium text-sm">{storeName}</span></div></td>
-                  <td className="text-sm">{storeName}</td>
-                  <td><span className="badge badge-green">متصل</span></td>
-                  <td><a href="/settings" className="btn btn-sm" style={{background:'#EBF5FF',color:'var(--color-accent)'}}>إعدادات</a></td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs" style={{color:'var(--color-text-muted)'}}>ربط منصات التجارة الإلكترونية بـ Confirmili</span>
+              <button onClick={()=>setIntegForm({platform:'youcan',status:true})} className="btn btn-primary btn-sm gap-1.5"><Plus size={13}/>ربط متجر</button>
+            </div>
+            <div className="card overflow-hidden">
+              <table className="data-table">
+                <thead><tr>{['المنصة','الاسم','الحالة','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {/* Dakkani always shown as connected */}
+                  <tr>
+                    <td><div className="flex items-center gap-2"><span>🔵</span><span className="text-xs font-mono" style={{color:'var(--color-accent)'}}>Dakkani</span></div></td>
+                    <td className="font-medium text-sm">{storeName}</td>
+                    <td><span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{background:'#D1E7DD',color:'#198754'}}>متصل ✓</span></td>
+                    <td><a href="/settings" className="btn btn-sm" style={{background:'#EBF5FF',color:'var(--color-accent)'}}>إعدادات</a></td>
+                  </tr>
+                  {integrations.filter(i=>i.platform!=='google_sheet').map(it => (
+                    <tr key={it.id}>
+                      <td><div className="flex items-center gap-2"><span>{PLATFORM_ICONS[it.platform]??'🔗'}</span><span className="text-xs" style={{color:'var(--color-text-muted)'}}>{it.platform}</span></div></td>
+                      <td className="font-medium text-sm">{it.name}</td>
+                      <td>
+                        <button onClick={()=>toggleIntegration(it)} className="w-9 h-5 rounded-full flex items-center transition-colors" style={{background:it.status?'#22C55E':'#DEE2E6'}}>
+                          <span className="w-4 h-4 bg-white rounded-full shadow transition-transform" style={{transform:it.status?'translateX(-2px)':'translateX(-18px)'}}/>
+                        </button>
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-1">
+                          <button onClick={()=>setIntegForm(it)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><Edit2 size={12} style={{color:'var(--color-text-muted)'}}/></button>
+                          <button onClick={()=>deleteIntegration(it.id)} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={12} style={{color:'#DC3545'}}/></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {integrations.filter(i=>i.platform!=='google_sheet').length === 0 && (
+                    <tr><td colSpan={4} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد تكاملات إضافية</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
         {storeSubTab === 1 && (
           <div className="space-y-3">
             <div className="flex gap-2">
-              <button className="btn btn-sm" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>+ حساب Google</button>
-              <button className="btn btn-sm" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>+ شيت</button>
+              <button onClick={()=>setIntegForm({platform:'google_sheet',status:true})} className="btn btn-primary btn-sm gap-1.5"><Plus size={13}/>إضافة شيت</button>
             </div>
             <div className="card overflow-hidden">
               <table className="data-table">
-                <thead><tr><th>اسم الشيت</th><th>الحساب</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+                <thead><tr><th>الاسم</th><th>الحالة</th><th>إجراءات</th></tr></thead>
                 <tbody>
-                  <tr><td colSpan={4} className="text-center py-10 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد شيتات — أضف أول شيت لإرسال الطلبيات تلقائياً</td></tr>
+                  {integrations.filter(i=>i.platform==='google_sheet').length === 0
+                    ? <tr><td colSpan={3} className="text-center py-10 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد شيتات — أضف أول شيت</td></tr>
+                    : integrations.filter(i=>i.platform==='google_sheet').map(it => (
+                      <tr key={it.id}>
+                        <td className="font-medium text-sm">{it.name}</td>
+                        <td>
+                          <button onClick={()=>toggleIntegration(it)} className="w-9 h-5 rounded-full flex items-center transition-colors" style={{background:it.status?'#22C55E':'#DEE2E6'}}>
+                            <span className="w-4 h-4 bg-white rounded-full shadow transition-transform" style={{transform:it.status?'translateX(-2px)':'translateX(-18px)'}}/>
+                          </button>
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-1">
+                            <button onClick={()=>setIntegForm(it)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><Edit2 size={12} style={{color:'var(--color-text-muted)'}}/></button>
+                            <button onClick={()=>deleteIntegration(it.id)} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={12} style={{color:'#DC3545'}}/></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
           </div>
         )}
         {storeSubTab === 2 && (
-          <div className="flex flex-col items-center justify-center py-16 rounded-2xl border-2 border-dashed" style={{borderColor:'var(--color-border)'}}>
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{background:'var(--color-accent-soft)'}}>
-              <Link2 size={28} style={{color:'var(--color-accent)'}}/>
-            </div>
-            <p className="font-black text-lg mb-1" style={{color:'var(--color-text-primary)'}}>COMING SOON...</p>
-            <p className="text-sm" style={{color:'var(--color-text-muted)'}}>ربط فيسبوك leads — نطبخ منتجنا 🍳</p>
+          <div className="flex flex-col items-center justify-center py-20 rounded-2xl border-2 border-dashed" style={{borderColor:'var(--color-border)'}}>
+            <span className="text-5xl mb-4">🍳</span>
+            <p className="font-black text-xl mb-2" style={{color:'var(--color-text-primary)'}}>COMING SOON...</p>
+            <p className="text-sm" style={{color:'var(--color-text-muted)'}}>ربط فيسبوك leads — نطبخ منتجنا</p>
           </div>
         )}
       </div>
@@ -1807,26 +2014,51 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
         </div>
       </div>
     ),
-    qr: () => (
-      <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <p className="text-sm font-semibold mb-2" style={{color:'var(--color-text-muted)'}}>امسح QR لتأكيد التسليم</p>
-        <div className="w-56 h-56 border-2 border-dashed rounded-2xl flex items-center justify-center relative" style={{borderColor:'var(--color-border)'}}>
-          <div className="absolute inset-4 border-2 rounded-xl" style={{borderColor:'var(--color-accent)',opacity:0.3}}/>
-          <div className="text-center">
-            <QrCode size={48} style={{color:'var(--color-text-muted)'}} className="mx-auto mb-2"/>
-            <p className="text-xs" style={{color:'var(--color-text-muted)'}}>كاميرا المسح</p>
+    qr: () => {
+      const scanOrder = async (code: string) => {
+        const found = localOrders.find(o => o.order_number === code || o.tracking_number === code)
+        if (found) {
+          setQrResult(`✅ طلبية موجودة — ${found.customer_name} — ${statusLabel(found.status, lang)}`)
+        } else {
+          setQrResult(`❌ لا توجد طلبية بهذا الرمز: ${code}`)
+        }
+      }
+      return (
+        <div className="flex flex-col items-center justify-center py-10 gap-5" dir="rtl">
+          <div className="w-56 h-56 border-2 border-dashed rounded-2xl flex items-center justify-center relative" style={{borderColor:'var(--color-accent)',background:'#F8FCFF'}}>
+            <div className="absolute inset-3 border-2 rounded-xl" style={{borderColor:'var(--color-accent)',opacity:0.25}}/>
+            {/* corner marks */}
+            {[['top-3 right-3'],['top-3 left-3'],['bottom-3 right-3'],['bottom-3 left-3']].map(([cls],i) => (
+              <div key={i} className={`absolute ${cls} w-4 h-4`} style={{border:'2.5px solid var(--color-accent)',borderRadius:3}}/>
+            ))}
+            <div className="text-center z-10">
+              <QrCode size={40} style={{color:'var(--color-accent)'}} className="mx-auto mb-2"/>
+              <p className="text-xs" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>منطقة المسح</p>
+            </div>
+            <div className="absolute inset-x-5 h-0.5 animate-pulse" style={{background:'var(--color-accent)',top:'50%'}}/>
           </div>
-          {/* Scanner animation */}
-          <div className="absolute inset-x-4 h-0.5 animate-bounce" style={{background:'var(--color-accent)',opacity:0.7,top:'50%'}}/>
+          {/* Manual code entry (for barcode scanners that type) */}
+          <div className="w-72 space-y-2">
+            <p className="text-xs text-center" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>أو أدخل رقم الطلبية / التتبع يدوياً</p>
+            <div className="flex gap-2">
+              <input id="qr-input" dir="ltr" placeholder="ORD-xxxx / SD-xxxx"
+                className="input text-sm flex-1 h-9"
+                onKeyDown={e => { if (e.key === 'Enter') { scanOrder((e.target as HTMLInputElement).value.trim()); (e.target as HTMLInputElement).value = '' } }}
+              />
+              <button className="btn btn-primary btn-sm" onClick={() => {
+                const el = document.getElementById('qr-input') as HTMLInputElement
+                if (el?.value) { scanOrder(el.value.trim()); el.value = '' }
+              }}>بحث</button>
+            </div>
+          </div>
+          <div className="card p-4 text-center w-72" style={{minHeight:56}}>
+            <p className="text-sm font-medium" style={{fontFamily:'var(--font-arabic)',color: qrResult?.startsWith('✅') ? '#198754' : qrResult?.startsWith('❌') ? '#DC3545' : 'var(--color-text-muted)'}}>
+              {qrResult ?? 'النتيجة: لا توجد نتيجة بعد!'}
+            </p>
+          </div>
         </div>
-        <div className="card p-3 text-center w-64">
-          <p className="text-sm font-medium" style={{fontFamily:'var(--font-arabic)',color:'var(--color-text-secondary)'}}>النتيجة: لا توجد نتيجة بعد!</p>
-        </div>
-        <p className="text-xs text-center max-w-xs" style={{color:'var(--color-text-muted)'}}>
-          امسح رمز QR الخاص بالطلبية لتأكيد التسليم تلقائياً
-        </p>
-      </div>
-    ),
+      )
+    },
   }
 
   // ── ORDER HISTORY MODAL ─────────────────────────────────
@@ -2006,6 +2238,185 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
               <div className="flex gap-2 pt-1">
                 <button onClick={saveCompany} disabled={!companyForm.name} className="btn btn-primary btn-sm flex-1">حفظ</button>
                 <button onClick={() => setCompanyForm(null)} className="btn btn-sm flex-1" style={{border:'1px solid var(--color-border)'}}>إلغاء</button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── PRODUCT FORM MODAL ──────────────────────────────── */}
+      {prodForm && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-50" onClick={()=>setProdForm(null)}/>
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[380px] bg-white rounded-2xl shadow-2xl overflow-hidden" dir="rtl">
+            <div className="flex items-center justify-between px-5 py-3 border-b" style={{borderColor:'var(--color-border)'}}>
+              <h3 className="font-bold text-sm">{prodForm.id ? 'تعديل منتج' : 'إضافة منتج'}</h3>
+              <button onClick={()=>setProdForm(null)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><X size={16}/></button>
+            </div>
+            <div className="p-5 space-y-3" style={{fontFamily:'var(--font-arabic)'}}>
+              <input className="input text-sm w-full" placeholder="الاسم بالعربية *" value={prodForm.name_ar??''} onChange={e=>setProdForm((f:any)=>({...f,name_ar:e.target.value,name:e.target.value}))}/>
+              <div className="grid grid-cols-2 gap-3">
+                <input className="input text-sm" placeholder="السعر دج" type="number" value={prodForm.price??''} onChange={e=>setProdForm((f:any)=>({...f,price:+e.target.value}))}/>
+                <input className="input text-sm" placeholder="المرجع SKU" dir="ltr" value={prodForm.sku??''} onChange={e=>setProdForm((f:any)=>({...f,sku:e.target.value}))}/>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input className="input text-sm" placeholder="حد التنبيه للمخزون" type="number" value={prodForm.min_stock_alert??5} onChange={e=>setProdForm((f:any)=>({...f,min_stock_alert:+e.target.value}))}/>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={prodForm.confirmili_is_known??true} onChange={e=>setProdForm((f:any)=>({...f,confirmili_is_known:e.target.checked}))} className="w-4 h-4 accent-[#0D6EFD]"/>
+                  معروف؟
+                </label>
+              </div>
+              <textarea className="input text-sm w-full" placeholder="ملاحظة لفريق العمل" rows={2} value={prodForm.confirmili_team_note??''} onChange={e=>setProdForm((f:any)=>({...f,confirmili_team_note:e.target.value}))}/>
+              <div className="flex gap-2 pt-1">
+                <button onClick={saveProd} disabled={!prodForm.name_ar&&!prodForm.name} className="btn btn-primary btn-sm flex-1">حفظ</button>
+                <button onClick={()=>setProdForm(null)} className="btn btn-sm flex-1" style={{border:'1px solid var(--color-border)'}}>إلغاء</button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── COLUMN SETTINGS MODAL ──────────────────────────── */}
+      {showColSettings && (() => {
+        const COLS = [
+          {key:'source',label:'المصدر'},{key:'order_number',label:'ر.الطلبية'},
+          {key:'date',label:'التاريخ'},{key:'name',label:'الاسم'},{key:'phone',label:'الهاتف'},
+          {key:'verify',label:'تحقق'},{key:'status',label:'الحالة'},{key:'wilaya',label:'الولاية'},
+          {key:'commune',label:'البلدية'},{key:'product',label:'المنتج'},{key:'total',label:'السعر الكلي'},
+          {key:'delivery_type',label:'نوع التوصيل'},{key:'delivery_fee',label:'س.التوصيل'},
+          {key:'notes',label:'ملاحظات'},{key:'call_attempts',label:'محاولات الاتصال'},{key:'actions',label:'الإجراءات'},
+        ]
+        const tempCols = new Set(visibleCols)
+        return (
+          <>
+            <div className="fixed inset-0 bg-black/60 z-50" onClick={()=>setShowColSettings(false)}/>
+            <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[420px] bg-white rounded-2xl shadow-2xl overflow-hidden" dir="rtl">
+              <div className="flex items-center justify-between px-5 py-3 border-b" style={{borderColor:'var(--color-border)'}}>
+                <h3 className="font-bold text-sm">إعدادات الأعمدة</h3>
+                <button onClick={()=>setShowColSettings(false)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><X size={16}/></button>
+              </div>
+              <div className="p-5">
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {COLS.map(c => (
+                    <label key={c.key} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input type="checkbox" defaultChecked={tempCols.has(c.key)}
+                        onChange={e => { e.target.checked ? tempCols.add(c.key) : tempCols.delete(c.key) }}
+                        className="w-3.5 h-3.5 accent-[#0D6EFD]"/>
+                      {c.label}
+                    </label>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={()=>saveColSettings(new Set(tempCols))} className="btn btn-primary btn-sm flex-1">حفظ</button>
+                  <button onClick={()=>{setVisibleCols(new Set(DEFAULT_COLS));setShowColSettings(false);localStorage.removeItem('confirmili_cols')}} className="btn btn-sm flex-1" style={{border:'1px solid var(--color-border)'}}>إعادة تعيين</button>
+                  <button onClick={()=>setShowColSettings(false)} className="btn btn-sm" style={{border:'1px solid var(--color-border)'}}>إلغاء</button>
+                </div>
+              </div>
+            </div>
+          </>
+        )
+      })()}
+
+      {/* ── MANUAL ORDER MODAL ─────────────────────────────── */}
+      {showManual && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-50" onClick={()=>setShowManual(false)}/>
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[400px] bg-white rounded-2xl shadow-2xl overflow-hidden" dir="rtl">
+            <div className="flex items-center justify-between px-5 py-3 border-b" style={{borderColor:'var(--color-border)'}}>
+              <h3 className="font-bold text-sm">إنشاء طلبية يدوية</h3>
+              <button onClick={()=>setShowManual(false)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><X size={16}/></button>
+            </div>
+            <div className="p-5 space-y-3" style={{fontFamily:'var(--font-arabic)'}}>
+              <input className="input text-sm w-full" placeholder="الاسم الكامل *" value={manualForm.customer_name??''} onChange={e=>setManualForm((f:any)=>({...f,customer_name:e.target.value}))}/>
+              <input className="input text-sm w-full" placeholder="رقم الهاتف *" dir="ltr" value={manualForm.customer_phone??''} onChange={e=>setManualForm((f:any)=>({...f,customer_phone:e.target.value}))}/>
+              <select className="input text-sm w-full" value={manualForm.delivery_type??'home'} onChange={e=>setManualForm((f:any)=>({...f,delivery_type:e.target.value}))}>
+                <option value="home">توصيل للمنزل</option>
+                <option value="stopdesk">نقطة توزيع</option>
+              </select>
+              <select className="input text-sm w-full" value={manualForm.product_id??''} onChange={e=>setManualForm((f:any)=>({...f,product_id:e.target.value}))}>
+                <option value="">اختر منتج (اختياري)</option>
+                {prodList.map(p=><option key={p.id} value={p.id}>{p.name_ar??p.name} — {p.price?.toLocaleString('ar-DZ')} دج</option>)}
+              </select>
+              {manualForm.product_id && (
+                <input className="input text-sm w-full" placeholder="الكمية" type="number" min="1" value={manualForm.qty??1} onChange={e=>setManualForm((f:any)=>({...f,qty:+e.target.value}))}/>
+              )}
+              <textarea className="input text-sm w-full" placeholder="ملاحظات" rows={2} value={manualForm.notes??''} onChange={e=>setManualForm((f:any)=>({...f,notes:e.target.value}))}/>
+              <div className="flex gap-2 pt-1">
+                <button onClick={saveManualOrder} disabled={savingManual||!manualForm.customer_name||!manualForm.customer_phone} className="btn btn-primary btn-sm flex-1">
+                  {savingManual ? 'جارٍ الحفظ...' : 'إنشاء الطلبية'}
+                </button>
+                <button onClick={()=>setShowManual(false)} className="btn btn-sm flex-1" style={{border:'1px solid var(--color-border)'}}>إلغاء</button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── SEND REPORT MODAL ──────────────────────────────── */}
+      {showSendReport && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-50" onClick={()=>setShowSendReport(false)}/>
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[480px] max-h-[80vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col" dir="rtl">
+            <div className="flex items-center justify-between px-5 py-3 border-b flex-shrink-0" style={{borderColor:'var(--color-border)'}}>
+              <h3 className="font-bold text-sm">تقرير الإرسال</h3>
+              <button onClick={()=>setShowSendReport(false)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><X size={16}/></button>
+            </div>
+            <div className="overflow-auto p-4 space-y-3 flex-1">
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  {label:'إجمالي الإرسال', v:String(sendReports.length), color:'var(--color-accent)'},
+                  {label:'ناجح',v:String(sendReports.filter(r=>r.status==='sent').length),color:'#22C55E'},
+                  {label:'فاشل',v:String(sendReports.filter(r=>r.status==='failed').length),color:'#E23024'},
+                  {label:'تلقائي',v:String(sendReports.filter(r=>r.is_auto).length),color:'#9D76C1'},
+                ].map(c => (
+                  <div key={c.label} className="rounded-xl p-3 text-center" style={{background:'var(--color-bg-soft)'}}>
+                    <p className="font-black text-lg" style={{color:c.color,fontFamily:'var(--font-primary)'}}>{c.v}</p>
+                    <p className="text-xs" style={{color:'var(--color-text-muted)'}}>{c.label}</p>
+                  </div>
+                ))}
+              </div>
+              {sendReports.length === 0
+                ? <p className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد تقارير إرسال</p>
+                : sendReports.map(r => (
+                  <div key={r.id} className="flex items-center gap-3 p-3 rounded-xl border" style={{borderColor:'var(--color-border)'}}>
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{background:r.status==='sent'?'#22C55E':'#E23024'}}/>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-mono text-xs" style={{color:'var(--color-accent)'}}>{r.tracking_num ?? '—'}</p>
+                      <p className="text-[10px]" style={{color:'var(--color-text-muted)'}}>{r.is_auto ? '⚡ تلقائي' : '✋ يدوي'} · {new Date(r.sent_at).toLocaleString('ar-DZ')}</p>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{background:r.status==='sent'?'#D1E7DD':'#F8D7DA',color:r.status==='sent'?'#198754':'#DC3545'}}>
+                      {r.status === 'sent' ? 'نجح' : 'فشل'}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── INTEGRATION FORM MODAL ─────────────────────────── */}
+      {integForm && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-50" onClick={()=>setIntegForm(null)}/>
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[360px] bg-white rounded-2xl shadow-2xl overflow-hidden" dir="rtl">
+            <div className="flex items-center justify-between px-5 py-3 border-b" style={{borderColor:'var(--color-border)'}}>
+              <h3 className="font-bold text-sm">{integForm.id ? 'تعديل التكامل' : 'إضافة تكامل'}</h3>
+              <button onClick={()=>setIntegForm(null)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><X size={16}/></button>
+            </div>
+            <div className="p-5 space-y-3" style={{fontFamily:'var(--font-arabic)'}}>
+              <input className="input text-sm w-full" placeholder="الاسم *" value={integForm.name??''} onChange={e=>setIntegForm((f:any)=>({...f,name:e.target.value}))}/>
+              <select className="input text-sm w-full" value={integForm.platform??'youcan'} onChange={e=>setIntegForm((f:any)=>({...f,platform:e.target.value}))}>
+                <option value="youcan">YouCan</option>
+                <option value="shopify">Shopify</option>
+                <option value="woocommerce">WooCommerce</option>
+                <option value="google_sheet">Google Sheet</option>
+              </select>
+              {integForm.platform === 'google_sheet' && (
+                <input className="input text-sm w-full" placeholder="رابط الشيت" dir="ltr" value={integForm.config?.url??''} onChange={e=>setIntegForm((f:any)=>({...f,config:{...f.config,url:e.target.value}}))}/>
+              )}
+              <div className="flex gap-2 pt-1">
+                <button onClick={saveIntegration} disabled={!integForm.name} className="btn btn-primary btn-sm flex-1">حفظ</button>
+                <button onClick={()=>setIntegForm(null)} className="btn btn-sm flex-1" style={{border:'1px solid var(--color-border)'}}>إلغاء</button>
               </div>
             </div>
           </div>
