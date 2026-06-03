@@ -163,6 +163,17 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   // Notifications
   const [notifications, setNotifications] = useState<any[]>([])
   const [unreadCount,   setUnreadCount]   = useState(0)
+  // Toast (declared early — used by many handlers)
+  const [toast,         setToastRaw]      = useState<string|null>(null)
+  const setToast = useCallback((msg: string) => {
+    setToastRaw(msg)
+    window.setTimeout(() => setToastRaw(null), 2200)
+  }, [])
+  // Team + delivery companies (loaded from confirmili_* tables)
+  const [team,          setTeam]          = useState<any[]>([])
+  const [companies,     setCompanies]     = useState<any[]>([])
+  const [teamForm,      setTeamForm]      = useState<any|null>(null) // null=closed, {}=add, {id}=edit
+  const [companyForm,   setCompanyForm]   = useState<any|null>(null)
   // Realtime subscription ref
   const realtimeRef = useRef<any>(null)
 
@@ -184,6 +195,77 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       }
     } catch {}
   }, [])
+
+  // ─── LOAD TEAM + DELIVERY COMPANIES ─────────────────────
+  const loadTeam = useCallback(async () => {
+    if (!storeId) return
+    const sb = createClient()
+    const { data } = await sb.from('confirmili_team').select('*').eq('store_id', storeId).order('created_at', { ascending: false })
+    setTeam(data ?? [])
+  }, [storeId])
+
+  const loadCompanies = useCallback(async () => {
+    if (!storeId) return
+    const sb = createClient()
+    const { data } = await sb.from('confirmili_delivery_companies').select('*').eq('store_id', storeId).order('created_at', { ascending: true })
+    setCompanies(data ?? [])
+  }, [storeId])
+
+  useEffect(() => { loadTeam(); loadCompanies() }, [loadTeam, loadCompanies])
+
+  // ─── TEAM CRUD ──────────────────────────────────────────
+  const saveTeamMember = useCallback(async () => {
+    if (!teamForm?.name) return
+    const sb = createClient()
+    const payload = {
+      store_id: storeId, name: teamForm.name, phone: teamForm.phone ?? null,
+      email: teamForm.email ?? null, role: teamForm.role ?? 'confirmer',
+      is_active: teamForm.is_active ?? true,
+    }
+    if (teamForm.id) await sb.from('confirmili_team').update(payload).eq('id', teamForm.id)
+    else            await sb.from('confirmili_team').insert(payload)
+    setTeamForm(null); setToast('تم حفظ العضو'); loadTeam()
+  }, [teamForm, storeId, setToast, loadTeam])
+
+  const toggleTeamMember = useCallback(async (m: any) => {
+    const sb = createClient()
+    await sb.from('confirmili_team').update({ is_active: !m.is_active }).eq('id', m.id)
+    setTeam(prev => prev.map(x => x.id === m.id ? { ...x, is_active: !x.is_active } : x))
+  }, [])
+
+  const deleteTeamMember = useCallback(async (id: string) => {
+    if (!window.confirm('حذف هذا العضو؟')) return
+    const sb = createClient()
+    await sb.from('confirmili_team').delete().eq('id', id)
+    setTeam(prev => prev.filter(x => x.id !== id)); setToast('تم الحذف')
+  }, [setToast])
+
+  // ─── DELIVERY COMPANY CRUD ──────────────────────────────
+  const saveCompany = useCallback(async () => {
+    if (!companyForm?.name) return
+    const sb = createClient()
+    const payload = {
+      store_id: storeId, name: companyForm.name,
+      short_name: companyForm.short_name ?? companyForm.name.slice(0,2).toUpperCase(),
+      is_active: companyForm.is_active ?? true, is_automatic: companyForm.is_automatic ?? false,
+    }
+    if (companyForm.id) await sb.from('confirmili_delivery_companies').update(payload).eq('id', companyForm.id)
+    else                await sb.from('confirmili_delivery_companies').insert(payload)
+    setCompanyForm(null); setToast('تم حفظ الشركة'); loadCompanies()
+  }, [companyForm, storeId, setToast, loadCompanies])
+
+  const toggleCompany = useCallback(async (c: any, field: 'is_active'|'is_automatic') => {
+    const sb = createClient()
+    await sb.from('confirmili_delivery_companies').update({ [field]: !c[field] }).eq('id', c.id)
+    setCompanies(prev => prev.map(x => x.id === c.id ? { ...x, [field]: !x[field] } : x))
+  }, [])
+
+  const deleteCompany = useCallback(async (id: string) => {
+    if (!window.confirm('حذف هذه الشركة؟')) return
+    const sb = createClient()
+    await sb.from('confirmili_delivery_companies').delete().eq('id', id)
+    setCompanies(prev => prev.filter(x => x.id !== id)); setToast('تم الحذف')
+  }, [setToast])
 
   // ─── ORDER HISTORY MODAL ────────────────────────────────
   const openHistory = useCallback(async (orderId: string, orderNum: string) => {
@@ -248,11 +330,6 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   const [actionMenu,     setActionMenu]     = useState<string|null>(null) // orderId with open menu
   const [statusMenu,     setStatusMenu]     = useState<string|null>(null) // orderId with open status dropdown
   const [updating,       setUpdating]       = useState<string|null>(null) // orderId being updated
-  const [toast,          setToastRaw]       = useState<string|null>(null)
-  const setToast = useCallback((msg: string) => {
-    setToastRaw(msg)
-    window.setTimeout(() => setToastRaw(null), 2200)
-  }, [])
   const [verifyModal,    setVerifyModal]    = useState<any|null>(null) // order being verified
   const [bulkUpdating,   setBulkUpdating]   = useState(false)
   const [statsDateFilter,setStatsDateFilter]= useState<'all'|'today'|'yesterday'|'week'|'month'>('all')
@@ -1170,43 +1247,49 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
         <TabBar tabs={dTabs} active={delivSubTab} onChange={setDelivSubTab}/>
         {delivSubTab === 0 && (
           <div className="space-y-3">
-            <div className="flex items-start gap-2 p-3 rounded-lg border" style={{borderColor:'var(--color-info)',background:'var(--color-info-soft)'}}>
-              <AlertTriangle size={13} style={{color:'var(--color-info)',marginTop:1,flexShrink:0}}/>
-              <p className="text-xs" style={{color:'var(--color-info)'}}>
-                عمود &quot;تلقائي&quot; يعني: عند تأكيد طلب مرتبط بهذه الشركة، يُرسل تلقائياً دون النقر على زر الإرسال.
-              </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-start gap-2 p-3 rounded-lg border flex-1" style={{borderColor:'var(--color-info)',background:'var(--color-info-soft)'}}>
+                <AlertTriangle size={13} style={{color:'var(--color-info)',marginTop:1,flexShrink:0}}/>
+                <p className="text-xs" style={{color:'var(--color-info)'}}>
+                  عمود &quot;تلقائي&quot; يعني: عند تأكيد طلب مرتبط بهذه الشركة، يُرسل تلقائياً دون النقر على زر الإرسال.
+                </p>
+              </div>
+              <button onClick={() => setCompanyForm({ is_active:true, is_automatic:false })} className="btn btn-primary btn-sm gap-1.5 mr-3 flex-shrink-0"><Plus size={13}/>شركة جديدة</button>
             </div>
             <div className="card overflow-hidden">
               <table className="data-table">
                 <thead>
-                  <tr>{['اسم الشركة','الاسم القصير','تلقائي ⚡','جماعي؟','الحالة','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr>
+                  <tr>{['اسم الشركة','الاسم القصير','تلقائي ⚡','الحالة','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr>
                 </thead>
                 <tbody>
-                  {[
-                    {name:'Yalidine Express', short:'YLD', auto:false, bulk:false},
-                    {name:'ZR Express',        short:'ZR',  auto:false, bulk:false},
-                    {name:'Maystro Delivery',  short:'MYS', auto:false, bulk:true },
-                  ].map((co, i) => (
-                    <tr key={co.short}>
+                  {companies.length === 0 ? (
+                    <tr><td colSpan={5} className="text-center py-10 text-sm" style={{color:'var(--color-text-muted)'}}>
+                      لا توجد شركات توصيل — أضف شركة جديدة
+                    </td></tr>
+                  ) : companies.map(co => (
+                    <tr key={co.id}>
                       <td className="font-medium text-sm">{co.name}</td>
-                      <td className="font-mono text-xs" style={{color:'var(--color-accent)'}}>{co.short}</td>
+                      <td className="font-mono text-xs" style={{color:'var(--color-accent)'}}>{co.short_name}</td>
                       <td>
-                        {/* 9.1 — Automatic sending checkbox */}
-                        <label className="flex items-center gap-2 cursor-pointer" title="إرسال تلقائي عند التأكيد">
-                          <div className={`w-8 h-4 rounded-full transition-colors ${co.auto ? 'bg-[#0D6EFD]' : 'bg-[#DEE2E6]'} relative cursor-pointer`}>
-                            <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all ${co.auto ? 'right-0.5' : 'right-4.5'}`}/>
-                          </div>
-                          <span className="text-xs" style={{color: co.auto ? 'var(--color-accent)' : 'var(--color-text-muted)'}}>
-                            {co.auto ? 'مفعّل' : 'يدوي'}
+                        {/* 9.1 / 8.1 — Automatic sending toggle (functional) */}
+                        <button onClick={() => toggleCompany(co, 'is_automatic')} className="flex items-center gap-2" title="إرسال تلقائي عند التأكيد">
+                          <span className="w-8 h-4 rounded-full relative transition-colors" style={{background: co.is_automatic ? '#0D6EFD' : '#DEE2E6'}}>
+                            <span className="absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all" style={{[co.is_automatic?'right':'left']:'2px'} as any}/>
                           </span>
-                        </label>
+                          <span className="text-xs" style={{color: co.is_automatic ? 'var(--color-accent)' : 'var(--color-text-muted)'}}>{co.is_automatic ? 'تلقائي' : 'يدوي'}</span>
+                        </button>
                       </td>
                       <td>
-                        <span className={`badge ${co.bulk ? 'badge-blue' : 'badge-gray'} text-[10px]`}>{co.bulk ? 'نعم' : 'لا'}</span>
+                        <button onClick={() => toggleCompany(co, 'is_active')}
+                          className="w-9 h-5 rounded-full flex items-center transition-colors" style={{background: co.is_active ? '#22C55E' : '#DEE2E6'}}>
+                          <span className="w-4 h-4 bg-white rounded-full shadow transition-transform" style={{transform: co.is_active ? 'translateX(-2px)' : 'translateX(-18px)'}}/>
+                        </button>
                       </td>
-                      <td><span className="badge badge-gray text-[10px]">غير مضبوط</span></td>
                       <td>
-                        <button className="btn btn-sm" style={{background:'#EBF5FF',color:'var(--color-accent)'}}>إعداد</button>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => setCompanyForm(co)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><Edit2 size={12} style={{color:'var(--color-text-muted)'}}/></button>
+                          <button onClick={() => deleteCompany(co.id)} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={12} style={{color:'#DC3545'}}/></button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1485,33 +1568,50 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
 
   const renderTeam = () => {
     const tTabs = ['فريق التأكيد و التتبع','فريق التوصيل','عضو ↔ مسير']
-    const EmptyTeam = ({ role }: { role: string }) => (
-      <div className="text-center py-12">
-        <Users size={28} className="mx-auto mb-2" style={{color:'var(--color-text-muted)',opacity:0.4}}/>
-        <p className="text-sm font-medium mb-1" style={{color:'var(--color-text-muted)'}}>لا يوجد أعضاء في {role}</p>
-        <p className="text-xs mb-4" style={{color:'var(--color-text-muted)'}}>أضف عضواً جديداً لبدء إدارة الفريق</p>
-        <button className="btn btn-primary btn-sm gap-1.5">
-          <Plus size={13}/>إضافة عضو
-        </button>
-      </div>
-    )
+    const managers = team.filter(m => m.role === 'manager')
     return (
       <div>
         <TabBar tabs={tTabs} active={teamSubTab} onChange={setTeamSubTab}/>
         {teamSubTab < 2 && (
           <div className="space-y-3">
             <div className="flex justify-end">
-              <button className="btn btn-primary btn-sm gap-1.5"><Plus size={13}/>إضافة عضو</button>
+              <button onClick={() => setTeamForm({ role: teamSubTab === 1 ? 'delivery' : 'confirmer', is_active: true })}
+                className="btn btn-primary btn-sm gap-1.5"><Plus size={13}/>إضافة عضو</button>
             </div>
             <div className="card overflow-hidden">
               <table className="data-table">
                 <thead>
-                  <tr>{['الاسم','الهاتف','البريد الإلكتروني','الحالة','الدور','تاريخ البداية','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr>
+                  <tr>{['الاسم','الهاتف','البريد الإلكتروني','الحالة','الدور','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr>
                 </thead>
                 <tbody>
-                  <tr><td colSpan={7}>
-                    <EmptyTeam role={teamSubTab === 0 ? 'فريق التأكيد' : 'فريق التوصيل'}/>
-                  </td></tr>
+                  {team.length === 0 ? (
+                    <tr><td colSpan={6}>
+                      <div className="text-center py-12">
+                        <Users size={28} className="mx-auto mb-2" style={{color:'var(--color-text-muted)',opacity:0.4}}/>
+                        <p className="text-sm font-medium mb-1" style={{color:'var(--color-text-muted)'}}>لا يوجد أعضاء</p>
+                        <button onClick={() => setTeamForm({ role:'confirmer', is_active:true })} className="btn btn-primary btn-sm gap-1.5 mt-2"><Plus size={13}/>إضافة عضو</button>
+                      </div>
+                    </td></tr>
+                  ) : team.map(m => (
+                    <tr key={m.id}>
+                      <td className="font-medium text-sm">{m.name}</td>
+                      <td className="text-xs font-mono" style={{color:'var(--color-text-muted)'}}>{m.phone ?? '—'}</td>
+                      <td className="text-xs" style={{color:'var(--color-text-muted)'}}>{m.email ?? '—'}</td>
+                      <td>
+                        <button onClick={() => toggleTeamMember(m)}
+                          className="w-9 h-5 rounded-full flex items-center transition-colors" style={{background: m.is_active ? '#22C55E' : '#DEE2E6'}}>
+                          <span className="w-4 h-4 bg-white rounded-full shadow transition-transform" style={{transform: m.is_active ? 'translateX(-2px)' : 'translateX(-18px)'}}/>
+                        </button>
+                      </td>
+                      <td className="text-xs">{m.role === 'manager' ? 'مسير' : m.role === 'delivery' ? 'توصيل' : 'عضو'}</td>
+                      <td>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => setTeamForm(m)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><Edit2 size={12} style={{color:'var(--color-text-muted)'}}/></button>
+                          <button onClick={() => deleteTeamMember(m.id)} className="p-1.5 rounded hover:bg-red-50"><Trash2 size={12} style={{color:'#DC3545'}}/></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -1519,24 +1619,20 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
         )}
         {teamSubTab === 2 && (
           <div className="card p-5 space-y-3">
-            <h3 className="font-semibold text-sm" style={{color:'var(--color-text-primary)'}}>تعيين عضو لمسير</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium mb-1.5" style={{color:'var(--color-text-secondary)'}}>اختر عضو</label>
-                <select className="input text-sm"><option>لا يوجد أعضاء</option></select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1.5" style={{color:'var(--color-text-secondary)'}}>اختر مسير</label>
-                <select className="input text-sm"><option>لا يوجد مسيرين</option></select>
-              </div>
-            </div>
-            <button className="btn btn-primary btn-sm" disabled>تعيين</button>
-            <div className="card overflow-hidden mt-3">
-              <table className="data-table">
-                <thead><tr><th>العضو</th><th>المسير</th><th>الدور</th><th>تاريخ التعيين</th></tr></thead>
-                <tbody><tr><td colSpan={4} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد علاقات مدير-عضو</td></tr></tbody>
-              </table>
-            </div>
+            <h3 className="font-semibold text-sm" style={{color:'var(--color-text-primary)'}}>عضو ↔ مسير</h3>
+            {managers.length === 0
+              ? <p className="text-sm py-6 text-center" style={{color:'var(--color-text-muted)'}}>أضف عضواً بدور &quot;مسير&quot; أولاً لربط الأعضاء به</p>
+              : managers.map(mgr => (
+                <div key={mgr.id} className="rounded-xl border p-3" style={{borderColor:'var(--color-border)'}}>
+                  <p className="text-sm font-semibold mb-2" style={{color:'var(--color-text-primary)'}}>عملاء {mgr.name}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {team.filter(m => m.role !== 'manager').map(m => (
+                      <span key={m.id} className="text-xs px-2 py-1 rounded-full" style={{background:'#EBF5FF',color:'#0D6EFD'}}>{m.name}</span>
+                    ))}
+                  </div>
+                </div>
+              ))
+            }
           </div>
         )}
       </div>
@@ -1793,6 +1889,66 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
           </>
         )
       })()}
+
+      {/* Team member form modal */}
+      {teamForm && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-50" onClick={() => setTeamForm(null)}/>
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[360px] bg-white rounded-2xl shadow-2xl overflow-hidden" dir="rtl">
+            <div className="flex items-center justify-between px-5 py-3 border-b" style={{borderColor:'var(--color-border)'}}>
+              <h3 className="font-bold text-sm" style={{fontFamily:'var(--font-arabic)'}}>{teamForm.id ? 'تعديل عضو' : 'إضافة عضو'}</h3>
+              <button onClick={() => setTeamForm(null)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><X size={16}/></button>
+            </div>
+            <div className="p-5 space-y-3" style={{fontFamily:'var(--font-arabic)'}}>
+              <input className="input text-sm w-full" placeholder="الاسم *" value={teamForm.name ?? ''} onChange={e=>setTeamForm((f:any)=>({...f,name:e.target.value}))}/>
+              <input className="input text-sm w-full" placeholder="الهاتف" dir="ltr" value={teamForm.phone ?? ''} onChange={e=>setTeamForm((f:any)=>({...f,phone:e.target.value}))}/>
+              <input className="input text-sm w-full" placeholder="البريد الإلكتروني" dir="ltr" value={teamForm.email ?? ''} onChange={e=>setTeamForm((f:any)=>({...f,email:e.target.value}))}/>
+              <select className="input text-sm w-full" value={teamForm.role ?? 'confirmer'} onChange={e=>setTeamForm((f:any)=>({...f,role:e.target.value}))}>
+                <option value="confirmer">عضو تأكيد</option>
+                <option value="delivery">عضو توصيل</option>
+                <option value="manager">مسير</option>
+              </select>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={teamForm.is_active ?? true} onChange={e=>setTeamForm((f:any)=>({...f,is_active:e.target.checked}))} className="w-4 h-4 accent-[#0D6EFD]"/>
+                نشط
+              </label>
+              <div className="flex gap-2 pt-1">
+                <button onClick={saveTeamMember} disabled={!teamForm.name} className="btn btn-primary btn-sm flex-1">حفظ</button>
+                <button onClick={() => setTeamForm(null)} className="btn btn-sm flex-1" style={{border:'1px solid var(--color-border)'}}>إلغاء</button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Delivery company form modal */}
+      {companyForm && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-50" onClick={() => setCompanyForm(null)}/>
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[360px] bg-white rounded-2xl shadow-2xl overflow-hidden" dir="rtl">
+            <div className="flex items-center justify-between px-5 py-3 border-b" style={{borderColor:'var(--color-border)'}}>
+              <h3 className="font-bold text-sm" style={{fontFamily:'var(--font-arabic)'}}>{companyForm.id ? 'تعديل شركة' : 'إضافة شركة توصيل'}</h3>
+              <button onClick={() => setCompanyForm(null)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><X size={16}/></button>
+            </div>
+            <div className="p-5 space-y-3" style={{fontFamily:'var(--font-arabic)'}}>
+              <input className="input text-sm w-full" placeholder="اسم الشركة *" value={companyForm.name ?? ''} onChange={e=>setCompanyForm((f:any)=>({...f,name:e.target.value}))}/>
+              <input className="input text-sm w-full" placeholder="الاختصار (مثل ZR)" dir="ltr" value={companyForm.short_name ?? ''} onChange={e=>setCompanyForm((f:any)=>({...f,short_name:e.target.value}))}/>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={companyForm.is_automatic ?? false} onChange={e=>setCompanyForm((f:any)=>({...f,is_automatic:e.target.checked}))} className="w-4 h-4 accent-[#0D6EFD]"/>
+                إرسال تلقائي عند التأكيد
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={companyForm.is_active ?? true} onChange={e=>setCompanyForm((f:any)=>({...f,is_active:e.target.checked}))} className="w-4 h-4 accent-[#0D6EFD]"/>
+                مفعّلة
+              </label>
+              <div className="flex gap-2 pt-1">
+                <button onClick={saveCompany} disabled={!companyForm.name} className="btn btn-primary btn-sm flex-1">حفظ</button>
+                <button onClick={() => setCompanyForm(null)} className="btn btn-sm flex-1" style={{border:'1px solid var(--color-border)'}}>إلغاء</button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Floating support button (9.5) */}
       <a href="https://wa.me/213555000000?text=مرحبا، أحتاج دعم في Confirmili" target="_blank" rel="noopener noreferrer"
