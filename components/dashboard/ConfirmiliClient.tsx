@@ -17,7 +17,7 @@ import {
   Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   PieChart, Pie, Cell, BarChart, Bar,
 } from 'recharts'
-import StatusBadge from '@/components/ui/StatusBadge'
+import { getStatus, statusLabel, STATUS_LIST } from '@/lib/confirmili/statuses'
 
 // ── Sub-nav tabs ──────────────────────────────────────────
 const TABS = [
@@ -36,17 +36,18 @@ const TABS = [
   { id: 'qr',                label: 'QR',               icon: QrCode },
 ]
 
-// Status action menu
+// Status action menu — EXACT Octomatic colors from lib/confirmili/statuses
+// (DB persists failed_1/2/3; UI labels failed_01/02/03)
 const STATUS_ACTIONS = [
-  { status: 'confirmed',  label: 'تأكيد الطلب ✅',    color: '#198754', bg: '#D1E7DD' },
-  { status: 'cancelled',  label: 'إلغاء الطلب ❌',    color: '#DC3545', bg: '#F8D7DA' },
-  { status: 'failed_1',   label: 'فاشلة 01 📵',       color: '#FFA500', bg: '#FFF3CD' },
-  { status: 'failed_2',   label: 'فاشلة 02 📵',       color: '#FF8C00', bg: '#FFE8C0' },
-  { status: 'failed_3',   label: 'فاشلة 03 📵',       color: '#DC3545', bg: '#F8D7DA' },
-  { status: 'postponed',  label: 'مؤجلة 🕐',          color: '#7B2FBE', bg: '#EEE5FF' },
-  { status: 'duplicate',  label: 'مكررة 👥',          color: '#212529', bg: '#DEE2E6' },
-  { status: 'delivered',  label: 'مسلمة ✅',          color: '#198754', bg: '#D1E7DD' },
-  { status: 'returned',   label: 'مرجعة 📦',          color: '#DC3545', bg: '#F8D7DA' },
+  { status: 'confirmed',  label: 'تأكيد الطلب ✅', color: getStatus('confirmed').color },
+  { status: 'failed_1',   label: 'فاشلة 01 📵',    color: getStatus('failed_01').color },
+  { status: 'failed_2',   label: 'فاشلة 02 📵',    color: getStatus('failed_02').color },
+  { status: 'failed_3',   label: 'فاشلة 03 📵',    color: getStatus('failed_03').color },
+  { status: 'postponed',  label: 'مؤجلة 🕐',       color: getStatus('postponed').color },
+  { status: 'cancelled',  label: 'إلغاء الطلب ❌', color: getStatus('cancelled').color },
+  { status: 'duplicate',  label: 'مكررة 👥',       color: getStatus('duplicate').color },
+  { status: 'delivered',  label: 'مسلمة ✅',       color: '#16A34A' },
+  { status: 'returned',   label: 'مرجعة 📦',       color: '#DC3545' },
 ]
 
 const CONFIRM_STATUSES_STATIC = [
@@ -245,6 +246,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   const [showTrash,      setShowTrash]      = useState(false)
   const [currentPage,    setCurrentPage]    = useState(1)
   const [actionMenu,     setActionMenu]     = useState<string|null>(null) // orderId with open menu
+  const [statusMenu,     setStatusMenu]     = useState<string|null>(null) // orderId with open status dropdown
   const [updating,       setUpdating]       = useState<string|null>(null) // orderId being updated
   const [bulkUpdating,   setBulkUpdating]   = useState(false)
   const [statsDateFilter,setStatsDateFilter]= useState<'all'|'today'|'yesterday'|'week'|'month'>('all')
@@ -549,6 +551,51 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
               >
                 <Trash2 size={13}/>نقل للسلة
               </button>
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  // ─── STATUS CELL (clickable badge → status dropdown) ─────
+  // Exact Octomatic colors (solid bg + white text). Click opens
+  // the 8-status list; "فاشلة" auto-escalates 01→02→03.
+  const StatusCell = ({ order }: { order: any }) => {
+    const isOpen = statusMenu === order.id
+    const def = getStatus(order.status)
+    return (
+      <div className="relative inline-block">
+        <button
+          onClick={e => { e.stopPropagation(); setStatusMenu(isOpen ? null : order.id) }}
+          disabled={updating === order.id}
+          className="inline-flex items-center gap-1 rounded-full px-2.5 h-[22px] text-[11px] font-bold transition-transform hover:scale-[1.04]"
+          style={{ background: def.color, color: def.text, fontFamily: 'var(--font-arabic)' }}
+        >
+          {updating === order.id ? '⏳' : statusLabel(order.status, lang)}
+          <ChevronDown size={10}/>
+        </button>
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setStatusMenu(null)}/>
+            <div className="absolute right-0 top-full mt-1 w-40 bg-white border rounded-xl shadow-xl z-20 overflow-hidden animate-scale-in" style={{borderColor:'var(--color-border)'}}>
+              {STATUS_LIST.map(s => {
+                // map UI failed_0x → DB failed_x; clicking "فاشلة 0x" sets that exact level
+                const dbStatus = s.key === 'failed_01' ? 'failed_1'
+                  : s.key === 'failed_02' ? 'failed_2'
+                  : s.key === 'failed_03' ? 'failed_3'
+                  : s.key === 'pending'   ? 'new'
+                  : s.key
+                return (
+                  <button key={s.key}
+                    onClick={() => { setStatusMenu(null); updateOrderStatus(order.id, dbStatus) }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[#F8F9FA] transition-colors text-right"
+                    style={{ fontFamily: 'var(--font-arabic)' }}>
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: s.dot }}/>
+                    {lang === 'fr' ? s.labelFr : lang === 'en' ? s.labelEn : s.label}
+                  </button>
+                )
+              })}
             </div>
           </>
         )}
@@ -939,7 +986,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                       <span className="text-[9px]" style={{color: riskRatio >= 70 ? '#198754' : riskRatio >= 40 ? '#FFA500' : '#DC3545'}}>{riskRatio}%</span>
                     </div>
                   </td>
-                  <td><StatusBadge status={o.status}/></td>
+                  <td><StatusCell order={o}/></td>
                   <td className="text-xs" style={{color:'var(--color-text-secondary)'}}>{(o.wilaya as any)?.name_ar ?? '—'}</td>
                   <td className="text-xs" style={{color:'var(--color-text-muted)'}}>{(o.items?.[0] as any)?.product_name?.slice(0,16) ?? '—'}</td>
                   <td className="font-semibold text-sm" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>{o.total?.toLocaleString('ar-DZ')} دج</td>
@@ -1028,7 +1075,12 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                       : <span className="text-xs" style={{color:'var(--color-text-muted)'}}>—</span>
                     }
                   </td>
-                  <td><StatusBadge status={o.status}/></td>
+                  <td>
+                    <span className="inline-flex items-center rounded-full px-2.5 h-[22px] text-[11px] font-bold"
+                      style={{ background: getStatus(o.status).color, color:'#fff', fontFamily:'var(--font-arabic)' }}>
+                      {statusLabel(o.status, lang)}
+                    </span>
+                  </td>
                   <td><button onClick={()=>openWhatsApp(o.customer_phone,o.customer_name)} className="text-xs" style={{color:'#25D366'}}>{o.customer_phone}</button></td>
                   <td className="font-medium text-sm">{o.customer_name}</td>
                   <td className="text-xs">{(o.items?.[0] as any)?.product_name?.slice(0,16) ?? '—'}</td>
