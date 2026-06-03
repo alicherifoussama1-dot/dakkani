@@ -248,6 +248,12 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   const [actionMenu,     setActionMenu]     = useState<string|null>(null) // orderId with open menu
   const [statusMenu,     setStatusMenu]     = useState<string|null>(null) // orderId with open status dropdown
   const [updating,       setUpdating]       = useState<string|null>(null) // orderId being updated
+  const [toast,          setToastRaw]       = useState<string|null>(null)
+  const setToast = useCallback((msg: string) => {
+    setToastRaw(msg)
+    window.setTimeout(() => setToastRaw(null), 2200)
+  }, [])
+  const [verifyModal,    setVerifyModal]    = useState<any|null>(null) // order being verified
   const [bulkUpdating,   setBulkUpdating]   = useState(false)
   const [statsDateFilter,setStatsDateFilter]= useState<'all'|'today'|'yesterday'|'week'|'month'>('all')
 
@@ -331,12 +337,18 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   }, [selectedOrders])
 
   const softDelete = useCallback((orderId: string) => {
-    setTrashedOrders(prev => { const s = new Set<string>(Array.from(prev.values())); s.add(orderId); return s })
     setActionMenu(null)
+    if (!window.confirm('هل أنت متأكد؟ سيتم نقل الطلبية إلى سلة المهملات.')) return
+    setTrashedOrders(prev => { const s = new Set<string>(Array.from(prev.values())); s.add(orderId); return s })
+    // persist (column added in migration 011 — best-effort)
+    createClient().from('orders').update({ is_trashed: true }).eq('id', orderId).then(()=>{}, ()=>{})
+    setToast('تم النقل إلى سلة المهملات')
   }, [])
 
   const restoreOrder = useCallback((orderId: string) => {
     setTrashedOrders(prev => { const s = new Set(prev); s.delete(orderId); return s })
+    createClient().from('orders').update({ is_trashed: false }).eq('id', orderId).then(()=>{}, ()=>{})
+    setToast('تمت الاستعادة')
   }, [])
 
   const openWhatsApp = useCallback((phone: string, customerName: string) => {
@@ -979,12 +991,15 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                       <MessageCircle size={11}/>
                       {o.customer_phone}
                     </button>
-                    {/* Verify counter (9.8) */}
-                    <div className="flex items-center gap-1 mt-0.5">
+                    {/* Verify counter (9.8) — click opens verify modal */}
+                    <button
+                      onClick={() => setVerifyModal(o)}
+                      className="flex items-center gap-1 mt-0.5 hover:opacity-80 transition-opacity"
+                      title="التحقق من العميل">
                       <span className="text-[9px] px-1 rounded font-bold" style={{background:'#D1E7DD',color:'#198754'}}>{verifyGreen}✓</span>
                       <span className="text-[9px] px-1 rounded font-bold" style={{background:'#F8D7DA',color:'#DC3545'}}>{verifyRed}✗</span>
                       <span className="text-[9px]" style={{color: riskRatio >= 70 ? '#198754' : riskRatio >= 40 ? '#FFA500' : '#DC3545'}}>{riskRatio}%</span>
-                    </div>
+                    </button>
                   </td>
                   <td><StatusCell order={o}/></td>
                   <td className="text-xs" style={{color:'var(--color-text-secondary)'}}>{(o.wilaya as any)?.name_ar ?? '—'}</td>
@@ -1716,6 +1731,69 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       {/* HistoryModal */}
       <HistoryModal />
 
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[60] px-4 py-2.5 rounded-xl shadow-xl text-sm font-medium text-white animate-scale-in"
+          style={{ background:'#212529', fontFamily:'var(--font-arabic)' }}>
+          {toast}
+        </div>
+      )}
+
+      {/* Verify modal (8.8) — blacklist across all orders by phone */}
+      {verifyModal && (() => {
+        const phone = verifyModal.customer_phone
+        const same = localOrders.filter(x => x.customer_phone === phone)
+        const delivered = same.filter(x => x.status === 'delivered').length
+        const returned  = same.filter(x => ['returned','cancelled','failed_1','failed_2','failed_3'].includes(x.status)).length
+        const denom = delivered + returned
+        const risk = denom > 0 ? Math.round(returned / denom * 100) : 0
+        const masked = phone ? phone.slice(0,4) + '****' + phone.slice(-2) : '—'
+        return (
+          <>
+            <div className="fixed inset-0 bg-black/60 z-50" onClick={() => setVerifyModal(null)}/>
+            <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[340px] bg-white rounded-2xl shadow-2xl overflow-hidden" dir="rtl">
+              <div className="flex items-center justify-between px-5 py-3 border-b" style={{borderColor:'var(--color-border)'}}>
+                <h3 className="font-bold text-sm" style={{color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)'}}>التحقق من العميل</h3>
+                <button onClick={() => setVerifyModal(null)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><X size={16}/></button>
+              </div>
+              <div className="p-5 space-y-4 text-center" style={{fontFamily:'var(--font-arabic)'}}>
+                <div className="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style={{background:'#EBF5FF'}}>
+                  <Package size={26} style={{color:'#0D6EFD'}}/>
+                </div>
+                <div>
+                  <p className="font-bold text-sm" style={{color:'var(--color-text-primary)'}}>{verifyModal.customer_name}</p>
+                  <p className="text-xs font-mono" style={{color:'var(--color-text-muted)'}}>{masked}</p>
+                  <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)'}}>{(verifyModal.wilaya as any)?.name_ar ?? ''}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl p-3" style={{background:'#D1E7DD'}}>
+                    <p className="text-2xl font-black" style={{color:'#198754',fontFamily:'var(--font-primary)'}}>{delivered}</p>
+                    <p className="text-xs" style={{color:'#198754'}}>تم التسليم</p>
+                  </div>
+                  <div className="rounded-xl p-3" style={{background:'#F8D7DA'}}>
+                    <p className="text-2xl font-black" style={{color:'#DC3545',fontFamily:'var(--font-primary)'}}>{returned}</p>
+                    <p className="text-xs" style={{color:'#DC3545'}}>مرتجع / فاشل</p>
+                  </div>
+                </div>
+                {/* Risk gauge */}
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span style={{color:'var(--color-text-muted)'}}>نسبة الخطورة</span>
+                    <span className="font-bold" style={{color: risk >= 50 ? '#DC3545' : risk >= 25 ? '#FFA447' : '#198754'}}>{risk}%</span>
+                  </div>
+                  <div className="h-2 rounded-full overflow-hidden" style={{background:'#F1F3F5'}}>
+                    <div className="h-full rounded-full transition-all" style={{width:`${risk}%`, background: risk >= 50 ? '#DC3545' : risk >= 25 ? '#FFA447' : '#198754'}}/>
+                  </div>
+                  <p className="text-[11px] mt-2" style={{color:'var(--color-text-muted)'}}>
+                    إجمالي {same.length} طلبية بهذا الرقم
+                  </p>
+                </div>
+              </div>
+            </div>
+          </>
+        )
+      })()}
+
       {/* Floating support button (9.5) */}
       <a href="https://wa.me/213555000000?text=مرحبا، أحتاج دعم في Confirmili" target="_blank" rel="noopener noreferrer"
         className="fixed bottom-6 left-6 z-50 w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-transform hover:scale-110"
@@ -1724,9 +1802,9 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
         <Headphones size={22}/>
       </a>
 
-      {/* Teal announcement banner */}
-      <div className="flex items-center justify-center gap-3 px-4 py-2 text-white text-xs" style={{background:'#2BBFAD',fontFamily:'var(--font-arabic)'}}>
-        <span>Confirmili — إدارة الطلبات الاحترافية مع تأكيد وإلغاء مباشر</span>
+      {/* Feature banner — Dakkani blue (STEP 4) */}
+      <div className="flex items-center justify-center gap-3 px-4 py-2 text-white text-xs" style={{background:'#0D6EFD',fontFamily:'var(--font-arabic)'}}>
+        <span>📦 تقرير الإرسال متاح الآن — Confirmili إدارة الطلبات الاحترافية</span>
       </div>
 
       {/* Header */}
