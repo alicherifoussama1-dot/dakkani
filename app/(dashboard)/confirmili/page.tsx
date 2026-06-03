@@ -19,9 +19,9 @@ export default async function ConfirmiliPage() {
   const { data: orders } = await supabase
     .from('orders')
     .select(`
-      id,order_number,customer_name,customer_phone,customer_phone2,
+      id,order_number,customer_name,customer_phone,customer_phone2,address,
       total,status,delivery_fee,declared_delivery_fee,real_delivery_fee,
-      delivery_type,delivery_company_id,tracking_number,
+      delivery_type,delivery_company_id,tracking_number,is_trashed,
       call_attempts,last_call_at,notes,
       confirmed_at,shipped_at,delivered_at,
       created_at,source,utm_source,

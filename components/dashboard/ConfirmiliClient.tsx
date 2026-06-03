@@ -324,7 +324,9 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   const [localOrders,    setLocalOrders]    = useState<any[]>(initialOrders)
   const [dateFilter,     setDateFilter]     = useState<'all'|'today'|'yesterday'|'week'|'month'>('all')
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set())
-  const [trashedOrders,  setTrashedOrders]  = useState<Set<string>>(new Set())
+  const [trashedOrders,  setTrashedOrders]  = useState<Set<string>>(
+    () => new Set<string>(initialOrders.filter((o:any) => o.is_trashed).map((o:any) => o.id))
+  )
   const [showTrash,      setShowTrash]      = useState(false)
   const [currentPage,    setCurrentPage]    = useState(1)
   const [actionMenu,     setActionMenu]     = useState<string|null>(null) // orderId with open menu
