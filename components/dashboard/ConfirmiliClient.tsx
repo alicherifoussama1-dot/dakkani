@@ -174,6 +174,8 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   const [companies,     setCompanies]     = useState<any[]>([])
   const [teamForm,      setTeamForm]      = useState<any|null>(null) // null=closed, {}=add, {id}=edit
   const [companyForm,   setCompanyForm]   = useState<any|null>(null)
+  // Finance config (costs that feed profit calc)
+  const [financeCfg,    setFinanceCfg]    = useState<any>({ monthly_ad_cost:0, confirmation_price:0, confirmation_price_mode:'per_confirmed', packaging_price:0, tracking_price:0 })
   // Realtime subscription ref
   const realtimeRef = useRef<any>(null)
 
@@ -211,7 +213,23 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     setCompanies(data ?? [])
   }, [storeId])
 
-  useEffect(() => { loadTeam(); loadCompanies() }, [loadTeam, loadCompanies])
+  const loadFinanceCfg = useCallback(async () => {
+    if (!storeId) return
+    const sb = createClient()
+    const { data } = await sb.from('confirmili_finance_config').select('*').eq('store_id', storeId).maybeSingle()
+    if (data) setFinanceCfg(data)
+  }, [storeId])
+
+  const saveFinanceCfg = useCallback(async () => {
+    const sb = createClient()
+    await sb.from('confirmili_finance_config').upsert(
+      { store_id: storeId, ...financeCfg, updated_at: new Date().toISOString() },
+      { onConflict: 'store_id' }
+    )
+    setToast('تم حفظ إعدادات التكاليف')
+  }, [storeId, financeCfg, setToast])
+
+  useEffect(() => { loadTeam(); loadCompanies(); loadFinanceCfg() }, [loadTeam, loadCompanies, loadFinanceCfg])
 
   // ─── TEAM CRUD ──────────────────────────────────────────
   const saveTeamMember = useCallback(async () => {
@@ -1405,7 +1423,14 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     const declaredDelivery   = deliveredOrders.reduce((s,o) => s + (o.declared_delivery_fee ?? o.delivery_fee ?? 0), 0)
     const realDelivery       = deliveredOrders.reduce((s,o) => s + (o.real_delivery_fee ?? o.delivery_fee ?? 0), 0)
     const productRevenue     = grossRevenue - declaredDelivery // pure product revenue
-    const netProfit          = productRevenue - realDelivery   // after actual carrier cost
+    // Operating costs from finance config
+    const confirmedCount     = localOrders.filter(o => ['confirmed','delivered'].includes(o.status) && !trashedOrders.has(o.id)).length
+    const costBase           = financeCfg.confirmation_price_mode === 'per_delivered' ? deliveredOrders.length : confirmedCount
+    const confirmationCost   = (financeCfg.confirmation_price ?? 0) * costBase
+    const packagingCost      = (financeCfg.packaging_price ?? 0) * deliveredOrders.length
+    const trackingCost       = (financeCfg.tracking_price ?? 0) * deliveredOrders.length
+    const adCost             = financeCfg.monthly_ad_cost ?? 0
+    const netProfit          = productRevenue - realDelivery - confirmationCost - packagingCost - trackingCost - adCost
 
     return (
       <div>
@@ -1457,7 +1482,42 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                 ))
               })()}
             </div>
+            {/* Cost inputs (persist to confirmili_finance_config) */}
+            <div className="card p-4">
+              <h3 className="font-semibold text-sm mb-3" style={{color:'var(--color-text-primary)'}}>التكاليف التشغيلية (دج)</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-xs mb-1" style={{color:'var(--color-text-muted)'}}>مصاريف الإعلان الشهرية</label>
+                  <input type="number" className="input text-sm w-full" value={financeCfg.monthly_ad_cost ?? 0}
+                    onChange={e=>setFinanceCfg((f:any)=>({...f,monthly_ad_cost:+e.target.value}))}/>
+                </div>
+                <div>
+                  <label className="block text-xs mb-1" style={{color:'var(--color-text-muted)'}}>سعر التأكيد</label>
+                  <input type="number" className="input text-sm w-full" value={financeCfg.confirmation_price ?? 0}
+                    onChange={e=>setFinanceCfg((f:any)=>({...f,confirmation_price:+e.target.value}))}/>
+                  <select className="input text-xs w-full mt-1" value={financeCfg.confirmation_price_mode ?? 'per_confirmed'}
+                    onChange={e=>setFinanceCfg((f:any)=>({...f,confirmation_price_mode:e.target.value}))}>
+                    <option value="per_confirmed">لكل مؤكدة</option>
+                    <option value="per_delivered">لكل مسلمة</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs mb-1" style={{color:'var(--color-text-muted)'}}>سعر التغليف</label>
+                  <input type="number" className="input text-sm w-full" value={financeCfg.packaging_price ?? 0}
+                    onChange={e=>setFinanceCfg((f:any)=>({...f,packaging_price:+e.target.value}))}/>
+                </div>
+                <div>
+                  <label className="block text-xs mb-1" style={{color:'var(--color-text-muted)'}}>سعر التتبع</label>
+                  <input type="number" className="input text-sm w-full" value={financeCfg.tracking_price ?? 0}
+                    onChange={e=>setFinanceCfg((f:any)=>({...f,tracking_price:+e.target.value}))}/>
+                </div>
+              </div>
+              <p className="text-xs mt-3" style={{color:'var(--color-text-muted)'}}>
+                التكاليف: تأكيد {confirmationCost.toLocaleString('ar-DZ')} · تغليف {packagingCost.toLocaleString('ar-DZ')} · تتبع {trackingCost.toLocaleString('ar-DZ')} · إعلان {adCost.toLocaleString('ar-DZ')} دج
+              </p>
+            </div>
             <div className="flex gap-2">
+              <button onClick={saveFinanceCfg} className="btn btn-primary btn-sm" style={{fontFamily:'var(--font-arabic)'}}>حفظ التكاليف</button>
               <button onClick={exportExcel} className="btn btn-sm" style={{background:'var(--color-success)',color:'#fff',fontFamily:'var(--font-arabic)'}}>
                 <Download size={13}/>تصدير CSV
               </button>
