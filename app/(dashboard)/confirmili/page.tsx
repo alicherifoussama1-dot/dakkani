@@ -15,30 +15,29 @@ export default async function ConfirmiliPage() {
   const { data: store } = await supabase.from('stores').select('id, name, slug, plan').eq('owner_id', user.id).single()
   if (!store) return null
 
-  // Fetch ALL orders (not just 30-day) for confirmili — sorted newest first
+  // Fetch ALL orders for Confirmili — all columns needed by ConfirmiliOrders
   const { data: orders } = await supabase
     .from('orders')
     .select(`
       id,order_number,customer_name,customer_phone,customer_phone2,address,
-      total,status,delivery_fee,declared_delivery_fee,real_delivery_fee,
-      delivery_type,delivery_company_id,tracking_number,is_trashed,
+      total,subtotal,status,delivery_fee,declared_delivery_fee,real_delivery_fee,
+      delivery_type,delivery_company_id,tracking_number,is_trashed,confirmed_by,
       call_attempts,last_call_at,notes,
       confirmed_at,shipped_at,delivered_at,
-      created_at,source,utm_source,
-      wilaya:wilayas(name_ar),
-      commune:communes(name_ar),
-      items:order_items(product_name,quantity,unit_price,product_id)
+      created_at,updated_at,source,utm_source,
+      wilaya:wilayas(id,name_ar),
+      commune:communes(id,name_ar),
+      items:order_items(id,product_name,quantity,unit_price,total_price,product_id,variant_key,variant_sku)
     `)
     .eq('store_id', store.id)
     .order('created_at', { ascending: false })
     .limit(1000)
 
-  const { data: products } = await supabase
-    .from('products')
-    .select('id,name,name_ar,sku,price,cost_price,images,min_stock_alert')
-    .eq('store_id', store.id)
-    .eq('is_active', true)
-    .order('name')
+  const [productsRes, teamRes, companiesRes] = await Promise.all([
+    supabase.from('products').select('id,name,name_ar,sku,price,cost_price,images,min_stock_alert').eq('store_id', store.id).eq('is_active', true).order('name'),
+    supabase.from('confirmili_team').select('id,name,phone,email,role,is_active').eq('store_id', store.id).eq('is_active', true),
+    supabase.from('confirmili_delivery_companies').select('id,name,short_name,is_active,is_automatic').eq('store_id', store.id).eq('is_active', true),
+  ])
 
   // Count this billing cycle orders for quota (9.9)
   const firstOfMonth = new Date()
@@ -60,7 +59,9 @@ export default async function ConfirmiliPage() {
       planOrderLimit={planLimit}
       planOrdersUsed={ordersUsed ?? 0}
       initialOrders={(orders ?? []) as any[]}
-      initialProducts={(products ?? []) as any[]}
+      initialProducts={(productsRes.data ?? []) as any[]}
+      initialTeam={(teamRes.data ?? []) as any[]}
+      initialCompanies={(companiesRes.data ?? []) as any[]}
     />
   )
 }

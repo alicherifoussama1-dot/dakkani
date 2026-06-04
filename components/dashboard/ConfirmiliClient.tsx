@@ -127,6 +127,8 @@ const T: Record<string, Record<string, string>> = {
 }
 
 interface Props {
+  initialTeam?:      any[]
+  initialCompanies?: any[]
   storeId?: string
   storeName?: string
   plan?: string
@@ -136,7 +138,7 @@ interface Props {
   initialProducts?: any[]
 }
 
-export default function ConfirmiliClient({ storeId='', storeName='متجري', plan='free', planOrderLimit=1000, planOrdersUsed=0, initialOrders=[], initialProducts=[] }: Props) {
+export default function ConfirmiliClient({ storeId='', storeName='متجري', plan='free', planOrderLimit=1000, planOrdersUsed=0, initialOrders=[], initialProducts=[], initialTeam=[], initialCompanies=[] }: Props) {
   const router = useRouter()
   const [activeTab,     setActiveTab]    = useState('statistics')
   const [statsTab,      setStatsTab]     = useState(0)
@@ -171,8 +173,8 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     window.setTimeout(() => setToastRaw(null), 2200)
   }, [])
   // Team + delivery companies (loaded from confirmili_* tables)
-  const [team,          setTeam]          = useState<any[]>([])
-  const [companies,     setCompanies]     = useState<any[]>([])
+  const [team,          setTeam]          = useState<any[]>(initialTeam)
+  const [companies,     setCompanies]     = useState<any[]>(initialCompanies)
   const [teamForm,      setTeamForm]      = useState<any|null>(null) // null=closed, {}=add, {id}=edit
   const [companyForm,   setCompanyForm]   = useState<any|null>(null)
   // Finance config (costs that feed profit calc)
