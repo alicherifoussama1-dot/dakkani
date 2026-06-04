@@ -1360,8 +1360,8 @@ function ColSettingsModal({ visibleCols, onSave, onClose }: { visibleCols:Set<st
             className="flex-1 h-9 rounded-xl text-xs font-bold text-white" style={{background:'#22C55E',minWidth:140}}>
             إعادة تعيين إلى الافتراضي
           </button>
-          <button className="flex-1 h-9 rounded-xl text-xs font-bold text-white" style={{background:'#22C55E',minWidth:100}}
-            onClick={()=>{}}>
+          <button className="flex-1 h-9 rounded-xl text-xs font-bold text-white opacity-70 cursor-default" style={{background:'#22C55E',minWidth:100}}
+            title="قريباً — سحب وإفلات لترتيب الأعمدة">
             ترتيب الأعمدة
           </button>
           <button onClick={()=>onSave(local)} className="flex-1 h-9 rounded-xl text-xs font-bold text-white" style={{background:'#0D6EFD',minWidth:80}}>
