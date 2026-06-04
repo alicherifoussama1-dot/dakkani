@@ -976,7 +976,12 @@ export default function ConfirmiliOrders({
                     {show('variant') && (
                       <td style={TD}>
                         {item0.variant_key && item0.variant_key !== 'default'
-                          ? <span style={{fontSize:10,padding:'1px 6px',borderRadius:999,background:'#D1E7DD',color:'#198754',fontWeight:600}}>{item0.variant_key}</span>
+                          ? (
+                            <button onClick={()=>setEditModal({...o})} className="inline-flex items-center gap-1 hover:opacity-80">
+                              <span style={{fontSize:10,padding:'1px 6px',borderRadius:999,background:'#D1E7DD',color:'#198754',fontWeight:600}}>{item0.variant_key}</span>
+                              <Edit2 size={9} style={{color:'#22C55E'}}/>
+                            </button>
+                          )
                           : <span style={{color:'#DEE2E6',fontSize:10}}>—</span>
                         }
                       </td>
