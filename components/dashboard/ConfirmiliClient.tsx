@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -18,6 +18,7 @@ import {
   PieChart, Pie, Cell, BarChart, Bar,
 } from 'recharts'
 import { getStatus, statusLabel, STATUS_LIST } from '@/lib/confirmili/statuses'
+import ConfirmiliOrders from './ConfirmiliOrders'
 
 // ── Sub-nav tabs ──────────────────────────────────────────
 const TABS = [
@@ -1079,219 +1080,17 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
 
   // ─── RENDER ORDERS ───────────────────────────────────────
   const renderOrders = () => (
-    <div className="space-y-3">
-      {/* Action bar */}
-      <div className="flex flex-wrap gap-2 items-center">
-        {/* Bulk status */}
-        {selectedOrders.size > 0 && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{background:'var(--color-accent-soft)'}}>
-            <span className="text-xs font-medium" style={{color:'var(--color-accent)'}}>{selectedOrders.size} محدد</span>
-            <button onClick={() => bulkUpdateStatus('confirmed')} disabled={bulkUpdating}
-              className="text-xs px-2 py-1 rounded" style={{background:'#D1E7DD',color:'#198754'}}>تأكيد الكل</button>
-            <button onClick={() => bulkUpdateStatus('cancelled')} disabled={bulkUpdating}
-              className="text-xs px-2 py-1 rounded" style={{background:'#F8D7DA',color:'#DC3545'}}>إلغاء الكل</button>
-            <button onClick={() => setSelectedOrders(new Set())} className="text-xs" style={{color:'var(--color-text-muted)'}}>✕ إلغاء التحديد</button>
-          </div>
-        )}
-
-        <button onClick={() => { setShowTrash(false); setCurrentPage(1) }}
-          className="btn btn-sm" style={{border:'1px solid var(--color-border)',background:!showTrash?'var(--color-accent)':'#fff',color:!showTrash?'#fff':'var(--color-text-secondary)'}}>
-          📋 الطلبات ({localOrders.filter(o=>!trashedOrders.has(o.id)).length})
-        </button>
-        <button onClick={() => { setShowTrash(true); setCurrentPage(1) }}
-          className="btn btn-sm gap-1" style={{border:'1px solid var(--color-border)',background:showTrash?'var(--color-accent)':'#fff',color:showTrash?'#fff':'var(--color-text-secondary)'}}>
-          <Trash2 size={13}/>سلة المهملات ({trashedOrders.size})
-        </button>
-        <button onClick={() => { router.refresh(); setLocalOrders(initialOrders); setTrashedOrders(new Set<string>()); setSelectedOrders(new Set<string>()); setCurrentPage(1) }}
-          className="btn btn-sm p-2" style={{border:'1px solid var(--color-border)',background:'#fff'}}>
-          <RefreshCw size={13}/>
-        </button>
-        <button onClick={exportExcel}
-          className="btn btn-sm gap-1" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>
-          <Download size={13}/>تصدير CSV
-        </button>
-
-        {/* Date filters — FUNCTIONAL */}
-        {(['today','yesterday','week','month'] as const).map(t => {
-          const labels = {today:'اليوم',yesterday:'الأمس',week:'أسبوع',month:'شهر'} as const
-          return (
-            <button key={t} onClick={() => { setDateFilter(f => f===t ? 'all' : t); setCurrentPage(1) }}
-              className="btn btn-sm" style={{
-                border: '1px solid',
-                borderColor: dateFilter===t ? 'var(--color-accent)' : 'var(--color-border)',
-                background: dateFilter===t ? 'var(--color-accent)' : '#fff',
-                color: dateFilter===t ? '#fff' : 'var(--color-text-secondary)',
-                fontFamily: 'var(--font-arabic)',
-              }}>
-              {labels[t]}
-            </button>
-          )
-        })}
-        {dateFilter !== 'all' && (
-          <button onClick={() => { setDateFilter('all'); setCurrentPage(1) }}
-            className="text-xs" style={{color:'var(--color-text-muted)'}}>
-            ✕ مسح الفلتر
-          </button>
-        )}
-
-        <button onClick={()=>setShowColSettings(true)}
-          className="btn btn-sm gap-1" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>
-          <SlidersHorizontal size={12}/>الأعمدة
-        </button>
-        <button onClick={()=>{setShowSendReport(true);loadSendReports()}}
-          className="btn btn-sm gap-1" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>
-          📊 تقرير الإرسال
-        </button>
-        <button onClick={()=>{setShowManual(true);setManualForm({})}}
-          className="btn btn-primary btn-sm gap-1">
-          <Plus size={13}/>طلبية يدوية
-        </button>
-
-        <div className="flex-1"/>
-        <div className="relative">
-          <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2" style={{color:'var(--color-text-muted)'}}/>
-          <input value={orderSearch} onChange={e=>{ setOrderSearch(e.target.value); setCurrentPage(1) }}
-            placeholder="بحث بالاسم / الهاتف / الرقم..."
-            className="input pr-8 text-sm h-8 w-52"/>
-        </div>
-      </div>
-
-      <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="data-table" style={{fontFamily:'var(--font-arabic)'}}>
-            <thead>
-              <tr>
-                <th><input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-3.5 h-3.5 accent-[#0D6EFD]"/></th>
-                {['المصدر','رقم الطلبية','التاريخ','الإسم','الهاتف','الحالة','الولاية','المنتج','السعر','اتصال','إجراء'].map(h=><th key={h}>{h}</th>)}
-                {showTrash && <th>استعادة</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {pagedOrders.length === 0 ? (
-                <tr>
-                  <td colSpan={12} className="text-center py-12 text-sm" style={{color:'var(--color-text-muted)'}}>
-                    {showTrash ? 'سلة المهملات فارغة' : dateFilter !== 'all' ? 'لا توجد طلبات في هذه الفترة' : 'لا توجد طلبات بعد'}
-                  </td>
-                </tr>
-              ) : (() => {
-                // ── Date group separators (9.12) ──────────────────────
-                const rows: React.ReactNode[] = []
-                let lastDate = ''
-                pagedOrders.forEach(o => {
-                  const dateKey = o.created_at?.slice(0,10) ?? ''
-                  if (dateKey !== lastDate) {
-                    lastDate = dateKey
-                    const dateObj = new Date(o.created_at)
-                    const dayLabel = dateObj.toLocaleDateString('ar-DZ', {
-                      weekday:'long', year:'numeric', month:'long', day:'numeric'
-                    })
-                    rows.push(
-                      <tr key={`date-${dateKey}`} style={{background:'var(--color-bg-muted)'}}>
-                        <td colSpan={13} className="text-center py-1.5 text-xs font-semibold" style={{color:'var(--color-text-muted)'}}>
-                          {dayLabel}
-                        </td>
-                      </tr>
-                    )
-                  }
-
-                  // Verify counter (9.8) — compute from all orders by this phone
-                  const samePhone = localOrders.filter(x => x.customer_phone === o.customer_phone)
-                  const verifyRed = samePhone.filter(x => ['returned','failed','failed_1','failed_2','failed_3','cancelled'].includes(x.status)).length
-                  const verifyGreen = samePhone.filter(x => x.status === 'delivered').length
-                  const riskRatio = samePhone.length > 0 ? Math.round(verifyGreen / samePhone.length * 100) : 100
-
-                  rows.push(
-                  <tr key={o.id} className={selectedOrders.has(o.id) ? 'bg-[#EBF5FF]' : ''}>
-                  <td>
-                    <input type="checkbox"
-                      checked={selectedOrders.has(o.id)}
-                      onChange={e => {
-                        setSelectedOrders(prev => {
-                          const s = new Set(prev)
-                          e.target.checked ? s.add(o.id) : s.delete(o.id)
-                          return s
-                        })
-                      }}
-                      className="w-3.5 h-3.5 accent-[#0D6EFD]"
-                    />
-                  </td>
-                  <td><SourceIcon source={o.source ?? o.utm_source ?? ''}/></td>
-                  <td className="font-mono text-xs font-medium" style={{color:'var(--color-accent)'}}>{o.order_number}</td>
-                  <td className="text-xs" style={{color:'var(--color-text-muted)'}}>{new Date(o.created_at).toLocaleDateString('ar-DZ')}</td>
-                  <td className="text-sm font-medium" style={{color:'var(--color-text-primary)'}}>{o.customer_name}</td>
-                  <td>
-                    <button
-                      onClick={() => openWhatsApp(o.customer_phone, o.customer_name)}
-                      className="text-xs font-mono flex items-center gap-1 hover:underline"
-                      style={{color:'#25D366'}}
-                    >
-                      <MessageCircle size={11}/>
-                      {o.customer_phone}
-                    </button>
-                    {/* Verify counter (9.8) — click opens verify modal */}
-                    <button
-                      onClick={() => setVerifyModal(o)}
-                      className="flex items-center gap-1 mt-0.5 hover:opacity-80 transition-opacity"
-                      title="التحقق من العميل">
-                      <span className="text-[9px] px-1 rounded font-bold" style={{background:'#D1E7DD',color:'#198754'}}>{verifyGreen}✓</span>
-                      <span className="text-[9px] px-1 rounded font-bold" style={{background:'#F8D7DA',color:'#DC3545'}}>{verifyRed}✗</span>
-                      <span className="text-[9px]" style={{color: riskRatio >= 70 ? '#198754' : riskRatio >= 40 ? '#FFA500' : '#DC3545'}}>{riskRatio}%</span>
-                    </button>
-                  </td>
-                  <td><StatusCell order={o}/></td>
-                  <td className="text-xs" style={{color:'var(--color-text-secondary)'}}>{(o.wilaya as any)?.name_ar ?? '—'}</td>
-                  <td className="text-xs" style={{color:'var(--color-text-muted)'}}>{(o.items?.[0] as any)?.product_name?.slice(0,16) ?? '—'}</td>
-                  <td className="font-semibold text-sm" style={{color:'var(--color-accent)',fontFamily:'var(--font-primary)'}}>{o.total?.toLocaleString('ar-DZ')} دج</td>
-                  <td className="text-xs" style={{color:'var(--color-text-muted)'}}>{o.call_attempts ?? 0}</td>
-                  <td>
-                    <div className="flex items-center gap-1">
-                      <a href={`/orders/${o.id}`} className="p-1.5 rounded hover:bg-[#F8F9FA] transition-colors inline-block">
-                        <Eye size={12} style={{color:'var(--color-text-muted)'}}/>
-                      </a>
-                      {showTrash
-                        ? <button onClick={() => restoreOrder(o.id)}
-                            className="btn btn-sm text-xs gap-1" style={{background:'#D1E7DD',color:'#198754',border:'none',minHeight:'24px',padding:'0 6px'}}>
-                            <RotateCcw size={11}/>استعادة
-                          </button>
-                        : <ActionDropdown order={o} />
-                      }
-                    </div>
-                  </td>
-                </tr>
-                  )
-                })
-                return rows
-              })()}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination — FUNCTIONAL */}
-        <div className="flex items-center justify-between px-4 py-3 border-t" style={{borderColor:'var(--color-border)'}}>
-          <div className="flex items-center gap-2">
-            <select value={ordersPerPage} onChange={e=>{ setOrdersPP(+e.target.value); setCurrentPage(1) }} className="input h-7 text-xs px-2 w-16">
-              {[10,20,50,100].map(n=><option key={n}>{n}</option>)}
-            </select>
-            <span className="text-xs" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
-              عرض {Math.min((currentPage-1)*ordersPerPage+1, filteredOrders.length)}-{Math.min(currentPage*ordersPerPage, filteredOrders.length)} من {filteredOrders.length}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button onClick={() => setCurrentPage(1)} disabled={currentPage<=1}
-              className="w-7 h-7 flex items-center justify-center rounded text-xs border disabled:opacity-40" style={{borderColor:'var(--color-border)'}}>«</button>
-            <button onClick={() => setCurrentPage(p => Math.max(1,p-1))} disabled={currentPage<=1}
-              className="w-7 h-7 flex items-center justify-center rounded text-xs border disabled:opacity-40" style={{borderColor:'var(--color-border)'}}>‹</button>
-            <span className="px-3 text-xs" style={{color:'var(--color-text-secondary)'}}>
-              {currentPage} / {totalPages || 1}
-            </span>
-            <button onClick={() => setCurrentPage(p => Math.min(totalPages,p+1))} disabled={currentPage>=totalPages}
-              className="w-7 h-7 flex items-center justify-center rounded text-xs border disabled:opacity-40" style={{borderColor:'var(--color-border)'}}>›</button>
-            <button onClick={() => setCurrentPage(totalPages || 1)} disabled={currentPage>=totalPages}
-              className="w-7 h-7 flex items-center justify-center rounded text-xs border disabled:opacity-40" style={{borderColor:'var(--color-border)'}}>»</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ConfirmiliOrders
+      storeId={storeId}
+      storeName={storeName}
+      orders={localOrders}
+      products={initialProducts}
+      team={team}
+      companies={companies}
+      onRefresh={() => { router.refresh(); setLocalOrders(initialOrders) }}
+      setToast={setToast}
+      lang={lang}
+    />
   )
 
   // ─── TRACKING ────────────────────────────────────────────
