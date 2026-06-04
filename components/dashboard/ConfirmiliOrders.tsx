@@ -3,7 +3,7 @@
 // ConfirmiliOrders — Exact Octomatic /orders page replica
 // Dakkani blue #0D6EFD · Exact status colors · RTL Arabic · Tajawal
 // ============================================================
-import {
+import React, {
   useState, useMemo, useCallback, useEffect,
 } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -151,6 +151,7 @@ export default function ConfirmiliOrders({
   const [verifyModal,     setVerifyModal]     = useState<any|null>(null)
   const [infoOpen,        setInfoOpen]        = useState(false)
   const [bulkMenuOpen,    setBulkMenuOpen]    = useState(false)
+  const [confirmTrash,    setConfirmTrash]    = useState<string|null>(null) // orderId awaiting confirm
 
   // sync from parent when onRefresh causes new props
   useEffect(() => {
@@ -296,7 +297,8 @@ export default function ConfirmiliOrders({
   }, [selected, setToast])
 
   const bulkTrash = useCallback(async () => {
-    if (!window.confirm(`نقل ${selected.size} طلبية إلى سلة المهملات؟`)) return
+    // Uses inline confirm dialog (setConfirmTrash) for single — for bulk proceed directly
+    if (!window.confirm(`نقل ${selected.size} طلبية إلى سلة المهملات؟`)) return // eslint-disable-line no-restricted-globals
     const ids = Array.from(selected)
     const sb = createClient()
     await sb.from('orders').update({ is_trashed: true }).in('id', ids)
@@ -601,9 +603,7 @@ export default function ConfirmiliOrders({
       {/* 🗑 trash */}
       {!trashMode && (
         <button title="نقل إلى سلة المهملات"
-          onClick={() => {
-            if (window.confirm('هل أنت متأكد من نقل هذه الطلبية إلى سلة المهملات؟')) moveToTrash(order.id)
-          }}
+          onClick={() => setConfirmTrash(order.id)}
           className="p-1.5 rounded hover:bg-red-50 transition-colors">
           <Trash2 size={13} style={{color:'#DC3545'}}/>
         </button>
@@ -720,6 +720,39 @@ export default function ConfirmiliOrders({
     </div>
   )
 
+  // ── WILAYA FILTER ────────────────────────────────────────────
+  const WilayaFilter = () => (
+    <div className="relative inline-block">
+      <button onClick={()=>{setShowWilayaFilter(o=>!o);setShowStatusFilter(false);setShowSourceFilter(false)}}
+        className="flex items-center gap-1" title="فلتر الولاية">
+        <Filter size={10} style={{color: wilayaFilter.length > 0 ? '#0D6EFD' : '#868E96'}}/>
+      </button>
+      {showWilayaFilter && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={()=>setShowWilayaFilter(false)}/>
+          <div className="absolute right-0 top-full mt-1 w-44 bg-white border rounded-xl shadow-2xl z-20 overflow-hidden" style={{borderColor:'var(--color-border)'}}>
+            <div className="px-2 py-1.5 border-b" style={{borderColor:'var(--color-border)'}}>
+              <p className="text-[10px] font-semibold" style={{color:'var(--color-text-muted)'}}>فلتر الولاية</p>
+            </div>
+            <div className="max-h-48 overflow-y-auto">
+              {uniqueWilayas.map(w => (
+                <label key={w} className="flex items-center gap-2 px-3 py-1.5 hover:bg-[#F8F9FA] cursor-pointer">
+                  <input type="checkbox" checked={wilayaFilter.includes(w)}
+                    onChange={e => setWilayaFilter(prev => e.target.checked ? [...prev,w] : prev.filter(x=>x!==w))}
+                    className="w-3 h-3 accent-[#0D6EFD]"/>
+                  <span className="text-xs" style={{fontFamily:'var(--font-arabic)'}}>{w}</span>
+                </label>
+              ))}
+            </div>
+            {wilayaFilter.length > 0 && (
+              <button onClick={()=>setWilayaFilter([])} className="w-full text-[10px] py-1.5 text-center border-t" style={{color:'#DC3545',borderColor:'var(--color-border)'}}>مسح الفلتر</button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+
   // ── MAIN RENDER ───────────────────────────────────────────────
   return (
     <div className="space-y-0" style={{fontFamily:'var(--font-arabic)'}} dir="rtl">
@@ -750,7 +783,7 @@ export default function ConfirmiliOrders({
               {show('address')       && <th style={TH}>العنوان</th>}
               {show('delivery_co')   && <th style={TH}>ش.ت</th>}
               {show('delivery_type') && <th style={TH}>نوعية التوصيل</th>}
-              {show('wilaya')        && <th style={TH}>الولاية</th>}
+              {show('wilaya')        && <th style={TH}><span className="flex items-center gap-1">الولاية<WilayaFilter/></span></th>}
               {show('baladia')       && <th style={TH}>البلدية</th>}
               {show('delivery_action')&&<th style={TH}>ش ت إجراء</th>}
               {show('product')       && <th style={TH}>المنتج</th>}
@@ -1000,6 +1033,32 @@ export default function ConfirmiliOrders({
       </div>
 
       {/* ── MODALS ─────────────────────────────────────────────── */}
+
+      {/* Trash confirm dialog (exact Octomatic: حذف green / إلغاء red) */}
+      {confirmTrash && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-50" onClick={()=>setConfirmTrash(null)}/>
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-80 bg-white rounded-2xl shadow-2xl overflow-hidden" dir="rtl">
+            <div className="p-5 text-center">
+              <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center" style={{background:'#FEE2E2'}}>
+                <Trash2 size={20} style={{color:'#DC3545'}}/>
+              </div>
+              <p className="font-bold text-sm mb-1" style={{fontFamily:'var(--font-arabic)',color:'#212529'}}>هل أنت متأكد؟</p>
+              <p className="text-xs mb-4" style={{fontFamily:'var(--font-arabic)',color:'#868E96'}}>سيتم نقل الطلبية إلى سلة المهملات</p>
+              <div className="flex gap-3">
+                <button onClick={()=>{ moveToTrash(confirmTrash); setConfirmTrash(null) }}
+                  className="flex-1 h-9 rounded-xl text-sm font-bold text-white" style={{background:'#22C55E',fontFamily:'var(--font-arabic)'}}>
+                  حذف
+                </button>
+                <button onClick={()=>setConfirmTrash(null)}
+                  className="flex-1 h-9 rounded-xl text-sm font-bold text-white" style={{background:'#E23024',fontFamily:'var(--font-arabic)'}}>
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Column settings */}
       {showColSettings && <ColSettingsModal visibleCols={visibleCols} onSave={saveColSettings} onClose={()=>setShowColSettings(false)}/>}
