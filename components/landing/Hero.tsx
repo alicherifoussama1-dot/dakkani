@@ -3,12 +3,22 @@
 import dynamic from 'next/dynamic'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useState } from 'react'
+import { Hero3DErrorBoundary } from './Hero3DErrorBoundary'
 
 // Lazy-load 3D canvas — never blocks first paint
 const Hero3D = dynamic(() => import('./Hero3D'), {
   ssr: false,
   loading: () => null,
 })
+
+// Fallback gradient orb shown when WebGL crashes
+const GradientOrb = () => (
+  <div style={{
+    width: '100%', height: '100%',
+    background: 'radial-gradient(circle at 60% 40%, rgba(79,70,229,0.35) 0%, rgba(124,58,237,0.18) 40%, transparent 70%)',
+    borderRadius: '50%',
+  }} />
+)
 
 const HEADLINE_WORDS = ['متجرك', 'الإلكتروني،', 'جاهز', 'في', 'دقائق']
 
@@ -94,7 +104,9 @@ export default function Hero() {
           width: '46%', height: '92vh',
           pointerEvents: 'none', zIndex: 1,
         }}>
-          <Hero3D />
+          <Hero3DErrorBoundary fallback={<GradientOrb />}>
+            <Hero3D />
+          </Hero3DErrorBoundary>
         </div>
       )}
 

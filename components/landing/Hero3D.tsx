@@ -1,20 +1,18 @@
 'use client'
 
 import { useRef, useMemo } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Float, MeshDistortMaterial, Sphere, Environment } from '@react-three/drei'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { Float, MeshDistortMaterial, Sphere } from '@react-three/drei'
 import * as THREE from 'three'
 
 function GlowSphere({ mouse }: { mouse: React.MutableRefObject<[number, number]> }) {
-  const meshRef = useRef<THREE.Mesh>(null)
+  const meshRef  = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
 
   useFrame(({ clock }) => {
     if (!meshRef.current || !groupRef.current) return
-    // Subtle auto-rotation
     meshRef.current.rotation.y += 0.004
     meshRef.current.rotation.x = Math.sin(clock.elapsedTime * 0.25) * 0.12
-    // Mouse tracking — smooth lerp toward cursor
     groupRef.current.rotation.y = THREE.MathUtils.lerp(
       groupRef.current.rotation.y, mouse.current[0] * 0.4, 0.04
     )
@@ -31,10 +29,10 @@ function GlowSphere({ mouse }: { mouse: React.MutableRefObject<[number, number]>
             color="#4F46E5"
             distort={0.42}
             speed={2.2}
-            roughness={0.08}
-            metalness={0.65}
+            roughness={0.15}
+            metalness={0.55}
             emissive="#312E81"
-            emissiveIntensity={0.25}
+            emissiveIntensity={0.3}
           />
         </Sphere>
       </Float>
@@ -54,8 +52,8 @@ function OrbitRing({ radius, thickness, speed, tiltX, tiltZ, color, opacity = 1 
     <mesh ref={ref} rotation={[tiltX, 0, tiltZ]}>
       <torusGeometry args={[radius, thickness, 16, 100]} />
       <meshStandardMaterial
-        color={color} roughness={0.1} metalness={0.85}
-        emissive={color} emissiveIntensity={0.15}
+        color={color} roughness={0.1} metalness={0.8}
+        emissive={color} emissiveIntensity={0.2}
         transparent opacity={opacity}
       />
     </mesh>
@@ -69,7 +67,7 @@ function Particles() {
     for (let i = 0; i < count; i++) {
       const r = 3.2 + Math.random() * 2
       const theta = Math.random() * Math.PI * 2
-      const phi = Math.acos(2 * Math.random() - 1)
+      const phi   = Math.acos(2 * Math.random() - 1)
       arr[i * 3]     = r * Math.sin(phi) * Math.cos(theta)
       arr[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
       arr[i * 3 + 2] = r * Math.cos(phi)
@@ -98,19 +96,21 @@ function Particles() {
 function Scene({ mouse }: { mouse: React.MutableRefObject<[number, number]> }) {
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 5, 5]}  intensity={1.2} />
-      <pointLight       position={[-4,-3,-4]}  intensity={0.7} color="#818CF8" />
-      <pointLight       position={[3, 3, 2]}   intensity={0.5} color="#C7D2FE" />
-      <pointLight       position={[0, -4, 0]}  intensity={0.4} color="#4F46E5" />
+      {/* Pure Three.js lights — no external asset fetches */}
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[5, 5, 5]}   intensity={1.4} color="#ffffff" />
+      <pointLight      position={[-4, -3, -4]}  intensity={0.8} color="#818CF8" />
+      <pointLight      position={[3,  3,  2]}   intensity={0.6} color="#C7D2FE" />
+      <pointLight      position={[0,  -4,  0]}  intensity={0.5} color="#4F46E5" />
+      <pointLight      position={[0,   5, -3]}  intensity={0.4} color="#ffffff" />
 
       <GlowSphere mouse={mouse} />
-      <OrbitRing radius={2.05} thickness={0.055} speed={0.006}  tiltX={Math.PI/3}   tiltZ={0.2}  color="#818CF8" />
-      <OrbitRing radius={2.7}  thickness={0.035} speed={-0.004} tiltX={Math.PI/5}   tiltZ={-0.3} color="#C7D2FE" opacity={0.6} />
-      <OrbitRing radius={3.2}  thickness={0.022} speed={0.003}  tiltX={Math.PI/2.2} tiltZ={0.5}  color="#E0E7FF" opacity={0.3} />
-      <Particles />
 
-      <Environment preset="city" />
+      <OrbitRing radius={2.05} thickness={0.055} speed={0.006}  tiltX={Math.PI / 3}   tiltZ={0.2}  color="#818CF8" />
+      <OrbitRing radius={2.7}  thickness={0.035} speed={-0.004} tiltX={Math.PI / 5}   tiltZ={-0.3} color="#C7D2FE" opacity={0.6} />
+      <OrbitRing radius={3.2}  thickness={0.022} speed={0.003}  tiltX={Math.PI / 2.2} tiltZ={0.5}  color="#E0E7FF" opacity={0.3} />
+
+      <Particles />
     </>
   )
 }
@@ -121,7 +121,7 @@ export default function Hero3D() {
   const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect()
     mouse.current = [
-      ((e.clientX - rect.left) / rect.width - 0.5) * 2,
+      ((e.clientX - rect.left) / rect.width  - 0.5) * 2,
       ((e.clientY - rect.top)  / rect.height - 0.5) * 2,
     ]
   }
