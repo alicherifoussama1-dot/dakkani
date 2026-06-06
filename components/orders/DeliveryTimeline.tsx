@@ -11,7 +11,7 @@ interface TimelineEntry {
   timestamp: string
 }
 
-const STATUS_ICON: Record<string, React.ElementType> = {
+const STATUS_ICON: Record<string, React.FC<{ className?: string }>> = {
   pending: Clock,
   picked_up: Package,
   in_transit: Truck,
