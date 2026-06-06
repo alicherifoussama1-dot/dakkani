@@ -6,13 +6,12 @@ import { motion, useInView, useReducedMotion } from 'framer-motion'
 const FEATURES = [
   {
     id: 'store',
-    size: 'large', // 2x2
+    size: 'large',
     icon: '🏪',
     title: 'متجر احترافي في دقائق',
     desc: 'اختر قالبًا جاهزًا، خصّصه بألوانك ولوجوك، وأنشر متجرك فوراً — بدون أي خبرة تقنية أو برمجة.',
-    color: '#4F46E5',
-    bg: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)',
-    preview: true,
+    color: '#4F46E5', bg: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)',
+    borderColor: 'rgba(79,70,229,0.12)',
   },
   {
     id: 'delivery',
@@ -20,8 +19,8 @@ const FEATURES = [
     icon: '🚚',
     title: 'توصيل لـ 48 ولاية',
     desc: 'تغطية شاملة لكل الجزائر مع شركات الشحن المعتمدة.',
-    color: '#059669',
-    bg: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
+    color: '#059669', bg: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
+    borderColor: 'rgba(5,150,105,0.1)',
   },
   {
     id: 'ai',
@@ -29,68 +28,68 @@ const FEATURES = [
     icon: '🤖',
     title: 'ردود AI بالدارجة',
     desc: 'مساعد ذكي يرد على عملائك بالدارجة الجزائرية تلقائياً.',
-    color: '#7C3AED',
-    bg: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)',
+    color: '#7C3AED', bg: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)',
+    borderColor: 'rgba(124,58,237,0.1)',
   },
   {
     id: 'analytics',
     size: 'small',
     icon: '📊',
     title: 'إحصائيات مباشرة',
-    desc: 'تتبّع مبيعاتك وزوارك في الوقت الفعلي.',
-    color: '#0EA5E9',
-    bg: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)',
+    desc: 'تتبّع مبيعاتك في الوقت الفعلي.',
+    color: '#0EA5E9', bg: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)',
+    borderColor: 'rgba(14,165,233,0.1)',
   },
   {
     id: 'cod',
     size: 'small',
     icon: '💵',
     title: 'دفع عند الاستلام',
-    desc: 'الطريقة المفضلة للجزائريين — الدفع عند الاستلام.',
-    color: '#D97706',
-    bg: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
+    desc: 'الطريقة المفضلة للجزائريين.',
+    color: '#D97706', bg: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
+    borderColor: 'rgba(217,119,6,0.1)',
   },
   {
     id: 'tracking',
     size: 'small',
     icon: '📍',
     title: 'تتبع الطلبات',
-    desc: 'صفحة تتبع للعميل مع إشعارات واتساب تلقائية.',
-    color: '#EC4899',
-    bg: 'linear-gradient(135deg, #FDF2F8 0%, #FCE7F3 100%)',
+    desc: 'إشعارات واتساب تلقائية للعميل.',
+    color: '#EC4899', bg: 'linear-gradient(135deg, #FDF2F8 0%, #FCE7F3 100%)',
+    borderColor: 'rgba(236,72,153,0.1)',
   },
   {
     id: 'inventory',
     size: 'small',
     icon: '📦',
     title: 'إدارة المخزون',
-    desc: 'تنبيهات نقص المخزون وإدارة المنتجات بسهولة.',
-    color: '#14B8A6',
-    bg: 'linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%)',
+    desc: 'تنبيهات نقص المخزون تلقائياً.',
+    color: '#14B8A6', bg: 'linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%)',
+    borderColor: 'rgba(20,184,166,0.1)',
   },
 ]
 
 function MiniStorePreview() {
   return (
     <div style={{
-      background: '#fff', borderRadius: 12, overflow: 'hidden',
-      boxShadow: '0 8px 32px rgba(79,70,229,0.12)', marginTop: 16,
-      border: '1px solid rgba(79,70,229,0.1)',
+      background: '#fff', borderRadius: 14, overflow: 'hidden',
+      boxShadow: '0 8px 32px rgba(79,70,229,0.12)', marginTop: 20,
+      border: '1px solid rgba(79,70,229,0.08)',
     }}>
-      {/* Fake browser bar */}
+      {/* Fake browser */}
       <div style={{
-        background: '#F8FAFC', padding: '8px 12px',
+        background: '#F8FAFC', padding: '7px 12px',
         display: 'flex', alignItems: 'center', gap: 6,
         borderBottom: '1px solid #E2E8F0',
       }}>
         <div style={{ display: 'flex', gap: 4 }}>
           {['#FF5F57','#FEBC2E','#28C840'].map(c => (
-            <div key={c} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />
+            <div key={c} style={{ width: 7, height: 7, borderRadius: '50%', background: c }} />
           ))}
         </div>
         <div style={{
-          flex: 1, background: '#fff', borderRadius: 4,
-          height: 18, display: 'flex', alignItems: 'center', padding: '0 8px',
+          flex: 1, background: '#fff', borderRadius: 4, height: 17,
+          display: 'flex', alignItems: 'center', padding: '0 8px',
           border: '1px solid #E2E8F0',
         }}>
           <span style={{ fontSize: 9, color: '#94A3B8', fontFamily: 'var(--font-inter)' }}>
@@ -98,28 +97,27 @@ function MiniStorePreview() {
           </span>
         </div>
       </div>
-      {/* Product grid mockup */}
-      <div style={{ padding: 12, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+      {/* Product grid */}
+      <div style={{ padding: '10px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 7 }}>
         {[
-          { bg: '#EEF2FF', h: 44 }, { bg: '#FDF2F8', h: 44 }, { bg: '#ECFDF5', h: 44 },
-          { bg: '#FFFBEB', h: 28 }, { bg: '#F0F9FF', h: 28 }, { bg: '#F5F3FF', h: 28 },
-        ].map((item, i) => (
+          '#EEF2FF','#FDF2F8','#ECFDF5',
+          '#FFFBEB','#F0F9FF','#F5F3FF',
+        ].map((bg, i) => (
           <div key={i} style={{
-            background: item.bg, borderRadius: 6, height: item.h,
+            background: bg, borderRadius: 8,
+            height: i < 3 ? 48 : 28,
           }} />
         ))}
       </div>
-      {/* Add to cart bar */}
+      {/* Cart bar */}
       <div style={{
-        padding: '8px 12px', borderTop: '1px solid #E2E8F0',
-        display: 'flex', gap: 8, alignItems: 'center',
+        padding: '7px 12px', borderTop: '1px solid #E2E8F0',
+        display: 'flex', gap: 8,
       }}>
+        <div style={{ flex: 1, height: 22, background: '#EEF2FF', borderRadius: 5 }} />
         <div style={{
-          flex: 1, height: 24, background: '#EEF2FF', borderRadius: 6,
-        }} />
-        <div style={{
-          width: 60, height: 24, borderRadius: 6,
-          background: 'linear-gradient(135deg, #4F46E5, #4338CA)',
+          width: 60, height: 22, borderRadius: 5,
+          background: 'linear-gradient(135deg,#4F46E5,#4338CA)',
         }} />
       </div>
     </div>
@@ -131,10 +129,14 @@ export default function Features() {
   const inView = useInView(ref, { once: true, margin: '-80px' })
   const prefersReduced = useReducedMotion()
 
+  const cardHover = (color: string) => ({
+    y: prefersReduced ? 0 : -4,
+    boxShadow: `0 16px 48px ${color}20`,
+    transition: { duration: 0.2 },
+  })
+
   return (
-    <section id="features" ref={ref} style={{
-      background: '#F8FAFC', padding: '100px 0',
-    }}>
+    <section id="features" ref={ref} style={{ background: '#F8FAFC', padding: '100px 0' }}>
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
         {/* Header */}
         <motion.div
@@ -144,56 +146,51 @@ export default function Features() {
           style={{ textAlign: 'center', marginBottom: 60 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: '#EEF2FF', borderRadius: 100, padding: '6px 16px', marginBottom: 16,
+            background: '#EEF2FF', borderRadius: 100, padding: '7px 18px', marginBottom: 16,
           }}>
-            <span style={{ fontFamily: 'var(--font-tajawal)', fontSize: 13, fontWeight: 600, color: '#4F46E5' }}>
+            <span style={{ fontFamily: 'var(--font-tajawal)', fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>
               ✦ المميزات
             </span>
           </div>
           <h2 style={{
             fontFamily: 'var(--font-tajawal)', fontWeight: 900,
-            fontSize: 'clamp(28px,4vw,44px)', color: '#0F172A',
-            lineHeight: 1.3, margin: '0 0 16px',
+            fontSize: 'clamp(28px, 4vw, 44px)', color: '#0F172A',
+            lineHeight: 1.3, margin: '0 0 14px',
           }}>
             كل ما تحتاجه لتنجح في التجارة الإلكترونية
           </h2>
           <p style={{
             fontFamily: 'var(--font-tajawal)', fontSize: 16, color: '#475569',
             lineHeight: 1.8, maxWidth: 520, margin: '0 auto',
-          }}>
-            منصة متكاملة صُممت خصيصاً للتاجر الجزائري
-          </p>
+          }}>منصة متكاملة صُممت خصيصاً للتاجر الجزائري</p>
         </motion.div>
 
         {/* Bento Grid */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
-          gridTemplateRows: 'auto',
+          gridAutoRows: 'auto',
           gap: 16,
         }}
-          className="bento-grid"
-        >
-          {/* Large card — 2x2 */}
+          className="features-bento">
+
+          {/* Large card — col-span 2, row-span 2 */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.96 }}
             animate={inView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ delay: 0, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            whileHover={prefersReduced ? {} : { y: -4, boxShadow: '0 20px 48px rgba(79,70,229,0.18)' }}
+            transition={{ delay: 0, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={cardHover(FEATURES[0].color)}
             style={{
-              gridColumn: 'span 2',
-              gridRow: 'span 2',
-              background: FEATURES[0].bg,
-              borderRadius: 24, padding: 32,
-              border: `1px solid rgba(79,70,229,0.12)`,
-              cursor: 'default',
-              transition: 'box-shadow 0.2s, transform 0.2s',
+              gridColumn: 'span 2', gridRow: 'span 2',
+              background: FEATURES[0].bg, borderRadius: 24, padding: 32,
+              border: `1px solid ${FEATURES[0].borderColor}`,
+              cursor: 'default', transition: 'box-shadow 0.2s, transform 0.2s',
             }}>
             <div style={{
-              width: 52, height: 52, borderRadius: 14,
-              background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 54, height: 54, borderRadius: 14, background: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 26, marginBottom: 16,
-              boxShadow: '0 2px 8px rgba(79,70,229,0.1)',
+              boxShadow: '0 2px 10px rgba(79,70,229,0.1)',
             }}>{FEATURES[0].icon}</div>
             <h3 style={{
               fontFamily: 'var(--font-tajawal)', fontWeight: 800, fontSize: 22,
@@ -201,27 +198,27 @@ export default function Features() {
             }}>{FEATURES[0].title}</h3>
             <p style={{
               fontFamily: 'var(--font-tajawal)', fontSize: 14, color: '#475569',
-              lineHeight: 1.8, margin: 0,
+              lineHeight: 1.8, margin: 0, maxWidth: 320,
             }}>{FEATURES[0].desc}</p>
             <MiniStorePreview />
           </motion.div>
 
-          {/* Medium cards */}
+          {/* Medium cards (col-span 1 each, filling right 2 cols × 2 rows) */}
           {FEATURES.slice(1, 3).map((f, i) => (
             <motion.div
               key={f.id}
               initial={{ opacity: 0, y: 24 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: (i + 1) * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              whileHover={prefersReduced ? {} : { y: -4, boxShadow: '0 12px 32px rgba(0,0,0,0.08)' }}
+              whileHover={cardHover(f.color)}
               style={{
                 background: f.bg, borderRadius: 24, padding: 28,
-                border: '1px solid rgba(0,0,0,0.05)',
+                border: `1px solid ${f.borderColor}`,
                 transition: 'box-shadow 0.2s, transform 0.2s',
               }}>
               <div style={{
-                width: 44, height: 44, borderRadius: 12,
-                background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 46, height: 46, borderRadius: 12, background: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 22, marginBottom: 14,
                 boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
               }}>{f.icon}</div>
@@ -231,27 +228,27 @@ export default function Features() {
               }}>{f.title}</h3>
               <p style={{
                 fontFamily: 'var(--font-tajawal)', fontSize: 13, color: '#475569',
-                lineHeight: 1.7, margin: 0,
+                lineHeight: 1.75, margin: 0,
               }}>{f.desc}</p>
             </motion.div>
           ))}
 
-          {/* Small cards */}
+          {/* Small cards — span 1 each */}
           {FEATURES.slice(3).map((f, i) => (
             <motion.div
               key={f.id}
               initial={{ opacity: 0, y: 24 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: (i + 3) * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              whileHover={prefersReduced ? {} : { y: -4, boxShadow: '0 12px 24px rgba(0,0,0,0.07)' }}
+              whileHover={cardHover(f.color)}
               style={{
                 background: f.bg, borderRadius: 24, padding: 24,
-                border: '1px solid rgba(0,0,0,0.05)',
+                border: `1px solid ${f.borderColor}`,
                 transition: 'box-shadow 0.2s, transform 0.2s',
               }}>
               <div style={{
-                width: 40, height: 40, borderRadius: 10,
-                background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 42, height: 42, borderRadius: 11, background: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 20, marginBottom: 12,
               }}>{f.icon}</div>
               <h3 style={{
@@ -260,7 +257,7 @@ export default function Features() {
               }}>{f.title}</h3>
               <p style={{
                 fontFamily: 'var(--font-tajawal)', fontSize: 12, color: '#475569',
-                lineHeight: 1.6, margin: 0,
+                lineHeight: 1.65, margin: 0,
               }}>{f.desc}</p>
             </motion.div>
           ))}
@@ -268,22 +265,13 @@ export default function Features() {
       </div>
 
       <style>{`
-        @media (max-width: 768px) {
-          .bento-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-          .bento-grid > *:first-child {
-            grid-column: span 2 !important;
-            grid-row: span 1 !important;
-          }
+        @media (max-width: 900px) {
+          .features-bento { grid-template-columns: 1fr 1fr !important; }
+          .features-bento > div:first-child { grid-column: span 2 !important; grid-row: span 1 !important; }
         }
-        @media (max-width: 480px) {
-          .bento-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .bento-grid > *:first-child {
-            grid-column: span 1 !important;
-          }
+        @media (max-width: 520px) {
+          .features-bento { grid-template-columns: 1fr !important; }
+          .features-bento > div:first-child { grid-column: span 1 !important; }
         }
       `}</style>
     </section>
