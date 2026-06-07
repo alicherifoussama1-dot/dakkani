@@ -42,7 +42,10 @@ function BaladiaField({ wilayaId, value, onChange, error }: {
         <button
           type="button"
           onClick={() => setOpen(o => !o)}
-          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none bg-white flex items-center justify-between"
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none bg-white flex items-center justify-between"
+          style={{ borderRadius: 'var(--pt-radius-md)' }}
+          onFocus={e => { e.currentTarget.style.boxShadow = '0 0 0 2px var(--pt-accent-soft)' }}
+          onBlur={e => { e.currentTarget.style.boxShadow = 'none' }}
         >
           <span className={value ? 'text-gray-900' : 'text-gray-400'}>{value || 'اختر البلدية'}</span>
           <ChevronDown size={15} className="text-gray-400" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
@@ -50,13 +53,14 @@ function BaladiaField({ wilayaId, value, onChange, error }: {
         {open && (
           <>
             <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 49 }} />
-            <div className="absolute z-50 mt-1.5 w-full max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg p-1.5">
+            <div className="absolute z-50 mt-1.5 w-full max-h-60 overflow-y-auto bg-white border border-gray-200 shadow-lg p-1.5" style={{ borderRadius: 'var(--pt-radius-md)' }}>
               {options.map(b => (
                 <button
                   key={b}
                   type="button"
                   onClick={() => { onChange(b); setOpen(false) }}
-                  className={`block w-full text-right px-3 py-2 rounded-lg text-sm transition ${value === b ? 'bg-[#0D6EFD]/10 text-[#0D6EFD] font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                  className="block w-full text-right px-3 py-2 rounded-lg text-sm transition hover:bg-gray-50"
+                  style={value === b ? { background: 'var(--pt-accent-soft)', color: 'var(--pt-accent)', fontWeight: 700 } : { color: '#374151' }}
                 >
                   {b}
                 </button>
@@ -121,8 +125,8 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white rounded-2xl border border-gray-100 p-4">
-      <h3 className="font-bold text-gray-900">اطلب الآن</h3>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-4" style={{ background: 'var(--pt-surface)', border: '1px solid var(--pt-border)', borderRadius: 'var(--pt-radius-lg)' }}>
+      <h3 className="pt-heading font-bold">اطلب الآن</h3>
 
       {/* Delivery Type */}
       <div className="grid grid-cols-2 gap-2">
@@ -131,11 +135,10 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
             key={val}
             type="button"
             onClick={() => setValue('delivery_type', val)}
-            className={`py-2.5 rounded-xl text-sm font-semibold border transition ${
-              deliveryType === val
-                ? 'bg-[#0D6EFD] border-[#0D6EFD] text-white'
-                : 'bg-gray-50 border-gray-200 text-gray-600'
-            }`}
+            className="py-2.5 text-sm font-semibold border transition"
+            style={deliveryType === val
+              ? { background: 'var(--pt-accent)', borderColor: 'var(--pt-accent)', color: 'var(--pt-btn-primary-text)', borderRadius: 'var(--pt-btn-radius)' }
+              : { background: 'var(--pt-surface-soft)', borderColor: 'var(--pt-border)', color: 'var(--pt-text-soft)', borderRadius: 'var(--pt-btn-radius)' }}
           >
             {label}
           </button>
@@ -152,7 +155,8 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
             setValue('wilaya_id', id)
             setSelectedWilaya(wilayas.find(w => w.id === id) ?? null)
           }}
-          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none bg-white"
+          className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none bg-white"
+          style={{ borderRadius: 'var(--pt-radius-md)' }}
         >
           <option value="">اختر الولاية</option>
           {wilayas.map(w => (
@@ -161,7 +165,7 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
         </select>
         {errors.wilaya_id && <p className="text-red-500 text-xs mt-1">{errors.wilaya_id.message}</p>}
         {selectedWilaya && (
-          <p className="text-xs text-[#0D6EFD] mt-1">
+          <p className="text-xs mt-1" style={{ color: 'var(--pt-accent)' }}>
             رسوم التوصيل: {formatDZD(deliveryFee)} · {deliveryType === 'home' ? selectedWilaya.delivery_days_home : selectedWilaya.delivery_days_stopdesk}
           </p>
         )}
@@ -187,7 +191,8 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
             <input
               {...register(f.name as keyof FormData)}
               placeholder={f.placeholder}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none"
+              className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none"
+              style={{ borderRadius: 'var(--pt-radius-md)' }}
             />
             {errors[f.name as keyof FormData] && (
               <p className="text-red-500 text-xs mt-1">{(errors[f.name as keyof FormData] as any)?.message}</p>
@@ -200,7 +205,7 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">العنوان التفصيلي</label>
           <input {...register('address')} placeholder="الحي، الشارع، رقم البناية..."
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none" />
+            className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none" style={{ borderRadius: 'var(--pt-radius-md)' }} />
         </div>
       )}
 
@@ -217,30 +222,31 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
       </div>
 
       {/* Order Summary */}
-      <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-sm">
-        <div className="flex justify-between text-gray-600">
+      <div className="p-3 space-y-1.5 text-sm" style={{ background: 'var(--pt-surface-soft)', borderRadius: 'var(--pt-radius-md)' }}>
+        <div className="flex justify-between" style={{ color: 'var(--pt-text-soft)' }}>
           <span>المنتج × {quantity}</span>
           <span>{formatDZD(product.price * quantity)}</span>
         </div>
-        <div className="flex justify-between text-gray-600">
+        <div className="flex justify-between" style={{ color: 'var(--pt-text-soft)' }}>
           <span>رسوم التوصيل</span>
           <span>{formatDZD(deliveryFee)}</span>
         </div>
-        <div className="flex justify-between font-black text-gray-900 text-base border-t border-gray-200 pt-1.5">
+        <div className="flex justify-between font-black text-base pt-1.5" style={{ color: 'var(--pt-text)', borderTop: '1px solid var(--pt-border)' }}>
           <span>المجموع</span>
-          <span className="text-[#0D6EFD]">{formatDZD(total)}</span>
+          <span style={{ color: 'var(--pt-accent)' }}>{formatDZD(total)}</span>
         </div>
       </div>
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-[#0D6EFD] hover:bg-[#0B5ED7] disabled:opacity-50 text-white font-black py-3.5 rounded-xl text-base transition"
+        className="w-full disabled:opacity-50 font-black py-3.5 text-base transition"
+        style={{ background: 'var(--pt-btn-primary-bg)', color: 'var(--pt-btn-primary-text)', borderRadius: 'var(--pt-btn-radius)', boxShadow: 'var(--pt-shadow-md)' }}
       >
         {isSubmitting ? 'جارٍ تسجيل الطلب...' : `🛒 اطلب الآن — ${formatDZD(total)}`}
       </button>
 
-      <p className="text-xs text-gray-400 text-center">الدفع عند الاستلام · توصيل لكل ولايات الجزائر</p>
+      <p className="text-xs text-center" style={{ color: 'var(--pt-text-muted)' }}>الدفع عند الاستلام · توصيل لكل ولايات الجزائر</p>
     </form>
   )
 }

@@ -4,6 +4,8 @@ import { formatDZD } from '@/lib/utils/format'
 import ProductOrderForm from './ProductOrderForm'
 import { Star, Shield, Truck, Package, ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react'
 import Link from 'next/link'
+import { getProductTheme, themeToCSSVars } from '@/lib/product-themes'
+import '@/components/discover/product/product-theme.css'
 
 interface Props {
   product: any; store: any; wilayas: any[]
@@ -13,6 +15,13 @@ interface Props {
 export default function ProductPageClient({ product, store, wilayas, totalStock, reviewCount, avgRating }: Props) {
   const [activeImg, setActiveImg] = useState(0)
   const [lightbox,  setLightbox]  = useState(false)
+
+  // Apply the merchant-selected product-page theme (same system already used
+  // by the /discover product page) — CSS custom properties set on the root
+  // cascade down through ProductOrderForm and every section below, so the
+  // whole page (including the order form's buttons/accents) restyles together.
+  const theme = getProductTheme(product?.theme_key)
+  const cssVars = themeToCSSVars(theme)
 
   const images   = (product.images as any[]) ?? []
   const hasDisc  = product.compare_price && product.compare_price > product.price
@@ -28,12 +37,15 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
   const next = () => setActiveImg(i => (i + 1) % images.length)
 
   return (
-    <>
+    <div data-pt-root style={{ ...cssVars }}>
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           {/* Gallery */}
           <div className="space-y-3">
-            <div className="relative group aspect-square bg-white rounded-3xl overflow-hidden shadow-card">
+            <div
+              className="relative group aspect-square overflow-hidden"
+              style={{ background: 'var(--pt-surface)', borderRadius: 'var(--pt-radius-lg)', boxShadow: 'var(--pt-shadow-md)', border: '1px solid var(--pt-border)' }}
+            >
               {images[activeImg]?.url ? (
                 <img
                   key={activeImg}
@@ -50,10 +62,10 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               {images.length > 1 && (
                 <>
                   <button onClick={prev} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ChevronRight className="w-5 h-5 text-[#0D6EFD]" />
+                    <ChevronRight className="w-5 h-5" style={{ color: 'var(--pt-accent)' }} />
                   </button>
                   <button onClick={next} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ChevronLeft className="w-5 h-5 text-[#0D6EFD]" />
+                    <ChevronLeft className="w-5 h-5" style={{ color: 'var(--pt-accent)' }} />
                   </button>
                 </>
               )}
@@ -64,7 +76,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               </button>
 
               {hasDisc && (
-                <span className="absolute top-3 right-3 bg-red-500 text-white text-sm font-black px-3 py-1.5 rounded-xl shadow-md">
+                <span className="absolute top-3 right-3 text-white text-sm font-black px-3 py-1.5 shadow-md" style={{ background: 'var(--pt-danger)', borderRadius: 'var(--pt-radius-md)' }}>
                   -{discPct}%
                 </span>
               )}
@@ -74,9 +86,8 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
                 {images.map((img: any, i: number) => (
                   <button key={i} onClick={() => setActiveImg(i)}
-                    className={`w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
-                      i === activeImg ? 'border-primary shadow-green' : 'border-transparent hover:border-gray-200'
-                    }`}>
+                    className="w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all hover:opacity-90"
+                    style={{ borderColor: i === activeImg ? 'var(--pt-accent)' : 'transparent' }}>
                     <img src={img.url} alt="" className="w-full h-full object-cover" />
                   </button>
                 ))}
@@ -88,21 +99,21 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
           <div className="space-y-5" dir="rtl">
             {/* Stock badge */}
             {totalStock <= 0 ? (
-              <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-100 text-xs font-bold px-3 py-1.5 rounded-full">
-                <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />نفد المخزون
+              <span className="pt-badge pt-badge-danger">
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--pt-danger)' }} />نفد المخزون
               </span>
             ) : totalStock <= 5 ? (
-              <span className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-600 border border-orange-100 text-xs font-bold px-3 py-1.5 rounded-full dot-blink">
-                <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+              <span className="pt-badge dot-blink" style={{ background: 'color-mix(in srgb, var(--pt-danger) 12%, transparent)', color: 'var(--pt-danger)' }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--pt-danger)' }} />
                 آخر {totalStock} قطع فقط!
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-100 text-xs font-bold px-3 py-1.5 rounded-full">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />متوفر
+              <span className="pt-badge pt-badge-success">
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--pt-success)' }} />متوفر
               </span>
             )}
 
-            <h1 className="text-3xl md:text-4xl font-black text-[#111827] leading-tight">
+            <h1 className="pt-heading text-3xl md:text-4xl leading-tight">
               {product.name_ar ?? product.name}
             </h1>
 
@@ -110,21 +121,21 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               <div className="flex items-center gap-2">
                 <div className="flex gap-0.5">
                   {[...Array(5)].map((_, i) => (
-                    <span key={i} className={`text-base ${i < Math.round(parseFloat(avgRating)) ? 'text-accent' : 'text-gray-200'}`}>★</span>
+                    <span key={i} className="text-base" style={{ color: i < Math.round(parseFloat(avgRating)) ? 'var(--pt-star)' : 'var(--pt-border)' }}>★</span>
                   ))}
                 </div>
-                <span className="text-sm font-bold text-[#111827]">{avgRating}</span>
-                <span className="text-sm text-gray-500">({reviewCount} تقييم)</span>
+                <span className="text-sm font-bold" style={{ color: 'var(--pt-text)' }}>{avgRating}</span>
+                <span className="text-sm" style={{ color: 'var(--pt-text-muted)' }}>({reviewCount} تقييم)</span>
               </div>
             )}
 
             {/* Price */}
             <div className="flex items-end gap-4">
-              <span className="text-4xl font-black text-accent">{formatDZD(product.price)}</span>
+              <span className="text-4xl font-black" style={{ color: 'var(--pt-accent)' }}>{formatDZD(product.price)}</span>
               {hasDisc && (
                 <>
-                  <span className="text-xl text-gray-400 line-through">{formatDZD(product.compare_price)}</span>
-                  <span className="bg-red-500 text-white text-sm font-black px-2.5 py-1 rounded-xl">
+                  <span className="text-xl line-through" style={{ color: 'var(--pt-text-muted)' }}>{formatDZD(product.compare_price)}</span>
+                  <span className="text-white text-sm font-black px-2.5 py-1" style={{ background: 'var(--pt-danger)', borderRadius: 'var(--pt-radius-md)' }}>
                     وفر {formatDZD(product.compare_price - product.price)}
                   </span>
                 </>
@@ -132,21 +143,21 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
             </div>
 
             {product.description_ar && (
-              <p className="text-gray-600 text-base leading-relaxed border-t border-gray-100 pt-4">
+              <p className="text-base leading-relaxed pt-4" style={{ color: 'var(--pt-text-soft)', borderTop: '1px solid var(--pt-border)' }}>
                 {product.description_ar}
               </p>
             )}
 
             {/* Mini trust */}
-            <div className="grid grid-cols-3 gap-3 py-3 border-y border-gray-100">
+            <div className="grid grid-cols-3 gap-3 py-3" style={{ borderTop: '1px solid var(--pt-border)', borderBottom: '1px solid var(--pt-border)' }}>
               {[
                 { icon: <Truck className="w-4 h-4" />, text: 'توصيل لكل الجزائر' },
                 { icon: <Package className="w-4 h-4" />, text: 'فتح قبل الدفع' },
                 { icon: <Shield className="w-4 h-4" />, text: 'ضمان الجودة' },
               ].map(b => (
                 <div key={b.text} className="flex flex-col items-center gap-1.5 text-center">
-                  <div className="w-8 h-8 bg-primary/10 text-primary rounded-xl flex items-center justify-center">{b.icon}</div>
-                  <p className="text-xs text-gray-600 font-medium leading-tight">{b.text}</p>
+                  <div className="w-8 h-8 flex items-center justify-center" style={{ background: 'var(--pt-accent-soft)', color: 'var(--pt-accent)', borderRadius: 'var(--pt-radius-md)' }}>{b.icon}</div>
+                  <p className="text-xs font-medium leading-tight" style={{ color: 'var(--pt-text-soft)' }}>{b.text}</p>
                 </div>
               ))}
             </div>
@@ -193,12 +204,12 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
         )}
         <Link
           href={`/store/${store.slug}/checkout?product_id=${product.id}`}
-          className="flex-1 flex items-center justify-center py-3 font-black text-white rounded-2xl text-sm"
-          style={{ background: 'linear-gradient(135deg,#0D6EFD,#0B5ED7)' }}
+          className="flex-1 flex items-center justify-center py-3 font-black text-white text-sm"
+          style={{ background: 'var(--pt-btn-primary-bg)', color: 'var(--pt-btn-primary-text)', borderRadius: 'var(--pt-btn-radius)' }}
         >
           🛒 اطلب — {formatDZD(product.price)}
         </Link>
       </div>
-    </>
+    </div>
   )
 }
