@@ -55,6 +55,15 @@ export default async function ProductPage({ params }: Props) {
   ])
 
   const totalStock = (stockRes.data ?? []).reduce((s, r) => s + r.quantity - r.reserved, 0)
+
+  // Per-variant available stock (qty - reserved), keyed by variant_key —
+  // lets the variant pickers disable/strike-through sold-out combinations
+  // exactly like the /discover product page already does.
+  const stockMap: Record<string, number> = {}
+  for (const r of stockRes.data ?? []) {
+    const key = r.variant_key || 'default'
+    stockMap[key] = (stockMap[key] ?? 0) + (r.quantity - r.reserved)
+  }
   const metaPixelId  = product.use_store_pixel ? store.meta_pixel_id  : product.meta_pixel_id
   const tiktokPixelId = product.use_store_pixel ? store.tiktok_pixel_id : product.tiktok_pixel_id
   const storePhone = (store as any).whatsapp ?? store.phone
@@ -108,6 +117,7 @@ export default async function ProductPage({ params }: Props) {
           store={store as any}
           wilayas={wilayasRes.data as any[] ?? []}
           totalStock={totalStock}
+          stockMap={stockMap}
           reviewCount={reviewsRes.data?.length ?? 0}
           avgRating={avgRating}
         />

@@ -74,9 +74,12 @@ function BaladiaField({ wilayaId, value, onChange, error }: {
   )
 }
 
-interface Props { product: Product; store: Store; wilayas: Wilaya[] }
+interface Props {
+  product: Product; store: Store; wilayas: Wilaya[]
+  variantKey?: string; variantLabel?: string; maxQty?: number
+}
 
-export default function ProductOrderForm({ product, store, wilayas }: Props) {
+export default function ProductOrderForm({ product, store, wilayas, variantKey, variantLabel, maxQty }: Props) {
   const [submitted, setSubmitted] = useState(false)
   const [orderId, setOrderId] = useState('')
   const [selectedWilaya, setSelectedWilaya] = useState<Wilaya | null>(null)
@@ -105,7 +108,7 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
       body: JSON.stringify({
         store_id: store.id,
         ...data,
-        items: [{ product_id: product.id, quantity: data.quantity, variant_key: 'default' }],
+        items: [{ product_id: product.id, quantity: data.quantity, variant_key: variantKey ?? 'default' }],
         source: 'storefront',
       }),
     })
@@ -216,15 +219,19 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
           <button type="button" onClick={() => setValue('quantity', Math.max(1, quantity - 1))}
             className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-lg font-bold hover:bg-gray-50">−</button>
           <span className="w-12 text-center font-bold text-lg">{quantity}</span>
-          <button type="button" onClick={() => setValue('quantity', quantity + 1)}
-            className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-lg font-bold hover:bg-gray-50">+</button>
+          <button type="button" onClick={() => setValue('quantity', maxQty ? Math.min(maxQty, quantity + 1) : quantity + 1)}
+            disabled={!!maxQty && quantity >= maxQty}
+            className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-lg font-bold hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent">+</button>
         </div>
+        {!!maxQty && (
+          <p className="text-xs mt-1" style={{ color: 'var(--pt-text-muted)' }}>الكمية المتوفرة: {maxQty}</p>
+        )}
       </div>
 
       {/* Order Summary */}
       <div className="p-3 space-y-1.5 text-sm" style={{ background: 'var(--pt-surface-soft)', borderRadius: 'var(--pt-radius-md)' }}>
         <div className="flex justify-between" style={{ color: 'var(--pt-text-soft)' }}>
-          <span>المنتج × {quantity}</span>
+          <span>المنتج{variantLabel ? ` (${variantLabel})` : ''} × {quantity}</span>
           <span>{formatDZD(product.price * quantity)}</span>
         </div>
         <div className="flex justify-between" style={{ color: 'var(--pt-text-soft)' }}>

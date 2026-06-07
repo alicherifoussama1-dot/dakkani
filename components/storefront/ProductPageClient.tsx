@@ -1,20 +1,73 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { formatDZD } from '@/lib/utils/format'
 import ProductOrderForm from './ProductOrderForm'
 import { Star, Shield, Truck, Package, ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react'
 import Link from 'next/link'
 import { getProductTheme, themeToCSSVars } from '@/lib/product-themes'
+import ProductVariants, { type VariantGroup } from '@/components/discover/product/ProductVariants'
 import '@/components/discover/product/product-theme.css'
 
 interface Props {
   product: any; store: any; wilayas: any[]
   totalStock: number; reviewCount: number; avgRating: string | null
+  stockMap?: Record<string, number>
 }
 
-export default function ProductPageClient({ product, store, wilayas, totalStock, reviewCount, avgRating }: Props) {
+// Builds the warehouse_stock variant_key from the user's current selections —
+// mirrors the exact helper already used (and proven) on the /discover product page,
+// so order submission, stock lookup and availability checks all stay consistent.
+function buildVariantKey(groups: VariantGroup[], selected: Record<string, string>) {
+  if (!groups.length) return 'default'
+  const parts = groups.map(g => selected[g.name]).filter(Boolean)
+  return parts.length === groups.length ? parts.join('|') : 'default'
+}
+
+export default function ProductPageClient({ product, store, wilayas, totalStock, reviewCount, avgRating, stockMap = {} }: Props) {
   const [activeImg, setActiveImg] = useState(0)
   const [lightbox,  setLightbox]  = useState(false)
+  const [selected,  setSelected]  = useState<Record<string, string>>({})
+
+  // ── Variant groups (color/size/etc.) — were completely missing from this
+  // page even though products carry a `variants` jsonb column and the order
+  // form always submitted variant_key:'default'. This wires the SAME
+  // ProductVariants component & selection logic already proven on /discover.
+  const variantGroups: VariantGroup[] = useMemo(() => {
+    const raw = product?.variants
+    if (!Array.isArray(raw)) return []
+    return raw.filter((g: any) => g?.name && Array.isArray(g.options) && g.options.length)
+  }, [product])
+
+  // Default-select the first option of every group once groups are known
+  useEffect(() => {
+    if (!variantGroups.length) return
+    setSelected(prev => {
+      const next = { ...prev }
+      let changed = false
+      variantGroups.forEach(g => {
+        if (!next[g.name]) { next[g.name] = g.options[0]; changed = true }
+      })
+      return changed ? next : prev
+    })
+  }, [variantGroups])
+
+  const variantKey = useMemo(() => buildVariantKey(variantGroups, selected), [variantGroups, selected])
+  const variantLabel = variantGroups.length
+    ? variantGroups.map(g => selected[g.name]).filter(Boolean).join(' / ')
+    : undefined
+
+  const isOptionAvailable = (groupName: string, option: string) => {
+    if (!Object.keys(stockMap).length) return true
+    const trial = { ...selected, [groupName]: option }
+    const key = buildVariantKey(variantGroups, trial)
+    if (key === 'default') return true
+    return (stockMap[key] ?? 0) > 0 || !(key in stockMap)
+  }
+
+  // Stock for the currently-selected combination (falls back to the product total)
+  const currentStock: number = Object.keys(stockMap).length
+    ? (stockMap[variantKey] ?? stockMap['default'] ?? totalStock)
+    : totalStock
 
   // Apply the merchant-selected product-page theme (same system already used
   // by the /discover product page) — CSS custom properties set on the root
@@ -28,7 +81,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
   const discPct  = hasDisc ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) : 0
   const storePhone = (store as any).whatsapp ?? store.phone
 
-  const waText = `السلام عليكم، أريد طلب: ${product.name_ar ?? product.name} — ${formatDZD(product.price)}`
+  const waText = `السلام عليكم، أريد طلب: ${product.name_ar ?? product.name}${variantLabel ? ` (${variantLabel})` : ''} — ${formatDZD(product.price)}`
   const waUrl  = storePhone
     ? `https://wa.me/${storePhone.replace(/\D/g,'').replace(/^0/,'213')}?text=${encodeURIComponent(waText)}`
     : null
@@ -97,15 +150,15 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
 
           {/* Info */}
           <div className="space-y-5" dir="rtl">
-            {/* Stock badge */}
-            {totalStock <= 0 ? (
+            {/* Stock badge — reflects the currently-selected variant's stock when the product has variants */}
+            {currentStock <= 0 ? (
               <span className="pt-badge pt-badge-danger">
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--pt-danger)' }} />نفد المخزون
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--pt-danger)' }} />نفد المخزون{variantLabel ? ` — ${variantLabel}` : ''}
               </span>
-            ) : totalStock <= 5 ? (
+            ) : currentStock <= 5 ? (
               <span className="pt-badge dot-blink" style={{ background: 'color-mix(in srgb, var(--pt-danger) 12%, transparent)', color: 'var(--pt-danger)' }}>
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--pt-danger)' }} />
-                آخر {totalStock} قطع فقط!
+                آخر {currentStock} قطع فقط!
               </span>
             ) : (
               <span className="pt-badge pt-badge-success">
@@ -148,6 +201,19 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               </p>
             )}
 
+            {/* Variants (color/size/etc.) — selecting updates the live stock badge,
+                the order-form summary & submission, and the WhatsApp message */}
+            {variantGroups.length > 0 && (
+              <div className="pt-4" style={{ borderTop: '1px solid var(--pt-border)' }}>
+                <ProductVariants
+                  groups={variantGroups}
+                  selected={selected}
+                  onSelect={(g, o) => setSelected(prev => ({ ...prev, [g]: o }))}
+                  isOptionAvailable={isOptionAvailable}
+                />
+              </div>
+            )}
+
             {/* Mini trust */}
             <div className="grid grid-cols-3 gap-3 py-3" style={{ borderTop: '1px solid var(--pt-border)', borderBottom: '1px solid var(--pt-border)' }}>
               {[
@@ -170,7 +236,14 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               </a>
             )}
 
-            <ProductOrderForm product={product} store={store} wilayas={wilayas} />
+            <ProductOrderForm
+              product={product}
+              store={store}
+              wilayas={wilayas}
+              variantKey={variantKey}
+              variantLabel={variantLabel}
+              maxQty={currentStock > 0 ? currentStock : undefined}
+            />
           </div>
         </div>
       </div>
