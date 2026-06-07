@@ -1,0 +1,120 @@
+/* ============================================================
+   Product Page Theme System — CSS variable-driven utility classes
+   All themes set the same --pt-* custom properties (see lib/product-themes.ts);
+   these classes simply consume them, so switching themes never requires
+   touching component markup or logic.
+   ============================================================ */
+
+[data-pt-root] {
+  background: var(--pt-bg);
+  color: var(--pt-text);
+  font-family: var(--pt-font-body);
+}
+
+.pt-heading {
+  font-family: var(--pt-font-heading);
+  font-weight: var(--pt-heading-weight);
+  letter-spacing: var(--pt-heading-tracking);
+  color: var(--pt-text);
+}
+
+.pt-text       { color: var(--pt-text); }
+.pt-text-soft  { color: var(--pt-text-soft); }
+.pt-text-muted { color: var(--pt-text-muted); }
+.pt-accent     { color: var(--pt-accent-text); }
+
+.pt-surface       { background: var(--pt-surface); }
+.pt-surface-soft  { background: var(--pt-surface-soft); }
+
+.pt-border { border: 1px solid var(--pt-border); }
+
+.pt-card {
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
+  border-radius: var(--pt-radius-lg);
+  padding: var(--pt-card-padding);
+  box-shadow: var(--pt-shadow-sm);
+}
+
+.pt-card-sm {
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
+  border-radius: var(--pt-radius-md);
+  box-shadow: var(--pt-shadow-sm);
+}
+
+.pt-radius-sm   { border-radius: var(--pt-radius-sm); }
+.pt-radius-md   { border-radius: var(--pt-radius-md); }
+.pt-radius-lg   { border-radius: var(--pt-radius-lg); }
+.pt-radius-pill { border-radius: var(--pt-radius-pill); }
+
+.pt-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--pt-font-body);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 14px 24px;
+  border-radius: var(--pt-btn-radius);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  min-height: 50px;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.pt-btn:active { transform: scale(0.98); }
+
+.pt-btn-primary {
+  background: var(--pt-btn-primary-bg);
+  color: var(--pt-btn-primary-text);
+  box-shadow: var(--pt-shadow-md);
+}
+.pt-btn-primary:hover { opacity: 0.92; }
+
+.pt-btn-secondary {
+  background: var(--pt-btn-secondary-bg);
+  color: var(--pt-btn-secondary-text);
+  border: 1.5px solid var(--pt-btn-secondary-border);
+}
+.pt-btn-secondary:hover { opacity: 0.85; }
+
+.pt-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--pt-font-body);
+  font-size: 12px; font-weight: 700;
+  padding: 5px 12px;
+  border-radius: var(--pt-radius-pill);
+  background: var(--pt-accent-soft);
+  color: var(--pt-accent-text);
+}
+
+.pt-badge-danger {
+  background: color-mix(in srgb, var(--pt-danger) 14%, transparent);
+  color: var(--pt-danger);
+}
+.pt-badge-success {
+  background: color-mix(in srgb, var(--pt-success) 14%, transparent);
+  color: var(--pt-success);
+}
+
+.pt-divider { height: 1px; background: var(--pt-border); border: none; margin: 0; }
+
+.pt-input {
+  width: 100%;
+  font-family: var(--pt-font-body);
+  font-size: 14px;
+  padding: 12px 14px;
+  border-radius: var(--pt-radius-sm);
+  border: 1.5px solid var(--pt-border);
+  background: var(--pt-surface);
+  color: var(--pt-text);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.pt-input:focus { border-color: var(--pt-accent); }
+
+.pt-section-gap > * + * { margin-top: var(--pt-section-gap); }
+
+@media (max-width: 640px) {
+  .pt-section-gap > * + * { margin-top: calc(var(--pt-section-gap) * 0.6); }
+}

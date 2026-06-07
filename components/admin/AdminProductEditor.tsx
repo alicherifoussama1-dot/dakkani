@@ -9,7 +9,11 @@ import { z } from 'zod'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils/format'
-import { Upload, X, Plus, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
+import { Upload, X, Plus, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, GripVertical, Eye, EyeOff } from 'lucide-react'
+import { PRODUCT_THEMES, DEFAULT_SECTION_ORDER, SECTION_LABELS, DEFAULT_THEME_KEY, type ProductSectionId } from '@/lib/product-themes'
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 // ── Schema ────────────────────────────────────────────────
 const variantGroupSchema = z.object({
@@ -41,6 +45,10 @@ const schema = z.object({
   variant_groups:   z.array(variantGroupSchema).default([]),
   initial_stock:    z.number().int().min(0).default(0),
   warehouse_id:     z.string().optional(),
+  theme_key:        z.string().default(DEFAULT_THEME_KEY),
+  section_order:    z.array(z.string()).default([...DEFAULT_SECTION_ORDER]),
+  section_visibility: z.record(z.boolean()).default({}),
+  video_url:        z.string().optional(),
 })
 type FormData = z.infer<typeof schema>
 
@@ -54,7 +62,7 @@ interface Props {
   product?:    any
   stockData?:  StockRow[]
 }
-type Tab = 'basic' | 'images' | 'variants' | 'pixels' | 'seo' | 'stock'
+type Tab = 'basic' | 'images' | 'variants' | 'design' | 'pixels' | 'seo' | 'stock'
 
 // ═══════════════════════════════════════════════════════════
 // STATIC CONSTANTS — outside component, never recreated
@@ -63,6 +71,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'basic',    label: 'أساسي',     icon: '📝' },
   { id: 'images',   label: 'الصور',     icon: '🖼️' },
   { id: 'variants', label: 'المتغيرات', icon: '🎨' },
+  { id: 'design',   label: 'تصميم الصفحة', icon: '🖌️' },
   { id: 'pixels',   label: 'البكسل',    icon: '📡' },
   { id: 'seo',      label: 'SEO',       icon: '🔍' },
   { id: 'stock',    label: 'المخزون',   icon: '📦' },
@@ -361,6 +370,153 @@ const VariantsSection = memo(function VariantsSection({
   )
 })
 
+// ── Sortable section row — drag handle + visibility toggle ──
+const SortableSectionRow = memo(function SortableSectionRow({
+  id, visible, onToggle,
+}: { id: ProductSectionId; visible: boolean; onToggle: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-3 bg-white border border-[#DEE2E6] rounded-xl px-3 py-2.5">
+      <button type="button" {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-[#ADB5BD] hover:text-[#495057]">
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <span className="flex-1 text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+        {SECTION_LABELS[id] ?? id}
+      </span>
+      <button type="button" onClick={onToggle}
+        className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-semibold transition ${
+          visible ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'
+        }`}>
+        {visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+        {visible ? 'ظاهر' : 'مخفي'}
+      </button>
+    </div>
+  )
+})
+
+// ── Design tab — theme picker + drag-and-drop section ordering ──
+const DesignSection = memo(function DesignSection({
+  control, register, errors, setValue,
+}: {
+  control: Control<FormData>
+  register: UseFormRegister<FormData>
+  errors: FieldErrors<FormData>
+  setValue: UseFormSetValue<FormData>
+}) {
+  const themeKey           = useWatch({ control, name: 'theme_key' })
+  const sectionOrderRaw    = useWatch({ control, name: 'section_order' })
+  const sectionVisibility  = (useWatch({ control, name: 'section_visibility' }) ?? {}) as Record<string, boolean>
+
+  const sectionOrder = (Array.isArray(sectionOrderRaw) && sectionOrderRaw.length
+    ? sectionOrderRaw
+    : [...DEFAULT_SECTION_ORDER]) as ProductSectionId[]
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e
+    if (!over || active.id === over.id) return
+    const order = [...sectionOrder]
+    const oldIdx = order.indexOf(active.id as ProductSectionId)
+    const newIdx = order.indexOf(over.id as ProductSectionId)
+    if (oldIdx === -1 || newIdx === -1) return
+    setValue('section_order', arrayMove(order, oldIdx, newIdx), { shouldDirty: true })
+  }
+
+  const toggleVisible = (id: ProductSectionId) => {
+    const next = { ...sectionVisibility }
+    next[id] = next[id] === false ? true : false
+    setValue('section_visibility', next, { shouldDirty: true })
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Theme picker */}
+      <div className={CC}>
+        <h3 className="font-semibold text-sm pb-2 border-b" style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>
+          اختر ثيم الصفحة 🎨
+        </h3>
+        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          اختر التصميم الذي يناسب علامتك التجارية — يُطبَّق فوراً على صفحة المنتج التي يراها الزوار.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {PRODUCT_THEMES.map(theme => {
+            const active = (themeKey || DEFAULT_THEME_KEY) === theme.key
+            return (
+              <button
+                key={theme.key}
+                type="button"
+                onClick={() => setValue('theme_key', theme.key, { shouldDirty: true })}
+                className={`text-right rounded-2xl border-2 p-3 transition ${
+                  active ? 'border-[#0D6EFD] ring-2 ring-[#EBF5FF]' : 'border-[#DEE2E6] hover:border-[#ADB5BD]'
+                }`}>
+                <div className="rounded-xl overflow-hidden mb-2.5 border border-black/5" style={{ background: theme.preview.bg }}>
+                  <div className="h-14 flex items-center gap-1.5 p-2.5">
+                    <span className="block w-7 h-7 rounded-lg shrink-0" style={{ background: theme.preview.surface }} />
+                    <span className="block flex-1 h-2.5 rounded-full" style={{ background: theme.preview.accent, opacity: 0.35 }} />
+                  </div>
+                  <div className="px-2.5 pb-2.5">
+                    <span className="inline-block px-3 h-6 leading-6 rounded-md text-[10px] font-bold text-white" style={{ background: theme.preview.accent }}>
+                      شراء
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>{theme.name}</p>
+                <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--color-text-muted)' }}>{theme.description}</p>
+                {active && <span className="inline-block mt-1.5 text-xs font-bold text-[#0D6EFD]">✓ مُفعّل حالياً</span>}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Section order + visibility */}
+      <div className={CC}>
+        <h3 className="font-semibold text-sm pb-2 border-b" style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>
+          ترتيب أقسام الصفحة 📐
+        </h3>
+        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          اسحب لإعادة الترتيب، وفعّل أو أخفِ أي قسم — التغييرات تنعكس مباشرة على صفحة المنتج بعد الحفظ.
+        </p>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {sectionOrder.map(id => (
+                <SortableSectionRow
+                  key={id}
+                  id={id}
+                  visible={sectionVisibility[id] !== false}
+                  onToggle={() => toggleVisible(id)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </div>
+
+      {/* Product video */}
+      <div className={CC}>
+        <h3 className="font-semibold text-sm pb-2 border-b" style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>
+          فيديو المنتج 🎬
+        </h3>
+        <Field
+          label="رابط الفيديو (اختياري)"
+          name="video_url"
+          placeholder="https://example.com/video.mp4"
+          hint="يظهر الفيديو ضمن معرض صور المنتج إن تم إدخاله"
+          register={register}
+          errors={errors}
+        />
+      </div>
+    </div>
+  )
+})
+
 // ═══════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════
@@ -413,6 +569,12 @@ export default function AdminProductEditor({
       variant_groups:   Array.isArray(product?.variants) ? product.variants : [],
       initial_stock:    0,
       warehouse_id:     warehouses[0]?.id ?? '',
+      theme_key:          product?.theme_key ?? DEFAULT_THEME_KEY,
+      section_order:      Array.isArray(product?.section_order) && product.section_order.length
+        ? product.section_order
+        : [...DEFAULT_SECTION_ORDER],
+      section_visibility: product?.section_visibility ?? {},
+      video_url:          product?.video_url ?? '',
     },
   })
 
@@ -626,6 +788,11 @@ export default function AdminProductEditor({
       {/* ── VARIANTS TAB ── */}
       {tab === 'variants' && (
         <VariantsSection control={control} register={register} setValue={setValue} />
+      )}
+
+      {/* ── DESIGN TAB ── */}
+      {tab === 'design' && (
+        <DesignSection control={control} register={register} errors={errors} setValue={setValue} />
       )}
 
       {/* ── PIXELS TAB ── */}

@@ -20,6 +20,7 @@ const schema = z.object({
   wilaya_id:      z.number({ required_error: 'اختر الولاية' }).int().min(1).max(58),
   delivery_type:  z.enum(['home', 'stopdesk']),
   commune_id:     z.number().int().optional(),
+  baladia:        z.string().min(1, 'اختر البلدية'),
   address:        z.string().optional(),
   notes:          z.string().max(200).optional(),
   payment_method: z.enum(['cod', 'chargily_cib', 'chargily_edahabia']),
@@ -89,6 +90,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const watchedDeliveryType = useWatch({ control, name: 'delivery_type' })
   const watchedQty          = useWatch({ control, name: 'quantity' }) ?? 1
   const watchedPayment      = useWatch({ control, name: 'payment_method' })
+  const watchedCommuneId    = useWatch({ control, name: 'commune_id' })
 
   // ── Calculate totals ────────────────────────────────────────
   const unitPrice    = product?.price ?? 0
@@ -112,6 +114,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
     const wilaya = wilayas.find(w => w.id === watchedWilayaId) ?? null
     setSelectedWilaya(wilaya)
     setValue('commune_id', undefined)
+    setValue('baladia', '')
     setCommunes([])
 
     setLoadingCommunes(true)
@@ -127,6 +130,14 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedWilayaId])
+
+  // ── Derive baladia text from selected commune (saved to orders.baladia) ──
+  useEffect(() => {
+    if (!watchedCommuneId) return
+    const commune = communes.find(c => c.id === watchedCommuneId)
+    if (commune) setValue('baladia', commune.name_ar, { shouldValidate: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedCommuneId, communes])
 
   // ── Coupon check ─────────────────────────────────────────────
   const checkCoupon = async () => {
@@ -175,6 +186,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           delivery_type: data.delivery_type,
           wilaya_id: data.wilaya_id,
           commune_id: data.commune_id,
+          baladia: data.baladia,
           address: data.address,
           payment_method: data.payment_method,
           coupon_code: data.coupon_code,
@@ -469,7 +481,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
             {/* Commune select */}
             {watchedWilayaId > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">البلدية</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">البلدية <span className="text-red-500">*</span></label>
                 <div className="relative">
                   {loadingCommunes ? (
                     <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
@@ -489,6 +501,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                   )}
                   <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
+                {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
               </div>
             )}
 
