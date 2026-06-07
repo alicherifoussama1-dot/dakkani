@@ -1,9 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { ChevronDown } from 'lucide-react'
 import { formatDZD } from '@/lib/utils/format'
+import { getBaladiasForWilaya } from '@/lib/algeria-baladias'
 import type { Product, Store, Wilaya } from '@/types'
 
 const schema = z.object({
@@ -12,12 +14,61 @@ const schema = z.object({
   customer_phone2: z.string().optional(),
   delivery_type: z.enum(['home', 'stopdesk']),
   wilaya_id: z.number({ required_error: 'اختر الولاية' }).int().min(1),
+  baladia: z.string().min(1, 'اختر البلدية'),
   address: z.string().optional(),
   quantity: z.number().int().min(1).max(99),
   coupon_code: z.string().optional(),
   notes: z.string().optional(),
 })
 type FormData = z.infer<typeof schema>
+
+// Simple dependent البلدية dropdown — mirrors the cascade already used in
+// ProductBuyBox/CheckoutForm, sourced from the complete algeria-baladias dataset.
+function BaladiaField({ wilayaId, value, onChange, error }: {
+  wilayaId: number | null
+  value: string
+  onChange: (v: string) => void
+  error?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const options = getBaladiasForWilaya(wilayaId)
+
+  if (!wilayaId) return null
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">البلدية *</label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen(o => !o)}
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none bg-white flex items-center justify-between"
+        >
+          <span className={value ? 'text-gray-900' : 'text-gray-400'}>{value || 'اختر البلدية'}</span>
+          <ChevronDown size={15} className="text-gray-400" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
+        </button>
+        {open && (
+          <>
+            <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 49 }} />
+            <div className="absolute z-50 mt-1.5 w-full max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg p-1.5">
+              {options.map(b => (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => { onChange(b); setOpen(false) }}
+                  className={`block w-full text-right px-3 py-2 rounded-lg text-sm transition ${value === b ? 'bg-[#0D6EFD]/10 text-[#0D6EFD] font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  {b}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+    </div>
+  )
+}
 
 interface Props { product: Product; store: Store; wilayas: Wilaya[] }
 
@@ -28,11 +79,16 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
 
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { delivery_type: 'home', quantity: 1 },
+    defaultValues: { delivery_type: 'home', quantity: 1, baladia: '' },
   })
 
   const deliveryType = watch('delivery_type')
   const quantity = watch('quantity') || 1
+  const wilayaId = watch('wilaya_id')
+  const baladia = watch('baladia')
+
+  // Reset البلدية whenever الولاية changes (cascading + required)
+  useEffect(() => { setValue('baladia', '', { shouldValidate: false }) }, [wilayaId, setValue])
   const deliveryFee = selectedWilaya
     ? (deliveryType === 'stopdesk' ? selectedWilaya.delivery_fee_stopdesk : selectedWilaya.delivery_fee_home)
     : 0
@@ -110,6 +166,14 @@ export default function ProductOrderForm({ product, store, wilayas }: Props) {
           </p>
         )}
       </div>
+
+      {/* Baladia (commune) — cascades from الولاية, required */}
+      <BaladiaField
+        wilayaId={wilayaId ?? null}
+        value={baladia ?? ''}
+        onChange={v => setValue('baladia', v, { shouldValidate: true })}
+        error={errors.baladia?.message}
+      />
 
       {/* Name & Phone */}
       <div className="grid grid-cols-1 gap-3">
