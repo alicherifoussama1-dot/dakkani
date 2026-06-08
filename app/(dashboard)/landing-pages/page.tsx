@@ -72,7 +72,7 @@ export default async function LandingPagesPage() {
                 <p className="text-xs" style={{color:'var(--color-text-muted)'}}>{formatDateShort(page.created_at)}</p>
 
                 <div className="flex gap-2">
-                  <a href={`/store/${store.slug}/product/${(page.product as any)?.slug ?? page.slug}`} target="_blank" rel="noopener noreferrer"
+                  <a href={`/store/${store.slug}/${page.slug}`} target="_blank" rel="noopener noreferrer"
                     className="flex-1 btn btn-ghost btn-sm gap-1">
                     <Eye size={12} />معاينة
                   </a>

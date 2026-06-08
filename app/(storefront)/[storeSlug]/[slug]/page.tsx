@@ -20,9 +20,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = createPublicClient()
   const { data: store } = await supabase.from('stores').select('id,name').eq('slug', params.storeSlug).single()
   if (!store) return { title: 'صفحة' }
-  const { data: page } = await supabase.from('landing_pages').select('title_ar,title,seo_title,seo_desc,ai_content').eq('store_id', store.id).eq('slug', params.slug).eq('is_active', true).maybeSingle()
+  const { data: page } = await supabase.from('landing_pages').select('title_ar,title,seo_title,seo_desc,ai_content,sections').eq('store_id', store.id).eq('slug', params.slug).eq('is_active', true).maybeSingle()
   if (!page) return { title: 'الصفحة غير موجودة' }
-  const hero = (page.ai_content as any)?.hero
+  const rawAi = (page as any).ai_content ?? (page as any).sections?.find((s: any) => s.type === 'ai_content')?.data
+  const hero = rawAi?.hero
   return {
     title: page.seo_title ?? page.title_ar ?? page.title,
     description: page.seo_desc ?? hero?.subheadline ?? undefined,
@@ -49,6 +50,22 @@ export default async function AILandingRoute({ params }: Props) {
   if (!page || !page.product) notFound()
 
   const product = page.product as any
+
+  // Graceful fallback: if migration 014 is not yet applied, ai_content/ai_images
+  // won't exist as columns. In that case, try to recover them from sections jsonb
+  // (the wizard stores ai_content there as a backup when AI columns are missing).
+  const rawPage = page as any
+  if (!rawPage.ai_content && Array.isArray(rawPage.sections)) {
+    const aiSection = rawPage.sections.find((s: any) => s.type === 'ai_content')
+    if (aiSection) {
+      rawPage.ai_content = aiSection.data
+      rawPage.ai_images  = aiSection.images ?? []
+    }
+  }
+  rawPage.theme_key    = rawPage.theme_key    ?? 'classic'
+  rawPage.hero_variant = rawPage.hero_variant ?? 0
+  rawPage.ai_images    = rawPage.ai_images    ?? []
+
   const { data: wilayasRes } = await supabase.from('wilayas').select('*').eq('is_active', true).order('id')
 
   // Fire-and-forget view counter — best-effort, never blocks the render
@@ -57,7 +74,7 @@ export default async function AILandingRoute({ params }: Props) {
   return (
     <StorefrontLayout store={store as any}>
       <AILandingPage
-        page={page as any}
+        page={rawPage}
         product={product}
         store={store as any}
         wilayas={(wilayasRes as any[]) ?? []}

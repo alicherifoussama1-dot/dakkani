@@ -168,9 +168,14 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
     try {
       const baseSlug = slugify(product.name_ar ?? product.name) || 'landing'
       const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 7)}`
-      const images = selectedImageUrl ? [{ key: 'selected', label_ar: 'صورة الصفحة', url: selectedImageUrl }] : []
+      const aiImages = selectedImageUrl ? [{ key: 'selected', label_ar: 'صورة الصفحة', url: selectedImageUrl }] : []
 
-      const { data: inserted, error: insertErr } = await supabase
+      // Step 1: Try inserting with AI columns (requires migration 014 to be applied).
+      // If migration not yet applied, fall back to inserting only the base columns
+      // so the page is always created and routable.
+      let pageId: string | null = null
+
+      const { data: full, error: fullErr } = await supabase
         .from('landing_pages')
         .insert({
           store_id: storeId,
@@ -180,7 +185,7 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
           slug,
           template: 'ai',
           ai_content: aiContent,
-          ai_images: images,
+          ai_images: aiImages,
           theme_key: 'classic',
           hero_variant: 0,
           is_active: true,
@@ -188,9 +193,30 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
         .select('id')
         .single()
 
-      if (insertErr || !inserted) throw new Error('تعذر حفظ الصفحة')
+      if (!fullErr && full) {
+        pageId = full.id
+      } else {
+        // Migration not applied yet — insert base columns only, store AI content in sections jsonb
+        const { data: base, error: baseErr } = await supabase
+          .from('landing_pages')
+          .insert({
+            store_id: storeId,
+            product_id: product.id,
+            title: product.name,
+            title_ar: product.name_ar ?? product.name,
+            slug,
+            template: 'ai',
+            sections: [{ type: 'ai_content', data: aiContent, images: aiImages }],
+            is_active: true,
+          })
+          .select('id')
+          .single()
 
-      router.push(`/landing-pages/${inserted.id}`)
+        if (baseErr || !base) throw new Error('تعذر حفظ الصفحة — ' + (baseErr?.message ?? ''))
+        pageId = base.id
+      }
+
+      router.push(`/landing-pages/${pageId}`)
     } catch (e: any) {
       setError(e?.message ?? 'حدث خطأ أثناء الحفظ')
       setSaving(false)

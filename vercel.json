@@ -53,6 +53,7 @@
     { "source": "/store/:slug/product/:product", "destination": "/:slug/product/:product" },
     { "source": "/store/:slug/products", "destination": "/:slug/products" },
     { "source": "/store/:slug/checkout", "destination": "/:slug/checkout" },
-    { "source": "/store/:slug/order-confirmation", "destination": "/:slug/order-confirmation" }
+    { "source": "/store/:slug/order-confirmation", "destination": "/:slug/order-confirmation" },
+    { "source": "/store/:storeSlug/:landingSlug", "destination": "/:storeSlug/:landingSlug" }
   ]
 }
