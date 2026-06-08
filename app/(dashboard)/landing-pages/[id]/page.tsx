@@ -4,6 +4,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, Eye, ExternalLink } from 'lucide-react'
+import AILandingEditor from '@/components/admin/AILandingEditor'
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
   return { title: 'تعديل صفحة الهبوط' }
@@ -16,8 +17,10 @@ export default async function EditLandingPage({ params }: { params: { id: string
   const { data: store } = await supabase.from('stores').select('id, slug').eq('owner_id', user.id).single()
   if (!store) return null
 
-  const { data: page } = await supabase.from('landing_pages').select('*').eq('id', params.id).eq('store_id', store.id).single()
+  const { data: page } = await supabase.from('landing_pages').select('*, product:products(id,name,name_ar,price,compare_price,images)').eq('id', params.id).eq('store_id', store.id).single()
   if (!page) notFound()
+
+  const isAI = page.template === 'ai' && page.ai_content
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl" style={{fontFamily:'var(--font-arabic)'}}>
@@ -55,18 +58,28 @@ export default async function EditLandingPage({ params }: { params: { id: string
         ))}
       </div>
 
-      {/* Builder Coming Soon */}
-      <div className="card p-8 text-center">
-        <div className="text-5xl mb-4">🚀</div>
-        <h2 className="font-black text-xl mb-2" style={{color:'var(--color-text-primary)'}}>محرر الصفحات</h2>
-        <p className="text-sm mb-4" style={{color:'var(--color-text-muted)'}}>
-          محرر السحب والإفلات قيد التطوير — سيتاح قريباً لبناء صفحات هبوط احترافية
-        </p>
-        <a href={`/store/${store.slug}/${page.slug}`} target="_blank" rel="noopener noreferrer"
-          className="btn btn-primary gap-2 inline-flex">
-          <ExternalLink size={14} />عرض الصفحة الحالية
-        </a>
-      </div>
+      {isAI ? (
+        <AILandingEditor
+          pageId={page.id}
+          storeId={store.id}
+          publicUrl={`/store/${store.slug}/${page.slug}`}
+          initialContent={page.ai_content as any}
+          initialImages={(page.ai_images as any[]) ?? []}
+          product={page.product as any}
+        />
+      ) : (
+        <div className="card p-8 text-center">
+          <div className="text-5xl mb-4">🚀</div>
+          <h2 className="font-black text-xl mb-2" style={{color:'var(--color-text-primary)'}}>محرر الصفحات</h2>
+          <p className="text-sm mb-4" style={{color:'var(--color-text-muted)'}}>
+            هذه الصفحة لم تُنشأ بالذكاء الاصطناعي بعد — أنشئ صفحة جديدة للاستفادة من المحرر الذكي
+          </p>
+          <a href={`/store/${store.slug}/${page.slug}`} target="_blank" rel="noopener noreferrer"
+            className="btn btn-primary gap-2 inline-flex">
+            <ExternalLink size={14} />عرض الصفحة الحالية
+          </a>
+        </div>
+      )}
     </div>
   )
 }
