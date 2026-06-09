@@ -8,11 +8,19 @@
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 
-// Models configurable via env vars — swappable without code changes.
-// TEXT_MODEL: any Gemini model that supports JSON output + systemInstruction
-// IMAGE_MODEL: must support responseModalities: ['IMAGE'] (only image-gen models)
-export const TEXT_MODEL  = process.env.GEMINI_TEXT_MODEL  ?? 'gemini-1.5-pro'
-export const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL ?? 'gemini-2.0-flash-preview-image-generation'
+// Models configurable via env vars — set GEMINI_TEXT_MODEL / GEMINI_IMAGE_MODEL in .env.local
+// TEXT_MODEL:  any model supporting generateContent + responseMimeType:application/json
+// IMAGE_MODEL: any model supporting responseModalities:['IMAGE']
+//
+// Confirmed available (as of 2026-06):
+//   text:  gemini-3-pro-preview, gemini-3.1-pro-preview, gemini-3.5-flash, gemini-2.5-flash
+//   image: gemini-3-pro-image, gemini-3-pro-image-preview, nano-banana-pro-preview,
+//          gemini-3.1-flash-image, gemini-2.5-flash-image
+//
+// Note: gemini-3-pro-* and nano-banana-pro-* require billing enabled on your Google Cloud project.
+// Fallback (gemini-3.5-flash / gemini-2.5-flash-image) works on the free tier.
+export const TEXT_MODEL  = process.env.GEMINI_TEXT_MODEL  ?? 'gemini-3.5-flash'
+export const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL ?? 'gemini-2.5-flash-image'
 
 function requireApiKey(): string {
   const key = process.env.GEMINI_API_KEY

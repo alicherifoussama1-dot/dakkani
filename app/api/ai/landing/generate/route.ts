@@ -5,7 +5,7 @@
 //         audience?, tone?, images? } }
 //   → creates landing_jobs row, runs Gemini, returns { jobId, status, result }
 //
-// Model: process.env.GEMINI_TEXT_MODEL (default gemini-1.5-pro)
+// Model: process.env.GEMINI_TEXT_MODEL (default gemini-3.5-flash)
 // Key:   process.env.GEMINI_API_KEY — never touches the client bundle.
 // ============================================================
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
