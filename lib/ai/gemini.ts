@@ -19,8 +19,13 @@ const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 //
 // Note: gemini-3-pro-* and nano-banana-pro-* require billing enabled on your Google Cloud project.
 // Fallback (gemini-3.5-flash / gemini-2.5-flash-image) works on the free tier.
-export const TEXT_MODEL  = process.env.GEMINI_TEXT_MODEL  ?? 'gemini-3.5-flash'
+export const TEXT_MODEL  = process.env.GEMINI_TEXT_MODEL  ?? 'gemini-2.5-flash'
 export const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL ?? 'gemini-2.5-flash-image'
+
+// Backup text model — used automatically when TEXT_MODEL is overloaded
+// ("high demand" 503) or quota-limited. gemini-3.1-flash-lite responds
+// instantly on the free tier.
+export const TEXT_FALLBACK_MODEL = process.env.GEMINI_TEXT_FALLBACK_MODEL ?? 'gemini-3.1-flash-lite'
 
 function requireApiKey(): string {
   const key = process.env.GEMINI_API_KEY
@@ -28,16 +33,30 @@ function requireApiKey(): string {
   return key
 }
 
-// ── Rate-limit-aware fetch ────────────────────────────────────────────────
-// Gemini free/paid tier: 10 req/min on some models. On 429, wait and retry.
+// ── Rate-limit & overload-aware fetch ─────────────────────────────────────
+// 429 (quota/min) → wait 65s, retry once.
+// 503 / "high demand" (model overloaded) → short backoff, up to 3 attempts.
 async function geminiPost(model: string, body: object, retryOn429 = true): Promise<Response> {
   const apiKey = requireApiKey()
   const url = `${GEMINI_BASE}/${model}:generateContent?key=${apiKey}`
-  const res = await fetch(url, {
+
+  let res: Response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
+
+  // Transient overload ("The model is currently experiencing high demand")
+  for (let attempt = 1; attempt <= 2 && (res.status === 503 || res.status === 500); attempt++) {
+    console.warn(`Gemini ${res.status} on ${model} (overloaded) — retry ${attempt}/2 in 6s`)
+    await new Promise(r => setTimeout(r, 6_000))
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  }
+
   if (res.status === 429 && retryOn429) {
     // Rate limited — wait 65s (Gemini rate window is 60s) then retry once
     console.warn(`Gemini 429 on ${model} — waiting 65s before retry`)
@@ -48,14 +67,34 @@ async function geminiPost(model: string, body: object, retryOn429 = true): Promi
 }
 
 // ── Structured JSON generation ────────────────────────────────────────────
+// Tries TEXT_MODEL first; if it's quota-limited or overloaded, automatically
+// falls back to TEXT_FALLBACK_MODEL so merchants never see a dead page.
 export async function geminiGenerateJSON(opts: {
   systemPrompt: string
   userPrompt: string
   temperature?: number
   maxOutputTokens?: number
 }): Promise<{ ok: true; data: any } | { ok: false; error: string }> {
+  const primary = await generateJSONWithModel(TEXT_MODEL, opts)
+  if (primary.ok) return primary
+
+  // Availability problem → try the backup model before giving up
+  const transient = /quota|exhausted|high demand|overloaded|503|429|not found/i.test(primary.error)
+  if (transient && TEXT_FALLBACK_MODEL !== TEXT_MODEL) {
+    console.warn(`Gemini ${TEXT_MODEL} unavailable (${primary.error.slice(0, 80)}) — falling back to ${TEXT_FALLBACK_MODEL}`)
+    return generateJSONWithModel(TEXT_FALLBACK_MODEL, opts)
+  }
+  return primary
+}
+
+async function generateJSONWithModel(model: string, opts: {
+  systemPrompt: string
+  userPrompt: string
+  temperature?: number
+  maxOutputTokens?: number
+}): Promise<{ ok: true; data: any } | { ok: false; error: string }> {
   try {
-    const res = await geminiPost(TEXT_MODEL, {
+    const res = await geminiPost(model, {
       systemInstruction: { parts: [{ text: opts.systemPrompt }] },
       contents: [{ role: 'user', parts: [{ text: opts.userPrompt }] }],
       generationConfig: {
