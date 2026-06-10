@@ -27,9 +27,10 @@ const NAV_MAIN = [
   { href: '/tracking',       label: 'التتبع',      icon: Navigation2 },
 ]
 const NAV_FEATURES = [
-  { href: '/confirmili',  label: 'Confirmili',  icon: Phone,         badge: 'جديد' },
-  { href: '/justad',      label: 'JustAd',       icon: BarChart2 },
-  { href: '/learn',       label: 'تعلم',          icon: GraduationCap },
+  { href: '/confirmili',    label: 'Confirmili',  icon: Phone,         badge: 'جديد' },
+  { href: '/google-sheets', label: 'قوقل شيت',    icon: Globe,         badge: 'جديد' },
+  { href: '/justad',        label: 'JustAd',       icon: BarChart2 },
+  { href: '/learn',         label: 'تعلم',          icon: GraduationCap },
 ]
 const NAV_BILLING = [
   { href: '/billing/plans', label: 'الفواتير والاشتراك', icon: CreditCard },

@@ -843,8 +843,20 @@ export default function ConfirmiliOrders({
                         className="w-3.5 h-3.5 accent-[#0D6EFD]"/>
                     </td>
 
-                    {/* Source */}
-                    {show('source') && <td style={TD}><SourceBadge source={o.source ?? o.utm_source ?? ''}/></td>}
+                    {/* Source (+ sheet routing badge when order also went to a Google Sheet) */}
+                    {show('source') && (
+                      <td style={TD}>
+                        <span className="inline-flex items-center gap-1 flex-wrap">
+                          <SourceBadge source={o.source ?? o.utm_source ?? ''}/>
+                          {(o as any).sheet_status === 'sent' && (
+                            <span title="أُرسل نسخة للقوقل شيت" className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{background:'#D1E7DD',color:'#198754'}}>📊 أُرسل للشيت</span>
+                          )}
+                          {(o as any).sheet_status === 'failed' && (
+                            <span title={(o as any).sheet_error ?? 'فشل الإرسال للشيت'} className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{background:'#F8D7DA',color:'#DC3545'}}>⚠️ فشل الشيت</span>
+                          )}
+                        </span>
+                      </td>
+                    )}
 
                     {/* ر.الطلبية */}
                     {show('order_number') && (

@@ -198,6 +198,13 @@ export default function ProductsPageClient({
                             {(p.use_store_pixel) && (
                               <span className="badge badge-gray text-[10px]">بكسل المتجر</span>
                             )}
+                            {/* وجهة الطلبات (routing override) */}
+                            {(p.order_routing === 'sheet_only' || p.order_routing === 'both') && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#D1E7DD', color: '#198754' }}>📊 قوقل شيت</span>
+                            )}
+                            {(p.order_routing === 'confirmili_only' || p.order_routing === 'both') && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: '#CFE2FF', color: '#0D6EFD' }}>Confirmili</span>
+                            )}
                           </div>
                         </div>
                       </div>

@@ -16,9 +16,7 @@ export default async function ConfirmiliPage() {
   if (!store) return null
 
   // Fetch ALL orders for Confirmili — all columns needed by ConfirmiliOrders
-  const { data: orders } = await supabase
-    .from('orders')
-    .select(`
+  const BASE_COLS = `
       id,order_number,customer_name,customer_phone,customer_phone2,address,
       total,subtotal,status,delivery_fee,declared_delivery_fee,real_delivery_fee,
       delivery_type,delivery_company_id,tracking_number,is_trashed,confirmed_by,
@@ -27,11 +25,28 @@ export default async function ConfirmiliPage() {
       created_at,updated_at,source,utm_source,
       wilaya:wilayas(id,name_ar),
       commune:communes(id,name_ar),
-      items:order_items(id,product_name,quantity,unit_price,total_price,product_id,variant_key,variant_sku)
-    `)
+      items:order_items(id,product_name,quantity,unit_price,total_price,product_id,variant_key,variant_sku)`
+
+  // With migration 015: exclude sheet_only orders (they live in the Google
+  // Sheet, not in Confirmili) and expose routing badges. Falls back to the
+  // plain query when the routing columns don't exist yet.
+  let { data: orders, error: ordersErr } = await supabase
+    .from('orders')
+    .select(`${BASE_COLS},routed_to,sheet_status`)
     .eq('store_id', store.id)
+    .or('routed_to.is.null,routed_to.neq.sheet')
     .order('created_at', { ascending: false })
     .limit(1000)
+
+  if (ordersErr) {
+    const fallback = await supabase
+      .from('orders')
+      .select(BASE_COLS)
+      .eq('store_id', store.id)
+      .order('created_at', { ascending: false })
+      .limit(1000)
+    orders = fallback.data as any
+  }
 
   const [productsRes, teamRes, companiesRes] = await Promise.all([
     supabase.from('products').select('id,name,name_ar,sku,price,cost_price,images,min_stock_alert').eq('store_id', store.id).eq('is_active', true).order('name'),

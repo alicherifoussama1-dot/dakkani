@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { checkFraud } from '@/lib/fraud/score'
+import { resolveRouting, pushOrderToSheet, markOrderRouting } from '@/lib/orders/route-order'
 
 const orderSchema = z.object({
   store_id: z.string().uuid(),
@@ -51,7 +52,7 @@ export async function POST(req: Request) {
     // 2. Get wilaya delivery fee
     const { data: wilaya } = await supabase
       .from('wilayas')
-      .select('delivery_fee_home, delivery_fee_stopdesk')
+      .select('name_ar, delivery_fee_home, delivery_fee_stopdesk')
       .eq('id', data.wilaya_id)
       .single()
 
@@ -306,6 +307,57 @@ export async function POST(req: Request) {
       changed_by: 'system',
       notes: `تم إنشاء الطلب من ${data.source ?? 'storefront'}${isDuplicate ? ' (مكرر)' : ''}`,
     }).then(() => {})
+
+    // 8e. ORDER ROUTING — Google Sheet / Confirmili / both.
+    // Resolved per first product (override) → store default.
+    // A Sheets failure NEVER blocks the order — it's recorded on the row.
+    let routedTo: 'confirmili' | 'sheet' | 'both' = 'confirmili'
+    try {
+      const { routing, sheetId } = await resolveRouting({
+        storeId: data.store_id,
+        firstProductId: data.items[0].product_id,
+      })
+      if (routing !== 'confirmili_only' && sheetId) {
+        routedTo = routing === 'both' ? 'both' : 'sheet'
+        const push = await pushOrderToSheet({
+          storeId: data.store_id,
+          sheetId,
+          order: {
+            order_number: order.order_number,
+            created_at: order.created_at,
+            customer_name: data.customer_name,
+            customer_phone: data.customer_phone,
+            wilaya_name: (wilaya as any)?.name_ar ?? String(data.wilaya_id),
+            baladia: data.baladia,
+            address: data.address,
+            delivery_fee: deliveryFee,
+            discount_amount: discountAmount,
+            total,
+            notes: data.notes,
+            status: finalStatus,
+            source: data.source ?? 'storefront',
+          },
+          items: orderItems.map(i => ({
+            product_name: i.product_name,
+            variant_key: i.variant_key,
+            quantity: i.quantity,
+            unit_price: i.unit_price,
+          })),
+        })
+        await markOrderRouting(order.id, {
+          routed_to: routedTo,
+          sheet_status: push.ok ? 'sent' : 'failed',
+          sheet_error: push.ok ? null : push.error.slice(0, 300),
+        })
+        if (!push.ok) console.error('Sheet push failed for', order.order_number, '—', push.error)
+      } else {
+        // sheet_only without an assigned/default sheet falls back to Confirmili
+        // so the order is never lost.
+        await markOrderRouting(order.id, { routed_to: 'confirmili' })
+      }
+    } catch (e) {
+      console.error('Order routing error (non-blocking):', e)
+    }
 
     // 9. Update coupon usage
     if (couponId) {

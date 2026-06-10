@@ -10,9 +10,10 @@ export default async function NewProductPage() {
   const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
-  const [categoriesRes, warehousesRes] = await Promise.all([
+  const [categoriesRes, warehousesRes, sheetsRes] = await Promise.all([
     supabase.from('categories').select('id, name, name_ar').eq('store_id', store.id).eq('is_active', true).order('name'),
     supabase.from('warehouses').select('id, name').eq('store_id', store.id).eq('is_active', true),
+    supabase.from('google_sheets').select('id, spreadsheet_name, worksheet_name, is_default').eq('store_id', store.id).eq('status', true),
   ])
 
   return (
@@ -23,6 +24,7 @@ export default async function NewProductPage() {
         storePixels={{ meta: store.meta_pixel_id, tiktok: store.tiktok_pixel_id }}
         categories={categoriesRes.data ?? []}
         warehouses={warehousesRes.data ?? []}
+        googleSheets={sheetsRes.data ?? []}
       />
     </div>
   )

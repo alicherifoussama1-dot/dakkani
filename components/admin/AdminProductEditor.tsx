@@ -49,6 +49,8 @@ const schema = z.object({
   section_order:    z.array(z.string()).default([...DEFAULT_SECTION_ORDER]),
   section_visibility: z.record(z.boolean()).default({}),
   video_url:        z.string().optional(),
+  order_routing:    z.enum(['inherit', 'sheet_only', 'confirmili_only', 'both']).default('inherit'),
+  google_sheet_id:  z.string().optional(),
 })
 type FormData = z.infer<typeof schema>
 
@@ -61,6 +63,7 @@ interface Props {
   warehouses:  { id: string; name: string }[]
   product?:    any
   stockData?:  StockRow[]
+  googleSheets?: { id: string; spreadsheet_name: string; worksheet_name: string; is_default: boolean }[]
 }
 type Tab = 'basic' | 'images' | 'variants' | 'design' | 'pixels' | 'seo' | 'stock'
 
@@ -520,8 +523,59 @@ const DesignSection = memo(function DesignSection({
 // ═══════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════
+// ── Order routing — where do orders for THIS product go? ────
+const ROUTING_CHOICES = [
+  { value: 'inherit',         label: 'حسب إعداد المتجر',  icon: '🏬' },
+  { value: 'confirmili_only', label: 'Confirmili فقط',    icon: '🔵' },
+  { value: 'sheet_only',      label: 'قوقل شيت فقط',      icon: '📊' },
+  { value: 'both',            label: 'الاثنين معاً',        icon: '🔀' },
+] as const
+
+const OrderRoutingSection = memo(function OrderRoutingSection({
+  control, register, googleSheets,
+}: {
+  control: Control<FormData>
+  register: UseFormRegister<FormData>
+  googleSheets: { id: string; spreadsheet_name: string; worksheet_name: string; is_default: boolean }[]
+}) {
+  const routing = useWatch({ control, name: 'order_routing' })
+  const needsSheet = routing === 'sheet_only' || routing === 'both'
+  return (
+    <div className={CC}>
+      <h3 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>وجهة الطلبات 📬</h3>
+      <p className="text-xs -mt-2" style={{ color: 'var(--color-text-muted)' }}>
+        أين تذهب طلبات هذا المنتج؟ الافتراضي يتبع إعداد المتجر في صفحة «قوقل شيت».
+      </p>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={LC}>وجهة طلبات هذا المنتج</label>
+          <select {...register('order_routing')} className={IC}>
+            {ROUTING_CHOICES.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className={LC}>قوقل شيت</label>
+          <select {...register('google_sheet_id')} className={IC} disabled={!needsSheet && routing !== 'inherit'}>
+            <option value="">الشيت الافتراضي للمتجر</option>
+            {googleSheets.map(s => (
+              <option key={s.id} value={s.id}>
+                📊 {s.spreadsheet_name} — {s.worksheet_name}{s.is_default ? ' (افتراضي)' : ''}
+              </option>
+            ))}
+          </select>
+          {needsSheet && googleSheets.length === 0 && (
+            <p className="text-xs mt-1" style={{ color: '#DC3545' }}>
+              ⚠️ لا توجد شيتات — أضف واحداً من صفحة «قوقل شيت» وإلا سيذهب الطلب لـ Confirmili
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+})
+
 export default function AdminProductEditor({
-  storeId, storePixels, categories, warehouses, product, stockData = [],
+  storeId, storePixels, categories, warehouses, product, stockData = [], googleSheets = [],
 }: Props) {
   const router = useRouter()
   const isEdit = !!product
@@ -575,6 +629,8 @@ export default function AdminProductEditor({
         : [...DEFAULT_SECTION_ORDER],
       section_visibility: product?.section_visibility ?? {},
       video_url:          product?.video_url ?? '',
+      order_routing:      product?.order_routing ?? 'inherit',
+      google_sheet_id:    product?.google_sheet_id ?? '',
     },
   })
 
@@ -670,24 +726,29 @@ export default function AdminProductEditor({
       rest.slug = slugify(data.name_ar ?? data.name ?? '') || `product-${Date.now()}`
     }
 
-    const payload = {
+    const payload: Record<string, any> = {
       ...rest,
       store_id:    storeId,
       images:      images.map((img, i) => ({ url: img.url, position: i })),
       variants:    variant_groups,
       tags:        tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [],
       category_id: data.category_id || null,
+      google_sheet_id: data.google_sheet_id || null,
     }
 
-    let productId = product?.id
-    if (isEdit) {
-      const { error: err } = await supabase.from('products').update(payload).eq('id', productId)
-      if (err) { setError(err.message); return }
-    } else {
-      const { data: np, error: err } = await supabase.from('products').insert(payload).select('id').single()
-      if (err || !np) { setError(err?.message ?? 'خطأ في الحفظ'); return }
-      productId = np.id
+    // Routing columns require migration 015 — retry without them if missing
+    const saveProduct = async (p: Record<string, any>) =>
+      isEdit
+        ? await supabase.from('products').update(p).eq('id', product.id).select('id').single()
+        : await supabase.from('products').insert(p).select('id').single()
+
+    let { data: np, error: err } = await saveProduct(payload)
+    if (err && /order_routing|google_sheet_id/.test(err.message)) {
+      const { order_routing: _r, google_sheet_id: _g, ...withoutRouting } = payload
+      ;({ data: np, error: err } = await saveProduct(withoutRouting))
     }
+    if (err || !np) { setError(err?.message ?? 'خطأ في الحفظ'); return }
+    const productId = np.id
 
     if (productId && initial_stock > 0 && warehouse_id) {
       await supabase.from('warehouse_stock').upsert({
@@ -769,6 +830,9 @@ export default function AdminProductEditor({
               <Toggle label="منتج مميز" name="is_featured" desc="يظهر في أعلى الصفحة الرئيسية" register={register} />
             </div>
           </div>
+
+          {/* وجهة الطلبات — per-product routing override */}
+          <OrderRoutingSection control={control} register={register} googleSheets={googleSheets} />
         </div>
       )}
 
