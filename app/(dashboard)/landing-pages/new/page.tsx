@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'صفحة هبوط جديدة بالذكاء الاصطناعي' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import AILandingWizard from '@/components/admin/AILandingWizard'
 
@@ -10,7 +10,7 @@ export default async function NewLandingPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: store } = await supabase.from('stores').select('id, slug').eq('owner_id', user.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user.id)
   if (!store) return null
 
   const { data: products } = await supabase

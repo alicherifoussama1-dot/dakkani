@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'نقطة البيع — POS' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import POSTerminal from '@/components/admin/POSTerminal'
 
 export default async function POSPage() {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: store } = await supabase.from('stores').select('id, name, name_ar').eq('owner_id', user!.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
   const { data: products } = await supabase

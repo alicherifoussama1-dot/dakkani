@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import { formatDZD } from '@/lib/utils/format'
 import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts'
 import Link from 'next/link'
@@ -10,7 +10,7 @@ export const metadata = { title: 'الإحصائيات' }
 export default async function AnalyticsPage() {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user!.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()

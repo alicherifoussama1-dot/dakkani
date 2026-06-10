@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'مركز الاتصال' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import CallCenterPage from '@/components/admin/CallCenter'
 
 export default async function CallCenter() {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: store } = await supabase.from('stores').select('id, name').eq('owner_id', user!.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
   // Load pending + new orders queue

@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import AdminOrderDetail from '@/components/admin/AdminOrderDetail'
 
@@ -8,7 +8,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data: store } = await supabase.from('stores').select('id, name, phone').eq('owner_id', user!.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
   const { data: order } = await supabase

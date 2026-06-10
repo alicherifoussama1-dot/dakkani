@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'القائمة السوداء' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import BlacklistManager from '@/components/admin/BlacklistManager'
 
 export default async function BlacklistPage() {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user!.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
   const { data: list } = await supabase

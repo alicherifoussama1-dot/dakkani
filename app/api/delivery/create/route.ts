@@ -1,3 +1,4 @@
+import { getActiveStore } from '@/lib/supabase/server';
 // ============================================================
 // Create Delivery Parcel API — triggers Yalidine/ZR/Maystro
 // Server-side only (CORS blocked on delivery APIs)
@@ -24,11 +25,7 @@ export async function POST(req: Request) {
     const { order_id, provider: providerOverride } = schema.parse(body)
 
     // Get store + settings
-    const { data: store } = await supabase
-      .from('stores')
-      .select('*, store_settings(*)')
-      .eq('owner_id', user.id)
-      .single()
+    const { activeStore: store } = await getActiveStore(supabase, user.id)
     if (!store) return NextResponse.json({ error: 'Store not found' }, { status: 404 })
 
     // Get full order

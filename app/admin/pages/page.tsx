@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'صفحات الهبوط' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Plus, Pencil, Eye, Trash2, BarChart2 } from 'lucide-react'
 import { formatDateShort } from '@/lib/utils/format'
@@ -9,7 +9,7 @@ import { formatDateShort } from '@/lib/utils/format'
 export default async function AdminPagesPage() {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: store } = await supabase.from('stores').select('id, slug').eq('owner_id', user!.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
   const { data: pages } = await supabase

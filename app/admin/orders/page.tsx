@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'OMS — إدارة الطلبات' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import AdminOrdersTable from '@/components/admin/AdminOrdersTable'
 
 export default async function AdminOrdersPage({
@@ -14,7 +14,7 @@ export default async function AdminOrdersPage({
 }) {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: store } = await supabase.from('stores').select('id, name').eq('owner_id', user!.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
   const page     = parseInt(searchParams.page ?? '1')

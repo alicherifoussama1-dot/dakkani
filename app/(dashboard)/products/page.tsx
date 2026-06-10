@@ -1,14 +1,14 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'المنتجات' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import ProductsPageClient from '@/components/dashboard/ProductsPageClient'
 
 export default async function ProductsPage() {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data: store } = await supabase.from('stores').select('id,name,slug,meta_pixel_id,tiktok_pixel_id').eq('owner_id', user.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user.id)
   if (!store) return null
   const [productsRes, catsRes, warehousesRes] = await Promise.all([
     supabase.from('products').select('*,warehouse_stock(quantity,reserved)').eq('store_id', store.id).order('created_at', { ascending: false }),

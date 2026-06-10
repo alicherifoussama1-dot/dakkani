@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'الفئات' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import CategoriesManager from '@/components/dashboard/CategoriesManager'
 
 export default async function CategoriesPage() {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user!.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
   const { data: categories } = await supabase

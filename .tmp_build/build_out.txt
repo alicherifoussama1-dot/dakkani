@@ -1,0 +1,129 @@
+
+> dakkani@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+> [PWA] Compile server
+> [PWA] Compile server
+> [PWA] Compile client (static)
+> [PWA] Auto register service worker with: F:\dakkani\node_modules\next-pwa\register.js
+> [PWA] Service worker: F:\dakkani\public\sw.js
+> [PWA]   url: /sw.js
+> [PWA]   scope: /
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/74) ...
+   Generating static pages (18/74) 
+   Generating static pages (36/74) 
+   Generating static pages (55/74) 
+ ✓ Generating static pages (74/74)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    26.7 kB         163 kB
+├ ○ /_not-found                          158 B            88 kB
+├ ƒ /[storeSlug]                         7.27 kB         104 kB
+├ ƒ /[storeSlug]/[slug]                  6.69 kB         196 kB
+├ ƒ /[storeSlug]/checkout                7.56 kB         187 kB
+├ ƒ /[storeSlug]/order-confirmation      158 B            88 kB
+├ ƒ /[storeSlug]/product/[slug]          6.84 kB         199 kB
+├ ƒ /[storeSlug]/products                5.42 kB         208 kB
+├ ƒ /admin/ai-agent                      4.09 kB        91.9 kB
+├ ƒ /admin/analytics                     9.3 kB          198 kB
+├ ƒ /admin/blacklist                     4.21 kB         157 kB
+├ ƒ /admin/call-center                   6.25 kB         159 kB
+├ ƒ /admin/inventory                     4.73 kB         158 kB
+├ ƒ /admin/orders                        6.7 kB          169 kB
+├ ƒ /admin/orders/[id]                   7.79 kB         284 kB
+├ ƒ /admin/pages                         200 B          96.7 kB
+├ ƒ /admin/pages/builder                 6.94 kB         176 kB
+├ ƒ /admin/pos                           7.75 kB         161 kB
+├ ƒ /admin/products                      4.07 kB         166 kB
+├ ƒ /admin/products/[id]/edit            154 B           206 kB
+├ ƒ /admin/products/new                  154 B           206 kB
+├ ƒ /analytics                           2.67 kB         272 kB
+├ ƒ /api/admin/labels/generate           0 B                0 B
+├ ƒ /api/ai/agent                        0 B                0 B
+├ ƒ /api/ai/call-script                  0 B                0 B
+├ ƒ /api/ai/fraud-check                  0 B                0 B
+├ ƒ /api/ai/generate-description         0 B                0 B
+├ ƒ /api/ai/image/remove-bg              0 B                0 B
+├ ƒ /api/ai/landing/generate             0 B                0 B
+├ ƒ /api/ai/landing/status/[id]          0 B                0 B
+├ ƒ /api/ai/photo/enhance                0 B                0 B
+├ ƒ /api/ai/photo/status/[id]            0 B                0 B
+├ ƒ /api/ai/script                       0 B                0 B
+├ ƒ /api/auth/callback                   0 B                0 B
+├ ƒ /api/auth/reset-password             0 B                0 B
+├ ƒ /api/cron/auto-blacklist             0 B                0 B
+├ ƒ /api/cron/sync-delivery-status       0 B                0 B
+├ ƒ /api/delivery/create                 0 B                0 B
+├ ƒ /api/icons/[size]                    0 B                0 B
+├ ƒ /api/meta-events                     0 B                0 B
+├ ƒ /api/notifications                   0 B                0 B
+├ ƒ /api/notifications/sms               0 B                0 B
+├ ƒ /api/notifications/whatsapp          0 B                0 B
+├ ƒ /api/orders                          0 B                0 B
+├ ƒ /api/orders/[id]/history             0 B                0 B
+├ ƒ /api/orders/[id]/status              0 B                0 B
+├ ƒ /api/reviews                         0 B                0 B
+├ ƒ /api/search                          0 B                0 B
+├ ƒ /api/setup/migrate                   0 B                0 B
+├ ƒ /api/tiktok-events                   0 B                0 B
+├ ƒ /api/upload                          0 B                0 B
+├ ƒ /api/webhooks/chargily               0 B                0 B
+├ ƒ /api/webhooks/delivery               0 B                0 B
+├ ƒ /api/webhooks/yalidine               0 B                0 B
+├ ƒ /apps                                200 B          96.7 kB
+├ ○ /auth/login                          2.9 kB          165 kB
+├ ○ /auth/register                       5.49 kB         167 kB
+├ ƒ /billing/history                     200 B          96.7 kB
+├ ƒ /billing/plans                       3.35 kB        99.9 kB
+├ ƒ /blacklist                           3.22 kB         156 kB
+├ ƒ /categories                          3.46 kB         181 kB
+├ ƒ /checkout                            158 B            88 kB
+├ ƒ /confirmili                          37.2 kB         298 kB
+├ ƒ /coupons                             3.7 kB          181 kB
+├ ƒ /customers                           3.49 kB        91.3 kB
+├ ƒ /customers/[phone]                   200 B          96.7 kB
+├ ƒ /dashboard                           5.41 kB         268 kB
+├ ○ /discover                            5.77 kB         171 kB
+├ ƒ /discover/[storeSlug]                3.21 kB         168 kB
+├ ƒ /discover/[storeSlug]/[slug]         13.9 kB         202 kB
+├ ○ /discover/cart                       3.06 kB         103 kB
+├ ○ /forgot-password                     2.58 kB        99.1 kB
+├ ƒ /justad                              200 B          96.7 kB
+├ ƒ /landing-pages                       199 B          96.7 kB
+├ ƒ /landing-pages/[id]                  4.33 kB         166 kB
+├ ƒ /landing-pages/new                   8.09 kB         161 kB
+├ ƒ /learn                               158 B            88 kB
+├ ○ /login                               2.54 kB         164 kB
+├ ○ /onboarding                          4.41 kB         182 kB
+├ ƒ /orders                              4.97 kB         101 kB
+├ ƒ /orders/[id]                         4.24 kB         289 kB
+├ ƒ /orders/new                          4.03 kB         157 kB
+├ ƒ /products                            4.87 kB         167 kB
+├ ƒ /products/[id]                       154 B           206 kB
+├ ƒ /products/new                        154 B           206 kB
+├ ○ /register                            3.02 kB         165 kB
+├ ○ /reset-password                      2.34 kB         156 kB
+├ ƒ /reviews                             2.33 kB         156 kB
+├ ƒ /settings                            6.29 kB         168 kB
+├ ƒ /tracking                            3.06 kB         156 kB
+└ ƒ /warehouses                          2.77 kB         180 kB
++ First Load JS shared by all            87.8 kB
+  ├ chunks/2117-b0976764d46e9f96.js      31.9 kB
+  ├ chunks/fd9d1056-82f78b5e3ca8fd77.js  53.6 kB
+  └ other shared chunks (total)          2.26 kB
+
+
+ƒ Middleware                             81.9 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

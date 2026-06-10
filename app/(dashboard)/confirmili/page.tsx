@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Confirmili' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import ConfirmiliClient from '@/components/dashboard/ConfirmiliClient'
 
 const PLAN_LIMITS: Record<string, number> = {
@@ -12,7 +12,7 @@ export default async function ConfirmiliPage() {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data: store } = await supabase.from('stores').select('id, name, slug, plan').eq('owner_id', user.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user.id)
   if (!store) return null
 
   // Fetch ALL orders for Confirmili — all columns needed by ConfirmiliOrders

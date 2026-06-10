@@ -1,3 +1,4 @@
+import { getActiveStore } from '@/lib/supabase/server';
 // ============================================================
 // AI Landing Copy Generator — Gemini Pro, SERVER-SIDE ONLY
 //

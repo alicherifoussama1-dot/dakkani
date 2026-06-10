@@ -1,17 +1,13 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'الإحصائيات المتقدمة' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import AdvancedAnalytics from '@/components/admin/AdvancedAnalytics'
 
 export default async function AdminAnalyticsPage() {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: store } = await supabase
-    .from('stores')
-    .select('id, name')
-    .eq('owner_id', user!.id)
-    .single()
+  const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
   // Last 30 days

@@ -1,3 +1,4 @@
+import { getActiveStore } from '@/lib/supabase/server';
 // ============================================================
 // Bulk Label Generation API
 // GET /api/admin/labels/generate?ids=id1,id2,id3
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
   const ids = req.nextUrl.searchParams.get('ids')?.split(',').filter(Boolean) ?? []
   if (!ids.length) return NextResponse.json({ error: 'No order IDs' }, { status: 400 })
 
-  const { data: store } = await supabase.from('stores').select('id, name, phone').eq('owner_id', user.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user.id)
   if (!store) return NextResponse.json({ error: 'Store not found' }, { status: 404 })
 
   const { data: orders } = await supabase

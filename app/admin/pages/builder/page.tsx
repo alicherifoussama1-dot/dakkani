@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'منشئ الصفحات — EcoBuilder' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import PageBuilder from '@/components/admin/PageBuilder'
 
 export default async function PageBuilderPage({
@@ -9,7 +9,7 @@ export default async function PageBuilderPage({
 }: { searchParams: { page_id?: string } }) {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: store } = await supabase.from('stores').select('id, name, meta_pixel_id, tiktok_pixel_id').eq('owner_id', user!.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
   let page = null

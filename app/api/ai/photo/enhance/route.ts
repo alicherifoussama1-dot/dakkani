@@ -1,3 +1,4 @@
+import { getActiveStore } from '@/lib/supabase/server';
 // ============================================================
 // AI Photo Studio — Gemini image enhancement, SERVER-SIDE ONLY
 //

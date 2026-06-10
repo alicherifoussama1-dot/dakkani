@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'الطلبات' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import OrdersPageClient from '@/components/dashboard/OrdersPageClient'
 
 export default async function OrdersPage({
@@ -11,7 +11,7 @@ export default async function OrdersPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user.id)
   if (!store) return null
 
   const page    = parseInt(searchParams.page ?? '1')

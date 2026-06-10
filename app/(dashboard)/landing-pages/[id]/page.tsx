@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, Eye, ExternalLink } from 'lucide-react'
@@ -14,7 +14,7 @@ export default async function EditLandingPage({ params }: { params: { id: string
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data: store } = await supabase.from('stores').select('id, slug').eq('owner_id', user.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user.id)
   if (!store) return null
 
   const { data: page } = await supabase.from('landing_pages').select('*, product:products(id,name,name_ar,price,compare_price,images)').eq('id', params.id).eq('store_id', store.id).single()

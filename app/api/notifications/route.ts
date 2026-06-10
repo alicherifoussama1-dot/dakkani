@@ -1,3 +1,4 @@
+import { getActiveStore } from '@/lib/supabase/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
@@ -19,7 +20,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: store } = await supabase.from('stores').select('id').eq('owner_id', user.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user.id)
   if (!store) return NextResponse.json({ notifications: [], unread: 0 })
 
   const { data: notifications } = await supabase

@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -8,11 +8,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: store } = await supabase
-    .from('stores')
-    .select('id, name, slug, logo_url, plan')
-    .eq('owner_id', user.id)
-    .single()
+  const { activeStore: store } = await getActiveStore(supabase, user.id)
   if (!store) redirect('/dashboard')
 
   return (

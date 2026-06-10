@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'الرئيسية — دكاني' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import DashboardHome from '@/components/dashboard/DashboardHome'
 
 export default async function DashboardPage() {
@@ -9,11 +9,7 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: store } = await supabase
-    .from('stores')
-    .select('id, name, slug, plan')
-    .eq('owner_id', user.id)
-    .single()
+  const { activeStore: store } = await getActiveStore(supabase, user.id)
 
   const today = new Date().toISOString().split('T')[0]
 

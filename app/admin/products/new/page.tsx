@@ -1,17 +1,13 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'منتج جديد — Admin' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import AdminProductEditor from '@/components/admin/AdminProductEditor'
 
 export default async function AdminNewProductPage() {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: store } = await supabase
-    .from('stores')
-    .select('id, meta_pixel_id, tiktok_pixel_id')
-    .eq('owner_id', user!.id)
-    .single()
+  const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
   const [categoriesRes, warehousesRes] = await Promise.all([

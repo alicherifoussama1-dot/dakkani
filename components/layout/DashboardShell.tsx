@@ -7,10 +7,11 @@ import {
   Phone, BarChart2, GraduationCap, CreditCard, ChevronDown,
   ChevronRight, Menu, X, LogOut, Settings, Bell, Youtube,
   HelpCircle, Sun, Moon, Globe, User, Store, ExternalLink,
-  Coins, Star, ShieldOff,
+  Coins, Star, ShieldOff, Plus, Loader2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { slugify } from '@/lib/utils/format'
 
 // ── Nav structure ─────────────────────────────────────────
 const NAV_MAIN = [
@@ -36,12 +37,13 @@ const NAV_BILLING = [
 
 interface Props {
   children: React.ReactNode
-  store?: { name: string; slug?: string; plan?: string; logo_url?: string } | null
+  store?: { id: string; name: string; slug?: string; plan?: string; logo_url?: string } | null
   user?: { name?: string; email?: string; avatar?: string } | null
   newOrdersCount?: number
+  allStores?: Array<{ id: string; name: string; slug: string; plan: string; logo_url?: string }>
 }
 
-export default function DashboardShell({ children, store, user, newOrdersCount = 0 }: Props) {
+export default function DashboardShell({ children, store, user, newOrdersCount = 0, allStores = [] }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
   const [sidebarOpen,  setSidebarOpen]  = useState(true)
@@ -51,6 +53,81 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
   const [billingOpen,  setBillingOpen]  = useState(false)
   const [darkMode,     setDarkMode]     = useState(false)
   const [notifOn,      setNotifOn]      = useState(true)
+  const [storeDropdownOpen, setStoreDropdownOpen] = useState(false)
+  const [newStoreModalOpen, setNewStoreModalOpen] = useState(false)
+  const [newStoreName, setNewStoreName] = useState('')
+  const [newStoreNameAr, setNewStoreNameAr] = useState('')
+  const [newStorePhone, setNewStorePhone] = useState('')
+  const [newStoreError, setNewStoreError] = useState('')
+  const [isSubmittingNewStore, setIsSubmittingNewStore] = useState(false)
+
+  const handleSwitchStore = (storeId: string) => {
+    document.cookie = `dakkani_active_store_id=${storeId}; path=/; max-age=31536000`
+    setStoreDropdownOpen(false)
+    router.refresh()
+    window.location.href = '/dashboard'
+  }
+
+  const handleCreateStore = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newStoreName || !newStoreNameAr) return
+    setIsSubmittingNewStore(true)
+    setNewStoreError('')
+    const sb = createClient()
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) {
+      router.push('/login')
+      return
+    }
+    const newSlug = slugify(newStoreName) || `store-${Date.now()}`
+    const newStoreId = crypto.randomUUID()
+
+    const { error: insertErr } = await sb.from('stores').insert({
+      id: newStoreId,
+      owner_id: user.id,
+      name: newStoreName,
+      name_ar: newStoreNameAr,
+      slug: newSlug,
+      phone: newStorePhone || null,
+      currency: 'DZD',
+      plan: 'free',
+      is_active: true,
+    })
+
+    if (insertErr) {
+      if (insertErr.message.includes('unique')) {
+        const randomSlug = newSlug + '-' + Math.random().toString(36).slice(2, 6)
+        const { error: insertErr2 } = await sb.from('stores').insert({
+          id: newStoreId,
+          owner_id: user.id,
+          name: newStoreName,
+          name_ar: newStoreNameAr,
+          slug: randomSlug,
+          phone: newStorePhone || null,
+          currency: 'DZD',
+          plan: 'free',
+          is_active: true,
+        })
+        if (insertErr2) {
+          setNewStoreError(insertErr2.message)
+          setIsSubmittingNewStore(false)
+          return
+        }
+      } else {
+        setNewStoreError(insertErr.message)
+        setIsSubmittingNewStore(false)
+        return
+      }
+    }
+
+    document.cookie = `dakkani_active_store_id=${newStoreId}; path=/; max-age=31536000`
+    setNewStoreModalOpen(false)
+    setIsSubmittingNewStore(false)
+    setNewStoreName('')
+    setNewStoreNameAr('')
+    setNewStorePhone('')
+    window.location.href = '/dashboard'
+  }
 
   // Close on route change
   useEffect(() => { setMobileOpen(false); setAvatarOpen(false) }, [pathname])
@@ -130,22 +207,56 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
       {/* Bottom */}
       <div className="flex-shrink-0 border-t p-3 space-y-2" style={{ borderColor: 'var(--color-sidebar-border)' }}>
         {store && (
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2 min-w-0">
-              {store.logo_url
-                ? <img src={store.logo_url} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0 border" style={{borderColor:'var(--color-border)'}} />
-                : <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{background:'var(--color-accent)'}}>{store.name[0]}</div>
-              }
-              <div className="min-w-0">
-                <p className="text-xs font-semibold truncate" style={{ color: 'var(--color-text-primary)' }}>{store.name}</p>
-                {store.plan && <span className="badge badge-blue text-[10px]">{store.plan}</span>}
+          <div className="relative">
+            <button
+              onClick={() => setStoreDropdownOpen(o => !o)}
+              className="flex items-center justify-between w-full px-1.5 py-1.5 rounded-xl hover:bg-[#F8F9FA] transition-colors text-right"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                {store.logo_url
+                  ? <img src={store.logo_url} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0 border" style={{borderColor:'var(--color-border)'}} />
+                  : <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{background:'var(--color-accent)'}}>{store.name[0]}</div>
+                }
+                <div className="min-w-0">
+                  <p className="text-xs font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>{store.name}</p>
+                  {store.plan && <span className="badge badge-blue text-[10px] scale-90 origin-right">{store.plan}</span>}
+                </div>
               </div>
-            </div>
-            {store.slug && (
-              <a href={`/store/${store.slug}`} target="_blank" rel="noopener noreferrer"
-                className="p-1.5 rounded-md hover:bg-[#F8F9FA] transition-colors" title="عرض المتجر">
-                <ExternalLink size={14} style={{ color: 'var(--color-text-muted)' }} />
-              </a>
+              <ChevronDown size={14} className={`transition-transform duration-200 ${storeDropdownOpen ? 'rotate-180' : ''}`} style={{ color: 'var(--color-text-muted)' }} />
+            </button>
+
+            {storeDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setStoreDropdownOpen(false)} />
+                <div className="absolute bottom-full right-0 mb-1 w-full bg-white border rounded-xl shadow-lg z-40 overflow-hidden p-1" style={{ borderColor: 'var(--color-border)' }}>
+                  <div className="max-h-48 overflow-y-auto space-y-0.5">
+                    {allStores.map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => handleSwitchStore(s.id)}
+                        className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-right text-xs transition-colors ${s.id === store.id ? 'bg-[#EBF5FF] text-[#0D6EFD] font-bold' : 'hover:bg-[#F8F9FA] text-[#444444]'}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${s.id === store.id ? 'bg-[#0D6EFD] text-white' : 'bg-gray-100 text-gray-500'}`}>
+                          {s.name[0]}
+                        </div>
+                        <span className="truncate flex-1">{s.name}</span>
+                        {s.id === store.id && <span className="text-[10px] font-black text-[#0D6EFD]">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="h-px bg-gray-100 my-1" />
+                  <button
+                    onClick={() => {
+                      setNewStoreModalOpen(true)
+                      setStoreDropdownOpen(false)
+                    }}
+                    className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg bg-[#EBF5FF] hover:bg-[#EBF5FF]/80 text-[#0D6EFD] font-bold text-xs transition-colors"
+                  >
+                    <Plus size={13} />
+                    <span>إضافة متجر جديد</span>
+                  </button>
+                </div>
+              </>
             )}
           </div>
         )}
@@ -337,6 +448,87 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
               </div>
               <button className="btn btn-primary w-full" style={{ fontFamily: 'var(--font-arabic)' }}>متابعة الدفع</button>
             </div>
+          </div>
+        </>
+      )}
+
+      {/* New Store Modal */}
+      {newStoreModalOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-50 animate-fade-in" onClick={() => setNewStoreModalOpen(false)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-3xl shadow-xl z-50 overflow-hidden animate-scale-in" dir="rtl" style={{ fontFamily: 'var(--font-arabic)' }}>
+            <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--color-border)' }}>
+              <h3 className="font-bold text-base text-[#111111]">إنشاء متجر جديد</h3>
+              <button onClick={() => setNewStoreModalOpen(false)} className="p-1.5 rounded-md hover:bg-[#F8F9FA]">
+                <X size={16} style={{ color: 'var(--color-text-muted)' }} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateStore}>
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold mb-1.5 text-[#111111]">اسم المتجر بالعربية *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newStoreNameAr}
+                    onChange={e => setNewStoreNameAr(e.target.value)}
+                    placeholder="مثال: متجر الأناقة الجزائري"
+                    className="w-full border border-[#EBEBEB] focus:border-[#0D6EFD] rounded-xl px-3 py-2 text-sm outline-none transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1.5 text-[#111111]">اسم المتجر بالفرنسية / الإنجليزية *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newStoreName}
+                    onChange={e => setNewStoreName(e.target.value)}
+                    placeholder="Ex: Elegance Store DZ"
+                    className="w-full border border-[#EBEBEB] focus:border-[#0D6EFD] rounded-xl px-3 py-2 text-sm outline-none transition"
+                    dir="ltr"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1.5 text-[#111111]">رقم الهاتف (اختياري)</label>
+                  <input
+                    type="tel"
+                    value={newStorePhone}
+                    onChange={e => setNewStorePhone(e.target.value)}
+                    placeholder="0555 xx xx xx"
+                    className="w-full border border-[#EBEBEB] focus:border-[#0D6EFD] rounded-xl px-3 py-2 text-sm outline-none transition"
+                  />
+                </div>
+
+                {newStoreError && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-3 text-xs">
+                    ⚠️ {newStoreError}
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewStoreModalOpen(false)}
+                    className="w-1/3 border border-[#EBEBEB] text-[#444444] font-bold py-2.5 rounded-xl hover:bg-[#F9F9F9] transition text-xs"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingNewStore}
+                    className="flex-1 bg-gradient-to-r from-[#0D6EFD] to-[#0B5ED7] hover:from-[#0B5ED7] hover:to-[#0B5ED7] text-white font-black py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 text-xs"
+                  >
+                    {isSubmittingNewStore ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" />جارٍ الإنشاء...</>
+                    ) : (
+                      '🚀 أنشئ المتجر الآن'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </>
       )}

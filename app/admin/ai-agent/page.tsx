@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'AI Agent — دكاني' }
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import AIAgentChat from '@/components/admin/AIAgentChat'
 
 export default async function AIAgentPage() {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: store } = await supabase.from('stores').select('id, name, slug').eq('owner_id', user!.id).single()
+  const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
   // Load store context for AI
