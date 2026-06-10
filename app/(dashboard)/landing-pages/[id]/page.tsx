@@ -66,6 +66,7 @@ export default async function EditLandingPage({ params }: { params: { id: string
           initialContent={page.ai_content as any}
           initialImages={(page.ai_images as any[]) ?? []}
           product={page.product as any}
+          initialThemeKey={page.theme_key ?? 'classic'}
         />
       ) : (
         <div className="card p-8 text-center">

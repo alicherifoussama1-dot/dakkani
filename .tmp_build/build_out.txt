@@ -16,11 +16,11 @@
  ✓ Compiled successfully
    Linting and checking validity of types ...
    Collecting page data ...
-   Generating static pages (0/74) ...
-   Generating static pages (18/74) 
-   Generating static pages (36/74) 
-   Generating static pages (55/74) 
- ✓ Generating static pages (74/74)
+   Generating static pages (0/78) ...
+   Generating static pages (19/78) 
+   Generating static pages (38/78) 
+   Generating static pages (58/78) 
+ ✓ Generating static pages (78/78)
    Finalizing page optimization ...
    Collecting build traces ...
 
@@ -63,6 +63,9 @@ Route (app)                              Size     First Load JS
 ├ ƒ /api/cron/auto-blacklist             0 B                0 B
 ├ ƒ /api/cron/sync-delivery-status       0 B                0 B
 ├ ƒ /api/delivery/create                 0 B                0 B
+├ ƒ /api/google/oauth/callback           0 B                0 B
+├ ƒ /api/google/oauth/start              0 B                0 B
+├ ƒ /api/google/sheets                   0 B                0 B
 ├ ƒ /api/icons/[size]                    0 B                0 B
 ├ ƒ /api/meta-events                     0 B                0 B
 ├ ƒ /api/notifications                   0 B                0 B
@@ -87,7 +90,7 @@ Route (app)                              Size     First Load JS
 ├ ƒ /blacklist                           3.22 kB         156 kB
 ├ ƒ /categories                          3.46 kB         181 kB
 ├ ƒ /checkout                            158 B            88 kB
-├ ƒ /confirmili                          37.2 kB         298 kB
+├ ƒ /confirmili                          37.3 kB         298 kB
 ├ ƒ /coupons                             3.7 kB          181 kB
 ├ ƒ /customers                           3.49 kB        91.3 kB
 ├ ƒ /customers/[phone]                   200 B          96.7 kB
@@ -97,9 +100,10 @@ Route (app)                              Size     First Load JS
 ├ ƒ /discover/[storeSlug]/[slug]         13.9 kB         202 kB
 ├ ○ /discover/cart                       3.06 kB         103 kB
 ├ ○ /forgot-password                     2.58 kB        99.1 kB
+├ ƒ /google-sheets                       5.49 kB         159 kB
 ├ ƒ /justad                              200 B          96.7 kB
 ├ ƒ /landing-pages                       199 B          96.7 kB
-├ ƒ /landing-pages/[id]                  4.33 kB         166 kB
+├ ƒ /landing-pages/[id]                  4.34 kB         166 kB
 ├ ƒ /landing-pages/new                   8.09 kB         161 kB
 ├ ƒ /learn                               158 B            88 kB
 ├ ○ /login                               2.54 kB         164 kB
@@ -107,7 +111,7 @@ Route (app)                              Size     First Load JS
 ├ ƒ /orders                              4.97 kB         101 kB
 ├ ƒ /orders/[id]                         4.24 kB         289 kB
 ├ ƒ /orders/new                          4.03 kB         157 kB
-├ ƒ /products                            4.87 kB         167 kB
+├ ƒ /products                            4.98 kB         167 kB
 ├ ƒ /products/[id]                       154 B           206 kB
 ├ ƒ /products/new                        154 B           206 kB
 ├ ○ /register                            3.02 kB         165 kB

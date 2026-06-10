@@ -150,10 +150,52 @@ function ImageLightbox({ images, startIndex, onClose }: { images: string[]; star
 }
 
 // ── Gallery Grid ──────────────────────────────────────────────
-function GallerySection({ images }: { images: string[] }) {
+function GallerySection({ images, isPosterTheme }: { images: AIImage[]; isPosterTheme: boolean }) {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
   if (!images.length) return null
-  const shown = images.slice(0, 6)
+
+  const shown = isPosterTheme ? images : images.slice(0, 6)
+
+  if (isPosterTheme) {
+    return (
+      <section className="w-full max-w-3xl mx-auto px-0 md:px-4 pb-12">
+        <FadeUp>
+          <h2 className="pt-heading text-xl md:text-2xl font-black text-center mb-6" style={{ color: 'var(--pt-text)' }}>
+            📸 العرض التوضيحي للمنتج
+          </h2>
+          <div className="flex flex-col gap-0 overflow-hidden" style={{ borderRadius: 'var(--pt-radius-lg)', border: '1px solid var(--pt-border)' }}>
+            {shown.map((img, i) => (
+              <div
+                key={i}
+                className="relative group w-full overflow-hidden"
+                style={{ background: 'var(--pt-surface-soft)' }}
+              >
+                <img
+                  src={img.url}
+                  alt={img.label_ar || ""}
+                  className="w-full h-auto block"
+                />
+                {img.label_ar && (
+                  <div
+                    className="absolute bottom-0 inset-x-0 p-5 pt-16 text-center"
+                    style={{
+                      background: 'linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.45) 60%, rgba(0, 0, 0, 0) 100%)',
+                    }}
+                  >
+                    <p className="text-white font-black text-lg md:text-xl leading-relaxed drop-shadow-md select-none">
+                      {img.label_ar}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </FadeUp>
+      </section>
+    )
+  }
+
+  const imageUrls = shown.map(img => img.url)
   return (
     <section className="max-w-5xl mx-auto px-4 pb-12">
       <FadeUp>
@@ -161,7 +203,7 @@ function GallerySection({ images }: { images: string[] }) {
           📸 صور المنتج
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {shown.map((url, i) => (
+          {shown.map((img, i) => (
             <button
               key={i}
               type="button"
@@ -169,7 +211,7 @@ function GallerySection({ images }: { images: string[] }) {
               className="relative group aspect-square overflow-hidden focus:outline-none"
               style={{ borderRadius: 'var(--pt-radius-lg)', background: 'var(--pt-surface-soft)' }}
             >
-              <img src={url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              <img src={img.url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,.35)' }}>
                 <ZoomIn size={28} color="#fff" />
               </div>
@@ -178,7 +220,7 @@ function GallerySection({ images }: { images: string[] }) {
         </div>
       </FadeUp>
       {lightboxIdx !== null && (
-        <ImageLightbox images={shown} startIndex={lightboxIdx} onClose={() => setLightboxIdx(null)} />
+        <ImageLightbox images={imageUrls} startIndex={lightboxIdx} onClose={() => setLightboxIdx(null)} />
       )}
     </section>
   )
@@ -275,7 +317,7 @@ function VariantsSection({ product }: { product: any }) {
                       style={{
                         borderRadius: 'var(--pt-btn-radius)',
                         border: isSel ? '2px solid var(--pt-accent)' : '1.5px solid var(--pt-border)',
-                        background: isSel ? 'var(--pt-accent-soft)' : 'var(--pt-bg)',
+                        background: isSel ? 'var(--pt-accent-soft)' : 'var(--pt-surface-soft)',
                         color: isSel ? 'var(--pt-accent)' : 'var(--pt-text)',
                         fontWeight: isSel ? 700 : 500,
                       }}
@@ -307,10 +349,9 @@ export default function AILandingPage({ page, product, store, wilayas }: Props) 
   const badgeText = hero?.badge_text
 
   const heroImage     = page.ai_images?.[0]?.url ?? (product.images as any[])?.[0]?.url
-  const galleryImages = (page.ai_images?.length
-    ? page.ai_images.map(i => i.url)
-    : (product.images as any[])?.map((i: any) => i.url)
-  ) ?? []
+  const galleryImages: AIImage[] = page.ai_images?.length
+    ? page.ai_images
+    : ((product.images as any[])?.map((i: any) => ({ url: i.url, label_ar: '' })) ?? [])
 
   const hasDiscount  = product.compare_price && product.compare_price > product.price
   const discountPct  = hasDiscount ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) : 0
@@ -509,7 +550,9 @@ export default function AILandingPage({ page, product, store, wilayas }: Props) 
       )}
 
       {/* ── GALLERY (zoomable) ────────────────────────────────── */}
-      {galleryImages.length > 1 && <GallerySection images={galleryImages} />}
+      {((page.theme_key === 'poster' && galleryImages.length > 0) || galleryImages.length > 1) && (
+        <GallerySection images={galleryImages} isPosterTheme={page.theme_key === 'poster'} />
+      )}
 
       {/* ── PRODUCT DETAILS ───────────────────────────────────── */}
       {content.product_details && (content.product_details.intro || (content.product_details.specs?.length ?? 0) > 0) && (
@@ -613,7 +656,14 @@ export default function AILandingPage({ page, product, store, wilayas }: Props) 
                       <p className="font-bold text-sm" style={{ color: 'var(--pt-text)' }}>{r.name}</p>
                       {r.wilaya && <p className="text-xs" style={{ color: 'var(--pt-text-muted)' }}>📍 {r.wilaya}</p>}
                     </div>
-                    <span className="mr-auto text-xs font-semibold px-2 py-0.5" style={{ background: '#dcfce7', color: '#15803d', borderRadius: 'var(--pt-radius-pill)' }}>
+                    <span
+                      className="mr-auto text-xs font-semibold px-2 py-0.5"
+                      style={{
+                        background: page.theme_key === 'poster' ? 'rgba(34, 197, 94, 0.15)' : '#dcfce7',
+                        color: page.theme_key === 'poster' ? '#4ade80' : '#15803d',
+                        borderRadius: 'var(--pt-radius-pill)'
+                      }}
+                    >
                       ✓ موثوق
                     </span>
                   </div>
@@ -630,12 +680,16 @@ export default function AILandingPage({ page, product, store, wilayas }: Props) 
           <FadeUp>
             <div
               className="p-6 flex gap-4 items-start"
-              style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 'var(--pt-radius-xl)' }}
+              style={{
+                background: page.theme_key === 'poster' ? 'rgba(34, 197, 94, 0.1)' : '#f0fdf4',
+                border: page.theme_key === 'poster' ? '1.5px solid rgba(34, 197, 94, 0.3)' : '1.5px solid #86efac',
+                borderRadius: 'var(--pt-radius-xl)'
+              }}
             >
-              <ShieldCheck size={32} style={{ color: '#16a34a', flexShrink: 0, marginTop: 2 }} />
+              <ShieldCheck size={32} style={{ color: page.theme_key === 'poster' ? '#4ade80' : '#16a34a', flexShrink: 0, marginTop: 2 }} />
               <div>
-                <h3 className="font-black text-base mb-1" style={{ color: '#15803d' }}>ضمان الرضا التام</h3>
-                <p className="text-sm leading-relaxed" style={{ color: '#166534' }}>{content.guarantee}</p>
+                <h3 className="font-black text-base mb-1" style={{ color: page.theme_key === 'poster' ? '#4ade80' : '#15803d' }}>ضمان الرضا التام</h3>
+                <p className="text-sm leading-relaxed" style={{ color: page.theme_key === 'poster' ? '#bbf7d0' : '#166534' }}>{content.guarantee}</p>
               </div>
             </div>
           </FadeUp>

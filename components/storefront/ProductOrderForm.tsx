@@ -37,7 +37,7 @@ function BaladiaField({ wilayaId, value, onChange, error }: {
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">البلدية *</label>
+      <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--pt-text-soft)' }}>البلدية *</label>
       <div className="relative">
         <button
           type="button"
@@ -150,7 +150,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
 
       {/* Wilaya */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">الولاية *</label>
+        <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--pt-text-soft)' }}>الولاية *</label>
         <select
           {...register('wilaya_id', { valueAsNumber: true })}
           onChange={e => {
@@ -158,7 +158,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
             setValue('wilaya_id', id)
             setSelectedWilaya(wilayas.find(w => w.id === id) ?? null)
           }}
-          className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none bg-white"
+          className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none bg-white text-gray-900"
           style={{ borderRadius: 'var(--pt-radius-md)' }}
         >
           <option value="">اختر الولاية</option>
@@ -190,11 +190,11 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           { name: 'customer_phone2', label: 'رقم هاتف بديل', placeholder: 'اختياري' },
         ].map(f => (
           <div key={f.name}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{f.label}</label>
+            <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--pt-text-soft)' }}>{f.label}</label>
             <input
               {...register(f.name as keyof FormData)}
               placeholder={f.placeholder}
-              className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none"
+              className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none bg-white text-gray-900"
               style={{ borderRadius: 'var(--pt-radius-md)' }}
             />
             {errors[f.name as keyof FormData] && (
@@ -206,22 +206,26 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
 
       {deliveryType === 'home' && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">العنوان التفصيلي</label>
+          <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--pt-text-soft)' }}>العنوان التفصيلي</label>
           <input {...register('address')} placeholder="الحي، الشارع، رقم البناية..."
-            className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none" style={{ borderRadius: 'var(--pt-radius-md)' }} />
+            className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none bg-white text-gray-900" style={{ borderRadius: 'var(--pt-radius-md)' }} />
         </div>
       )}
 
       {/* Quantity */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">الكمية</label>
+        <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--pt-text-soft)' }}>الكمية</label>
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => setValue('quantity', Math.max(1, quantity - 1))}
-            className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-lg font-bold hover:bg-gray-50">−</button>
-          <span className="w-12 text-center font-bold text-lg">{quantity}</span>
+            className="w-9 h-9 rounded-full border flex items-center justify-center text-lg font-bold transition"
+            style={{ borderColor: 'var(--pt-border)', color: 'var(--pt-text)', background: 'var(--pt-surface-soft)' }}
+          >−</button>
+          <span className="w-12 text-center font-bold text-lg" style={{ color: 'var(--pt-text)' }}>{quantity}</span>
           <button type="button" onClick={() => setValue('quantity', maxQty ? Math.min(maxQty, quantity + 1) : quantity + 1)}
             disabled={!!maxQty && quantity >= maxQty}
-            className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-lg font-bold hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent">+</button>
+            className="w-9 h-9 rounded-full border flex items-center justify-center text-lg font-bold transition disabled:opacity-40"
+            style={{ borderColor: 'var(--pt-border)', color: 'var(--pt-text)', background: 'var(--pt-surface-soft)' }}
+          >+</button>
         </div>
         {!!maxQty && (
           <p className="text-xs mt-1" style={{ color: 'var(--pt-text-muted)' }}>الكمية المتوفرة: {maxQty}</p>

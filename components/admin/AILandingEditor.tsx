@@ -2,12 +2,14 @@
 // ============================================================
 // AI Landing Page — inline editor
 // Lets the merchant tweak Gemini-generated copy section by section,
-// re-run AI generation ("أعد التوليد") for the whole page or just the
-// image, and persist the final version back to landing_pages.
+// choose theme styles, manage infographic gallery images & labels,
+// and persist the final version back to landing_pages.
 // ============================================================
 import { useRef, useState } from 'react'
-import { Sparkles, RefreshCw, Check, Loader2, ExternalLink, Plus, Trash2 } from 'lucide-react'
+import { Sparkles, RefreshCw, Check, Loader2, ExternalLink, Plus, Trash2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { slugify } from '@/lib/utils/format'
+import { PRODUCT_THEMES } from '@/lib/product-themes'
 
 interface AIContent {
   hero?: { headline: string; subheadline?: string; cta_text?: string; variations?: { headline: string; cta_text?: string }[] }
@@ -19,13 +21,23 @@ interface AIContent {
   [key: string]: any
 }
 
-interface ProductLite { id: string; name: string; name_ar: string | null; price: number; compare_price: number | null; images?: { url: string }[] | null }
+interface ProductLite {
+  id: string
+  name: string
+  name_ar: string | null
+  price: number
+  compare_price: number | null
+  images?: { url: string }[] | null
+}
 
 interface Props {
-  pageId: string; storeId: string; publicUrl: string
+  pageId: string
+  storeId: string
+  publicUrl: string
   initialContent: AIContent
   initialImages: { key: string; label_ar: string; url: string }[]
   product: ProductLite | null
+  initialThemeKey?: string
 }
 
 async function pollJob<T>(url: string, onTick: (data: any) => T | undefined, intervalMs = 2000, maxTries = 60): Promise<T> {
@@ -52,11 +64,13 @@ function Field({ label, value, onChange, multiline }: { label: string; value: st
   )
 }
 
-export default function AILandingEditor({ pageId, storeId, publicUrl, initialContent, initialImages, product }: Props) {
+export default function AILandingEditor({ pageId, storeId, publicUrl, initialContent, initialImages, product, initialThemeKey }: Props) {
   const supabase = useRef(createClient()).current
   const [content, setContent] = useState<AIContent>(initialContent ?? {})
   const [images, setImages] = useState(initialImages)
+  const [themeKey, setThemeKey] = useState(initialThemeKey ?? 'classic')
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [regenLoading, setRegenLoading] = useState(false)
   const [photoLoading, setPhotoLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
@@ -74,9 +88,28 @@ export default function AILandingEditor({ pageId, storeId, publicUrl, initialCon
   async function handleSave() {
     setSaving(true)
     setMessage(null)
-    const { error } = await supabase.from('landing_pages').update({ ai_content: content, ai_images: images }).eq('id', pageId)
+    const { error } = await supabase
+      .from('landing_pages')
+      .update({ ai_content: content, ai_images: images, theme_key: themeKey })
+      .eq('id', pageId)
     setSaving(false)
     setMessage(error ? { type: 'err', text: 'تعذر حفظ التعديلات' } : { type: 'ok', text: 'تم حفظ التعديلات ✅' })
+  }
+
+  async function handleDelete() {
+    if (!window.confirm('هل أنت متأكد من حذف صفحة الهبوط هذه نهائياً؟')) return
+    setDeleting(true)
+    setMessage(null)
+    const { error } = await supabase
+      .from('landing_pages')
+      .delete()
+      .eq('id', pageId)
+    if (error) {
+      setMessage({ type: 'err', text: `فشل الحذف: ${error.message}` })
+      setDeleting(false)
+    } else {
+      window.location.href = '/landing-pages'
+    }
   }
 
   async function regenerateContent() {
@@ -130,8 +163,11 @@ export default function AILandingEditor({ pageId, storeId, publicUrl, initialCon
         })
       }
       if (opts?.[0]) {
-        setImages([{ key: 'selected', label_ar: 'صورة الصفحة', url: opts[0].url }])
-        setMessage({ type: 'ok', text: 'تم تحسين الصورة — لا تنسَ الحفظ ✨' })
+        setImages(prev => [
+          { key: `ai_${Date.now()}`, label_ar: 'صورة الصفحة الرئيسية', url: opts[0].url },
+          ...prev.filter(i => i.key !== 'selected')
+        ])
+        setMessage({ type: 'ok', text: 'تم تحسين الصورة بنجاح وإضافتها للمعرض — لا تنسَ الحفظ ✨' })
       }
     } catch (e: any) {
       setMessage({ type: 'err', text: e?.message ?? 'فشل تحسين الصورة' })
@@ -140,12 +176,31 @@ export default function AILandingEditor({ pageId, storeId, publicUrl, initialCon
     }
   }
 
+  const handleUpdateImageLabel = (index: number, label: string) => {
+    setImages(prev => {
+      const next = [...prev]
+      next[index] = { ...next[index], label_ar: label }
+      return next
+    })
+  }
+
+  const handleDeleteImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleAddProductImage = (url: string) => {
+    setImages(prev => [
+      ...prev,
+      { key: `gallery_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, label_ar: '', url }
+    ])
+  }
+
   const hero = content.hero ?? { headline: '', subheadline: '', cta_text: '' }
   const benefits = content.benefits ?? []
   const faq = content.faq ?? []
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="btn btn-sm gap-1.5" style={{ border: '1px solid var(--color-border)', background: '#fff', color: 'var(--color-text-secondary)' }}>
           <ExternalLink size={13} />فتح الصفحة المنشورة
@@ -172,20 +227,94 @@ export default function AILandingEditor({ pageId, storeId, publicUrl, initialCon
         </div>
       )}
 
-      {/* Hero image */}
+      {/* Theme Selection */}
       <section className="card p-5 space-y-3">
+        <h3 className="font-bold text-sm text-[#111111]" style={{ fontFamily: 'var(--font-arabic)' }}>طابع الصفحة ولون المظهر</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {PRODUCT_THEMES.map(t => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setThemeKey(t.key)}
+              className={`p-3 border rounded-xl text-right transition flex flex-col justify-between h-20 ${themeKey === t.key ? 'border-[#0D6EFD] bg-[#EBF5FF]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}
+            >
+              <p className="font-bold text-xs" style={{ color: themeKey === t.key ? '#0D6EFD' : '#111111' }}>{t.name}</p>
+              <div className="flex gap-1.5 mt-2">
+                <span className="w-3.5 h-3.5 rounded-full border border-gray-300" style={{ background: t.preview.bg }} />
+                <span className="w-3.5 h-3.5 rounded-full" style={{ background: t.preview.accent }} />
+                <span className="w-3.5 h-3.5 rounded-full" style={{ background: t.preview.surface }} />
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Infographic / Gallery Images List */}
+      <section className="card p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-sm" style={{ color: 'var(--color-text-primary)' }}>صورة الصفحة الرئيسية</h3>
+          <h3 className="font-bold text-sm text-[#111111]">صور الملصق التسويقي والنصوص التوضيحية (Infographic Gallery)</h3>
           <button onClick={regenerateImage} disabled={photoLoading || !product?.images?.length} className="btn btn-ghost btn-sm gap-1.5">
             {photoLoading ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-            أعد التحسين بالذكاء الاصطناعي
+            توليد خلفية بالذكاء الاصطناعي
           </button>
         </div>
-        <div className="w-32 h-32 rounded-xl overflow-hidden" style={{ background: 'var(--color-bg-soft)' }}>
-          {(images[0]?.url ?? product?.images?.[0]?.url) && (
-            <img src={images[0]?.url ?? product?.images?.[0]?.url} alt="" className="w-full h-full object-cover" />
-          )}
+        
+        <p className="text-xs text-gray-500">
+          تترتب هذه الصور بشكل تتابعي طولي في الصفحة عند استخدام "طابع الملصق الطويل". يمكنك تعديل النص التوضيحي الذي سيظهر متراكباً فوق كل صورة.
+        </p>
+
+        <div className="space-y-4">
+          {images.map((img, i) => (
+            <div key={img.key || i} className="flex gap-4 p-4 rounded-xl border border-gray-100 bg-[#F9F9F9] relative items-center">
+              <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 border bg-white">
+                <img src={img.url} alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <Field
+                  label={`النص التوضيحي المكتوب فوق الصورة ${i + 1}`}
+                  value={img.label_ar ?? ''}
+                  onChange={(v) => handleUpdateImageLabel(i, v)}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDeleteImage(i)}
+                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition shrink-0"
+                title="حذف الصورة"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))}
         </div>
+
+        {/* Add image from product section */}
+        {product?.images && product.images.length > 0 && (
+          <div className="space-y-2 pt-2">
+            <h4 className="text-xs font-bold text-gray-700">أضف صورة إضافية من صور المنتج الأساسية:</h4>
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {product.images.map((img: any, i: number) => {
+                const exists = images.some(item => item.url === img.url)
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    disabled={exists}
+                    onClick={() => handleAddProductImage(img.url)}
+                    className="w-14 h-14 rounded-lg overflow-hidden border bg-white relative hover:border-blue-400 disabled:opacity-40 transition shrink-0"
+                  >
+                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                    {!exists && (
+                      <div className="absolute inset-0 bg-black/25 flex items-center justify-center text-white font-bold text-xs opacity-0 hover:opacity-100 transition-opacity">
+                        + أضف
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Hero copy */}
@@ -253,10 +382,22 @@ export default function AILandingEditor({ pageId, storeId, publicUrl, initialCon
         </section>
       )}
 
-      <button onClick={handleSave} disabled={saving} className="btn btn-primary btn-lg w-full gap-2">
-        {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-        {saving ? 'جاري الحفظ...' : 'حفظ كل التعديلات'}
-      </button>
+      {/* Deletion & Save Buttons */}
+      <div className="flex gap-3 pt-4">
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="btn border border-red-200 hover:bg-red-50 text-red-600 font-bold py-3 px-6 rounded-xl text-sm transition shrink-0"
+        >
+          {deleting ? 'جاري الحذف...' : 'حذف الصفحة 🗑️'}
+        </button>
+
+        <button onClick={handleSave} disabled={saving} className="flex-1 btn btn-primary btn-lg gap-2">
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+          {saving ? 'جاري الحفظ...' : 'حفظ كل التعديلات'}
+        </button>
+      </div>
+
     </div>
   )
 }
