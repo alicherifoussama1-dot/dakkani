@@ -213,7 +213,8 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
       if (!res.ok) throw new Error(data.error ?? 'تعذر توليد الإنفوغرافيك')
       setInfographicUrl(data.url)
     } catch (e: any) {
-      setError(e?.message ?? 'حدث خطأ أثناء توليد الإنفوغرافيك')
+      console.error('Infographic generation error:', e)
+      setError(e?.message || String(e) || 'حدث خطأ أثناء توليد الإنفوغرافيك')
     } finally {
       setInfographicLoading(false)
     }
