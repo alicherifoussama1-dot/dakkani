@@ -77,10 +77,6 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
               {['اليوم','الأمس','أسبوع','شهر'].map(d => <option key={d}>{d}</option>)}
             </select>
           </div>
-          <Link href="/products/new" className="btn btn-primary btn-sm gap-1.5">
-            <Plus size={14} />
-            منتج جديد
-          </Link>
         </div>
       </div>
 
