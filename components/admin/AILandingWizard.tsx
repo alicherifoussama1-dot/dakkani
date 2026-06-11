@@ -11,7 +11,7 @@
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, ArrowLeft, Sparkles, ImageIcon, Check, Loader2, RefreshCw, Lightbulb, LayoutTemplate, Grid3X3 } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Sparkles, ImageIcon, Check, Loader2, RefreshCw, Lightbulb, LayoutTemplate, Grid3X3, ChevronDown, ChevronUp, Upload, Download, ExternalLink, HelpCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDZD } from '@/lib/utils/format'
 import { slugify } from '@/lib/utils/format'
@@ -85,9 +85,19 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
   const [infographicSkipped, setInfographicSkipped] = useState(false)
   const [brandColor, setBrandColor] = useState('#7C3AED')
   const [accentColor, setAccentColor] = useState('#F59E0B')
+  const [panels, setPanels] = useState<any[]>([])
+  const [expandedPanel, setExpandedPanel] = useState<number | null>(0)
+  const [uploadingCustom, setUploadingCustom] = useState(false)
 
   const sourceImageUrl = product?.images?.[0]?.url ?? null
   const categoryName   = product?.category?.name_ar ?? ''
+
+  // Collect all unique product images (original + enhanced)
+  const allImages = [
+    selectedImageUrl,
+    ...(product?.images?.map(i => i.url) ?? []),
+    ...photoOptions.map(o => o.url),
+  ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i) as string[]
 
   // Scenario suggestions for the detected/selected category
   const scenarioSuggestions = SCENARIO_SUGGESTIONS[categoryName] ?? DEFAULT_SCENARIOS
@@ -182,19 +192,63 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
     }
   }
 
+  // Helper to update a panel's field
+  function updatePanel(index: number, key: string, value: any) {
+    setPanels(prev => prev.map((p, idx) => idx === index ? { ...p, [key]: value } : p))
+  }
+
+  // Initialize panels when aiContent changes or when entering step 3.5
+  useEffect(() => {
+    if (aiContent && product && panels.length === 0) {
+      const allImages = [
+        selectedImageUrl,
+        ...(product.images?.map((i: any) => i.url) ?? []),
+        ...photoOptions.map(o => o.url),
+      ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i) as string[]
+
+      const defaultPanels = [
+        {
+          imageUrl: allImages[0],
+          headline: aiContent?.product_story?.hook ?? `كرهتي تطلبي من الانترنت وما يوصلك ما توقعتيه؟`,
+          subtext: aiContent?.hero?.subheadline ?? '',
+          layout: 'image-full',
+        },
+        {
+          imageUrl: allImages[1] ?? allImages[0],
+          headline: aiContent?.hero?.headline ?? `${product.name_ar ?? product.name} — الحل اللي كنتِ تستنّيه`,
+          subtext: aiContent?.product_story?.body ?? '',
+          layout: 'image-right',
+        },
+        {
+          imageUrl: allImages[2] ?? allImages[0],
+          headline: aiContent?.benefits?.[0]?.title ?? 'جودة تستاهل',
+          subtext: (aiContent?.benefits ?? []).slice(0, 3).map((b: any) => `${b.icon ?? '✅'} ${b.title}`).join('  '),
+          layout: 'image-left',
+        },
+        {
+          imageUrl: allImages[3] ?? allImages[0],
+          headline: 'ماتحيريش في المقاس — متوفر كل القياسات',
+          subtext: aiContent?.product_details?.specs?.slice(0, 3).join(' • ') ?? '',
+          layout: 'image-right',
+        },
+        {
+          imageUrl: allImages[4] ?? allImages[0],
+          headline: aiContent?.final_cta?.headline ?? `يصلك كما في الصورة — التوصيل لـ58 ولاية`,
+          subtext: `الدفع عند الاستلام • ${product.price.toLocaleString('fr-DZ')} دج`,
+          badge: '⭐⭐⭐⭐⭐ + 🚚',
+          layout: 'image-left',
+        },
+      ]
+      setPanels(defaultPanels)
+    }
+  }, [aiContent, product, selectedImageUrl, photoOptions, panels.length])
+
   // ── Infographic generation ──
   async function runInfographicGeneration() {
     if (!product) return
     setError(null)
     setInfographicLoading(true)
     try {
-      // Collect all available images (enhanced + original)
-      const allImages = [
-        selectedImageUrl,
-        ...(product.images?.map(i => i.url) ?? []),
-        ...photoOptions.map(o => o.url),
-      ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i) as string[]
-
       const res = await fetch('/api/ai/infographic/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -207,6 +261,7 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
           accentColor,
           productName: product.name_ar ?? product.name,
           price: product.price,
+          panels: panels.length > 0 ? panels : undefined,
         }),
       })
       const data = await res.json()
@@ -217,6 +272,54 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
       setError(e?.message || String(e) || 'حدث خطأ أثناء توليد الإنفوغرافيك')
     } finally {
       setInfographicLoading(false)
+    }
+  }
+
+  // ── Custom infographic upload ──
+  async function handleCustomUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !product) return
+    setUploadingCustom(true)
+    setError(null)
+    try {
+      const supabase = createClient()
+      const filename = `infographic/${storeId}/${Date.now()}-custom-${file.name}`
+      
+      const { error: uploadErr } = await supabase.storage
+        .from('dakkani-uploads')
+        .upload(filename, file, {
+          upsert: true
+        })
+      if (uploadErr) throw uploadErr
+      
+      const { data: publicUrlData } = supabase.storage.from('dakkani-uploads').getPublicUrl(filename)
+      setInfographicUrl(publicUrlData.publicUrl)
+      setInfographicSkipped(false)
+    } catch (err: any) {
+      console.error('Custom infographic upload error:', err)
+      setError('تعذر رفع الملف المخصص: ' + (err.message ?? String(err)))
+    } finally {
+      setUploadingCustom(false)
+    }
+  }
+
+  // ── Download SVG helper ──
+  async function handleDownloadSvg() {
+    if (!infographicUrl) return
+    try {
+      const res = await fetch(infographicUrl)
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = `${product?.name_ar || product?.name || 'infographic'}.svg`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } catch (e) {
+      // Fallback: just open in new tab
+      window.open(infographicUrl, '_blank')
     }
   }
 
@@ -626,145 +729,440 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
       )}
 
       {/* ── STEP 3.5 — Infographic Studio ────────────────────── */}
+      {/* ── STEP 3.5 — Infographic Studio ────────────────────── */}
       {step === 3.5 && (
-        <div className="card p-5 space-y-5">
-          {/* Header */}
-          <div>
-            <p className="text-sm font-black flex items-center gap-2" style={{ color: 'var(--color-text-primary)' }}>
-              <Sparkles size={16} style={{ color: 'var(--color-accent)' }} />
-              مولّد الإنفوغرافيك الاحترافي
-            </p>
-            <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-              يدمج صور منتجك مع النصوص تلقائياً في صورة طولية مثل Ayor
-            </p>
-          </div>
+        <div className="space-y-6">
+          {/* Main Layout Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* Right column: Designer / Editor (7 cols on lg) */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* Panels Accordion Card */}
+              <div className="card p-5 space-y-4">
+                <div>
+                  <p className="text-sm font-black flex items-center gap-2" style={{ color: 'var(--color-text-primary)' }}>
+                    <Sparkles size={16} style={{ color: 'var(--color-accent)' }} />
+                    محرر شرائح الإنفوغرافيك الـ 5
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                    قم بتعديل النصوص، اختيار اتجاه التصميم، وتخصيص صورة كل شريحة بالكامل
+                  </p>
+                </div>
 
-          {/* Template selector */}
-          <div>
-            <p className="text-xs font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>اختر شكل الإنفوغرافيك</p>
-            <div className="grid grid-cols-2 gap-3">
-              {([
-                { key: 'story', label: 'قصصي طولي', desc: '5 بانلات متسلسلة', icon: <LayoutTemplate size={20} /> },
-                { key: 'grid',  label: 'شبكة صور',  desc: 'صورتين في صف', icon: <Grid3X3 size={20} /> },
-              ] as const).map(t => (
-                <button
-                  key={t.key}
-                  onClick={() => setInfographicTemplate(t.key)}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all"
-                  style={{
-                    borderColor: infographicTemplate === t.key ? 'var(--color-accent)' : 'var(--color-border)',
-                    background:  infographicTemplate === t.key ? 'var(--color-accent-soft, #EBF5FF)' : '#fff',
-                  }}
-                >
-                  <span style={{ color: infographicTemplate === t.key ? 'var(--color-accent)' : 'var(--color-text-muted)' }}>
-                    {t.icon}
-                  </span>
-                  <span className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>{t.label}</span>
-                  <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{t.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+                <div className="space-y-3">
+                  {panels.map((p, idx) => {
+                    const isExpanded = expandedPanel === idx
+                    const panelLabels = [
+                      'الشريحة 1: الخطاف (جذب الانتباه)',
+                      'الشريحة 2: تقديم الحل وميزات المنتج',
+                      'الشريحة 3: الفوائد وتجربة الاستخدام',
+                      'الشريحة 4: التفاصيل والمقاسات والمواصفات',
+                      'الشريحة 5: الضمان وبناء الثقة',
+                    ]
+                    
+                    return (
+                      <div 
+                        key={idx} 
+                        className="rounded-xl border transition-all"
+                        style={{ 
+                          borderColor: isExpanded ? 'var(--color-accent)' : 'var(--color-border)',
+                          background: isExpanded ? 'var(--color-bg-soft, #FAFAFA)' : '#fff'
+                        }}
+                      >
+                        {/* Header */}
+                        <button
+                          type="button"
+                          onClick={() => setExpandedPanel(isExpanded ? null : idx)}
+                          className="w-full flex items-center justify-between p-4 text-right font-bold text-xs"
+                          style={{ color: 'var(--color-text-primary)' }}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span 
+                              className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white"
+                              style={{ background: isExpanded ? 'var(--color-accent)' : 'var(--color-text-muted)' }}
+                            >
+                              {idx + 1}
+                            </span>
+                            {panelLabels[idx]}
+                          </span>
+                          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
 
-          {/* Color pickers */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-bold block mb-1.5" style={{ color: 'var(--color-text-primary)' }}>
-                اللون الرئيسي
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={brandColor}
-                  onChange={e => setBrandColor(e.target.value)}
-                  className="w-9 h-9 rounded-lg cursor-pointer border"
-                  style={{ borderColor: 'var(--color-border)' }}
-                />
-                <span className="text-xs font-mono" style={{ color: 'var(--color-text-muted)' }}>{brandColor}</span>
+                        {/* Content */}
+                        {isExpanded && (
+                          <div className="p-4 pt-0 border-t border-dashed space-y-4 mt-2">
+                            {/* Headline */}
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-bold block" style={{ color: 'var(--color-text-primary)' }}>
+                                العنوان الرئيسي (Darija)
+                              </label>
+                              <input
+                                type="text"
+                                value={p.headline || ''}
+                                onChange={(e) => updatePanel(idx, 'headline', e.target.value)}
+                                className="w-full px-3 py-2 rounded-lg border text-xs"
+                                style={{ borderColor: 'var(--color-border)' }}
+                                placeholder="العنوان الرئيسي للشريحة..."
+                              />
+                            </div>
+
+                            {/* Subtext */}
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-bold block" style={{ color: 'var(--color-text-primary)' }}>
+                                النص التوضيحي الفرعي
+                              </label>
+                              <textarea
+                                value={p.subtext || ''}
+                                onChange={(e) => updatePanel(idx, 'subtext', e.target.value)}
+                                className="w-full px-3 py-2 rounded-lg border text-xs"
+                                style={{ borderColor: 'var(--color-border)' }}
+                                rows={2}
+                                placeholder="تفاصيل إضافية لشرح الميزة أو المشكلة..."
+                              />
+                            </div>
+
+                            {/* Layout Selector */}
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-bold block" style={{ color: 'var(--color-text-primary)' }}>
+                                اتجاه تصميم الشريحة
+                              </label>
+                              <select
+                                value={p.layout || 'image-right'}
+                                onChange={(e) => updatePanel(idx, 'layout', e.target.value)}
+                                className="w-full px-3 py-2 rounded-lg border text-xs bg-white"
+                                style={{ borderColor: 'var(--color-border)' }}
+                              >
+                                <option value="image-full">صورة كاملة مع نص متراكب بالأسفل</option>
+                                <option value="image-right">صورة على اليمين ونصوص على اليسار</option>
+                                <option value="image-left">صورة على اليسار ونصوص على اليمين</option>
+                                <option value="text-only">نص فقط مع خلفية المظهر (بدون صورة)</option>
+                              </select>
+                            </div>
+
+                            {/* Optional Badge */}
+                            {(idx === 0 || idx === 4) && (
+                              <div className="space-y-1">
+                                <label className="text-[11px] font-bold block" style={{ color: 'var(--color-text-primary)' }}>
+                                  الشارة الملفتة (Badge)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={p.badge || ''}
+                                  onChange={(e) => updatePanel(idx, 'badge', e.target.value)}
+                                  className="w-full px-3 py-2 rounded-lg border text-xs"
+                                  style={{ borderColor: 'var(--color-border)' }}
+                                  placeholder="مثال: ⭐⭐⭐⭐⭐ + 🚚"
+                                />
+                              </div>
+                            )}
+
+                            {/* Image selector */}
+                            {p.layout !== 'text-only' && (
+                              <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold block" style={{ color: 'var(--color-text-primary)' }}>
+                                  اختر صورة هذه الشريحة
+                                </label>
+                                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                                  {allImages.map((imgUrl, i) => {
+                                    const isSelected = p.imageUrl === imgUrl
+                                    return (
+                                      <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => updatePanel(idx, 'imageUrl', imgUrl)}
+                                        className="w-14 h-14 rounded-lg overflow-hidden border-2 shrink-0 bg-white relative transition-all"
+                                        style={{
+                                          borderColor: isSelected ? 'var(--color-accent)' : 'var(--color-border)',
+                                          opacity: isSelected ? 1 : 0.6,
+                                          transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                                        }}
+                                      >
+                                        <img src={imgUrl} alt="" className="w-full h-full object-cover" />
+                                        {isSelected && (
+                                          <div 
+                                            className="absolute top-1 left-1 w-3 h-3 rounded-full flex items-center justify-center text-[6px] text-white"
+                                            style={{ background: 'var(--color-accent)' }}
+                                          >
+                                            ✓
+                                          </div>
+                                        )}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-            <div>
-              <label className="text-xs font-bold block mb-1.5" style={{ color: 'var(--color-text-primary)' }}>
-                لون الـ CTA
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={accentColor}
-                  onChange={e => setAccentColor(e.target.value)}
-                  className="w-9 h-9 rounded-lg cursor-pointer border"
-                  style={{ borderColor: 'var(--color-border)' }}
-                />
-                <span className="text-xs font-mono" style={{ color: 'var(--color-text-muted)' }}>{accentColor}</span>
+
+              {/* Free Tools Directory Card */}
+              <div className="card p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <HelpCircle size={18} style={{ color: 'var(--color-accent)' }} />
+                  <p className="text-sm font-black" style={{ color: 'var(--color-text-primary)' }}>
+                    تطبيقات مجانية لمساعدتك في تصميم صور احترافية
+                  </p>
+                </div>
+                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  يمكنك استخدام هذه الأدوات المجانية بالكامل لتصميم صور جذابة، إزالة الخلفيات، أو بناء ملصق تسويقي مخصص ورفعه مباشرة هنا:
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                  {([
+                    {
+                      name: 'Canva',
+                      desc: 'موقع وتطبيق مجاني يحتوي على آلاف القوالب الاحترافية الجاهزة للإنفوغرافيك والتسويق.',
+                      url: 'https://www.canva.com',
+                      badge: 'تصميم قوالب',
+                    },
+                    {
+                      name: 'Remove.bg',
+                      desc: 'لحذف خلفية صورة منتجك بضغطة زر واحدة لتصبح شفافة وجاهزة للدمج.',
+                      url: 'https://www.remove.bg',
+                      badge: 'حذف الخلفية',
+                    },
+                    {
+                      name: 'Photopea',
+                      desc: 'موقع مجاني بالكامل بديل للفوتوشوب يعمل مباشرة من المتصفح دون الحاجة لتثبيت أي شيء.',
+                      url: 'https://www.photopea.com',
+                      badge: 'تعديل احترافي',
+                    },
+                    {
+                      name: 'Adobe Express',
+                      desc: 'أداة مجانية من شركة أدوبي لتصميم المنشورات والملصقات الإعلانية المميزة.',
+                      url: 'https://www.adobe.com/express',
+                      badge: 'بانرات سريعة',
+                    },
+                    {
+                      name: 'Pixlr',
+                      desc: 'محرر صور سهل وسريع يوفر أدوات تحسين سريعة وفلاتر مجانية لصور المنتجات.',
+                      url: 'https://pixlr.com',
+                      badge: 'محرر سريع',
+                    },
+                  ] as const).map((t, idx) => (
+                    <a
+                      key={idx}
+                      href={t.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-3 rounded-xl border border-gray-100 hover:border-blue-400 bg-white hover:bg-slate-50 transition flex flex-col justify-between h-32 text-right group"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-bold text-slate-800 flex items-center gap-1 group-hover:text-blue-500 transition-colors">
+                            {t.name}
+                            <ExternalLink size={12} />
+                          </span>
+                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-slate-100 font-bold text-slate-500">
+                            {t.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+                          {t.desc}
+                        </p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Result preview */}
-          {infographicUrl && !infographicLoading && (
-            <div>
-              <p className="text-xs font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-                ✅ الإنفوغرافيك جاهز — اضغط للتكبير
-              </p>
-              <a href={infographicUrl} target="_blank" rel="noopener noreferrer">
-                <img
-                  src={infographicUrl}
-                  alt="إنفوغرافيك"
-                  className="w-full rounded-xl border shadow"
-                  style={{ borderColor: 'var(--color-border)', maxHeight: '400px', objectFit: 'contain' }}
-                />
-              </a>
             </div>
-          )}
 
-          {/* Loading state */}
-          {infographicLoading && (
-            <div className="flex flex-col items-center gap-3 py-6">
-              <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-accent)' }} />
-              <p className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
-                🎨 يولّد إنفوغرافيك احترافي...
-              </p>
-              <p className="text-xs text-center" style={{ color: 'var(--color-text-muted)' }}>
-                يدمج صورك مع النصوص المكتوبة بالدارجة ويرتبها في قالب احترافي
-              </p>
-            </div>
-          )}
+            {/* Left column: Preview & Settings (5 cols on lg) */}
+            <div className="lg:col-span-5 space-y-6">
+              
+              {/* Design Settings Card */}
+              <div className="card p-5 space-y-4">
+                <p className="text-xs font-bold" style={{ color: 'var(--color-text-primary)' }}>خيارات وقالب الإنفوغرافيك</p>
+                
+                {/* Template selector */}
+                <div>
+                  <p className="text-[11px] font-bold mb-2 text-slate-500">شكل الإنفوغرافيك</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { key: 'story', label: 'قصصي طولي', desc: '5 بانلات متسلسلة', icon: <LayoutTemplate size={18} /> },
+                      { key: 'grid',  label: 'شبكة صور',  desc: 'صورتين في صف', icon: <Grid3X3 size={18} /> },
+                    ] as const).map(t => (
+                      <button
+                        key={t.key}
+                        type="button"
+                        onClick={() => setInfographicTemplate(t.key)}
+                        className="flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all"
+                        style={{
+                          borderColor: infographicTemplate === t.key ? 'var(--color-accent)' : 'var(--color-border)',
+                          background:  infographicTemplate === t.key ? 'var(--color-accent-soft, #EBF5FF)' : '#fff',
+                        }}
+                      >
+                        <span style={{ color: infographicTemplate === t.key ? 'var(--color-accent)' : 'var(--color-text-muted)' }}>
+                          {t.icon}
+                        </span>
+                        <span className="text-xs font-bold" style={{ color: 'var(--color-text-primary)' }}>{t.label}</span>
+                        <span className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>{t.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-          {/* Action buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => { setInfographicSkipped(true); setStep(4) }}
-              className="btn btn-ghost btn-sm flex-1"
-              disabled={infographicLoading}
-            >
-              تخطي
-            </button>
-            {infographicUrl ? (
-              <>
+                {/* Color pickers */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div>
+                    <label className="text-[11px] font-bold block mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                      اللون الرئيسي للمتجر
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={brandColor}
+                        onChange={e => setBrandColor(e.target.value)}
+                        className="w-8 h-8 rounded-lg cursor-pointer border"
+                        style={{ borderColor: 'var(--color-border)' }}
+                      />
+                      <span className="text-xs font-mono text-slate-500">{brandColor}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold block mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                      لون الـ CTA والأزرار
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={accentColor}
+                        onChange={e => setAccentColor(e.target.value)}
+                        className="w-8 h-8 rounded-lg cursor-pointer border"
+                        style={{ borderColor: 'var(--color-border)' }}
+                      />
+                      <span className="text-xs font-mono text-slate-500">{accentColor}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trigger button */}
                 <button
-                  onClick={() => { setInfographicUrl(null); runInfographicGeneration() }}
-                  className="btn btn-ghost btn-sm gap-1.5"
+                  type="button"
+                  onClick={runInfographicGeneration}
                   disabled={infographicLoading}
+                  className="btn btn-primary btn-sm w-full gap-1.5 mt-2"
                 >
-                  <RefreshCw size={13} /> أعد التوليد
+                  {infographicLoading ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                  {infographicLoading ? 'جاري التوليد والتحديث...' : 'تحديث وتوليد الإنفوغرافيك'}
                 </button>
+              </div>
+
+              {/* Live Preview Card */}
+              <div className="card p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold" style={{ color: 'var(--color-text-primary)' }}>معاينة الملصق التسويقي</p>
+                  
+                  {infographicUrl && !infographicLoading && (
+                    <button
+                      type="button"
+                      onClick={handleDownloadSvg}
+                      className="text-blue-500 hover:text-blue-700 text-xs flex items-center gap-1 font-bold"
+                    >
+                      <Download size={13} />
+                      تحميل SVG
+                    </button>
+                  )}
+                </div>
+
+                {/* Result preview */}
+                {infographicUrl && !infographicLoading && (
+                  <div className="space-y-3">
+                    <a href={infographicUrl} target="_blank" rel="noopener noreferrer" className="block relative group overflow-hidden border rounded-xl shadow-inner bg-slate-50">
+                      <img
+                        src={infographicUrl}
+                        alt="إنفوغرافيك"
+                        className="w-full rounded-xl"
+                        style={{ maxHeight: '420px', objectFit: 'contain' }}
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1.5">
+                        <Sparkles size={14} /> اضغط للتكبير في نافذة جديدة
+                      </div>
+                    </a>
+                  </div>
+                )}
+
+                {/* Loading state */}
+                {infographicLoading && (
+                  <div className="flex flex-col items-center gap-3 py-16 border rounded-xl border-dashed">
+                    <Loader2 size={32} className="animate-spin text-blue-500" />
+                    <p className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                      🎨 جاري بناء وتنسيق الإنفوغرافيك...
+                    </p>
+                    <p className="text-xs text-center text-slate-500 px-4">
+                      نقوم بجلب الصور وتحويلها للعمل دون إنترنت، وترتيب الخطوط العربية والتصميم
+                    </p>
+                  </div>
+                )}
+
+                {/* No infographic generated yet */}
+                {!infographicUrl && !infographicLoading && (
+                  <div className="flex flex-col items-center gap-2 py-16 border rounded-xl border-dashed bg-slate-50 text-slate-500">
+                    <ImageIcon size={32} className="opacity-40" />
+                    <p className="text-xs font-bold">لم يتم توليد أي إنفوغرافيك بعد</p>
+                    <p className="text-[10px] text-center px-4">اضغط على زر التحديث في الأعلى لتوليد الإنفوغرافيك</p>
+                  </div>
+                )}
+
+                {/* Custom File Upload option */}
+                <div className="border-t pt-4 space-y-2">
+                  <p className="text-[11px] font-bold text-slate-700">أو قم برفع تصميمك الخاص الجاهز (Canva / Photopea)</p>
+                  <div className="flex items-center gap-2">
+                    <label 
+                      className="btn btn-ghost btn-sm border-2 border-dashed flex-1 flex items-center justify-center gap-1.5 cursor-pointer hover:bg-slate-50"
+                      style={{ borderColor: 'var(--color-border)' }}
+                    >
+                      {uploadingCustom ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                      <span className="text-xs font-bold">
+                        {uploadingCustom ? 'جاري الرفع...' : 'اختر ملف صورة أو SVG'}
+                      </span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleCustomUpload} 
+                        disabled={uploadingCustom || infographicLoading}
+                        className="hidden" 
+                      />
+                    </label>
+                  </div>
+                  <p className="text-[9px] text-slate-500">
+                    يدعم جميع صيغ الصور (PNG, JPG, WebP, SVG). سيتم دمجها كملصق تسويقي كامل في صفحتك.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step Navigation Buttons */}
+              <div className="flex gap-2">
                 <button
-                  onClick={() => { setInfographicSkipped(false); setStep(4) }}
-                  className="btn btn-primary btn-sm flex-1 gap-1.5"
+                  type="button"
+                  onClick={() => { setInfographicSkipped(true); setStep(4) }}
+                  className="btn btn-ghost btn-sm flex-1"
+                  disabled={infographicLoading || uploadingCustom}
                 >
-                  <Check size={13} /> استخدمه <ArrowLeft size={13} />
+                  تخطي هذه الخطوة
                 </button>
-              </>
-            ) : (
-              <button
-                onClick={runInfographicGeneration}
-                disabled={infographicLoading}
-                className="btn btn-primary btn-sm flex-1 gap-1.5"
-              >
-                <Sparkles size={13} />
-                {infographicLoading ? 'جاري التوليد...' : 'ولّد الإنفوغرافيك'}
-              </button>
-            )}
+                {infographicUrl && (
+                  <button
+                    type="button"
+                    onClick={() => { setInfographicSkipped(false); setStep(4) }}
+                    className="btn btn-primary btn-sm flex-1 gap-1.5"
+                    disabled={infographicLoading || uploadingCustom}
+                  >
+                    <Check size={13} /> استخدام هذا التصميم والانتقال للمعاينة <ArrowLeft size={13} />
+                  </button>
+                )}
+              </div>
+
+            </div>
+
           </div>
         </div>
       )}

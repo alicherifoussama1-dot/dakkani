@@ -1,5 +1,5 @@
 // ============================================================
-// Infographic Generator API — Premium SVG (zero native deps)
+// Infographic Generator API — Premium SVG with Base64 Images
 //
 // POST /api/ai/infographic/generate
 //
@@ -8,7 +8,7 @@
 //   - Rounded panels and modern card design
 //   - RTL Arabic typography with proper spacing
 //   - Brand color theming
-//   - Product images embedded via <image>
+//   - Product images embedded via Base64 to be self-contained
 //   - CTA bar with call-to-action
 //   - Store branding footer
 //
@@ -16,7 +16,7 @@
 // ============================================================
 import { createServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { buildDefaultPanels } from '@/lib/ai/infographic-templates'
+import { buildDefaultPanels, InfographicPanel } from '@/lib/ai/infographic-templates'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -79,6 +79,30 @@ function wrapLines(text: string, maxChars: number): string[] {
   return lines.slice(0, 4)
 }
 
+/** Fetch image and convert to base64 data URL */
+async function toBase64DataUrl(url: string, origin: string): Promise<string> {
+  try {
+    if (!url) return ''
+    if (url.startsWith('data:')) return url
+
+    let absoluteUrl = url
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      // Resolve relative url
+      absoluteUrl = new URL(url, origin).toString()
+    }
+
+    const res = await fetch(absoluteUrl)
+    if (!res.ok) throw new Error(`failed to fetch image: ${res.statusText}`)
+    const buffer = await res.arrayBuffer()
+    const contentType = res.headers.get('content-type') || 'image/jpeg'
+    const base64 = Buffer.from(buffer).toString('base64')
+    return `data:${contentType};base64,${base64}`
+  } catch (e) {
+    console.error(`Failed to convert image to base64: ${url}`, e)
+    return url // fallback to original url
+  }
+}
+
 // ── SVG Defs (shared gradients, filters, clip paths) ──────────
 function svgDefs(brandColor: string, accentColor: string): string {
   const bc = hexToRgb(brandColor)
@@ -117,7 +141,7 @@ function svgDefs(brandColor: string, accentColor: string): string {
 
 // ── STORY SVG builder ──────────────────────────────────────────
 function buildStorySVG(opts: {
-  panels: ReturnType<typeof buildDefaultPanels>
+  panels: InfographicPanel[]
   images: string[]
   brandColor: string
   accentColor: string
@@ -126,8 +150,6 @@ function buildStorySVG(opts: {
   productName: string
 }): string {
   const { panels, images, brandColor, accentColor, price, storeName, productName } = opts
-  const bc = hexToRgb(brandColor)
-  const ac = hexToRgb(accentColor)
 
   // Layout: header(48) + panel0(340) + gap(8) + panels1-3(260×3 + gaps) + panel4(340) + gap(8) + CTA(64) + footer
   const headerH = 48
@@ -157,28 +179,36 @@ function buildStorySVG(opts: {
 
   for (let i = 0; i < 5; i++) {
     const panel = panels[i] ?? panels[0]
-    const imgUrl = images[i] ?? images[0]
-    const isFullWidth = i === 0 || i === 4
+    const imgUrl = panel.imageUrl ?? images[i] ?? images[0]
+    const isFullWidth = panel.layout === 'image-full' || panel.layout === 'text-only' || i === 0 || i === 4
 
     if (isFullWidth) {
       const h = fullPanelH
       // Full-width image panel with gradient overlay
       svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16" fill="#222"/>\n`
       svg += `<clipPath id="clip-full-${i}"><rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16"/></clipPath>\n`
-      svg += `<image href="${esc(imgUrl)}" x="${px}" y="${y}" width="${W - px * 2}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-full-${i})"/>\n`
-      svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16" fill="url(#fadeBottom)"/>\n`
+      if (panel.layout !== 'text-only' && imgUrl) {
+        svg += `<image href="${esc(imgUrl)}" x="${px}" y="${y}" width="${W - px * 2}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-full-${i})"/>\n`
+        svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16" fill="url(#fadeBottom)"/>\n`
+      } else {
+        // Text-only: fill with brand soft gradient
+        svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16" fill="url(#brandSoft)" clip-path="url(#clip-full-${i})"/>\n`
+      }
 
       // Headline
       const headLines = wrapLines(panel.headline, 26)
       const textBaseY = y + h - 28 - (headLines.length - 1) * 36 - (panel.subtext ? 28 : 0)
-      svg += `<text text-anchor="end" x="${W - px - 20}" y="${textBaseY}" fill="#fff" font-size="28" font-weight="900" font-family="'Segoe UI',Arial,sans-serif" direction="rtl">\n`
+      const textColor = (panel.layout === 'text-only') ? darken(brandColor, 0.6) : '#fff'
+      const subtextColor = (panel.layout === 'text-only') ? darken(brandColor, 0.4) : 'rgba(255,255,255,0.85)'
+
+      svg += `<text text-anchor="end" x="${W - px - 20}" y="${textBaseY}" fill="${textColor}" font-size="28" font-weight="900" font-family="'Segoe UI',Arial,sans-serif" direction="rtl">\n`
       headLines.forEach((line, li) => {
         svg += `  <tspan x="${W - px - 20}" dy="${li === 0 ? 0 : 36}">${esc(line)}</tspan>\n`
       })
       svg += `</text>\n`
 
       if (panel.subtext) {
-        svg += `<text text-anchor="end" x="${W - px - 20}" y="${y + h - 20}" fill="rgba(255,255,255,0.85)" font-size="14" font-family="'Segoe UI',Arial,sans-serif" direction="rtl">${esc(panel.subtext.slice(0, 65))}</text>\n`
+        svg += `<text text-anchor="end" x="${W - px - 20}" y="${y + h - 20}" fill="${subtextColor}" font-size="14" font-family="'Segoe UI',Arial,sans-serif" direction="rtl">${esc(panel.subtext.slice(0, 65))}</text>\n`
       }
 
       if (panel.badge) {
@@ -191,14 +221,20 @@ function buildStorySVG(opts: {
       // Split panel: image side + branded text side
       const h = splitPanelH
       const halfW = (W - px * 2 - panelGap) / 2
-      const isTextRight = i % 2 === 1
+      
+      let isTextRight = i % 2 === 1
+      if (panel.layout === 'image-right') isTextRight = false
+      if (panel.layout === 'image-left') isTextRight = true
+
       const imgX = isTextRight ? px : px + halfW + panelGap
       const textX = isTextRight ? px + halfW + panelGap : px
 
       // Image side with rounded corners
       svg += `<clipPath id="clip-split-img-${i}"><rect x="${imgX}" y="${y}" width="${halfW}" height="${h}" rx="14"/></clipPath>\n`
       svg += `<rect x="${imgX}" y="${y}" width="${halfW}" height="${h}" rx="14" fill="#ddd"/>\n`
-      svg += `<image href="${esc(imgUrl)}" x="${imgX}" y="${y}" width="${halfW}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-split-img-${i})"/>\n`
+      if (imgUrl) {
+        svg += `<image href="${esc(imgUrl)}" x="${imgX}" y="${y}" width="${halfW}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-split-img-${i})"/>\n`
+      }
 
       // Text side with brand gradient + rounded corners
       svg += `<rect x="${textX}" y="${y}" width="${halfW}" height="${h}" rx="14" fill="url(#brandGrad)"/>\n`
@@ -251,7 +287,7 @@ function buildStorySVG(opts: {
 
 // ── GRID SVG builder ───────────────────────────────────────────
 function buildGridSVG(opts: {
-  panels: ReturnType<typeof buildDefaultPanels>
+  panels: InfographicPanel[]
   images: string[]
   brandColor: string
   accentColor: string
@@ -260,8 +296,6 @@ function buildGridSVG(opts: {
   productName: string
 }): string {
   const { panels, images, brandColor, accentColor, price, storeName, productName } = opts
-  const bc = hexToRgb(brandColor)
-  const ac = hexToRgb(accentColor)
 
   const headerH = 56
   const cellH = 240
@@ -292,14 +326,18 @@ function buildGridSVG(opts: {
     const x = px + col * (cellW + cellGap)
     const y = headerH + cellGap + row * (cellH + cellGap)
 
+    const panel = panels[i]
+    const imgUrl = panel?.imageUrl ?? images[i] ?? images[0]
+
     // Rounded image cell
     svg += `<clipPath id="clip-cell-${i}"><rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="14"/></clipPath>\n`
     svg += `<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="14" fill="#ddd"/>\n`
-    svg += `<image href="${esc(images[i])}" x="${x}" y="${y}" width="${cellW}" height="${cellH}" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-cell-${i})"/>\n`
+    if (imgUrl) {
+      svg += `<image href="${esc(imgUrl)}" x="${x}" y="${y}" width="${cellW}" height="${cellH}" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-cell-${i})"/>\n`
+    }
     // Gradient overlay
     svg += `<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="14" fill="url(#fadeBottom)"/>\n`
 
-    const panel = panels[i]
     if (panel) {
       const headLines = wrapLines(panel.headline, 13)
       svg += `<text text-anchor="end" x="${x + cellW - 12}" y="${y + cellH - 36}" fill="#fff" font-size="15" font-weight="900" font-family="'Segoe UI',Arial,sans-serif" direction="rtl">\n`
@@ -342,16 +380,17 @@ export async function POST(req: Request) {
 
     const body = await req.json()
 
-    // Manual validation (no Zod edge cases — keeps it simple and crash-proof)
-    const storeId     = body.storeId as string
-    const images      = (body.images ?? []) as string[]
-    const aiContent   = body.aiContent
-    const template    = (body.template ?? 'story') as 'story' | 'grid'
-    const brandColor  = (body.brandColor ?? '#7C3AED') as string
-    const accentColor = (body.accentColor ?? '#F59E0B') as string
-    const productName = (body.productName ?? '') as string
-    const price       = Number(body.price) || 0
-    const storeName   = body.storeName as string | undefined
+    // Manual validation
+    const storeId      = body.storeId as string
+    const images       = (body.images ?? []) as string[]
+    const aiContent    = body.aiContent
+    const template     = (body.template ?? 'story') as 'story' | 'grid'
+    const brandColor   = (body.brandColor ?? '#7C3AED') as string
+    const accentColor  = (body.accentColor ?? '#F59E0B') as string
+    const productName  = (body.productName ?? '') as string
+    const price        = Number(body.price) || 0
+    const storeName    = body.storeName as string | undefined
+    const customPanels = body.panels as InfographicPanel[] | undefined
 
     if (!storeId || !productName || images.length === 0) {
       return NextResponse.json({ error: 'بيانات ناقصة: storeId, productName, images مطلوبة' }, { status: 400 })
@@ -367,20 +406,46 @@ export async function POST(req: Request) {
 
     if (!store) return NextResponse.json({ error: 'المتجر غير موجود' }, { status: 404 })
 
-    // Build panels from AI content
-    const panels = buildDefaultPanels({ productName, price, images, aiContent })
+    // Build panels from AI content or use custom panels
+    let panels: InfographicPanel[]
+    if (customPanels && Array.isArray(customPanels) && customPanels.length > 0) {
+      panels = customPanels
+    } else {
+      panels = buildDefaultPanels({ productName, price, images, aiContent })
+    }
+
     const resolvedStore = storeName ?? store.name ?? ''
+
+    // Convert all unique images in the panels and images array to base64
+    const origin = new URL(req.url).origin
+    const uniqueUrls = new Set<string>()
+    images.forEach(u => { if (u) uniqueUrls.add(u) })
+    panels.forEach(p => { if (p.imageUrl) uniqueUrls.add(p.imageUrl) })
+
+    const base64Map: Record<string, string> = {}
+    await Promise.all(
+      Array.from(uniqueUrls).map(async (url) => {
+        base64Map[url] = await toBase64DataUrl(url, origin)
+      })
+    )
+
+    // Replace URLs with their base64 representation
+    const base64Images = images.map(u => base64Map[u] ?? u)
+    const base64Panels = panels.map(p => ({
+      ...p,
+      imageUrl: p.imageUrl ? (base64Map[p.imageUrl] ?? p.imageUrl) : undefined
+    }))
 
     // Build SVG
     let svgContent: string
     if (template === 'grid') {
       svgContent = buildGridSVG({
-        panels, images: images.slice(0, 6), brandColor, accentColor,
+        panels: base64Panels, images: base64Images.slice(0, 6), brandColor, accentColor,
         price, storeName: resolvedStore, productName,
       })
     } else {
       svgContent = buildStorySVG({
-        panels, images: images.slice(0, 6), brandColor, accentColor,
+        panels: base64Panels, images: base64Images.slice(0, 6), brandColor, accentColor,
         price, storeName: resolvedStore, productName,
       })
     }
