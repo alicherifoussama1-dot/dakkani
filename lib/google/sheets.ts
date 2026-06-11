@@ -50,7 +50,7 @@ export function verifyState(state: string): string | null {
 }
 
 export function getRedirectUri(): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  const base = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
   return `${base}/api/google/oauth/callback`
 }
 
