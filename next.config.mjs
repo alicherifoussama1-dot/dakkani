@@ -97,7 +97,7 @@ const nextConfig = {
     ],
   },
   experimental: {
-    serverComponentsExternalPackages: ["jsbarcode", "bwip-js"],
+    serverComponentsExternalPackages: ["jsbarcode", "bwip-js", "sharp"],
     optimizePackageImports: ["framer-motion", "lucide-react", "recharts"],
   },
   async rewrites() {
