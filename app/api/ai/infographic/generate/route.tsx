@@ -11,8 +11,8 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const sharp = require('sharp') as any
+// @ts-ignore
+import sharp from 'sharp'
 import { buildDefaultPanels } from '@/lib/ai/infographic-templates'
 
 export const runtime = 'nodejs'
