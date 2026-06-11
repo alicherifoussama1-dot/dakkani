@@ -334,6 +334,17 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
               <Coins size={13} />
               <span>0 كريدت</span>
             </button>
+            {store?.slug ? (
+              <a href={`/store/${store.slug}`} target="_blank" rel="noopener noreferrer"
+                className="p-2 rounded-md hover:bg-[#F8F9FA] transition-colors" title="زيارة المتجر">
+                <ExternalLink size={16} style={{ color: 'var(--color-text-secondary)' }} />
+              </a>
+            ) : (
+              <Link href="/settings"
+                className="p-2 rounded-md hover:bg-[#F8F9FA] transition-colors" title="أضف رابط متجرك في الإعدادات لزيارته">
+                <ExternalLink size={16} style={{ color: 'var(--color-text-secondary)' }} />
+              </Link>
+            )}
             <Link href="/learn"
               className="p-2 rounded-md hover:bg-[#F8F9FA] transition-colors" title="تعلم">
               <Youtube size={16} style={{ color: '#FF0000' }} />

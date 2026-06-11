@@ -339,8 +339,8 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       confirmili_is_known: prodForm.confirmili_is_known ?? true,
       confirmili_team_note: prodForm.confirmili_team_note ?? null,
     }
-    if (prodForm.id) await sb.from('products').update(patch).eq('id', prodForm.id)
-    else             await sb.from('products').insert({ ...patch, store_id: storeId, is_active: true })
+    if (!prodForm.id) return
+    await sb.from('products').update(patch).eq('id', prodForm.id)
     const { data } = await sb.from('products').select('id,name,name_ar,sku,price,cost_price,images,min_stock_alert,confirmili_is_known,confirmili_team_note').eq('store_id', storeId).eq('is_active', true).order('name')
     setProdList(data ?? []); setProdForm(null); setToast('تم حفظ المنتج')
   }, [prodForm, storeId, setToast])
@@ -1176,10 +1176,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
             <Search size={12} className="absolute right-3 top-1/2 -translate-y-1/2" style={{color:'var(--color-text-muted)'}}/>
             <input value={prodSearch} onChange={e=>setProdSearch(e.target.value)} placeholder="ابحث..." className="input pr-8 text-sm h-9 w-full"/>
           </div>
-          <button onClick={()=>setProdForm({ confirmili_is_known:true })} className="btn btn-primary btn-sm gap-1.5"><Plus size={13}/>إضافة منتج</button>
-          <a href="/products/new" className="btn btn-sm gap-1.5" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>
-            ربط منتج موجود →
-          </a>
+          <a href="/products/new" className="btn btn-primary btn-sm gap-1.5"><Plus size={13}/>إضافة منتج</a>
         </div>
         <div className="card overflow-hidden">
           <table className="data-table" style={{fontFamily:'var(--font-arabic)'}}>
@@ -2105,7 +2102,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
           <div className="fixed inset-0 bg-black/60 z-50" onClick={()=>setProdForm(null)}/>
           <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[380px] bg-white rounded-2xl shadow-2xl overflow-hidden" dir="rtl">
             <div className="flex items-center justify-between px-5 py-3 border-b" style={{borderColor:'var(--color-border)'}}>
-              <h3 className="font-bold text-sm">{prodForm.id ? 'تعديل منتج' : 'إضافة منتج'}</h3>
+              <h3 className="font-bold text-sm">تعديل منتج</h3>
               <button onClick={()=>setProdForm(null)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><X size={16}/></button>
             </div>
             <div className="p-5 space-y-3" style={{fontFamily:'var(--font-arabic)'}}>
