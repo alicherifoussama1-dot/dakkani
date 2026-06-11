@@ -1,16 +1,17 @@
 'use client'
 // ============================================================
-// AI Landing Page Studio — merchant wizard (4 steps)
+// AI Landing Page Studio — merchant wizard (5 steps)
 //
 // All Gemini calls go through API routes — key never leaves server.
 //   1. Pick product + description + audience/tone
-//   2. AI Copy   → POST /api/ai/landing/generate, poll /status/[id]
-//   3. AI Photo  → POST /api/ai/photo/enhance (with scenario), poll
+//   2. AI Copy   → POST /api/ai/landing/generate
+//   3. AI Photo  → POST /api/ai/photo/enhance (with scenario)
+//   3.5 Infographic → POST /api/ai/infographic/generate
 //   4. Preview + Save → INSERT landing_pages row
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, ArrowLeft, Sparkles, ImageIcon, Check, Loader2, RefreshCw, Lightbulb } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Sparkles, ImageIcon, Check, Loader2, RefreshCw, Lightbulb, LayoutTemplate, Grid3X3 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDZD } from '@/lib/utils/format'
 import { slugify } from '@/lib/utils/format'
@@ -24,7 +25,7 @@ interface ProductLite {
 }
 
 interface Props { storeId: string; storeSlug: string; products: ProductLite[] }
-type Step = 1 | 2 | 3 | 4
+type Step = 1 | 2 | 3 | 3.5 | 4
 
 const TONES = [
   { key: 'حماسي',    label: 'حماسي 🔥' },
@@ -76,6 +77,14 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null)
   const [scenario, setScenario]           = useState('')
   const [scenarioApplied, setScenarioApplied] = useState(false)
+
+  // ── Step 3.5 — Infographic studio ──
+  const [infographicLoading, setInfographicLoading] = useState(false)
+  const [infographicTemplate, setInfographicTemplate] = useState<'story' | 'grid'>('story')
+  const [infographicUrl, setInfographicUrl] = useState<string | null>(null)
+  const [infographicSkipped, setInfographicSkipped] = useState(false)
+  const [brandColor, setBrandColor] = useState('#7C3AED')
+  const [accentColor, setAccentColor] = useState('#F59E0B')
 
   const sourceImageUrl = product?.images?.[0]?.url ?? null
   const categoryName   = product?.category?.name_ar ?? ''
@@ -173,6 +182,43 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
     }
   }
 
+  // ── Infographic generation ──
+  async function runInfographicGeneration() {
+    if (!product) return
+    setError(null)
+    setInfographicLoading(true)
+    try {
+      // Collect all available images (enhanced + original)
+      const allImages = [
+        selectedImageUrl,
+        ...(product.images?.map(i => i.url) ?? []),
+        ...photoOptions.map(o => o.url),
+      ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i) as string[]
+
+      const res = await fetch('/api/ai/infographic/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storeId,
+          images: allImages.slice(0, 6),
+          aiContent,
+          template: infographicTemplate,
+          brandColor,
+          accentColor,
+          productName: product.name_ar ?? product.name,
+          price: product.price,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'تعذر توليد الإنفوغرافيك')
+      setInfographicUrl(data.url)
+    } catch (e: any) {
+      setError(e?.message ?? 'حدث خطأ أثناء توليد الإنفوغرافيك')
+    } finally {
+      setInfographicLoading(false)
+    }
+  }
+
   // Auto-trigger steps when entering them
   useEffect(() => {
     if (step === 2 && !aiContent && !copyLoading) runCopyGeneration()
@@ -192,9 +238,10 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
     try {
       const baseSlug = slugify(product.name_ar ?? product.name) || 'landing'
       const slug     = `${baseSlug}-${Math.random().toString(36).slice(2, 7)}`
-      const aiImages = selectedImageUrl
-        ? [{ key: 'selected', label_ar: 'صورة الصفحة', url: selectedImageUrl }]
-        : []
+      const aiImages = [
+        ...(selectedImageUrl ? [{ key: 'selected', label_ar: 'صورة الصفحة', url: selectedImageUrl }] : []),
+        ...(infographicUrl && !infographicSkipped ? [{ key: 'infographic', label_ar: 'إنفوغرافيك', url: infographicUrl }] : []),
+      ]
 
       let pageId: string | null = null
 
@@ -269,30 +316,31 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
       </div>
 
       {/* Step indicator */}
-      <div className="flex items-center gap-2 my-5">
+      <div className="flex items-center gap-1 my-5">
         {[
-          { n: 1, label: 'المنتج' },
-          { n: 2, label: 'النص بالذكاء الاصطناعي' },
-          { n: 3, label: 'استوديو الصور' },
-          { n: 4, label: 'المعاينة والحفظ' },
+          { n: 1,   label: 'المنتج' },
+          { n: 2,   label: 'النص AI' },
+          { n: 3,   label: 'الصور' },
+          { n: 3.5, label: 'إنفوغرافيك' },
+          { n: 4,   label: 'حفظ' },
         ].map((s, i) => (
-          <div key={s.n} className="flex items-center gap-2 flex-1">
+          <div key={s.n} className="flex items-center gap-1 flex-1">
             <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+              className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
               style={{
                 background: step >= s.n ? 'var(--color-accent)' : 'var(--color-bg-soft)',
                 color:      step >= s.n ? '#fff' : 'var(--color-text-muted)',
               }}
             >
-              {step > s.n ? <Check size={14} /> : s.n}
+              {step > s.n ? <Check size={12} /> : (s.n === 3.5 ? '✦' : s.n)}
             </div>
             <span
-              className="text-xs hidden sm:block"
+              className="text-[10px] hidden sm:block truncate"
               style={{ color: step >= s.n ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}
             >
               {s.label}
             </span>
-            {i < 3 && (
+            {i < 4 && (
               <div
                 className="flex-1 h-0.5 rounded"
                 style={{ background: step > s.n ? 'var(--color-accent)' : 'var(--color-border)' }}
@@ -551,8 +599,8 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
                         <RefreshCw size={13} />بدون مشهد
                       </button>
                     )}
-                    <button onClick={() => setStep(4)} className="btn btn-primary btn-sm gap-1.5">
-                      متابعة <ArrowLeft size={13} />
+                    <button onClick={() => setStep(3.5)} className="btn btn-primary btn-sm gap-1.5">
+                      <Sparkles size={13} /> إنفوغرافيك <ArrowLeft size={13} />
                     </button>
                   </div>
                 </>
@@ -568,6 +616,150 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
               )}
             </>
           )}
+        </div>
+      )}
+
+      {/* ── STEP 3.5 — Infographic Studio ────────────────────── */}
+      {step === 3.5 && (
+        <div className="card p-5 space-y-5">
+          {/* Header */}
+          <div>
+            <p className="text-sm font-black flex items-center gap-2" style={{ color: 'var(--color-text-primary)' }}>
+              <Sparkles size={16} style={{ color: 'var(--color-accent)' }} />
+              مولّد الإنفوغرافيك الاحترافي
+            </p>
+            <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+              يدمج صور منتجك مع النصوص تلقائياً في صورة طولية مثل Ayor
+            </p>
+          </div>
+
+          {/* Template selector */}
+          <div>
+            <p className="text-xs font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>اختر شكل الإنفوغرافيك</p>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { key: 'story', label: 'قصصي طولي', desc: '5 بانلات متسلسلة', icon: <LayoutTemplate size={20} /> },
+                { key: 'grid',  label: 'شبكة صور',  desc: 'صورتين في صف', icon: <Grid3X3 size={20} /> },
+              ] as const).map(t => (
+                <button
+                  key={t.key}
+                  onClick={() => setInfographicTemplate(t.key)}
+                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all"
+                  style={{
+                    borderColor: infographicTemplate === t.key ? 'var(--color-accent)' : 'var(--color-border)',
+                    background:  infographicTemplate === t.key ? 'var(--color-accent-soft, #EBF5FF)' : '#fff',
+                  }}
+                >
+                  <span style={{ color: infographicTemplate === t.key ? 'var(--color-accent)' : 'var(--color-text-muted)' }}>
+                    {t.icon}
+                  </span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>{t.label}</span>
+                  <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{t.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Color pickers */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold block mb-1.5" style={{ color: 'var(--color-text-primary)' }}>
+                اللون الرئيسي
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={brandColor}
+                  onChange={e => setBrandColor(e.target.value)}
+                  className="w-9 h-9 rounded-lg cursor-pointer border"
+                  style={{ borderColor: 'var(--color-border)' }}
+                />
+                <span className="text-xs font-mono" style={{ color: 'var(--color-text-muted)' }}>{brandColor}</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold block mb-1.5" style={{ color: 'var(--color-text-primary)' }}>
+                لون الـ CTA
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={accentColor}
+                  onChange={e => setAccentColor(e.target.value)}
+                  className="w-9 h-9 rounded-lg cursor-pointer border"
+                  style={{ borderColor: 'var(--color-border)' }}
+                />
+                <span className="text-xs font-mono" style={{ color: 'var(--color-text-muted)' }}>{accentColor}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Result preview */}
+          {infographicUrl && !infographicLoading && (
+            <div>
+              <p className="text-xs font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                ✅ الإنفوغرافيك جاهز — اضغط للتكبير
+              </p>
+              <a href={infographicUrl} target="_blank" rel="noopener noreferrer">
+                <img
+                  src={infographicUrl}
+                  alt="إنفوغرافيك"
+                  className="w-full rounded-xl border shadow"
+                  style={{ borderColor: 'var(--color-border)', maxHeight: '400px', objectFit: 'contain' }}
+                />
+              </a>
+            </div>
+          )}
+
+          {/* Loading state */}
+          {infographicLoading && (
+            <div className="flex flex-col items-center gap-3 py-6">
+              <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-accent)' }} />
+              <p className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                🎨 يولّد إنفوغرافيك احترافي...
+              </p>
+              <p className="text-xs text-center" style={{ color: 'var(--color-text-muted)' }}>
+                يدمج صورك مع النصوص المكتوبة بالدارجة ويرتبها في قالب احترافي
+              </p>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setInfographicSkipped(true); setStep(4) }}
+              className="btn btn-ghost btn-sm flex-1"
+              disabled={infographicLoading}
+            >
+              تخطي
+            </button>
+            {infographicUrl ? (
+              <>
+                <button
+                  onClick={() => { setInfographicUrl(null); runInfographicGeneration() }}
+                  className="btn btn-ghost btn-sm gap-1.5"
+                  disabled={infographicLoading}
+                >
+                  <RefreshCw size={13} /> أعد التوليد
+                </button>
+                <button
+                  onClick={() => { setInfographicSkipped(false); setStep(4) }}
+                  className="btn btn-primary btn-sm flex-1 gap-1.5"
+                >
+                  <Check size={13} /> استخدمه <ArrowLeft size={13} />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={runInfographicGeneration}
+                disabled={infographicLoading}
+                className="btn btn-primary btn-sm flex-1 gap-1.5"
+              >
+                <Sparkles size={13} />
+                {infographicLoading ? 'جاري التوليد...' : 'ولّد الإنفوغرافيك'}
+              </button>
+            )}
+          </div>
         </div>
       )}
 

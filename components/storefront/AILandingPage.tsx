@@ -348,10 +348,13 @@ export default function AILandingPage({ page, product, store, wilayas }: Props) 
   const ctaText   = heroVariant?.cta_text   ?? hero?.cta_text   ?? '🛒 اطلب الآن'
   const badgeText = hero?.badge_text
 
-  const heroImage     = page.ai_images?.[0]?.url ?? (product.images as any[])?.[0]?.url
-  const galleryImages: AIImage[] = page.ai_images?.length
-    ? page.ai_images
+  const heroImage        = page.ai_images?.[0]?.url ?? (product.images as any[])?.[0]?.url
+  const infographicImages: AIImage[] = (page.ai_images ?? []).filter(img => img.key === 'infographic')
+  const regularImages: AIImage[]    = (page.ai_images ?? []).filter(img => img.key !== 'infographic')
+  const galleryImages: AIImage[]    = regularImages.length
+    ? regularImages
     : ((product.images as any[])?.map((i: any) => ({ url: i.url, label_ar: '' })) ?? [])
+
 
   const hasDiscount  = product.compare_price && product.compare_price > product.price
   const discountPct  = hasDiscount ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100) : 0
@@ -549,10 +552,43 @@ export default function AILandingPage({ page, product, store, wilayas }: Props) 
         </section>
       )}
 
+      {/* ── INFOGRAPHIC (AI-generated multi-panel image) ──────── */}
+      {infographicImages.length > 0 && (
+        <section className="w-full max-w-2xl mx-auto px-4 pb-10">
+          <FadeUp>
+            <h2 className="pt-heading text-xl md:text-2xl font-black text-center mb-5" style={{ color: 'var(--pt-text)' }}>
+              🎨 كل تفاصيل المنتج في صورة واحدة
+            </h2>
+            {infographicImages.map((img, i) => (
+              <a
+                key={i}
+                href={img.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full overflow-hidden"
+                style={{
+                  borderRadius: 'var(--pt-radius-lg)',
+                  boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
+                  marginBottom: i < infographicImages.length - 1 ? '16px' : 0,
+                }}
+              >
+                <img
+                  src={img.url}
+                  alt="إنفوغرافيك المنتج"
+                  className="w-full h-auto block"
+                  style={{ display: 'block' }}
+                />
+              </a>
+            ))}
+          </FadeUp>
+        </section>
+      )}
+
       {/* ── GALLERY (zoomable) ────────────────────────────────── */}
       {((page.theme_key === 'poster' && galleryImages.length > 0) || galleryImages.length > 1) && (
         <GallerySection images={galleryImages} isPosterTheme={page.theme_key === 'poster'} />
       )}
+
 
       {/* ── PRODUCT DETAILS ───────────────────────────────────── */}
       {content.product_details && (content.product_details.intro || (content.product_details.specs?.length ?? 0) > 0) && (
