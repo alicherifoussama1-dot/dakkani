@@ -174,7 +174,7 @@ function buildStorySVG(opts: {
 
   // ── Header bar ──
   svg += `<rect x="0" y="0" width="${W}" height="${headerH}" fill="url(#brandGrad)"/>\n`
-  svg += `<text x="${W / 2}" y="${headerH / 2 + 6}" text-anchor="middle" fill="#fff" font-size="18" font-weight="900" font-family="'Segoe UI',Arial,sans-serif">${esc(productName)}</text>\n`
+  svg += `<text x="${W / 2}" y="${headerH / 2 + 6}" text-anchor="middle" fill="#fff" font-size="18" font-weight="900" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif">${esc(productName)}</text>\n`
   y += headerH
 
   for (let i = 0; i < 5; i++) {
@@ -185,7 +185,7 @@ function buildStorySVG(opts: {
     if (isFullWidth) {
       const h = fullPanelH
       // Full-width image panel with gradient overlay
-      svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16" fill="#222"/>\n`
+      svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16" fill="#222" filter="url(#shadow)"/>\n`
       svg += `<clipPath id="clip-full-${i}"><rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16"/></clipPath>\n`
       if (panel.layout !== 'text-only' && imgUrl) {
         svg += `<image href="${esc(imgUrl)}" x="${px}" y="${y}" width="${W - px * 2}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-full-${i})"/>\n`
@@ -201,19 +201,19 @@ function buildStorySVG(opts: {
       const textColor = (panel.layout === 'text-only') ? darken(brandColor, 0.6) : '#fff'
       const subtextColor = (panel.layout === 'text-only') ? darken(brandColor, 0.4) : 'rgba(255,255,255,0.85)'
 
-      svg += `<text text-anchor="end" x="${W - px - 20}" y="${textBaseY}" fill="${textColor}" font-size="28" font-weight="900" font-family="'Segoe UI',Arial,sans-serif" direction="rtl">\n`
+      svg += `<text text-anchor="end" x="${W - px - 20}" y="${textBaseY}" fill="${textColor}" font-size="28" font-weight="900" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif" direction="rtl">\n`
       headLines.forEach((line, li) => {
         svg += `  <tspan x="${W - px - 20}" dy="${li === 0 ? 0 : 36}">${esc(line)}</tspan>\n`
       })
       svg += `</text>\n`
 
       if (panel.subtext) {
-        svg += `<text text-anchor="end" x="${W - px - 20}" y="${y + h - 20}" fill="${subtextColor}" font-size="14" font-family="'Segoe UI',Arial,sans-serif" direction="rtl">${esc(panel.subtext.slice(0, 65))}</text>\n`
+        svg += `<text text-anchor="end" x="${W - px - 20}" y="${y + h - 20}" fill="${subtextColor}" font-size="14" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif" direction="rtl">${esc(panel.subtext.slice(0, 65))}</text>\n`
       }
 
       if (panel.badge) {
         svg += `<rect x="${px + 16}" y="${y + h - 50}" width="160" height="32" rx="16" fill="url(#accentGrad)"/>\n`
-        svg += `<text x="${px + 96}" y="${y + h - 29}" text-anchor="middle" fill="#fff" font-size="14" font-weight="700" font-family="'Segoe UI',Arial,sans-serif">${esc(panel.badge)}</text>\n`
+        svg += `<text x="${px + 96}" y="${y + h - 29}" text-anchor="middle" fill="#fff" font-size="14" font-weight="700" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif">${esc(panel.badge)}</text>\n`
       }
 
       y += h + panelGap
@@ -231,18 +231,18 @@ function buildStorySVG(opts: {
 
       // Image side with rounded corners
       svg += `<clipPath id="clip-split-img-${i}"><rect x="${imgX}" y="${y}" width="${halfW}" height="${h}" rx="14"/></clipPath>\n`
-      svg += `<rect x="${imgX}" y="${y}" width="${halfW}" height="${h}" rx="14" fill="#ddd"/>\n`
+      svg += `<rect x="${imgX}" y="${y}" width="${halfW}" height="${h}" rx="14" fill="#ddd" filter="url(#shadow)"/>\n`
       if (imgUrl) {
         svg += `<image href="${esc(imgUrl)}" x="${imgX}" y="${y}" width="${halfW}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-split-img-${i})"/>\n`
       }
 
       // Text side with brand gradient + rounded corners
-      svg += `<rect x="${textX}" y="${y}" width="${halfW}" height="${h}" rx="14" fill="url(#brandGrad)"/>\n`
+      svg += `<rect x="${textX}" y="${y}" width="${halfW}" height="${h}" rx="14" fill="url(#brandGrad)" filter="url(#shadow)"/>\n`
 
       // Headline
       const headLines = wrapLines(panel.headline, 14)
       const headY = y + 45
-      svg += `<text text-anchor="end" x="${textX + halfW - 18}" y="${headY}" fill="#fff" font-size="19" font-weight="900" font-family="'Segoe UI',Arial,sans-serif" direction="rtl">\n`
+      svg += `<text text-anchor="end" x="${textX + halfW - 18}" y="${headY}" fill="#fff" font-size="19" font-weight="900" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif" direction="rtl">\n`
       headLines.forEach((line, li) => {
         svg += `  <tspan x="${textX + halfW - 18}" dy="${li === 0 ? 0 : 28}">${esc(line)}</tspan>\n`
       })
@@ -252,7 +252,7 @@ function buildStorySVG(opts: {
       if (panel.subtext) {
         const subY = headY + headLines.length * 28 + 16
         const subLines = wrapLines(panel.subtext, 16)
-        svg += `<text text-anchor="end" x="${textX + halfW - 18}" y="${subY}" fill="rgba(255,255,255,0.8)" font-size="12" font-family="'Segoe UI',Arial,sans-serif" direction="rtl">\n`
+        svg += `<text text-anchor="end" x="${textX + halfW - 18}" y="${subY}" fill="rgba(255,255,255,0.8)" font-size="12" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif" direction="rtl">\n`
         subLines.forEach((line, li) => {
           svg += `  <tspan x="${textX + halfW - 18}" dy="${li === 0 ? 0 : 18}">${esc(line)}</tspan>\n`
         })
@@ -262,7 +262,7 @@ function buildStorySVG(opts: {
       // Badge pill
       if (panel.badge) {
         svg += `<rect x="${textX + 14}" y="${y + h - 48}" width="150" height="30" rx="15" fill="url(#accentGrad)"/>\n`
-        svg += `<text x="${textX + 89}" y="${y + h - 28}" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="'Segoe UI',Arial,sans-serif">${esc(panel.badge)}</text>\n`
+        svg += `<text x="${textX + 89}" y="${y + h - 28}" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif">${esc(panel.badge)}</text>\n`
       }
 
       y += h + panelGap
@@ -270,15 +270,15 @@ function buildStorySVG(opts: {
   }
 
   // ── CTA bar ──
-  svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${ctaH}" rx="16" fill="url(#accentGrad)"/>\n`
-  svg += `<text x="${W / 2}" y="${y + ctaH / 2 + 7}" text-anchor="middle" fill="#fff" font-size="22" font-weight="900" font-family="'Segoe UI',Arial,sans-serif">🛒 اطلب الان — ${price.toLocaleString('fr-DZ')} دج</text>\n`
-  svg += `<text x="${W / 2}" y="${y + ctaH / 2 + 26}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="12" font-family="'Segoe UI',Arial,sans-serif">الدفع عند الاستلام • التوصيل لـ 58 ولاية</text>\n`
+  svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${ctaH}" rx="16" fill="url(#accentGrad)" filter="url(#shadow)"/>\n`
+  svg += `<text x="${W / 2}" y="${y + ctaH / 2 + 7}" text-anchor="middle" fill="#fff" font-size="22" font-weight="900" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif">🛒 اطلب الان — ${price.toLocaleString('fr-DZ')} دج</text>\n`
+  svg += `<text x="${W / 2}" y="${y + ctaH / 2 + 26}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="12" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif">الدفع عند الاستلام • التوصيل لـ 58 ولاية</text>\n`
   y += ctaH + panelGap
 
   // ── Footer ──
   if (storeName) {
     svg += `<rect x="0" y="${y}" width="${W}" height="${footerH}" fill="url(#brandGrad)"/>\n`
-    svg += `<text x="${W / 2}" y="${y + footerH / 2 + 6}" text-anchor="middle" fill="#fff" font-size="15" font-weight="700" font-family="'Segoe UI',Arial,sans-serif">${esc(storeName)}</text>\n`
+    svg += `<text x="${W / 2}" y="${y + footerH / 2 + 6}" text-anchor="middle" fill="#fff" font-size="15" font-weight="700" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif">${esc(storeName)}</text>\n`
   }
 
   svg += `</svg>`
@@ -317,7 +317,7 @@ function buildGridSVG(opts: {
 
   // Header
   svg += `<rect x="0" y="0" width="${W}" height="${headerH}" fill="url(#brandGrad)"/>\n`
-  svg += `<text x="${W / 2}" y="${headerH / 2 + 7}" text-anchor="middle" fill="#fff" font-size="22" font-weight="900" font-family="'Segoe UI',Arial,sans-serif">${esc(productName)}</text>\n`
+  svg += `<text x="${W / 2}" y="${headerH / 2 + 7}" text-anchor="middle" fill="#fff" font-size="22" font-weight="900" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif">${esc(productName)}</text>\n`
 
   // Grid cells
   for (let i = 0; i < imgCount; i++) {
@@ -331,7 +331,7 @@ function buildGridSVG(opts: {
 
     // Rounded image cell
     svg += `<clipPath id="clip-cell-${i}"><rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="14"/></clipPath>\n`
-    svg += `<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="14" fill="#ddd"/>\n`
+    svg += `<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="14" fill="#ddd" filter="url(#shadow)"/>\n`
     if (imgUrl) {
       svg += `<image href="${esc(imgUrl)}" x="${x}" y="${y}" width="${cellW}" height="${cellH}" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-cell-${i})"/>\n`
     }
@@ -340,29 +340,29 @@ function buildGridSVG(opts: {
 
     if (panel) {
       const headLines = wrapLines(panel.headline, 13)
-      svg += `<text text-anchor="end" x="${x + cellW - 12}" y="${y + cellH - 36}" fill="#fff" font-size="15" font-weight="900" font-family="'Segoe UI',Arial,sans-serif" direction="rtl">\n`
+      svg += `<text text-anchor="end" x="${x + cellW - 12}" y="${y + cellH - 36}" fill="#fff" font-size="15" font-weight="900" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif" direction="rtl">\n`
       headLines.forEach((line, li) => {
         svg += `  <tspan x="${x + cellW - 12}" dy="${li === 0 ? 0 : 20}">${esc(line)}</tspan>\n`
       })
       svg += `</text>\n`
 
       if (panel.subtext) {
-        svg += `<text text-anchor="end" x="${x + cellW - 12}" y="${y + cellH - 14}" fill="rgba(255,255,255,0.8)" font-size="11" font-family="'Segoe UI',Arial,sans-serif" direction="rtl">${esc(panel.subtext.slice(0, 30))}</text>\n`
+        svg += `<text text-anchor="end" x="${x + cellW - 12}" y="${y + cellH - 14}" fill="rgba(255,255,255,0.8)" font-size="11" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif" direction="rtl">${esc(panel.subtext.slice(0, 30))}</text>\n`
       }
     }
   }
 
   // CTA
   const ctaY = headerH + cellGap + rows * (cellH + cellGap)
-  svg += `<rect x="${px}" y="${ctaY}" width="${W - px * 2}" height="${ctaH}" rx="16" fill="url(#accentGrad)"/>\n`
-  svg += `<text x="${W / 2}" y="${ctaY + ctaH / 2 + 7}" text-anchor="middle" fill="#fff" font-size="22" font-weight="900" font-family="'Segoe UI',Arial,sans-serif">🛒 اطلب الان — ${price.toLocaleString('fr-DZ')} دج</text>\n`
-  svg += `<text x="${W / 2}" y="${ctaY + ctaH / 2 + 26}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="12" font-family="'Segoe UI',Arial,sans-serif">الدفع عند الاستلام • التوصيل لـ 58 ولاية</text>\n`
+  svg += `<rect x="${px}" y="${ctaY}" width="${W - px * 2}" height="${ctaH}" rx="16" fill="url(#accentGrad)" filter="url(#shadow)"/>\n`
+  svg += `<text x="${W / 2}" y="${ctaY + ctaH / 2 + 7}" text-anchor="middle" fill="#fff" font-size="22" font-weight="900" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif">🛒 اطلب الان — ${price.toLocaleString('fr-DZ')} دج</text>\n`
+  svg += `<text x="${W / 2}" y="${ctaY + ctaH / 2 + 26}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="12" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif">الدفع عند الاستلام • التوصيل لـ 58 ولاية</text>\n`
 
   // Footer
   if (storeName) {
     const fY = ctaY + ctaH + cellGap
     svg += `<rect x="0" y="${fY}" width="${W}" height="${footerH}" fill="url(#brandGrad)"/>\n`
-    svg += `<text x="${W / 2}" y="${fY + footerH / 2 + 6}" text-anchor="middle" fill="#fff" font-size="15" font-weight="700" font-family="'Segoe UI',Arial,sans-serif">${esc(storeName)}</text>\n`
+    svg += `<text x="${W / 2}" y="${fY + footerH / 2 + 6}" text-anchor="middle" fill="#fff" font-size="15" font-weight="700" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif">${esc(storeName)}</text>\n`
   }
 
   svg += `</svg>`
