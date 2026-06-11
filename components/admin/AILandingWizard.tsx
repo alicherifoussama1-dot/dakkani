@@ -231,6 +231,11 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
 
+  useEffect(() => {
+    if (step === 3.5 && !infographicUrl && !infographicLoading) runInfographicGeneration()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
+
   // ── Save ──
   async function handleSave() {
     if (!product || !aiContent) return
