@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { formatDZD } from '@/lib/utils/format'
 import ProductOrderForm from './ProductOrderForm'
 import { Star, Shield, Truck, Package, ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react'
@@ -86,8 +86,58 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
     ? `https://wa.me/${storePhone.replace(/\D/g,'').replace(/^0/,'213')}?text=${encodeURIComponent(waText)}`
     : null
 
-  const prev = () => setActiveImg(i => (i - 1 + images.length) % images.length)
-  const next = () => setActiveImg(i => (i + 1) % images.length)
+  const galleryRef = useRef<HTMLDivElement>(null)
+
+  const scrollToIdx = (idx: number) => {
+    if (!galleryRef.current) return
+    const container = galleryRef.current
+    const items = container.querySelectorAll('[data-gallery-item]')
+    const target = items[idx]
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    }
+  }
+
+  const handleScroll = () => {
+    if (!galleryRef.current) return
+    const container = galleryRef.current
+    const containerRect = container.getBoundingClientRect()
+    const containerCenter = containerRect.left + containerRect.width / 2
+
+    const items = container.querySelectorAll('[data-gallery-item]')
+    let closestIdx = 0
+    let minDistance = Infinity
+
+    items.forEach((item, idx) => {
+      const rect = item.getBoundingClientRect()
+      const itemCenter = rect.left + rect.width / 2
+      const distance = Math.abs(itemCenter - containerCenter)
+      if (distance < minDistance) {
+        minDistance = distance
+        closestIdx = idx
+      }
+    })
+
+    setActiveImg(curr => {
+      if (closestIdx !== curr) {
+        return closestIdx
+      }
+      return curr
+    })
+  }
+
+  const prev = () => {
+    if (images.length <= 1) return
+    const nextIdx = (activeImg - 1 + images.length) % images.length
+    setActiveImg(nextIdx)
+    scrollToIdx(nextIdx)
+  }
+  const next = () => {
+    if (images.length <= 1) return
+    const nextIdx = (activeImg + 1) % images.length
+    setActiveImg(nextIdx)
+    scrollToIdx(nextIdx)
+  }
 
   return (
     <div data-pt-root style={{ ...cssVars }}>
@@ -99,18 +149,39 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               className="relative group aspect-square overflow-hidden"
               style={{ background: 'var(--pt-surface)', borderRadius: 'var(--pt-radius-lg)', boxShadow: 'var(--pt-shadow-md)', border: '1px solid var(--pt-border)' }}
             >
-              {images[activeImg]?.url ? (
-                <img
-                  key={activeImg}
-                  src={images[activeImg].url}
-                  alt={product.name_ar ?? product.name}
-                  className="w-full h-full object-cover transition-opacity duration-200"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-7xl text-gray-100 bg-gray-50">
-                  {(product.name_ar ?? product.name)[0]}
-                </div>
-              )}
+              <div
+                ref={galleryRef}
+                onScroll={handleScroll}
+                className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+                style={{ scrollBehavior: 'smooth' }}
+              >
+                {images.length > 0 ? (
+                  images.map((img: any, idx: number) => (
+                    <div
+                      key={idx}
+                      data-gallery-item
+                      className="w-full h-full flex-shrink-0 snap-center relative"
+                    >
+                      {img?.url ? (
+                        <img
+                          src={img.url}
+                          alt={`${product.name_ar ?? product.name} - ${idx + 1}`}
+                          className="w-full h-full object-cover select-none"
+                          draggable="false"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-7xl text-gray-100 bg-gray-50 select-none">
+                          {(product.name_ar ?? product.name)[0]}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center text-7xl text-gray-100 bg-gray-50 select-none">
+                    {(product.name_ar ?? product.name)[0]}
+                  </div>
+                )}
+              </div>
 
               {images.length > 1 && (
                 <>
@@ -138,7 +209,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
             {images.length > 1 && (
               <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
                 {images.map((img: any, i: number) => (
-                  <button key={i} onClick={() => setActiveImg(i)}
+                  <button key={i} onClick={() => { setActiveImg(i); scrollToIdx(i); }}
                     className="w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all hover:opacity-90"
                     style={{ borderColor: i === activeImg ? 'var(--pt-accent)' : 'transparent' }}>
                     <img src={img.url} alt="" className="w-full h-full object-cover" />
