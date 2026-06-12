@@ -4,6 +4,7 @@ import { formatDZD } from '@/lib/utils/format'
 import ProductOrderForm from './ProductOrderForm'
 import { Star, Shield, Truck, Package, ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getProductTheme, themeToCSSVars } from '@/lib/product-themes'
 import ProductVariants, { type VariantGroup } from '@/components/discover/product/ProductVariants'
 import '@/components/discover/product/product-theme.css'
@@ -163,10 +164,13 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
                       className="w-full h-full flex-shrink-0 snap-center relative"
                     >
                       {img?.url ? (
-                        <img
+                        <Image
                           src={img.url}
                           alt={`${product.name_ar ?? product.name} - ${idx + 1}`}
-                          className="w-full h-full object-cover select-none"
+                          fill
+                          priority={idx === 0}
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          className="object-cover select-none"
                           draggable="false"
                         />
                       ) : (
@@ -210,9 +214,15 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
                 {images.map((img: any, i: number) => (
                   <button key={i} onClick={() => { setActiveImg(i); scrollToIdx(i); }}
-                    className="w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all hover:opacity-90"
+                    className="w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all hover:opacity-90 relative"
                     style={{ borderColor: i === activeImg ? 'var(--pt-accent)' : 'transparent' }}>
-                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                    <Image
+                      src={img.url}
+                      alt=""
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                    />
                   </button>
                 ))}
               </div>
@@ -273,11 +283,14 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
             )}
 
             {(product.description_image_url || product.attributes?.description_image_url) && (
-              <div className="pt-4" style={{ borderTop: product.description_ar ? 'none' : '1px solid var(--pt-border)' }}>
-                <img
+              <div className="pt-4 w-full" style={{ borderTop: product.description_ar ? 'none' : '1px solid var(--pt-border)' }}>
+                <Image
                   src={product.description_image_url ?? product.attributes?.description_image_url}
                   alt="وصف المنتج"
-                  className="w-full rounded-2xl object-contain shadow-sm border border-gray-100"
+                  width={1200}
+                  height={1200}
+                  className="w-full h-auto rounded-2xl object-contain shadow-sm border border-gray-100"
+                  loading="lazy"
                 />
               </div>
             )}
@@ -339,6 +352,8 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
             src={images[activeImg].url}
             alt={product.name_ar ?? product.name}
             className="max-w-full max-h-full object-contain rounded-2xl"
+            loading="lazy"
+            decoding="async"
             onClick={e => e.stopPropagation()}
           />
           <button onClick={() => setLightbox(false)}
