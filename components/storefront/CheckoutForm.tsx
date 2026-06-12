@@ -4,6 +4,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { formatDZD } from '@/lib/utils/format'
 import { usePixels } from '@/components/pixels/PixelProvider'
@@ -354,9 +355,9 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           {/* Product summary (mobile) */}
           {product && (
             <div className="lg:hidden bg-white rounded-2xl border border-gray-100 p-4 flex gap-3">
-              <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+              <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative">
                 {product.images?.[0]?.url ? (
-                  <img src={product.images[0].url} alt={product.name} className="w-full h-full object-cover" />
+                  <Image src={product.images[0].url} alt={product.name} fill sizes="64px" className="object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-2xl text-gray-300">{product.name[0]}</div>
                 )}
@@ -604,9 +605,9 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
             {product && (
               <div className="hidden lg:block bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                 <div className="flex gap-3">
-                  <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                  <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative">
                     {product.images?.[0]?.url ? (
-                      <img src={product.images[0].url} alt={product.name} className="w-full h-full object-cover" />
+                      <Image src={product.images[0].url} alt={product.name} fill sizes="80px" className="object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-2xl text-gray-300">{product.name[0]}</div>
                     )}

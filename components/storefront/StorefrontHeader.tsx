@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ShoppingCart, Search, Menu, X } from 'lucide-react'
 import type { Store } from '@/types'
 
@@ -16,7 +17,7 @@ export default function StorefrontHeader({ store }: Props) {
         {/* Logo */}
         <Link href={`/store/${store.slug}`} className="flex items-center gap-2.5 flex-shrink-0">
           {store.logo_url ? (
-            <img src={store.logo_url} alt={store.name} className="w-9 h-9 rounded-xl object-cover" />
+            <Image src={store.logo_url} alt={store.name} width={36} height={36} className="w-9 h-9 rounded-xl object-cover" />
           ) : (
             <div className="w-9 h-9 bg-[#0D6EFD] rounded-xl flex items-center justify-center text-white font-black text-lg">
               {store.name[0]}

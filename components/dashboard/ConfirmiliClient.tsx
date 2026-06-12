@@ -543,6 +543,14 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   const [verifyModal,    setVerifyModal]    = useState<any|null>(null) // order being verified
   const [bulkUpdating,   setBulkUpdating]   = useState(false)
   const [statsDateFilter,setStatsDateFilter]= useState<'all'|'today'|'yesterday'|'week'|'month'>('all')
+  // Statistics shared filter chips (source / carrier / product / agent)
+  const [statsSource,   setStatsSource]   = useState<string>('')
+  const [statsCarrier,  setStatsCarrier]  = useState<string>('')
+  const [statsProduct,  setStatsProduct]  = useState<string>('')
+  const [statsAgent,    setStatsAgent]    = useState<string>('')
+  const [teamStatsOn,   setTeamStatsOn]   = useState(false)   // إحصائيات الفريق toggle
+  const [wilayaSort,    setWilayaSort]    = useState<'t'|'d'|'r'|'rate'>('t')
+  const [top5Sort,      setTop5Sort]      = useState<'count'|'alpha'>('count')
 
   // ─── STATUS UPDATE ───────────────────────────────────────
   const updateOrderStatus = useCallback(async (orderId: string, newStatus: string) => {
@@ -705,14 +713,20 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   // ─── STATS FILTERING ─────────────────────────────────────
   const statsOrders = useMemo(() => {
     const range = getDateRange(statsDateFilter)
-    if (!range) return localOrders.filter(o => !trashedOrders.has(o.id))
     return localOrders.filter(o => {
       if (trashedOrders.has(o.id)) return false
-      const d = new Date(o.created_at)
-      return d >= range[0] && d < range[1]
+      if (range) {
+        const d = new Date(o.created_at)
+        if (d < range[0] || d >= range[1]) return false
+      }
+      if (statsSource  && (o.utm_source ?? o.source ?? 'مباشر') !== statsSource) return false
+      if (statsCarrier && o.delivery_company_id !== statsCarrier) return false
+      if (statsProduct && !(o.items ?? []).some((i:any) => i.product_name === statsProduct)) return false
+      if (statsAgent   && o.confirmed_by !== statsAgent) return false
+      return true
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localOrders, statsDateFilter, trashedOrders])
+  }, [localOrders, statsDateFilter, trashedOrders, statsSource, statsCarrier, statsProduct, statsAgent])
 
   const delivered    = statsOrders.filter(o => o.status === 'delivered')
   const cancelled    = statsOrders.filter(o => o.status === 'cancelled')
@@ -952,7 +966,16 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       if (o.status === 'delivered') wilayaStats[n].d++
       if (o.status === 'returned')  wilayaStats[n].r++
     })
-    const wilayaRows = Object.entries(wilayaStats).sort(([,a],[,b]) => b.t - a.t).slice(0,15)
+    const wilayaRows = Object.entries(wilayaStats).sort(([,a],[,b]) => {
+      if (wilayaSort === 'rate') {
+        const ra = a.t ? a.d/a.t : 0, rb = b.t ? b.d/b.t : 0
+        return rb - ra
+      }
+      return b[wilayaSort] - a[wilayaSort]
+    })
+    const totalDelivered = Object.values(wilayaStats).reduce((s,w)=>s+w.d,0)
+    const totalReturned  = Object.values(wilayaStats).reduce((s,w)=>s+w.r,0)
+    const deliveryRate   = (totalDelivered+totalReturned) > 0 ? Math.round(totalDelivered/(totalDelivered+totalReturned)*100) : 0
 
     // Top indicators
     const srcCount: Record<string,number> = {}
@@ -1006,6 +1029,32 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
           </span>
         </div>
 
+        {/* Shared filter chips: source / carrier / product / agent */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <select className="input text-xs h-8" value={statsSource} onChange={e=>setStatsSource(e.target.value)} style={{fontFamily:'var(--font-arabic)'}}>
+            <option value="">كل المصادر</option>
+            {Array.from(new Set(localOrders.map(o => o.utm_source ?? o.source ?? 'مباشر'))).map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <select className="input text-xs h-8" value={statsCarrier} onChange={e=>setStatsCarrier(e.target.value)} style={{fontFamily:'var(--font-arabic)'}}>
+            <option value="">كل شركات التوصيل</option>
+            {companies.map(co => <option key={co.id} value={co.id}>{co.name}</option>)}
+          </select>
+          <select className="input text-xs h-8" value={statsProduct} onChange={e=>setStatsProduct(e.target.value)} style={{fontFamily:'var(--font-arabic)'}}>
+            <option value="">كل المنتجات</option>
+            {Array.from(new Set(localOrders.flatMap(o => (o.items ?? []).map((i:any) => i.product_name)).filter(Boolean))).map(p => <option key={p as string} value={p as string}>{(p as string).slice(0,30)}</option>)}
+          </select>
+          <select className="input text-xs h-8" value={statsAgent} onChange={e=>setStatsAgent(e.target.value)} style={{fontFamily:'var(--font-arabic)'}}>
+            <option value="">كل المؤكدين</option>
+            {Array.from(new Set(localOrders.map(o => o.confirmed_by).filter(Boolean))).map(a => <option key={a as string} value={a as string}>{a as string}</option>)}
+          </select>
+          {(statsSource || statsCarrier || statsProduct || statsAgent) && (
+            <button onClick={()=>{setStatsSource('');setStatsCarrier('');setStatsProduct('');setStatsAgent('')}}
+              className="btn btn-sm text-xs" style={{border:'1px solid var(--color-border)',background:'#fff',color:'#DC3545',fontFamily:'var(--font-arabic)'}}>
+              <X size={11}/>مسح الفلاتر
+            </button>
+          )}
+        </div>
+
         <TabBar tabs={tabs} active={statsTab} onChange={setStatsTab} />
 
         {statsTab === 0 && (
@@ -1045,6 +1094,41 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
 
         {statsTab === 1 && (
           <div className="space-y-4">
+            {/* Team stats toggle */}
+            <div className="flex items-center justify-between card p-3">
+              <span className="text-xs font-medium" style={{fontFamily:'var(--font-arabic)',color:'var(--color-text-secondary)'}}>إحصائيات الفريق</span>
+              <button onClick={()=>setTeamStatsOn(v=>!v)}
+                className="w-9 h-5 rounded-full flex items-center transition-colors" style={{background: teamStatsOn ? '#0D6EFD' : '#DEE2E6'}}>
+                <span className="w-4 h-4 bg-white rounded-full shadow transition-transform" style={{transform: teamStatsOn ? 'translateX(-2px)' : 'translateX(-18px)'}}/>
+              </button>
+            </div>
+            {teamStatsOn && (
+              <div className="card overflow-hidden">
+                <div className="px-4 py-3 border-b font-semibold text-sm" style={{borderColor:'var(--color-border)',fontFamily:'var(--font-arabic)'}}>أداء أعضاء الفريق</div>
+                <table className="data-table" style={{fontFamily:'var(--font-arabic)'}}>
+                  <thead><tr><th>العضو</th><th>مؤكدة</th><th>ملغاة</th><th>الكل</th><th>نسبة التأكيد %</th></tr></thead>
+                  <tbody>
+                    {team.length === 0
+                      ? <tr><td colSpan={5} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا يوجد أعضاء فريق</td></tr>
+                      : team.map(m => {
+                          const mine = statsOrders.filter(o => o.confirmed_by === m.name || o.confirmed_by === m.id)
+                          const conf = mine.filter(o => ['confirmed','delivered'].includes(o.status)).length
+                          const canc = mine.filter(o => o.status === 'cancelled').length
+                          const rate = mine.length ? Math.round(conf/mine.length*100) : 0
+                          return (
+                            <tr key={m.id}>
+                              <td className="font-medium text-sm">{m.name}</td>
+                              <td style={{color:'#198754'}}>{conf}</td>
+                              <td style={{color:'#DC3545'}}>{canc}</td>
+                              <td>{mine.length}</td>
+                              <td>{rate}%</td>
+                            </tr>
+                          )
+                        })}
+                  </tbody>
+                </table>
+              </div>
+            )}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {CONFIRM_STATUSES_STATIC.map(s => {
                 const count = statsOrders.filter(o => o.status === s.key).length
@@ -1100,11 +1184,41 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
 
         {statsTab === 2 && (
           <div className="space-y-4">
-            <div className="card overflow-hidden">
-              <div className="px-4 py-3 border-b font-semibold text-sm" style={{borderColor:'var(--color-border)'}}>
-                احصائيات الولايات ({statsOrders.length} طلب)
+            {/* Radial delivered/returned gauge */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="card p-4 flex flex-col items-center justify-center">
+                <h3 className="font-semibold text-sm mb-2" style={{fontFamily:'var(--font-arabic)',color:'var(--color-text-primary)'}}>نسبة التوصيل</h3>
+                <div className="relative w-32 h-32">
+                  <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="#F1F3F5" strokeWidth="12"/>
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="#198754" strokeWidth="12" strokeLinecap="round"
+                      strokeDasharray={`${deliveryRate*3.14} 314`}/>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="font-black text-2xl" style={{color:'#198754',fontFamily:'var(--font-primary)'}}>{deliveryRate}%</span>
+                  </div>
+                </div>
               </div>
-              <div className="overflow-x-auto">
+              <div className="card p-4 flex flex-col items-center justify-center">
+                <p className="font-black text-3xl" style={{color:'#198754',fontFamily:'var(--font-primary)'}}>{totalDelivered}</p>
+                <p className="text-xs mt-1" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>طلبات مسلمة</p>
+              </div>
+              <div className="card p-4 flex flex-col items-center justify-center">
+                <p className="font-black text-3xl" style={{color:'#DC3545',fontFamily:'var(--font-primary)'}}>{totalReturned}</p>
+                <p className="text-xs mt-1" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>طلبات مرجعة</p>
+              </div>
+            </div>
+            <div className="card overflow-hidden">
+              <div className="px-4 py-3 border-b flex items-center justify-between" style={{borderColor:'var(--color-border)'}}>
+                <span className="font-semibold text-sm">احصائيات الولايات ({statsOrders.length} طلب)</span>
+                <select className="input text-xs h-7" value={wilayaSort} onChange={e=>setWilayaSort(e.target.value as any)} style={{fontFamily:'var(--font-arabic)'}}>
+                  <option value="t">ترتيب: الكل</option>
+                  <option value="d">ترتيب: المسلمة</option>
+                  <option value="r">ترتيب: المرجعة</option>
+                  <option value="rate">ترتيب: نسبة التوصيل</option>
+                </select>
+              </div>
+              <div className="overflow-x-auto" style={{maxHeight:480,overflowY:'auto'}}>
                 <table className="data-table" style={{fontFamily:'var(--font-arabic)'}}>
                   <thead>
                     <tr>{['الولاية','المسلمة','المرجعة','الكل','نسبة التوصيل %'].map(h=><th key={h}>{h}</th>)}</tr>

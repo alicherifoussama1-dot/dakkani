@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { formatDZD } from '@/lib/utils/format'
 import { Zap } from 'lucide-react'
 
@@ -64,7 +65,7 @@ export default function FlashSaleSection({ products, storeSlug }: { products: Pr
               >
                 <div className="relative product-img aspect-square bg-gray-50">
                   {img
-                    ? <img src={img} alt={p.name_ar ?? p.name} className="w-full h-full object-cover" />
+                    ? <Image src={img} alt={p.name_ar ?? p.name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
                     : <div className="w-full h-full flex items-center justify-center text-5xl">{(p.name_ar ?? p.name)[0]}</div>
                   }
                   {hasDisc && (

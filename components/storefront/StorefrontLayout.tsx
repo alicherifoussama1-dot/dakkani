@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Search, Menu, X } from 'lucide-react'
 import type { Store } from '@/types'
 
@@ -32,7 +33,7 @@ export default function StorefrontLayout({ store, children }: Props) {
           {/* Logo */}
           <Link href={storeUrl} className="flex items-center gap-3 flex-shrink-0">
             {store.logo_url ? (
-              <img src={store.logo_url} alt={store.name} className="w-9 h-9 rounded-xl object-cover" />
+              <Image src={store.logo_url} alt={store.name} width={36} height={36} className="w-9 h-9 rounded-xl object-cover" />
             ) : (
               <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-lg"
                 style={{ background: 'linear-gradient(135deg,#0D6EFD,#0B5ED7)' }}>

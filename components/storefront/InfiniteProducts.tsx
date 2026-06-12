@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { formatDZD } from '@/lib/utils/format'
 import { Loader2 } from 'lucide-react'
@@ -105,7 +106,7 @@ export default function InfiniteProducts({
             >
               <div className="relative aspect-square overflow-hidden bg-gray-50">
                 {img
-                  ? <img src={img} alt={p.name_ar ?? p.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                  ? <Image src={img} alt={p.name_ar ?? p.name} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition duration-300" />
                   : <div className="w-full h-full flex items-center justify-center text-5xl text-gray-200">{(p.name_ar ?? p.name)[0]}</div>
                 }
                 {hasDisc && (

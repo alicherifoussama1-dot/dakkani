@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import Image from 'next/image'
 import { formatDZD } from '@/lib/utils/format'
 import { Heart, ShoppingCart, Star } from 'lucide-react'
 
@@ -15,7 +16,7 @@ function ProductCard({ product, storeSlug }: { product: Product; storeSlug: stri
       <div className="bg-white rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1.5">
         <div className="relative product-img aspect-[4/5] bg-[#F3F4F6]">
           {img
-            ? <img src={img} alt={product.name_ar ?? product.name} className="w-full h-full object-cover" />
+            ? <Image src={img} alt={product.name_ar ?? product.name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
             : <div className="w-full h-full flex items-center justify-center text-5xl text-gray-200">{(product.name_ar ?? product.name)[0]}</div>
           }
           {hasDisc && (
