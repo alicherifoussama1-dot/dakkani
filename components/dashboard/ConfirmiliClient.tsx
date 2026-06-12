@@ -988,9 +988,16 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       wilayaCount[w] = (wilayaCount[w]??0)+1
       ;(o.items ?? []).forEach((i:any) => { prodCount[i.product_name] = (prodCount[i.product_name]??0)+(i.quantity??1) })
     })
-    const topWilayas  = Object.entries(wilayaCount).sort(([,a],[,b]) => b-a).slice(0,5)
-    const topSources  = Object.entries(srcCount).sort(([,a],[,b]) => b-a).slice(0,5)
-    const topProducts = Object.entries(prodCount).sort(([,a],[,b]) => b-a).slice(0,5)
+    const top5sort = (entries: [string,number][]) =>
+      top5Sort === 'alpha'
+        ? [...entries].sort(([a],[b]) => a.localeCompare(b,'ar')).slice(0,5)
+        : [...entries].sort(([,a],[,b]) => b-a).slice(0,5)
+    const topWilayas  = top5sort(Object.entries(wilayaCount))
+    const topSources  = top5sort(Object.entries(srcCount))
+    const topProducts = top5sort(Object.entries(prodCount))
+    const agentCount: Record<string,number> = {}
+    statsOrders.forEach(o => { if (o.confirmed_by) agentCount[o.confirmed_by] = (agentCount[o.confirmed_by]??0)+1 })
+    const topAgents = top5sort(Object.entries(agentCount))
     const MiniBar = ({label,count,max}:{label:string,count:number,max:number}) => (
       <div className="flex items-center gap-2 py-1">
         <span className="text-xs truncate w-24 flex-shrink-0" style={{color:'var(--color-text-secondary)'}}>{label}</span>
@@ -1254,18 +1261,28 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
 
         {statsTab === 3 && (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex justify-end">
+              <button onClick={()=>setTop5Sort(s=>s==='count'?'alpha':'count')}
+                className="btn btn-sm text-xs gap-1" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)',fontFamily:'var(--font-arabic)'}}>
+                <ArrowUpDown size={11}/>{top5Sort==='count' ? 'ترتيب: العدد' : 'ترتيب: أبجدي'}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="card p-4">
                 <h3 className="font-semibold text-sm mb-3" style={{fontFamily:'var(--font-arabic)',color:'var(--color-text-primary)'}}>أفضل الولايات</h3>
-                {topWilayas.length > 0 ? topWilayas.map(([w,c]) => <MiniBar key={w} label={w} count={c} max={topWilayas[0]?.[1]??1}/>) : <p className="text-xs text-center py-4" style={{color:'var(--color-text-muted)'}}>لا توجد بيانات</p>}
+                {topWilayas.length > 0 ? topWilayas.map(([w,c]) => <MiniBar key={w} label={w} count={c} max={Math.max(...topWilayas.map(([,n])=>n),1)}/>) : <p className="text-xs text-center py-4" style={{color:'var(--color-text-muted)'}}>لا توجد بيانات</p>}
               </div>
               <div className="card p-4">
                 <h3 className="font-semibold text-sm mb-3" style={{fontFamily:'var(--font-arabic)',color:'var(--color-text-primary)'}}>أفضل المصادر</h3>
-                {topSources.length > 0 ? topSources.map(([s,c]) => <MiniBar key={s} label={s} count={c} max={topSources[0]?.[1]??1}/>) : <p className="text-xs text-center py-4" style={{color:'var(--color-text-muted)'}}>لا توجد بيانات</p>}
+                {topSources.length > 0 ? topSources.map(([s,c]) => <MiniBar key={s} label={s} count={c} max={Math.max(...topSources.map(([,n])=>n),1)}/>) : <p className="text-xs text-center py-4" style={{color:'var(--color-text-muted)'}}>لا توجد بيانات</p>}
               </div>
               <div className="card p-4">
                 <h3 className="font-semibold text-sm mb-3" style={{fontFamily:'var(--font-arabic)',color:'var(--color-text-primary)'}}>أفضل المنتجات</h3>
-                {topProducts.length > 0 ? topProducts.map(([p,c]) => <MiniBar key={p} label={p.slice(0,16)} count={c} max={topProducts[0]?.[1]??1}/>) : <p className="text-xs text-center py-4" style={{color:'var(--color-text-muted)'}}>لا توجد بيانات</p>}
+                {topProducts.length > 0 ? topProducts.map(([p,c]) => <MiniBar key={p} label={p.slice(0,16)} count={c} max={Math.max(...topProducts.map(([,n])=>n),1)}/>) : <p className="text-xs text-center py-4" style={{color:'var(--color-text-muted)'}}>لا توجد بيانات</p>}
+              </div>
+              <div className="card p-4">
+                <h3 className="font-semibold text-sm mb-3" style={{fontFamily:'var(--font-arabic)',color:'var(--color-text-primary)'}}>أفضل المؤكدين</h3>
+                {topAgents.length > 0 ? topAgents.map(([a,c]) => <MiniBar key={a} label={a.slice(0,16)} count={c} max={Math.max(...topAgents.map(([,n])=>n),1)}/>) : <p className="text-xs text-center py-4" style={{color:'var(--color-text-muted)'}}>لا توجد بيانات</p>}
               </div>
             </div>
           </div>
