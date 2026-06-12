@@ -201,6 +201,16 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               </p>
             )}
 
+            {(product.description_image_url || product.attributes?.description_image_url) && (
+              <div className="pt-4" style={{ borderTop: product.description_ar ? 'none' : '1px solid var(--pt-border)' }}>
+                <img
+                  src={product.description_image_url ?? product.attributes?.description_image_url}
+                  alt="وصف المنتج"
+                  className="w-full rounded-2xl object-contain shadow-sm border border-gray-100"
+                />
+              </div>
+            )}
+
             {/* Variants (color/size/etc.) — selecting updates the live stock badge,
                 the order-form summary & submission, and the WhatsApp message */}
             {variantGroups.length > 0 && (

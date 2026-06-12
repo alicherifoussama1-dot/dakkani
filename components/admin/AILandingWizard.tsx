@@ -92,12 +92,18 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
   const sourceImageUrl = product?.images?.[0]?.url ?? null
   const categoryName   = product?.category?.name_ar ?? ''
 
-  // Collect all unique product images (original + enhanced)
-  const allImages = [
+  // Collect all unique product images (original + enhanced), prioritizing background-removed options first
+  const enhancedImages = photoOptions.filter(o => o.key !== 'original').map(o => o.url)
+  const originalImages = [
     selectedImageUrl,
     ...(product?.images?.map(i => i.url) ?? []),
-    ...photoOptions.map(o => o.url),
-  ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i) as string[]
+    ...photoOptions.filter(o => o.key === 'original').map(o => o.url),
+  ].filter(Boolean)
+
+  const allImages = [
+    ...enhancedImages,
+    ...originalImages,
+  ].filter((v, i, a) => a.indexOf(v) === i) as string[]
 
   // Scenario suggestions for the detected/selected category
   const scenarioSuggestions = SCENARIO_SUGGESTIONS[categoryName] ?? DEFAULT_SCENARIOS
@@ -200,11 +206,17 @@ export default function AILandingWizard({ storeId, storeSlug, products }: Props)
   // Initialize panels when aiContent changes or when entering step 3.5
   useEffect(() => {
     if (aiContent && product && panels.length === 0) {
-      const allImages = [
+      const enhanced = photoOptions.filter(o => o.key !== 'original').map(o => o.url)
+      const original = [
         selectedImageUrl,
         ...(product.images?.map((i: any) => i.url) ?? []),
-        ...photoOptions.map(o => o.url),
-      ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i) as string[]
+        ...photoOptions.filter(o => o.key === 'original').map(o => o.url),
+      ].filter(Boolean)
+
+      const allImages = [
+        ...enhanced,
+        ...original,
+      ].filter((v, i, a) => a.indexOf(v) === i) as string[]
 
       const defaultPanels = [
         {

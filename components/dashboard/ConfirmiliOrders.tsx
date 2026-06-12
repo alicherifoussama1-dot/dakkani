@@ -39,6 +39,15 @@ function getStatusDef(raw?: string|null) {
   return SB[normStatus(raw)] ?? { label: raw ?? '—', color:'#868E96', text:'#fff' }
 }
 
+// ─── Row tint: ~10% of status color (hover ~20%) ──────────────
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#','')
+  const r = parseInt(h.substring(0,2),16)
+  const g = parseInt(h.substring(2,4),16)
+  const b = parseInt(h.substring(4,6),16)
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
 // ─── SOURCE ICONS ─────────────────────────────────────────────
 function SourceBadge({ source }: { source: string }) {
   const s = (source ?? '').toLowerCase()
@@ -822,19 +831,21 @@ export default function ConfirmiliOrders({
                   )
                 }
 
-                const isDuplicate = normStatus(o.status) === 'duplicate'
                 const vc = verifyStats(o.customer_phone)
                 const item0 = (o.items as any[])?.[0] ?? {}
                 const co = companies.find(c => c.id === o.delivery_company_id)
+                const statusColor = getStatusDef(o.status).color
+                const rowBg      = hexToRgba(statusColor, 0.08)
+                const rowBgHover = hexToRgba(statusColor, 0.18)
 
                 rows.push(
                   <tr key={o.id}
                     style={{
-                      background: selected.has(o.id) ? '#EBF5FF' : isDuplicate ? '#F8F9FA' : '#fff',
+                      background: selected.has(o.id) ? '#EBF5FF' : rowBg,
                       borderBottom:'1px solid #F1F3F5',
                     }}
-                    onMouseEnter={e=>(e.currentTarget.style.background=selected.has(o.id)?'#EBF5FF':'#F8FCFF')}
-                    onMouseLeave={e=>(e.currentTarget.style.background=selected.has(o.id)?'#EBF5FF':isDuplicate?'#F8F9FA':'#fff')}>
+                    onMouseEnter={e=>(e.currentTarget.style.background=selected.has(o.id)?'#EBF5FF':rowBgHover)}
+                    onMouseLeave={e=>(e.currentTarget.style.background=selected.has(o.id)?'#EBF5FF':rowBg)}>
 
                     {/* Checkbox */}
                     <td style={TD}>

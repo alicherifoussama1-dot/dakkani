@@ -254,6 +254,7 @@ export default function DiscoverProductPage() {
     description: (
       <ProductDescription
         description={product.description_ar ?? product.description}
+        descriptionImageUrl={product.description_image_url ?? product.attributes?.description_image_url}
         specs={[
           ...(product.sku ? [{ label: 'رمز المنتج (SKU)', value: product.sku }] : []),
           ...(product.weight ? [{ label: 'الوزن', value: `${product.weight} كغ` }] : []),

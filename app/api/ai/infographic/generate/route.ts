@@ -17,12 +17,134 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { buildDefaultPanels, InfographicPanel } from '@/lib/ai/infographic-templates'
+import { geminiEnhanceImage } from '@/lib/ai/gemini'
+import crypto from 'crypto'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
 const BUCKET = process.env.NEXT_PUBLIC_STORAGE_BUCKET ?? 'dakkani-uploads'
 const W = 600
+
+function getCachePath(url: string, storeId: string): string {
+  const hash = crypto.createHash('md5').update(url).digest('hex')
+  return `infographic-cache/${storeId}/${hash}.png`
+}
+
+async function autoProcessImage(url: string, storeId: string, supabase: any, origin: string): Promise<string> {
+  try {
+    if (!url) return ''
+
+    // If it's already a base64 string, or is already background-removed, return as-is
+    if (url.startsWith('data:') || url.includes('removebg') || url.includes('landing-ai') || url.includes('infographic-cache')) {
+      return url
+    }
+
+    // Resolve relative URL
+    let absoluteUrl = url
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      absoluteUrl = new URL(url, origin).toString()
+    }
+
+    // Check if cached version exists in Supabase Storage
+    const cachePath = getCachePath(absoluteUrl, storeId)
+    const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(cachePath)
+
+    try {
+      const headRes = await fetch(publicUrl, { method: 'HEAD' })
+      if (headRes.ok) {
+        console.log(`Cache hit for image background removal: ${publicUrl}`)
+        return publicUrl
+      }
+    } catch (e) {
+      // ignore check error, proceed to generate
+    }
+
+    console.log(`Cache miss: removing background for ${absoluteUrl}`)
+
+    // Fetch the original image buffer
+    const imgRes = await fetch(absoluteUrl)
+    if (!imgRes.ok) throw new Error(`Failed to fetch image for background removal: ${imgRes.statusText}`)
+    const contentType = imgRes.headers.get('content-type') || 'image/jpeg'
+    const imgBuffer = await imgRes.arrayBuffer()
+
+    let processedBuffer: Buffer | null = null
+    let processedMime = 'image/png'
+
+    // Try Remove.bg first if configured
+    const removeBgKey = process.env.REMOVEBG_API_KEY
+    if (removeBgKey && removeBgKey !== 'your_removebg_api_key') {
+      try {
+        console.log('Using Remove.bg for automatic background removal...')
+        const imgBlob = new Blob([imgBuffer], { type: contentType })
+        const formData = new FormData()
+        formData.append('image_file', imgBlob, 'image.jpg')
+        formData.append('size', 'auto')
+        formData.append('format', 'png')
+
+        const bgRes = await fetch('https://api.remove.bg/v1.0/removebg', {
+          method: 'POST',
+          headers: { 'X-Api-Key': removeBgKey },
+          body: formData,
+        })
+
+        if (bgRes.ok) {
+          processedBuffer = Buffer.from(await bgRes.arrayBuffer())
+          processedMime = 'image/png'
+        } else {
+          const errData = await bgRes.json().catch(() => ({}))
+          console.warn('Remove.bg API failed, falling back to Gemini:', errData?.errors?.[0]?.title)
+        }
+      } catch (err) {
+        console.warn('Error calling Remove.bg, falling back to Gemini:', err)
+      }
+    }
+
+    // Fallback to Gemini if Remove.bg wasn't run or failed
+    if (!processedBuffer && process.env.GEMINI_API_KEY) {
+      console.log('Using Gemini for automatic background removal (Studio White backdrop)...')
+      const imageBase64 = Buffer.from(imgBuffer).toString('base64')
+      const instruction = 'Replace the background with a clean pure-white studio backdrop. Keep the product 100% unchanged. Add soft realistic studio lighting and a subtle shadow. High-quality photorealistic e-commerce photo.'
+
+      const geminiRes = await geminiEnhanceImage({
+        imageBase64,
+        mimeType: contentType,
+        instruction
+      })
+
+      if (geminiRes.ok) {
+        processedBuffer = Buffer.from(geminiRes.base64, 'base64')
+        processedMime = geminiRes.mimeType
+      } else {
+        console.error('Gemini background removal failed:', geminiRes.error)
+      }
+    }
+
+    // If both failed or keys aren't configured, return original url
+    if (!processedBuffer) {
+      console.warn('No background removal keys configured or both failed. Using original image.')
+      return url
+    }
+
+    // Upload processed image to Supabase Storage
+    const { error: uploadErr } = await supabase.storage
+      .from(BUCKET)
+      .upload(cachePath, processedBuffer, {
+        contentType: processedMime,
+        upsert: true,
+      })
+
+    if (uploadErr) {
+      console.error('Error uploading processed image to storage:', uploadErr.message)
+      return url // fallback to original
+    }
+
+    return publicUrl
+  } catch (e) {
+    console.error(`autoProcessImage error for ${url}:`, e)
+    return url
+  }
+}
 
 // ── helpers ────────────────────────────────────────────────────
 function esc(s: string): string {
@@ -32,6 +154,11 @@ function esc(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .slice(0, 150)
+}
+
+function isBackgroundRemoved(url: string): boolean {
+  if (!url) return false
+  return url.includes('removebg') || url.includes('landing-ai') || url.includes('infographic-cache') || url.startsWith('data:image/png')
 }
 
 function hexToRgb(hex: string) {
@@ -181,39 +308,84 @@ function buildStorySVG(opts: {
     const panel = panels[i] ?? panels[0]
     const imgUrl = panel.imageUrl ?? images[i] ?? images[0]
     const isFullWidth = panel.layout === 'image-full' || panel.layout === 'text-only' || i === 0 || i === 4
+    const isBgRemoved = isBackgroundRemoved(imgUrl)
 
     if (isFullWidth) {
       const h = fullPanelH
-      // Full-width image panel with gradient overlay
-      svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16" fill="#222" filter="url(#shadow)"/>\n`
-      svg += `<clipPath id="clip-full-${i}"><rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16"/></clipPath>\n`
-      if (panel.layout !== 'text-only' && imgUrl) {
-        svg += `<image href="${esc(imgUrl)}" x="${px}" y="${y}" width="${W - px * 2}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-full-${i})"/>\n`
-        svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16" fill="url(#fadeBottom)"/>\n`
+      
+      if (isBgRemoved && panel.layout !== 'text-only' && imgUrl) {
+        // Premium layout for background-removed image: Floating card on left, text on right, soft brand gradient bg
+        svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16" fill="url(#brandSoft)" filter="url(#shadow)"/>\n`
+        
+        // Floating white card on left
+        const cardW = 210
+        const cardH = 250
+        const cardX = px + 20
+        const cardY = y + (h - cardH) / 2
+        svg += `<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="14" fill="#fff" filter="url(#shadow)"/>\n`
+        svg += `<clipPath id="clip-card-${i}"><rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="14"/></clipPath>\n`
+        svg += `<image href="${esc(imgUrl)}" x="${cardX + 10}" y="${cardY + 10}" width="${cardW - 20}" height="${cardH - 20}" preserveAspectRatio="xMidYMid contain" clip-path="url(#clip-card-${i})"/>\n`
+
+        // Headline (on right)
+        const headLines = wrapLines(panel.headline, 20)
+        const headBaseY = y + 70
+        const textColor = darken(brandColor, 0.6)
+        const subtextColor = darken(brandColor, 0.4)
+
+        svg += `<text text-anchor="end" x="${W - px - 24}" y="${headBaseY}" fill="${textColor}" font-size="24" font-weight="900" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif" direction="rtl">\n`
+        headLines.forEach((line, li) => {
+          svg += `  <tspan x="${W - px - 24}" dy="${li === 0 ? 0 : 32}">${esc(line)}</tspan>\n`
+        })
+        svg += `</text>\n`
+
+        // Subtext (on right)
+        if (panel.subtext) {
+          const subLines = wrapLines(panel.subtext, 22)
+          const subBaseY = headBaseY + headLines.length * 32 + 10
+          svg += `<text text-anchor="end" x="${W - px - 24}" y="${subBaseY}" fill="${subtextColor}" font-size="13" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif" direction="rtl">\n`
+          subLines.forEach((line, li) => {
+            svg += `  <tspan x="${W - px - 24}" dy="${li === 0 ? 0 : 18}">${esc(line)}</tspan>\n`
+          })
+          svg += `</text>\n`
+        }
+
+        // Badge (on right)
+        if (panel.badge) {
+          svg += `<rect x="${W - px - 24 - 150}" y="${y + h - 56}" width="150" height="30" rx="15" fill="url(#accentGrad)"/>\n`
+          svg += `<text x="${W - px - 24 - 75}" y="${y + h - 36}" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif">${esc(panel.badge)}</text>\n`
+        }
       } else {
-        // Text-only: fill with brand soft gradient
-        svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16" fill="url(#brandSoft)" clip-path="url(#clip-full-${i})"/>\n`
-      }
+        // Classic Full-width image panel (stretched) with gradient overlay
+        svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16" fill="#222" filter="url(#shadow)"/>\n`
+        svg += `<clipPath id="clip-full-${i}"><rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16"/></clipPath>\n`
+        if (panel.layout !== 'text-only' && imgUrl) {
+          svg += `<image href="${esc(imgUrl)}" x="${px}" y="${y}" width="${W - px * 2}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-full-${i})"/>\n`
+          svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16" fill="url(#fadeBottom)"/>\n`
+        } else {
+          // Text-only: fill with brand soft gradient
+          svg += `<rect x="${px}" y="${y}" width="${W - px * 2}" height="${h}" rx="16" fill="url(#brandSoft)" clip-path="url(#clip-full-${i})"/>\n`
+        }
 
-      // Headline
-      const headLines = wrapLines(panel.headline, 26)
-      const textBaseY = y + h - 28 - (headLines.length - 1) * 36 - (panel.subtext ? 28 : 0)
-      const textColor = (panel.layout === 'text-only') ? darken(brandColor, 0.6) : '#fff'
-      const subtextColor = (panel.layout === 'text-only') ? darken(brandColor, 0.4) : 'rgba(255,255,255,0.85)'
+        // Headline
+        const headLines = wrapLines(panel.headline, 26)
+        const textBaseY = y + h - 28 - (headLines.length - 1) * 36 - (panel.subtext ? 28 : 0)
+        const textColor = (panel.layout === 'text-only') ? darken(brandColor, 0.6) : '#fff'
+        const subtextColor = (panel.layout === 'text-only') ? darken(brandColor, 0.4) : 'rgba(255,255,255,0.85)'
 
-      svg += `<text text-anchor="end" x="${W - px - 20}" y="${textBaseY}" fill="${textColor}" font-size="28" font-weight="900" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif" direction="rtl">\n`
-      headLines.forEach((line, li) => {
-        svg += `  <tspan x="${W - px - 20}" dy="${li === 0 ? 0 : 36}">${esc(line)}</tspan>\n`
-      })
-      svg += `</text>\n`
+        svg += `<text text-anchor="end" x="${W - px - 20}" y="${textBaseY}" fill="${textColor}" font-size="28" font-weight="900" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif" direction="rtl">\n`
+        headLines.forEach((line, li) => {
+          svg += `  <tspan x="${W - px - 20}" dy="${li === 0 ? 0 : 36}">${esc(line)}</tspan>\n`
+        })
+        svg += `</text>\n`
 
-      if (panel.subtext) {
-        svg += `<text text-anchor="end" x="${W - px - 20}" y="${y + h - 20}" fill="${subtextColor}" font-size="14" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif" direction="rtl">${esc(panel.subtext.slice(0, 65))}</text>\n`
-      }
+        if (panel.subtext) {
+          svg += `<text text-anchor="end" x="${W - px - 20}" y="${y + h - 20}" fill="${subtextColor}" font-size="14" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif" direction="rtl">${esc(panel.subtext.slice(0, 65))}</text>\n`
+        }
 
-      if (panel.badge) {
-        svg += `<rect x="${px + 16}" y="${y + h - 50}" width="160" height="32" rx="16" fill="url(#accentGrad)"/>\n`
-        svg += `<text x="${px + 96}" y="${y + h - 29}" text-anchor="middle" fill="#fff" font-size="14" font-weight="700" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif">${esc(panel.badge)}</text>\n`
+        if (panel.badge) {
+          svg += `<rect x="${px + 16}" y="${y + h - 50}" width="160" height="32" rx="16" fill="url(#accentGrad)"/>\n`
+          svg += `<text x="${px + 96}" y="${y + h - 29}" text-anchor="middle" fill="#fff" font-size="14" font-weight="700" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif">${esc(panel.badge)}</text>\n`
+        }
       }
 
       y += h + panelGap
@@ -231,9 +403,14 @@ function buildStorySVG(opts: {
 
       // Image side with rounded corners
       svg += `<clipPath id="clip-split-img-${i}"><rect x="${imgX}" y="${y}" width="${halfW}" height="${h}" rx="14"/></clipPath>\n`
-      svg += `<rect x="${imgX}" y="${y}" width="${halfW}" height="${h}" rx="14" fill="#ddd" filter="url(#shadow)"/>\n`
+      
+      const cellBg = isBgRemoved ? '#ffffff' : '#dddddd'
+      svg += `<rect x="${imgX}" y="${y}" width="${halfW}" height="${h}" rx="14" fill="${cellBg}" filter="url(#shadow)"/>\n`
+      
       if (imgUrl) {
-        svg += `<image href="${esc(imgUrl)}" x="${imgX}" y="${y}" width="${halfW}" height="${h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-split-img-${i})"/>\n`
+        const aspect = isBgRemoved ? 'xMidYMid contain' : 'xMidYMid slice'
+        const padding = isBgRemoved ? 8 : 0
+        svg += `<image href="${esc(imgUrl)}" x="${imgX + padding}" y="${y + padding}" width="${halfW - padding * 2}" height="${h - padding * 2}" preserveAspectRatio="${aspect}" clip-path="url(#clip-split-img-${i})"/>\n`
       }
 
       // Text side with brand gradient + rounded corners
@@ -328,18 +505,34 @@ function buildGridSVG(opts: {
 
     const panel = panels[i]
     const imgUrl = panel?.imageUrl ?? images[i] ?? images[0]
+    const isBgRemoved = isBackgroundRemoved(imgUrl)
 
     // Rounded image cell
     svg += `<clipPath id="clip-cell-${i}"><rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="14"/></clipPath>\n`
-    svg += `<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="14" fill="#ddd" filter="url(#shadow)"/>\n`
+    
+    const cellBg = isBgRemoved ? '#ffffff' : '#dddddd'
+    svg += `<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="14" fill="${cellBg}" filter="url(#shadow)"/>\n`
+    
     if (imgUrl) {
-      svg += `<image href="${esc(imgUrl)}" x="${x}" y="${y}" width="${cellW}" height="${cellH}" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-cell-${i})"/>\n`
+      const aspect = isBgRemoved ? 'xMidYMid contain' : 'xMidYMid slice'
+      const padding = isBgRemoved ? 10 : 0
+      svg += `<image href="${esc(imgUrl)}" x="${x + padding}" y="${y + padding}" width="${cellW - padding * 2}" height="${cellH - padding * 2}" preserveAspectRatio="${aspect}" clip-path="url(#clip-cell-${i})"/>\n`
     }
-    // Gradient overlay
-    svg += `<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="14" fill="url(#fadeBottom)"/>\n`
+    
+    // Gradient overlay (only if NOT background removed)
+    if (!isBgRemoved) {
+      svg += `<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="14" fill="url(#fadeBottom)"/>\n`
+    }
 
     if (panel) {
       const headLines = wrapLines(panel.headline, 13)
+      
+      // If background is removed, draw a nice brand-colored footer overlay at the bottom for readability
+      if (isBgRemoved) {
+        const barH = headLines.length * 22 + (panel.subtext ? 16 : 0) + 16
+        svg += `<rect x="${x}" y="${y + cellH - barH}" width="${cellW}" height="${barH}" fill="url(#brandGrad)" clip-path="url(#clip-cell-${i})"/>\n`
+      }
+
       svg += `<text text-anchor="end" x="${x + cellW - 12}" y="${y + cellH - 36}" fill="#fff" font-size="15" font-weight="900" font-family="Cairo, Tajawal, system-ui, -apple-system, sans-serif" direction="rtl">\n`
       headLines.forEach((line, li) => {
         svg += `  <tspan x="${x + cellW - 12}" dy="${li === 0 ? 0 : 20}">${esc(line)}</tspan>\n`
@@ -422,16 +615,36 @@ export async function POST(req: Request) {
     images.forEach(u => { if (u) uniqueUrls.add(u) })
     panels.forEach(p => { if (p.imageUrl) uniqueUrls.add(p.imageUrl) })
 
-    const base64Map: Record<string, string> = {}
+    // Auto-process unique images to remove background automatically (Remove.bg or Gemini Studio White)
+    const processedUrlsMap: Record<string, string> = {}
     await Promise.all(
       Array.from(uniqueUrls).map(async (url) => {
+        processedUrlsMap[url] = await autoProcessImage(url, storeId, supabase, origin)
+      })
+    )
+
+    // Map input arrays to their processed background-removed counterparts
+    const cleanImages = images.map(u => processedUrlsMap[u] ?? u)
+    const cleanPanels = panels.map(p => ({
+      ...p,
+      imageUrl: p.imageUrl ? (processedUrlsMap[p.imageUrl] ?? p.imageUrl) : undefined
+    }))
+
+    // Convert all unique processed images to base64
+    const uniqueProcessedUrls = new Set<string>()
+    cleanImages.forEach(u => { if (u) uniqueProcessedUrls.add(u) })
+    cleanPanels.forEach(p => { if (p.imageUrl) uniqueProcessedUrls.add(p.imageUrl) })
+
+    const base64Map: Record<string, string> = {}
+    await Promise.all(
+      Array.from(uniqueProcessedUrls).map(async (url) => {
         base64Map[url] = await toBase64DataUrl(url, origin)
       })
     )
 
     // Replace URLs with their base64 representation
-    const base64Images = images.map(u => base64Map[u] ?? u)
-    const base64Panels = panels.map(p => ({
+    const base64Images = cleanImages.map(u => base64Map[u] ?? u)
+    const base64Panels = cleanPanels.map(p => ({
       ...p,
       imageUrl: p.imageUrl ? (base64Map[p.imageUrl] ?? p.imageUrl) : undefined
     }))

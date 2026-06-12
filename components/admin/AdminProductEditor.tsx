@@ -49,6 +49,7 @@ const schema = z.object({
   section_order:    z.array(z.string()).default([...DEFAULT_SECTION_ORDER]),
   section_visibility: z.record(z.boolean()).default({}),
   video_url:        z.string().optional(),
+  description_image_url: z.string().optional(),
   order_routing:    z.enum(['inherit', 'sheet_only', 'confirmili_only', 'both']).default('inherit'),
   google_sheet_id:  z.string().optional(),
 })
@@ -592,6 +593,7 @@ export default function AdminProductEditor({
   const [error,      setError]      = useState('')
   const [aiLoading,  setAiLoading]  = useState(false)
   const [removingBg, setRemovingBg] = useState<string | null>(null)
+  const [descUploading, setDescUploading] = useState(false)
 
   // useForm with NO watch() in main component
   const {
@@ -629,10 +631,13 @@ export default function AdminProductEditor({
         : [...DEFAULT_SECTION_ORDER],
       section_visibility: product?.section_visibility ?? {},
       video_url:          product?.video_url ?? '',
+      description_image_url: product?.description_image_url ?? product?.attributes?.description_image_url ?? '',
       order_routing:      product?.order_routing ?? 'inherit',
       google_sheet_id:    product?.google_sheet_id ?? '',
     },
   })
+
+  const descriptionImageUrl = useWatch({ control, name: 'description_image_url' })
 
   // ── Stable callbacks (useCallback prevents recreation) ────
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -656,6 +661,35 @@ export default function AdminProductEditor({
     setUploading(false)
     e.target.value = ''
   }, [storeId])
+
+  const handleDescriptionImageChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setDescUploading(true)
+    setError('')
+    if (file.size > 5 * 1024 * 1024) {
+      setError('صورة الوصف أكبر من 5MB')
+      setDescUploading(false)
+      return
+    }
+    const form = new FormData()
+    form.append('file', file)
+    form.append('folder', `products/${storeId}`)
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: form })
+      if (res.ok) {
+        const data = await res.json()
+        setValue('description_image_url', data.url, { shouldDirty: true })
+      } else {
+        setError('فشل رفع صورة الوصف — تأكد من إعداد Supabase Storage')
+      }
+    } catch (err) {
+      setError('حدث خطأ أثناء رفع الصورة')
+    } finally {
+      setDescUploading(false)
+      e.target.value = ''
+    }
+  }, [storeId, setValue])
 
   const handleRemoveImage = useCallback((idx: number) => {
     setImages(prev => prev.filter((_, i) => i !== idx))
@@ -736,17 +770,59 @@ export default function AdminProductEditor({
       google_sheet_id: data.google_sheet_id || null,
     }
 
-    // Routing columns require migration 015 — retry without them if missing
+    // Routing & description_image_url columns fallback check — retries saving by moving missing fields to attributes or removing them
     const saveProduct = async (p: Record<string, any>) =>
       isEdit
         ? await supabase.from('products').update(p).eq('id', product.id).select('id').single()
         : await supabase.from('products').insert(p).select('id').single()
 
-    let { data: np, error: err } = await saveProduct(payload)
-    if (err && /order_routing|google_sheet_id/.test(err.message)) {
-      const { order_routing: _r, google_sheet_id: _g, ...withoutRouting } = payload
-      ;({ data: np, error: err } = await saveProduct(withoutRouting))
+    const trySave = async (p: Record<string, any>) => {
+      let res = await saveProduct(p)
+      if (res.error) {
+        let modified = false
+        const nextPayload = { ...p }
+        
+        // Fallback 1: description_image_url column missing
+        if (/description_image_url/i.test(res.error.message)) {
+          delete nextPayload.description_image_url
+          nextPayload.attributes = {
+            ...(p.attributes ?? product?.attributes ?? {}),
+            description_image_url: p.description_image_url
+          }
+          modified = true
+        }
+        
+        // Fallback 2: order_routing or google_sheet_id columns missing
+        if (/order_routing|google_sheet_id/i.test(res.error.message)) {
+          delete nextPayload.order_routing
+          delete nextPayload.google_sheet_id
+          modified = true
+        }
+        
+        if (modified) {
+          res = await saveProduct(nextPayload)
+          // Double check if it still fails due to the other unhandled fallback
+          if (res.error && (/description_image_url/i.test(res.error.message) || /order_routing|google_sheet_id/i.test(res.error.message))) {
+            const cleanPayload = { ...nextPayload }
+            if (/description_image_url/i.test(res.error.message)) {
+              delete cleanPayload.description_image_url
+              cleanPayload.attributes = {
+                ...(nextPayload.attributes ?? product?.attributes ?? {}),
+                description_image_url: p.description_image_url
+              }
+            }
+            if (/order_routing|google_sheet_id/i.test(res.error.message)) {
+              delete cleanPayload.order_routing
+              delete cleanPayload.google_sheet_id
+            }
+            res = await saveProduct(cleanPayload)
+          }
+        }
+      }
+      return res
     }
+
+    const { data: np, error: err } = await trySave(payload)
     if (err || !np) { setError(err?.message ?? 'خطأ في الحفظ'); return }
     const productId = np.id
 
@@ -804,6 +880,47 @@ export default function AdminProductEditor({
 
             <TextArea label="الوصف بالعربية" name="description_ar" rows={3} placeholder="اكتب وصفاً مقنعاً للمنتج..." register={register} />
             <TextArea label="Description en français" name="description" rows={3} placeholder="Description persuasive du produit..." register={register} />
+
+            {/* Description Image Upload */}
+            <div className="space-y-1.5">
+              <label className={LC}>صورة الوصف ديسكريبسيون (Description Banner)</label>
+              <p className="text-[10px] text-gray-400 -mt-1">صورة إعلانية أو بنر توضيحي يظهر تحت الوصف مباشرة في صفحة المنتج</p>
+              
+              <div className="flex gap-4 items-start">
+                <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-4 cursor-pointer transition w-48 shrink-0 ${descUploading ? 'border-[#0D6EFD] bg-[#EBF5FF]' : 'border-[#DEE2E6] hover:border-[#0D6EFD]'}`}>
+                  <input type="file" accept="image/*" onChange={handleDescriptionImageChange} className="sr-only" disabled={descUploading} />
+                  {descUploading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 text-[#0D6EFD] animate-spin mb-1" />
+                      <span className="text-[10px]" style={{color:'var(--color-text-muted)'}}>جارٍ الرفع...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-5 h-5 mb-1" style={{color:'var(--color-text-muted)'}} />
+                      <span className="text-[10px] font-bold text-center" style={{color:'var(--color-text-muted)'}}>اختر أو اسحب صورة</span>
+                    </>
+                  )}
+                </label>
+
+                {descriptionImageUrl ? (
+                  <div className="relative group w-48 h-16 bg-[#F8F9FA] rounded-2xl overflow-hidden border border-[#DEE2E6] flex items-center justify-center">
+                    <img src={descriptionImageUrl} alt="معاينة صورة الوصف" className="w-full h-full object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => setValue('description_image_url', '', { shouldDirty: true })}
+                      className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded-lg text-white"
+                      title="حذف الصورة"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex-1 self-center text-[11px] text-gray-400 border border-dashed border-gray-200 rounded-2xl py-5 text-center">
+                    لم يتم رفع صورة وصف لهذا المنتج بعد
+                  </div>
+                )}
+              </div>
+            </div>
 
             <div className="grid grid-cols-3 gap-4">
               <Field label="سعر البيع (دج) *" name="price" type="number" placeholder="2500" required register={register} errors={errors} />

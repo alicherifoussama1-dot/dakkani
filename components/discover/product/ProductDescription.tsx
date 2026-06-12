@@ -7,6 +7,7 @@ interface Spec { label: string; value: string }
 
 interface Props {
   description?: string | null
+  descriptionImageUrl?: string | null
   specs?: Spec[]
 }
 
@@ -16,7 +17,7 @@ const TABS = [
   { id: 'specs',    label: 'المواصفات' },
 ] as const
 
-export default function ProductDescription({ description, specs = [] }: Props) {
+export default function ProductDescription({ description, descriptionImageUrl, specs = [] }: Props) {
   const [tab, setTab] = useState<typeof TABS[number]['id']>('desc')
 
   return (
@@ -45,13 +46,24 @@ export default function ProductDescription({ description, specs = [] }: Props) {
       {/* Tab content */}
       <div style={{ padding: 'var(--pt-card-padding)' }}>
         {tab === 'desc' && (
-          description ? (
-            <p className="pt-text-soft" style={{
-              fontSize: 14, lineHeight: 2, fontFamily: 'var(--font-tajawal)', whiteSpace: 'pre-wrap', margin: 0,
-            }}>{description}</p>
-          ) : (
-            <p className="pt-text-muted" style={{ fontSize: 13, fontFamily: 'var(--font-tajawal)' }}>لا يوجد وصف لهذا المنتج بعد.</p>
-          )
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {description ? (
+              <p className="pt-text-soft" style={{
+                fontSize: 14, lineHeight: 2, fontFamily: 'var(--font-tajawal)', whiteSpace: 'pre-wrap', margin: 0,
+              }}>{description}</p>
+            ) : (
+              !descriptionImageUrl && <p className="pt-text-muted" style={{ fontSize: 13, fontFamily: 'var(--font-tajawal)' }}>لا يوجد وصف لهذا المنتج بعد.</p>
+            )}
+            {descriptionImageUrl && (
+              <div>
+                <img
+                  src={descriptionImageUrl}
+                  alt="وصف المنتج"
+                  style={{ width: '100%', borderRadius: 'var(--pt-radius-md)', objectFit: 'contain', display: 'block' }}
+                />
+              </div>
+            )}
+          </div>
         )}
 
         {tab === 'delivery' && (

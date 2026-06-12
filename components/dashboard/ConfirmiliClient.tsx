@@ -10,7 +10,7 @@ import {
   SlidersHorizontal, Calendar, AlignLeft, ChevronRight, ChevronLeft,
   AlertTriangle, CheckCircle, XCircle, Clock, PhoneCall, Copy, RotateCcw,
   MessageCircle, ChevronDown, History, Languages, Headphones, FileSpreadsheet,
-  Globe, Pencil, Table,
+  Globe, Pencil, Table, User, LogOut, Wallet,
 } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -52,13 +52,13 @@ const STATUS_ACTIONS = [
 ]
 
 const CONFIRM_STATUSES_STATIC = [
-  { key:'confirmed', label:'المؤكدة',  color:'#198754' },
-  { key:'cancelled', label:'الملغاة',  color:'#DC3545' },
-  { key:'failed_1',  label:'فاشلة 01', color:'#FFA500' },
-  { key:'failed_2',  label:'فاشلة 02', color:'#FF8C00' },
-  { key:'failed_3',  label:'فاشلة 03', color:'#DC3545' },
-  { key:'postponed', label:'مؤجلة',    color:'#7B2FBE' },
-  { key:'duplicate', label:'مكررة',    color:'#212529' },
+  { key:'confirmed', label:'المؤكدة',  color:'#22C55E' },
+  { key:'cancelled', label:'الملغاة',  color:'#E23024' },
+  { key:'failed_1',  label:'فاشلة 01', color:'#FFA447' },
+  { key:'failed_2',  label:'فاشلة 02', color:'#FF8C1A' },
+  { key:'failed_3',  label:'فاشلة 03', color:'#E67300' },
+  { key:'postponed', label:'مؤجلة',    color:'#9D76C1' },
+  { key:'duplicate', label:'مكررة',    color:'#1A1A1A' },
 ]
 const PIE_COLORS = ['#198754','#DC3545','#FFC107','#0D6EFD','#7B2FBE','#FF8C00']
 
@@ -134,18 +134,21 @@ interface Props {
   plan?: string
   planOrderLimit?: number
   planOrdersUsed?: number
+  balance?: number
   initialOrders?: any[]
   initialProducts?: any[]
 }
 
-export default function ConfirmiliClient({ storeId='', storeName='متجري', plan='free', planOrderLimit=1000, planOrdersUsed=0, initialOrders=[], initialProducts=[], initialTeam=[], initialCompanies=[] }: Props) {
+export default function ConfirmiliClient({ storeId='', storeName='متجري', plan='free', planOrderLimit=1000, planOrdersUsed=0, balance=0, initialOrders=[], initialProducts=[], initialTeam=[], initialCompanies=[] }: Props) {
   const router = useRouter()
   const [activeTab,     setActiveTab]    = useState('statistics')
   const [statsTab,      setStatsTab]     = useState(0)
   const [notifOpen,     setNotifOpen]    = useState(false)
   const [notifTab,      setNotifTab]     = useState(0)
+  const [avatarOpen,    setAvatarOpen]   = useState(false)
   const [ordersPerPage, setOrdersPP]     = useState(50)
   const [delivSubTab,   setDelivSubTab]  = useState(0)
+  const [trackSubTab,   setTrackSubTab]  = useState(0)
   const [teamSubTab,    setTeamSubTab]   = useState(0)
   const [financeSubTab, setFinanceSubTab]= useState(0)
   const [storeSubTab,   setStoreSubTab]  = useState(0)
@@ -202,8 +205,15 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   // Store integrations (confirmili_store_integrations)
   const [integrations,   setIntegrations]   = useState<any[]>([])
   const [integForm,      setIntegForm]      = useState<any|null>(null)
+  // Delivery pricing (declared/real price lists + wilaya↔company map)
+  const [wilayasList,    setWilayasList]    = useState<any[]>([])
+  const [declaredPrices, setDeclaredPrices] = useState<Record<number,{home:number;desk:number}>>({})
+  const [realPrices,     setRealPrices]     = useState<Record<number,{home:number;desk:number}>>({})
+  const [wilayaCompanyMap, setWilayaCompanyMap] = useState<Record<number,string>>({})
   // Realtime subscription ref
   const realtimeRef = useRef<any>(null)
+  const declaredListIdRef = useRef<string|null>(null)
+  const realListIdRef = useRef<string|null>(null)
 
   // i18n helper
   const t = useCallback((key: string) => T[lang]?.[key] ?? T.ar[key] ?? key, [lang])
@@ -237,6 +247,63 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     const sb = createClient()
     const { data } = await sb.from('confirmili_delivery_companies').select('*').eq('store_id', storeId).order('created_at', { ascending: true })
     setCompanies(data ?? [])
+  }, [storeId])
+
+  // ─── DELIVERY PRICING ────────────────────────────────────
+  const loadDeliveryPricing = useCallback(async () => {
+    if (!storeId) return
+    const sb = createClient()
+    const [wRes, mapRes] = await Promise.all([
+      sb.from('wilayas').select('id,name_ar').order('id'),
+      sb.from('confirmili_wilaya_company_map').select('wilaya_id,company_id').eq('store_id', storeId),
+    ])
+    setWilayasList(wRes.data ?? [])
+    const map: Record<number,string> = {}
+    ;(mapRes.data ?? []).forEach((r:any) => { map[r.wilaya_id] = r.company_id })
+    setWilayaCompanyMap(map)
+
+    for (const kind of ['declared','real'] as const) {
+      const { data: list } = await sb.from('confirmili_price_lists').select('id').eq('store_id', storeId).eq('kind', kind).maybeSingle()
+      let listId = list?.id
+      if (!listId) {
+        const { data: created } = await sb.from('confirmili_price_lists')
+          .insert({ store_id: storeId, name: kind === 'declared' ? 'الأسعار المعلنة' : 'الأسعار الحقيقية', kind })
+          .select('id').single()
+        listId = created?.id
+      }
+      if (!listId) continue
+      const { data: rows } = await sb.from('confirmili_price_list_wilayas').select('wilaya_id,price_home,price_desk').eq('price_list_id', listId)
+      const prices: Record<number,{home:number;desk:number}> = {}
+      ;(rows ?? []).forEach((r:any) => { prices[r.wilaya_id] = { home: r.price_home ?? 0, desk: r.price_desk ?? 0 } })
+      if (kind === 'declared') { setDeclaredPrices(prices); declaredListIdRef.current = listId }
+      else { setRealPrices(prices); realListIdRef.current = listId }
+    }
+  }, [storeId])
+
+  const savePrice = useCallback(async (kind: 'declared'|'real', wilayaId: number, field: 'home'|'desk', value: number) => {
+    const sb = createClient()
+    const listId = kind === 'declared' ? declaredListIdRef.current : realListIdRef.current
+    if (!listId) return
+    const current = (kind === 'declared' ? declaredPrices : realPrices)[wilayaId] ?? { home: 0, desk: 0 }
+    const next = { ...current, [field]: value }
+    if (kind === 'declared') setDeclaredPrices(p => ({ ...p, [wilayaId]: next })); else setRealPrices(p => ({ ...p, [wilayaId]: next }))
+    await sb.from('confirmili_price_list_wilayas').upsert(
+      { price_list_id: listId, wilaya_id: wilayaId, price_home: next.home, price_desk: next.desk },
+      { onConflict: 'price_list_id,wilaya_id' }
+    )
+  }, [declaredPrices, realPrices])
+
+  const saveWilayaCompany = useCallback(async (wilayaId: number, companyId: string) => {
+    const sb = createClient()
+    setWilayaCompanyMap(m => ({ ...m, [wilayaId]: companyId }))
+    if (!companyId) {
+      await sb.from('confirmili_wilaya_company_map').delete().eq('store_id', storeId).eq('wilaya_id', wilayaId)
+      return
+    }
+    await sb.from('confirmili_wilaya_company_map').upsert(
+      { store_id: storeId, wilaya_id: wilayaId, company_id: companyId },
+      { onConflict: 'store_id,wilaya_id' }
+    )
   }, [storeId])
 
   const loadFinanceCfg = useCallback(async () => {
@@ -352,7 +419,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     setProdList(prev => prev.filter(x => x.id !== id)); setToast('تم الحذف')
   }, [setToast])
 
-  useEffect(() => { loadTeam(); loadCompanies(); loadFinanceCfg(); loadIntegrations() }, [loadTeam, loadCompanies, loadFinanceCfg, loadIntegrations])
+  useEffect(() => { loadTeam(); loadCompanies(); loadFinanceCfg(); loadIntegrations(); loadDeliveryPricing() }, [loadTeam, loadCompanies, loadFinanceCfg, loadIntegrations, loadDeliveryPricing])
 
   // ─── TEAM CRUD ──────────────────────────────────────────
   const saveTeamMember = useCallback(async () => {
@@ -655,24 +722,37 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   const netRevenue        = totalRevenue - totalDeliveryFee
 
   // ─── EXPORT ──────────────────────────────────────────────
-  const exportExcel = useCallback(() => {
+  const exportExcel = useCallback(async () => {
     const orders = selectedOrders.size > 0
       ? filteredOrders.filter(o => selectedOrders.has(o.id))
       : filteredOrders
-    const rows = [
-      ['رقم الطلب','الاسم','الهاتف','الولاية','المنتج','السعر','الحالة','التاريخ']
-    ]
-    orders.forEach(o => rows.push([
-      o.order_number, o.customer_name, o.customer_phone,
-      o.wilaya?.name_ar ?? '', (o.items?.[0]?.product_name ?? ''),
-      String(o.total), o.status, o.created_at?.slice(0,10) ?? ''
-    ]))
-    const csv = '﻿' + rows.map(r => r.join(',')).join('\n')
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
-    a.download = `orders-${new Date().toISOString().slice(0,10)}.csv`
-    a.click()
+    const rows = orders.map(o => ({
+      'رقم الطلب': o.order_number,
+      'الاسم': o.customer_name,
+      'الهاتف': o.customer_phone,
+      'الولاية': o.wilaya?.name_ar ?? '',
+      'المنتج': o.items?.[0]?.product_name ?? '',
+      'السعر': o.total,
+      'الحالة': statusLabel(o.status),
+      'التاريخ': o.created_at?.slice(0,10) ?? '',
+    }))
+    const XLSX = await import('xlsx')
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'الطلبات')
+    XLSX.writeFile(wb, `orders-${new Date().toISOString().slice(0,10)}.xlsx`)
   }, [filteredOrders, selectedOrders])
+
+  // ─── DELIVERY PRICE INPUT (save on blur) ────────────────
+  const PriceInput = ({ value, onSave }: { value: number; onSave: (v: number) => void }) => {
+    const [v, setV] = useState(String(value))
+    useEffect(() => { setV(String(value)) }, [value])
+    return (
+      <input type="number" className="input text-xs w-24" dir="ltr" value={v}
+        onChange={e=>setV(e.target.value)}
+        onBlur={()=>onSave(+v || 0)}/>
+    )
+  }
 
   // ─── TAB BAR ─────────────────────────────────────────────
   const TabBar = ({ tabs, active, onChange }: { tabs: string[]; active: number; onChange: (i: number) => void }) => (
@@ -1101,22 +1181,23 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       ['shipped','in_transit','out_for_delivery','with_driver','at_stopdesk'].includes(o.status) &&
       !trashedOrders.has(o.id)
     )
+    const driverTeam = team.filter(m => m.role === 'delivery')
     return (
     <div className="space-y-3">
       <div className="flex gap-2 mb-3">
         {['شركة التوصيل','رجل التوصيل'].map((t,i) => (
-          <button key={t} className={`tab-item ${i===0?'active':''}`}>{t}</button>
+          <button key={t} onClick={()=>setTrackSubTab(i)} className={`tab-item ${trackSubTab===i?'active':''}`}>{t}</button>
         ))}
       </div>
-      {/* 9.10 Empty state for رجل التوصيل */}
+      {trackSubTab === 0 && (
       <div className="card overflow-hidden">
         <table className="data-table" style={{fontFamily:'var(--font-arabic)'}}>
           <thead>
-            <tr>{['رقم التتبع','الحالة','الهاتف','الاسم','المنتج','الولاية','الإجمالي','إجراء'].map(h=><th key={h}>{h}</th>)}</tr>
+            <tr>{['رقم التتبع','شركة التوصيل','الحالة','الهاتف','الاسم','المنتج','الولاية','الإجمالي','إجراء'].map(h=><th key={h}>{h}</th>)}</tr>
           </thead>
           <tbody>
             {trackingOrders.length === 0
-              ? <tr><td colSpan={8} className="text-center py-12 text-sm" style={{color:'var(--color-text-muted)'}}>
+              ? <tr><td colSpan={9} className="text-center py-12 text-sm" style={{color:'var(--color-text-muted)'}}>
                   لا توجد طلبات للتتبع — الطلبات المشحونة تظهر هنا
                 </td></tr>
               : trackingOrders.slice(0,50).map(o => (
@@ -1128,6 +1209,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                       : <span className="text-xs" style={{color:'var(--color-text-muted)'}}>—</span>
                     }
                   </td>
+                  <td className="text-xs">{companies.find(c=>c.id===o.delivery_company_id)?.name ?? '—'}</td>
                   <td>
                     <span className="inline-flex items-center rounded-full px-2.5 h-[22px] text-[11px] font-bold"
                       style={{ background: getStatus(o.status).color, color:'#fff', fontFamily:'var(--font-arabic)' }}>
@@ -1145,6 +1227,34 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
           </tbody>
         </table>
       </div>
+      )}
+      {trackSubTab === 1 && (
+      <div className="card overflow-hidden">
+        <table className="data-table" style={{fontFamily:'var(--font-arabic)'}}>
+          <thead>
+            <tr>{['رجل التوصيل','الهاتف','طلبات قيد التوصيل','إجراء'].map(h=><th key={h}>{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {driverTeam.length === 0
+              ? <tr><td colSpan={4} className="text-center py-12 text-sm" style={{color:'var(--color-text-muted)'}}>
+                  لا يوجد أعضاء فريق توصيل — أضفهم من تبويب الفريق
+                </td></tr>
+              : driverTeam.map(m => (
+                <tr key={m.id}>
+                  <td className="font-medium text-sm">{m.name}</td>
+                  <td><button onClick={()=>openWhatsApp(m.phone,m.name)} className="text-xs" style={{color:'#25D366'}}>{m.phone ?? '—'}</button></td>
+                  <td className="font-semibold text-sm" style={{color:'var(--color-accent)'}}>{trackingOrders.length}</td>
+                  <td>
+                    <button onClick={()=>openWhatsApp(m.phone,m.name)} className="btn btn-sm" style={{background:'#25D366',color:'#fff',fontFamily:'var(--font-arabic)'}}>
+                      <MessageCircle size={12}/>تواصل
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+      )}
     </div>
   )}
 
@@ -1300,7 +1410,15 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
               <table className="data-table">
                 <thead><tr><th>الولاية</th><th>مكتب (دج)</th><th>المنزل (دج)</th></tr></thead>
                 <tbody>
-                  <tr><td colSpan={3} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد قوائم أسعار — أضف قائمة جديدة</td></tr>
+                  {wilayasList.length === 0 ? (
+                    <tr><td colSpan={3} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>جارٍ التحميل...</td></tr>
+                  ) : wilayasList.map(w => (
+                    <tr key={w.id}>
+                      <td className="text-sm font-medium">{w.name_ar}</td>
+                      <td><PriceInput value={declaredPrices[w.id]?.desk ?? 0} onSave={v=>savePrice('declared', w.id, 'desk', v)}/></td>
+                      <td><PriceInput value={declaredPrices[w.id]?.home ?? 0} onSave={v=>savePrice('declared', w.id, 'home', v)}/></td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -1309,8 +1427,22 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
         {delivSubTab === 2 && (
           <div className="card overflow-hidden">
             <table className="data-table">
-              <thead><tr><th>الولاية</th><th>شركة التوصيل</th><th>إجراءات</th></tr></thead>
-              <tbody><tr><td colSpan={3} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد تعيينات — كل ولاية تستخدم الشركة الافتراضية</td></tr></tbody>
+              <thead><tr><th>الولاية</th><th>شركة التوصيل</th></tr></thead>
+              <tbody>
+                {wilayasList.length === 0 ? (
+                  <tr><td colSpan={2} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>جارٍ التحميل...</td></tr>
+                ) : wilayasList.map(w => (
+                  <tr key={w.id}>
+                    <td className="text-sm font-medium">{w.name_ar}</td>
+                    <td>
+                      <select className="input text-xs" value={wilayaCompanyMap[w.id] ?? ''} onChange={e=>saveWilayaCompany(w.id, e.target.value)}>
+                        <option value="">الشركة الافتراضية</option>
+                        {companies.map(co => <option key={co.id} value={co.id}>{co.name}</option>)}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         )}
@@ -1322,7 +1454,17 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
             <div className="card overflow-hidden">
               <table className="data-table">
                 <thead><tr><th>الولاية</th><th>مكتب (دج)</th><th>المنزل (دج)</th></tr></thead>
-                <tbody><tr><td colSpan={3} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>لا توجد أسعار حقيقية</td></tr></tbody>
+                <tbody>
+                  {wilayasList.length === 0 ? (
+                    <tr><td colSpan={3} className="text-center py-8 text-sm" style={{color:'var(--color-text-muted)'}}>جارٍ التحميل...</td></tr>
+                  ) : wilayasList.map(w => (
+                    <tr key={w.id}>
+                      <td className="text-sm font-medium">{w.name_ar}</td>
+                      <td><PriceInput value={realPrices[w.id]?.desk ?? 0} onSave={v=>savePrice('real', w.id, 'desk', v)}/></td>
+                      <td><PriceInput value={realPrices[w.id]?.home ?? 0} onSave={v=>savePrice('real', w.id, 'home', v)}/></td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
           </div>
@@ -1442,7 +1584,8 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     const packagingCost      = (financeCfg.packaging_price ?? 0) * deliveredOrders.length
     const trackingCost       = (financeCfg.tracking_price ?? 0) * deliveredOrders.length
     const adCost             = financeCfg.monthly_ad_cost ?? 0
-    const netProfit          = productRevenue - realDelivery - confirmationCost - packagingCost - trackingCost - adCost
+    const otherCost          = Array.isArray(financeCfg.other_costs) ? financeCfg.other_costs.reduce((s:number,c:any)=>s+(c.amount??0),0) : 0
+    const netProfit          = productRevenue - realDelivery - confirmationCost - packagingCost - trackingCost - adCost - otherCost
 
     return (
       <div>
@@ -1531,7 +1674,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
             <div className="flex gap-2">
               <button onClick={saveFinanceCfg} className="btn btn-primary btn-sm" style={{fontFamily:'var(--font-arabic)'}}>حفظ التكاليف</button>
               <button onClick={exportExcel} className="btn btn-sm" style={{background:'var(--color-success)',color:'#fff',fontFamily:'var(--font-arabic)'}}>
-                <Download size={13}/>تصدير CSV
+                <Download size={13}/>تصدير Excel
               </button>
             </div>
           </div>
@@ -1618,19 +1761,32 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
           <div className="card p-5 space-y-4">
             <h3 className="font-semibold text-sm" style={{color:'var(--color-text-primary)'}}>تنظيم مدير الأعمال</h3>
             <div className="grid grid-cols-2 gap-4">
-              {[
-                {label:'ميزانية الإعلانات', ph:'0 دج'},
-                {label:'تكلفة التأكيد (لكل طلب)', ph:'0 دج'},
-                {label:'تكلفة التغليف (لكل طلب)', ph:'0 دج'},
-                {label:'مصاريف أخرى', ph:'0 دج'},
-              ].map(f => (
-                <div key={f.label}>
-                  <label className="block text-xs font-medium mb-1.5" style={{color:'var(--color-text-secondary)'}}>{f.label}</label>
-                  <input type="number" placeholder={f.ph} className="input text-sm" dir="ltr"/>
-                </div>
-              ))}
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{color:'var(--color-text-secondary)'}}>ميزانية الإعلانات</label>
+                <input type="number" placeholder="0 دج" className="input text-sm" dir="ltr"
+                  value={financeCfg.monthly_ad_cost ?? 0}
+                  onChange={e=>setFinanceCfg((f:any)=>({...f,monthly_ad_cost:+e.target.value}))}/>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{color:'var(--color-text-secondary)'}}>تكلفة التأكيد (لكل طلب)</label>
+                <input type="number" placeholder="0 دج" className="input text-sm" dir="ltr"
+                  value={financeCfg.confirmation_price ?? 0}
+                  onChange={e=>setFinanceCfg((f:any)=>({...f,confirmation_price:+e.target.value}))}/>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{color:'var(--color-text-secondary)'}}>تكلفة التغليف (لكل طلب)</label>
+                <input type="number" placeholder="0 دج" className="input text-sm" dir="ltr"
+                  value={financeCfg.packaging_price ?? 0}
+                  onChange={e=>setFinanceCfg((f:any)=>({...f,packaging_price:+e.target.value}))}/>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{color:'var(--color-text-secondary)'}}>مصاريف أخرى</label>
+                <input type="number" placeholder="0 دج" className="input text-sm" dir="ltr"
+                  value={Array.isArray(financeCfg.other_costs) ? (financeCfg.other_costs[0]?.amount ?? 0) : 0}
+                  onChange={e=>setFinanceCfg((f:any)=>({...f,other_costs:[{label:'مصاريف أخرى',amount:+e.target.value}]}))}/>
+              </div>
             </div>
-            <button className="btn btn-primary btn-sm">حفظ وحساب الأرباح</button>
+            <button onClick={saveFinanceCfg} className="btn btn-primary btn-sm" style={{fontFamily:'var(--font-arabic)'}}>حفظ وحساب الأرباح</button>
             <div className="p-3 rounded-lg" style={{background:'var(--color-bg-soft)'}}>
               <p className="text-xs" style={{color:'var(--color-text-muted)'}}>💡 هذه المصاريف تُطرح من صافي الربح في تبويب &quot;حساب الأرباح&quot;</p>
             </div>
@@ -1877,18 +2033,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       }
       return (
         <div className="flex flex-col items-center justify-center py-10 gap-5" dir="rtl">
-          <div className="w-56 h-56 border-2 border-dashed rounded-2xl flex items-center justify-center relative" style={{borderColor:'var(--color-accent)',background:'#F8FCFF'}}>
-            <div className="absolute inset-3 border-2 rounded-xl" style={{borderColor:'var(--color-accent)',opacity:0.25}}/>
-            {/* corner marks */}
-            {[['top-3 right-3'],['top-3 left-3'],['bottom-3 right-3'],['bottom-3 left-3']].map(([cls],i) => (
-              <div key={i} className={`absolute ${cls} w-4 h-4`} style={{border:'2.5px solid var(--color-accent)',borderRadius:3}}/>
-            ))}
-            <div className="text-center z-10">
-              <QrCode size={40} style={{color:'var(--color-accent)'}} className="mx-auto mb-2"/>
-              <p className="text-xs" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>منطقة المسح</p>
-            </div>
-            <div className="absolute inset-x-5 h-0.5 animate-pulse" style={{background:'var(--color-accent)',top:'50%'}}/>
-          </div>
+          <QRScanner onScan={scanOrder}/>
           {/* Manual code entry (for barcode scanners that type) */}
           <div className="w-72 space-y-2">
             <p className="text-xs text-center" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>أو أدخل رقم الطلبية / التتبع يدوياً</p>
@@ -2286,6 +2431,9 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       {/* Feature banner — Dakkani blue (STEP 4) */}
       <div className="flex items-center justify-center gap-3 px-4 py-2 text-white text-xs" style={{background:'#0D6EFD',fontFamily:'var(--font-arabic)'}}>
         <span>📦 تقرير الإرسال متاح الآن — Confirmili إدارة الطلبات الاحترافية</span>
+        <button onClick={() => { setActiveTab('tutorials') }} className="flex items-center gap-1 underline font-semibold flex-shrink-0">
+          <Video size={12}/>الفيديو
+        </button>
       </div>
 
       {/* Header */}
@@ -2364,6 +2512,12 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
           <div className="text-xs" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
             إيرادات: <strong style={{color:'var(--color-accent)'}}>{totalRevenue.toLocaleString('ar-DZ')} دج</strong>
           </div>
+          {/* الرصيد (balance) */}
+          <a href="/billing/plans" className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs" style={{background:'var(--color-bg-soft)',color:'var(--color-text-secondary)',fontFamily:'var(--font-arabic)'}} title="الرصيد">
+            <Wallet size={12} style={{color:'var(--color-accent)'}}/>
+            <span>الرصيد:</span>
+            <strong style={{fontFamily:'var(--font-primary)',color:'var(--color-accent)'}}>{balance.toLocaleString('ar-DZ')} دج</strong>
+          </a>
           {/* Quota display (9.9) — red when remaining < 20% */}
           {(() => {
             const remaining = Math.max(0, planOrderLimit - planOrdersUsed)
@@ -2392,6 +2546,35 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                 {l === 'ar' ? '🇩🇿' : l === 'fr' ? '🇫🇷' : '🇺🇸'}
               </button>
             ))}
+          </div>
+          {/* Avatar dropdown */}
+          <div className="relative">
+            <button onClick={e=>{e.stopPropagation();setAvatarOpen(o=>!o)}}
+              className="w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:opacity-80"
+              style={{background:'var(--color-accent-soft)',color:'var(--color-accent)'}}>
+              <User size={15}/>
+            </button>
+            {avatarOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={()=>setAvatarOpen(false)}/>
+                <div className="absolute top-full mt-1 left-0 w-48 bg-white border rounded-xl shadow-lg z-20 overflow-hidden" style={{borderColor:'var(--color-border)',fontFamily:'var(--font-arabic)'}}>
+                  <div className="px-3 py-2 border-b" style={{borderColor:'var(--color-border)'}}>
+                    <p className="text-xs font-bold truncate" style={{color:'var(--color-text-primary)'}}>{storeName}</p>
+                  </div>
+                  <a href="/settings" className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-[#F8F9FA] transition-colors" style={{color:'var(--color-text-secondary)'}}>
+                    <Settings size={13}/>إعدادات الحساب
+                  </a>
+                  <a href="https://wa.me/213555000000?text=مرحبا، أحتاج دعم في Confirmili" target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-[#F8F9FA] transition-colors" style={{color:'var(--color-text-secondary)'}}>
+                    <Headphones size={13}/>الدعم
+                  </a>
+                  <button onClick={async ()=>{ const sb=createClient(); await sb.auth.signOut(); router.push('/login'); router.refresh() }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-red-50 transition-colors text-right" style={{color:'#DC3545'}}>
+                    <LogOut size={13}/>تسجيل الخروج
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -2426,6 +2609,52 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
         {SECTION_RENDERERS[activeTab]?.() ?? COMING_SOON}
       </div>
+    </div>
+  )
+}
+
+// ── QR CAMERA SCANNER (html5-qrcode) ─────────────────────────
+function QRScanner({ onScan }: { onScan: (text: string) => void }) {
+  const scannerRef = useRef<any>(null)
+  const [active, setActive] = useState(false)
+  const [error, setError] = useState<string|null>(null)
+
+  useEffect(() => {
+    return () => { scannerRef.current?.stop?.().catch(() => {}) }
+  }, [])
+
+  const stop = useCallback(async () => {
+    try { await scannerRef.current?.stop(); scannerRef.current?.clear() } catch {}
+    setActive(false)
+  }, [])
+
+  const start = useCallback(async () => {
+    setError(null)
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode')
+      const scanner = new Html5Qrcode('qr-reader-box')
+      scannerRef.current = scanner
+      await scanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: 220 },
+        (decodedText: string) => { onScan(decodedText); stop() },
+        () => {}
+      )
+      setActive(true)
+    } catch (e: any) {
+      setError(e?.message ?? 'تعذر تشغيل الكاميرا — تحقق من الأذونات')
+    }
+  }, [onScan, stop])
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div id="qr-reader-box" className="w-56 h-56 rounded-2xl overflow-hidden" style={{background:'#000'}}/>
+      {!active ? (
+        <button onClick={start} className="btn btn-primary btn-sm" style={{fontFamily:'var(--font-arabic)'}}>تشغيل الكاميرا</button>
+      ) : (
+        <button onClick={stop} className="btn btn-sm" style={{background:'#DC3545',color:'#fff',fontFamily:'var(--font-arabic)'}}>إيقاف الكاميرا</button>
+      )}
+      {error && <p className="text-xs text-center" style={{color:'#DC3545',fontFamily:'var(--font-arabic)'}}>{error}</p>}
     </div>
   )
 }

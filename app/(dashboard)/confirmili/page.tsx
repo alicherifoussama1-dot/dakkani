@@ -66,6 +66,14 @@ export default async function ConfirmiliPage() {
   const planKey = store.plan ?? 'free'
   const planLimit = PLAN_LIMITS[planKey] ?? 100
 
+  // الرصيد — sum of paid confirmili_payments
+  const { data: payments } = await supabase
+    .from('confirmili_payments')
+    .select('amount,status')
+    .eq('store_id', store.id)
+    .eq('status', 'paid')
+  const balance = (payments ?? []).reduce((s, p: any) => s + (p.amount ?? 0), 0)
+
   return (
     <ConfirmiliClient
       storeId={store.id}
@@ -73,6 +81,7 @@ export default async function ConfirmiliPage() {
       plan={planKey}
       planOrderLimit={planLimit}
       planOrdersUsed={ordersUsed ?? 0}
+      balance={balance}
       initialOrders={(orders ?? []) as any[]}
       initialProducts={(productsRes.data ?? []) as any[]}
       initialTeam={(teamRes.data ?? []) as any[]}
