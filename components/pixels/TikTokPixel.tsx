@@ -6,6 +6,7 @@
 // Uses event_id for deduplication with Events API
 // ============================================================
 import { useEffect, useCallback, useRef } from 'react'
+import Script from 'next/script'
 
 declare global {
   interface Window {
@@ -61,59 +62,55 @@ interface TikTokPixelProps {
 }
 
 export function TikTokPixel({ pixelId, onEventId }: TikTokPixelProps) {
-  const loaded = useRef(false)
+  // Bootstrap ttq synchronously on render so that window.ttq exists immediately
+  if (typeof window !== 'undefined' && !window.ttq) {
+    const ttq = {
+      methods: ['page', 'track', 'identify', 'instances', 'debug', 'on', 'off', 'once', 'ready', 'alias', 'group', 'enableCookie', 'disableCookie', 'holdConsent', 'revokeConsent', 'grantConsent'],
+      setAndDequeue: function (i: unknown) { (ttq as any)._i = i },
+      instances: {},
+      _i: {},
+      instance: function (pid: string) { return (ttq as any)._i[pid] },
+      page: function () { },
+      track: function () { },
+      identify: function () { },
+      load: function (pid: string) {
+        const o = "https://analytics.tiktok.com/i18n/pixel/events.js";
+        (ttq as any)._i = (ttq as any)._i || {};
+        (ttq as any)._i[pid] = [];
+        (ttq as any)._i[pid]._u = o;
+        (ttq as any)._t = (ttq as any)._t || {};
+        (ttq as any)._t[pid] = +new Date;
+      },
+    } as unknown as TikTokPixelInstance
 
-  useEffect(() => {
-    if (loaded.current || !pixelId) return
-    loaded.current = true
-
-    // Bootstrap ttq
-    if (!window.ttq) {
-      const ttq = {
-        methods: ['page', 'track', 'identify', 'instances', 'debug', 'on', 'off', 'once', 'ready', 'alias', 'group', 'enableCookie', 'disableCookie', 'holdConsent', 'revokeConsent', 'grantConsent'],
-        setAndDequeue: function (i: unknown) { (ttq as any)._i = i },
-        instances: {},
-        _i: {},
-        instance: function (pid: string) { return (ttq as any)._i[pid] },
-        page: function () { },
-        track: function () { },
-        identify: function () { },
-        load: function (pid: string) {
-          const script = document.createElement('script')
-          script.async = true
-          script.src = 'https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=' + pid + '&lib=ttq'
-          document.head.appendChild(script)
-        },
-      } as unknown as TikTokPixelInstance
-
-      ttq.methods.forEach(m => {
-        ;(ttq as any)[m] = function (...args: unknown[]) {
-          const instance = (ttq as any)._i?.[pixelId]
-          if (instance) {
-            instance[m]?.(...args)
-          }
+    ttq.methods.forEach(m => {
+      ;(ttq as any)[m] = function (...args: unknown[]) {
+        const instance = (ttq as any)._i?.[pixelId]
+        if (instance) {
+          instance[m]?.(...args)
         }
-      })
+      }
+    })
 
-      window.ttq = ttq
-    }
+    window.ttq = ttq
+  }
 
-    window.ttq.load(pixelId)
-
-    // Fire PageView
+  // Trigger load and PageView in useEffect (they get queued)
+  useEffect(() => {
+    if (!pixelId) return
+    window.ttq?.load(pixelId)
     const eventId = generateEventId('PageView', pixelId)
-    window.ttq.page()
+    window.ttq?.page()
     onEventId?.(eventId)
-
-    return () => {
-      const scripts = document.querySelectorAll(
-        `script[src*="analytics.tiktok.com"]`
-      )
-      scripts.forEach(s => s.remove())
-    }
   }, [pixelId, onEventId])
 
-  return null
+  return (
+    <Script
+      id={`tiktok-pixel-${pixelId}`}
+      src={`https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=${pixelId}&lib=ttq`}
+      strategy="lazyOnload"
+    />
+  )
 }
 
 // ── Hook for firing TikTok events ─────────────────────────

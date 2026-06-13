@@ -289,6 +289,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
                   alt="وصف المنتج"
                   width={1200}
                   height={1200}
+                  sizes="(max-width: 768px) 100vw, 800px"
                   className="w-full h-auto rounded-2xl object-contain shadow-sm border border-gray-100"
                   loading="lazy"
                 />

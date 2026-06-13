@@ -6,6 +6,7 @@
 // Uses event_id for deduplication with CAPI (server-side)
 // ============================================================
 import { useEffect, useCallback, useRef } from 'react'
+import Script from 'next/script'
 
 declare global {
   interface Window {
@@ -49,53 +50,39 @@ function generateEventId(event: string, extra = ''): string {
 }
 
 export function MetaPixel({ pixelId, onEventId }: MetaPixelProps) {
-  const loaded = useRef(false)
+  // Bootstrap fbq synchronously on render so that window.fbq exists immediately
+  if (typeof window !== 'undefined' && !window.fbq) {
+    const fbq = function (...args: unknown[]) {
+      if ((fbq as any).callMethod) {
+        ;(fbq as any).callMethod.apply(fbq, args)
+      } else {
+        ;(fbq as any).queue.push(args)
+      }
+    } as any
+    if (!window._fbq) window._fbq = fbq
+    fbq.push = fbq
+    fbq.loaded = true
+    fbq.version = '2.0'
+    fbq.queue = []
+    window.fbq = fbq
+  }
 
+  // Trigger init and PageView in useEffect (they get queued)
   useEffect(() => {
-    if (loaded.current || !pixelId) return
-    loaded.current = true
-
-    // Inject fbq bootstrap
-    if (!window.fbq) {
-      const fbq = function (...args: unknown[]) {
-        if ((fbq as any).callMethod) {
-          ;(fbq as any).callMethod.apply(fbq, args)
-        } else {
-          ;(fbq as any).queue.push(args)
-        }
-      } as any
-      if (!window._fbq) window._fbq = fbq
-      fbq.push = fbq
-      fbq.loaded = true
-      fbq.version = '2.0'
-      fbq.queue = []
-      window.fbq = fbq
-    }
-
-    // Load script
-    const script = document.createElement('script')
-    script.async = true
-    script.src = 'https://connect.facebook.net/en_US/fbevents.js'
-    document.head.appendChild(script)
-
-    // Init pixel
+    if (!pixelId) return
     window.fbq?.('init', pixelId)
-
-    // Fire PageView with event_id
     const eventId = generateEventId('PageView', pixelId)
     window.fbq?.('track', 'PageView', {}, { eventID: eventId })
     onEventId?.(eventId)
-
-    return () => {
-      // Cleanup script on unmount
-      const scripts = document.querySelectorAll(
-        `script[src="https://connect.facebook.net/en_US/fbevents.js"]`
-      )
-      scripts.forEach(s => s.remove())
-    }
   }, [pixelId, onEventId])
 
-  return null
+  return (
+    <Script
+      id={`meta-pixel-${pixelId}`}
+      src="https://connect.facebook.net/en_US/fbevents.js"
+      strategy="lazyOnload"
+    />
+  )
 }
 
 // ── Hook for firing Meta events ───────────────────────────
