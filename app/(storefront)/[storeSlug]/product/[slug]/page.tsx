@@ -8,7 +8,7 @@ import WhatsAppFloat       from '@/components/storefront/WhatsAppFloat'
 import ProductPageClient   from '@/components/storefront/ProductPageClient'
 import ProductPagePixels   from '@/components/storefront/ProductPagePixels'
 import ReviewForm          from '@/components/storefront/ReviewForm'
-import { FadeUp, StaggerContainer, StaggerItem } from '@/components/ui/animations'
+import Image               from 'next/image'
 import { formatDZD } from '@/lib/utils/format'
 import Link from 'next/link'
 
@@ -125,33 +125,31 @@ export default async function ProductPage({ params }: Props) {
         {/* Reviews */}
         {(reviewsRes.data?.length ?? 0) > 0 && (
           <section className="max-w-6xl mx-auto px-4 py-12">
-            <FadeUp>
+            <div className="animate-fade-in">
               <h2 className="text-2xl font-black text-[#111827] mb-6">
                 آراء العملاء ({reviewsRes.data?.length}) ⭐ {avgRating}
               </h2>
-            </FadeUp>
-            <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {reviewsRes.data?.map((r, i) => (
-                <StaggerItem key={i}>
-                  <div className="bg-white rounded-2xl p-5 shadow-card">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-black">
-                        {r.customer_name?.[0] ?? 'ع'}
-                      </div>
-                      <div>
-                        <p className="font-bold text-[#111827] text-sm">{r.customer_name ?? 'عميل'}</p>
-                        <div className="flex gap-0.5">
-                          {[...Array(5)].map((_, j) => (
-                            <span key={j} className={`text-xs ${j < r.rating ? 'text-accent' : 'text-gray-200'}`}>★</span>
-                          ))}
-                        </div>
+                <div key={i} className="bg-white rounded-2xl p-5 shadow-card animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-black">
+                      {r.customer_name?.[0] ?? 'ع'}
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#111827] text-sm">{r.customer_name ?? 'عميل'}</p>
+                      <div className="flex gap-0.5">
+                        {[...Array(5)].map((_, j) => (
+                          <span key={j} className={`text-xs ${j < r.rating ? 'text-accent' : 'text-gray-200'}`}>★</span>
+                        ))}
                       </div>
                     </div>
-                    {r.comment && <p className="text-gray-600 text-sm leading-relaxed">{r.comment}</p>}
                   </div>
-                </StaggerItem>
+                  {r.comment && <p className="text-gray-600 text-sm leading-relaxed">{r.comment}</p>}
+                </div>
               ))}
-            </StaggerContainer>
+            </div>
           </section>
         )}
 
@@ -165,30 +163,30 @@ export default async function ProductPage({ params }: Props) {
         {/* Related */}
         {(relatedRes.data?.length ?? 0) > 0 && (
           <section className="max-w-6xl mx-auto px-4 py-8 border-t border-gray-100">
-            <FadeUp>
+            <div className="animate-fade-in">
               <h2 className="text-2xl font-black text-[#111827] mb-6">منتجات مشابهة</h2>
-            </FadeUp>
-            <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {relatedRes.data?.map(p => {
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {relatedRes.data?.map((p, i) => {
                 const img = (p.images as any[])?.[0]?.url
                 return (
-                  <StaggerItem key={p.id}>
-                    <Link href={`/store/${store.slug}/product/${p.slug}`} className="group block card-premium overflow-hidden">
-                      <div className="product-img aspect-square bg-gray-50">
-                        {img
-                          ? <img src={img} alt={p.name_ar ?? p.name} className="w-full h-full object-cover" />
-                          : <div className="w-full h-full flex items-center justify-center text-3xl text-gray-200">{(p.name_ar ?? p.name)[0]}</div>
-                        }
-                      </div>
-                      <div className="p-3">
-                        <p className="font-bold text-[#111827] text-sm line-clamp-2">{p.name_ar ?? p.name}</p>
-                        <p className="font-black text-accent mt-1">{formatDZD(p.price)}</p>
-                      </div>
-                    </Link>
-                  </StaggerItem>
+                  <Link key={p.id} href={`/store/${store.slug}/product/${p.slug}`}
+                    className="group block card-premium overflow-hidden animate-fade-in"
+                    style={{ animationDelay: `${i * 80}ms` }}>
+                    <div className="relative product-img aspect-square bg-gray-50">
+                      {img
+                        ? <Image src={img} alt={p.name_ar ?? p.name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" loading="lazy" />
+                        : <div className="w-full h-full flex items-center justify-center text-3xl text-gray-200">{(p.name_ar ?? p.name)[0]}</div>
+                      }
+                    </div>
+                    <div className="p-3">
+                      <p className="font-bold text-[#111827] text-sm line-clamp-2">{p.name_ar ?? p.name}</p>
+                      <p className="font-black text-accent mt-1">{formatDZD(p.price)}</p>
+                    </div>
+                  </Link>
                 )
               })}
-            </StaggerContainer>
+            </div>
           </section>
         )}
       </div>
