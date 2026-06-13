@@ -1,244 +1,96 @@
 // ============================================================
-// Unified Delivery Webhook
-// Handles callbacks from Yalidine, ZR Express, Maystro
-// Updates order status + delivery_timeline JSONB
+// Unified Delivery Webhook — courier status callbacks.
+// Extracts {tracking, status} from any provider payload shape,
+// normalizes the status, updates the order (status + tracking_status
+// + delivery_timeline) and logs it. Optional WhatsApp notify.
 // ============================================================
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import {
-  YALIDINE_STATUS_MAP,
-  ZR_STATUS_MAP,
-  MAYSTRO_STATUS_MAP,
-  NORMALIZED_TO_ORDER_STATUS,
-  WHATSAPP_TEMPLATES,
-  type NormalizedStatus,
-} from '@/lib/delivery/types'
+import { normalizeStatus, UNIFIED_TO_ORDER_STATUS, UNIFIED_STATUS_LABEL, type UnifiedStatus } from '@/lib/delivery/types'
 
 const supabase = () =>
-  createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-// ── Provider detection ────────────────────────────────────
-type Provider = 'yalidine' | 'zrexpress' | 'maystro' | 'unknown'
-
-interface NormalizedWebhookPayload {
-  trackingId: string
-  rawStatus: string
-  normalizedStatus: NormalizedStatus
-  description?: string
-  location?: string
-  provider: Provider
-  timestamp: string
-  raw: unknown
+const WHATSAPP_TEMPLATES: Partial<Record<UnifiedStatus, string>> = {
+  picked_up:        'تم استلام طلبك رقم {n} وهو في طريقه إليك 📦',
+  in_transit:       'طلبك رقم {n} في الطريق إليك 🚚',
+  out_for_delivery: 'طلبك رقم {n} خرج للتوصيل اليوم، كن جاهزاً! 🎯',
+  delivered:        'تم تسليم طلبك رقم {n} بنجاح ✅ شكراً لتسوقك معنا!',
+  returned:         'تعذر تسليم طلبك رقم {n}، سيتم الاتصال بك قريباً 📞',
+  exception:        'هناك مشكلة في تسليم طلبك رقم {n}، سيتصل بك فريقنا 📞',
 }
 
-function normalizeYalidine(body: Record<string, string>): NormalizedWebhookPayload | null {
-  const tracking = body.tracking ?? body.Tracking
-  const status = body.status ?? body.situation
-  if (!tracking || !status) return null
-
+function extract(body: Record<string, any>): { tracking?: string; status?: string; location?: string; at?: string } {
   return {
-    trackingId: tracking,
-    rawStatus: status,
-    normalizedStatus: (YALIDINE_STATUS_MAP[status] ?? 'exception') as NormalizedStatus,
-    description: body.description ?? body.commentaire,
-    location: body.commune ?? body.wilaya,
-    provider: 'yalidine',
-    timestamp: body.date ?? new Date().toISOString(),
-    raw: body,
+    tracking: body.tracking ?? body.Tracking ?? body.tracking_code ?? body.tracking_number ?? body.id,
+    status:   body.status ?? body.situation ?? body.Situation ?? body.last_status ?? body.event,
+    location: body.commune ?? body.wilaya ?? body.Wilaya ?? body.location,
+    at:       body.date ?? body.Date ?? body.updated_at ?? body.created_at ?? new Date().toISOString(),
   }
 }
 
-function normalizeZRExpress(body: Record<string, string>): NormalizedWebhookPayload | null {
-  const tracking = body.Tracking ?? body.tracking
-  const status = body.Situation ?? body.situation ?? body.status
-  if (!tracking || !status) return null
-
-  return {
-    trackingId: tracking,
-    rawStatus: status,
-    normalizedStatus: (ZR_STATUS_MAP[status] ?? 'exception') as NormalizedStatus,
-    description: body.Description ?? body.description,
-    location: body.Wilaya ?? body.wilaya,
-    provider: 'zrexpress',
-    timestamp: body.Date ?? new Date().toISOString(),
-    raw: body,
-  }
-}
-
-function normalizeMaystro(body: Record<string, string>): NormalizedWebhookPayload | null {
-  const tracking = body.tracking_code ?? body.id
-  const status = body.status
-  if (!tracking || !status) return null
-
-  return {
-    trackingId: tracking,
-    rawStatus: status,
-    normalizedStatus: (MAYSTRO_STATUS_MAP[status] ?? 'exception') as NormalizedStatus,
-    description: body.description ?? body.note,
-    location: body.location,
-    provider: 'maystro',
-    timestamp: body.updated_at ?? new Date().toISOString(),
-    raw: body,
-  }
-}
-
-function detectAndNormalize(
-  body: Record<string, string>,
-  providerHint?: string
-): NormalizedWebhookPayload | null {
-  // Try explicit provider from query param first
-  if (providerHint === 'yalidine') return normalizeYalidine(body)
-  if (providerHint === 'zrexpress') return normalizeZRExpress(body)
-  if (providerHint === 'maystro') return normalizeMaystro(body)
-
-  // Auto-detect by payload shape
-  if ('tracking' in body && 'situation' in body) return normalizeYalidine(body)
-  if ('Tracking' in body && 'Situation' in body) return normalizeZRExpress(body)
-  if ('tracking_code' in body && 'status' in body) return normalizeMaystro(body)
-
-  // Last resort: try each
-  return normalizeYalidine(body) ?? normalizeZRExpress(body) ?? normalizeMaystro(body)
-}
-
-// ── WhatsApp notification (via Twilio or direct) ──────────
-async function sendWhatsAppNotification(
-  phone: string,
-  orderNumber: string,
-  normalizedStatus: NormalizedStatus
-): Promise<void> {
-  const template = WHATSAPP_TEMPLATES[normalizedStatus]
-  if (!template || !process.env.WHATSAPP_API_URL) return
-
-  const message = template.replace('{order_number}', orderNumber)
-  const algerianPhone = phone.startsWith('0')
-    ? '+213' + phone.slice(1)
-    : phone.startsWith('+') ? phone : '+213' + phone
-
+async function notifyWhatsApp(phone: string, orderNumber: string, status: UnifiedStatus) {
+  const tpl = WHATSAPP_TEMPLATES[status]
+  if (!tpl || !process.env.WHATSAPP_API_URL) return
+  const to = phone.startsWith('0') ? '+213' + phone.slice(1) : phone.startsWith('+') ? phone : '+213' + phone
   try {
     await fetch(process.env.WHATSAPP_API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.WHATSAPP_API_TOKEN}`,
-      },
-      body: JSON.stringify({
-        to: algerianPhone,
-        message,
-        type: 'text',
-      }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.WHATSAPP_API_TOKEN}` },
+      body: JSON.stringify({ to, message: tpl.replace('{n}', orderNumber), type: 'text' }),
     })
-  } catch {
-    // Non-critical — log but don't fail
-    console.error(`WhatsApp notification failed for order ${orderNumber}`)
-  }
+  } catch { /* non-critical */ }
 }
 
-// ── Main handler ──────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const db = supabase()
-
   try {
     const providerHint = req.nextUrl.searchParams.get('provider') ?? undefined
-    const body = await req.json() as Record<string, string>
-
-    const payload = detectAndNormalize(body, providerHint)
-    if (!payload) {
+    const body = await req.json() as Record<string, any>
+    const { tracking, status, location, at } = extract(body)
+    if (!tracking || !status) {
       return NextResponse.json({ error: 'Unrecognized webhook payload' }, { status: 400 })
     }
 
-    // Find order by tracking number
-    const { data: order, error: findErr } = await db
+    const unified = normalizeStatus(status)
+    const orderStatus = UNIFIED_TO_ORDER_STATUS[unified]
+
+    const { data: order } = await db
       .from('orders')
       .select('id, store_id, order_number, customer_phone, status, delivery_timeline')
-      .or(`tracking_number.eq.${payload.trackingId},order_number.eq.${payload.trackingId}`)
+      .or(`tracking_number.eq.${tracking},order_number.eq.${tracking}`)
       .single()
+    if (!order) return NextResponse.json({ error: 'Order not found', tracking }, { status: 404 })
 
-    if (findErr || !order) {
-      return NextResponse.json({ error: 'Order not found', tracking: payload.trackingId }, { status: 404 })
-    }
-
-    const newOrderStatus = NORMALIZED_TO_ORDER_STATUS[payload.normalizedStatus]
-    const timelineEntry = {
-      status: payload.rawStatus,
-      normalized: payload.normalizedStatus,
-      description: payload.description ?? payload.rawStatus,
-      location: payload.location,
-      provider: payload.provider,
-      timestamp: payload.timestamp,
-    }
-
-    const updatedTimeline = [
+    const timeline = [
       ...((order.delivery_timeline as unknown[]) ?? []),
-      timelineEntry,
+      { status, normalized: unified, label: UNIFIED_STATUS_LABEL[unified], location, provider: providerHint, at },
     ]
 
-    // Build update payload
+    const RANK: Record<string, number> = { new: 0, confirmed: 1, processing: 2, in_transit: 3, out_for_delivery: 3, shipped: 3, delivered: 4, returned: 4, cancelled: 4, exception: 4 }
     const updates: Record<string, unknown> = {
-      delivery_timeline: updatedTimeline,
+      delivery_timeline: timeline,
+      tracking_status: unified,
       updated_at: new Date().toISOString(),
     }
-
-    // Only update status if it's a meaningful transition
-    const STATUS_RANK: Record<string, number> = {
-      new: 0, confirmed: 1, processing: 2,
-      shipped: 3, delivered: 4, returned: 4, cancelled: 4, failed: 4,
-    }
-    const currentRank = STATUS_RANK[order.status] ?? 0
-    const newRank = STATUS_RANK[newOrderStatus] ?? 0
-
-    if (newRank >= currentRank) {
-      updates.status = newOrderStatus
-    }
-
-    if (payload.normalizedStatus === 'delivered') {
-      updates.delivered_at = payload.timestamp
-    } else if (['picked_up', 'in_transit'].includes(payload.normalizedStatus)) {
-      if (!order.delivery_timeline?.length) {
-        updates.shipped_at = payload.timestamp
-      }
-    }
+    if ((RANK[orderStatus] ?? 0) >= (RANK[order.status] ?? 0)) updates.status = orderStatus
+    if (unified === 'delivered') updates.delivered_at = at
 
     await db.from('orders').update(updates).eq('id', order.id)
-
-    // Insert delivery log
     await db.from('delivery_logs').insert({
-      order_id: order.id,
-      store_id: order.store_id,
-      status: payload.rawStatus,
-      description: payload.description,
-      location: payload.location,
-      source: 'webhook',
-      metadata: { provider: payload.provider, raw: payload.raw },
-    })
+      order_id: order.id, store_id: order.store_id, status, location,
+      source: 'webhook', metadata: { provider: providerHint, unified, raw: body },
+    }).then(() => {}, () => {})
 
-    // Send WhatsApp if status changed
-    if (newRank >= currentRank) {
-      await sendWhatsAppNotification(
-        order.customer_phone,
-        order.order_number,
-        payload.normalizedStatus
-      )
-    }
+    await notifyWhatsApp(order.customer_phone, order.order_number, unified)
 
-    return NextResponse.json({
-      ok: true,
-      orderId: order.id,
-      orderNumber: order.order_number,
-      newStatus: newOrderStatus,
-      normalizedStatus: payload.normalizedStatus,
-      provider: payload.provider,
-    })
+    return NextResponse.json({ ok: true, orderId: order.id, status: orderStatus, unified })
   } catch (err) {
-    console.error('Delivery webhook error:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }
 }
 
-// Some providers use GET for verification ping
 export async function GET(req: NextRequest) {
   const challenge = req.nextUrl.searchParams.get('hub.challenge')
   if (challenge) return new Response(challenge, { status: 200 })
