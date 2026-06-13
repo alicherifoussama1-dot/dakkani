@@ -2701,6 +2701,8 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
               </button>
             ))}
           </div>
+          {/* User name */}
+          <span className="hidden sm:inline text-xs font-bold max-w-[120px] truncate" style={{color:'var(--cf-teal)',fontFamily:'var(--font-arabic)'}} title={storeName}>{storeName}</span>
           {/* Avatar dropdown */}
           <div className="relative">
             <button onClick={e=>{e.stopPropagation();setAvatarOpen(o=>!o)}}

@@ -464,6 +464,9 @@
 .confirmili-theme .tab-item:hover { background: var(--cf-turq); color: #fff; }
 .confirmili-theme .tab-item.active { background: var(--cf-teal); color: #fff; border-color: var(--cf-teal); }
 
-/* Section-card headers get a subtle teal weight inside Confirmili */
-.confirmili-theme .card h3 { color: var(--cf-teal); }
+/* Headings + card radius inside Confirmili */
+.confirmili-theme h2, .confirmili-theme h3 { color: var(--cf-teal); font-weight: 700; }
 .confirmili-theme .card { border-radius: 14px; }
+.confirmili-theme input:focus, .confirmili-theme select:focus, .confirmili-theme textarea:focus {
+  border-color: var(--cf-turq); box-shadow: 0 0 0 3px rgba(60,198,185,0.18);
+}
