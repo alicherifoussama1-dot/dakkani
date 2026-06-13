@@ -454,3 +454,16 @@
 .confirmili-theme .btn-primary { background: var(--cf-turq); box-shadow: none; }
 .confirmili-theme .btn-primary:hover { background: var(--color-accent-dark); }
 .confirmili-theme .data-table tr:hover td { background: transparent; }
+
+/* Confirmili sub-tab bar → turquoise pills */
+.confirmili-theme .tab-bar { border-bottom: none; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.confirmili-theme .tab-item {
+  border: 1px solid var(--cf-turq); border-radius: 9999px;
+  padding: 7px 16px; color: #0A6E66; font-weight: 600; margin-bottom: 0;
+}
+.confirmili-theme .tab-item:hover { background: var(--cf-turq); color: #fff; }
+.confirmili-theme .tab-item.active { background: var(--cf-teal); color: #fff; border-color: var(--cf-teal); }
+
+/* Section-card headers get a subtle teal weight inside Confirmili */
+.confirmili-theme .card h3 { color: var(--cf-teal); }
+.confirmili-theme .card { border-radius: 14px; }

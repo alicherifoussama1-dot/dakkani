@@ -11,7 +11,7 @@ import {
   Search, RefreshCw, Trash2, Plus, SlidersHorizontal,
   Calendar, X, Check, ChevronDown, MessageCircle, Clock,
   Edit2, Truck, RotateCcw, Copy, CheckCircle, AlertTriangle,
-  Package, Filter, Info, Users,
+  Package, Filter, Info, Users, Phone,
 } from 'lucide-react'
 // statuses import used for type parity — getStatusDef is inlined below for exact Octomatic colors
 
@@ -920,22 +920,27 @@ export default function ConfirmiliOrders({
                       <td style={TD}><span style={{fontWeight:500,color:'#212529'}}>{o.customer_name}</span></td>
                     )}
 
-                    {/* Phone */}
+                    {/* Phone — number + green call circle */}
                     {show('phone') && (
                       <td style={TD}>
                         <button onClick={()=>openWhatsApp(o.customer_phone, o.customer_name)}
-                          className="font-mono hover:underline flex items-center gap-1" style={{color:'#25D366',fontSize:11}}>
-                          <MessageCircle size={10}/>+{o.customer_phone}
+                          className="font-mono hover:underline flex items-center gap-1.5" style={{color:'#212529',fontSize:11}} title="واتساب / اتصال">
+                          <span className="inline-flex items-center justify-center rounded-full" style={{width:18,height:18,background:'#22C55E',color:'#fff',flexShrink:0}}>
+                            <Phone size={10}/>
+                          </span>
+                          +{o.customer_phone}
                         </button>
                       </td>
                     )}
 
-                    {/* Verify */}
+                    {/* Verify — cream rounded pill */}
                     {show('verify') && (
                       <td style={TD}>
-                        <button onClick={()=>setVerifyModal(o)} className="flex items-center gap-1 hover:opacity-80" title="التحقق من العميل">
-                          <span style={{background:'#D1E7DD',color:'#198754',fontSize:9,padding:'1px 4px',borderRadius:3,fontWeight:700}}>{vc.green}✓</span>
-                          <span style={{background:'#F8D7DA',color:'#DC3545',fontSize:9,padding:'1px 4px',borderRadius:3,fontWeight:700}}>{vc.red}✗</span>
+                        <button onClick={()=>setVerifyModal(o)} className="inline-flex items-center gap-1.5 rounded-full hover:opacity-80" title="التحقق من العميل"
+                          style={{background:'#FFFDEE',border:'1px solid #F0EBC8',padding:'2px 8px'}}>
+                          <span style={{color:'#198754',fontSize:10,fontWeight:800}}>{vc.green}</span>
+                          <span style={{color:'#CED4DA',fontSize:9}}>·</span>
+                          <span style={{color:'#DC3545',fontSize:10,fontWeight:800}}>{vc.red}</span>
                         </button>
                       </td>
                     )}
