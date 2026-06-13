@@ -388,3 +388,69 @@
     padding-bottom: calc(24px + env(safe-area-inset-bottom));
   }
 }
+
+/* ============================================================
+   CONFIRMILI DESIGN SYSTEM — teal / turquoise (scoped)
+   Deep teal #00414D · turquoise accent #3CC6B9 · Montserrat
+   Re-skins the module without touching shared dashboard styles.
+   ============================================================ */
+.confirmili-theme {
+  --font-primary: var(--font-montserrat, 'Montserrat', sans-serif);
+  --font-arabic:  var(--font-montserrat, 'Montserrat', sans-serif);
+  --color-accent: #3CC6B9;
+  --color-accent-dark: #2BA89C;
+  --color-accent-soft: #E0F5F2;
+  --cf-teal: #00414D;
+  --cf-teal-soft: #E6EEF0;
+  --cf-turq: #3CC6B9;
+  font-family: var(--font-montserrat, 'Montserrat', sans-serif);
+  font-size: 16px;
+  color: #212529;
+  background: #FFFFFF;
+}
+.confirmili-theme h1,.confirmili-theme h2,.confirmili-theme h3,
+.confirmili-theme h4,.confirmili-theme h5,.confirmili-theme h6,
+.confirmili-theme input,.confirmili-theme select,.confirmili-theme textarea,
+.confirmili-theme button { font-family: var(--font-montserrat, 'Montserrat', sans-serif); }
+
+/* Teal table header bar inside Confirmili */
+.confirmili-theme .data-table th {
+  background: var(--cf-teal); color: #FFFFFF; font-weight: 700;
+  border-bottom: none; white-space: nowrap;
+}
+.confirmili-theme .data-table thead tr:first-child th:first-child { border-top-right-radius: 12px; }
+.confirmili-theme .data-table thead tr:first-child th:last-child  { border-top-left-radius: 12px; }
+
+/* Right-edge vertical icon sidebar */
+.cf-sidebar {
+  width: 66px; background: var(--cf-teal); flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 12px 0; gap: 6px; overflow-y: auto;
+}
+.cf-sidebar::-webkit-scrollbar { width: 0; }
+.cf-side-btn {
+  position: relative; width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.75); transition: all 150ms ease; flex-shrink: 0;
+}
+.cf-side-btn:hover { background: rgba(60,198,185,0.18); color: #fff; }
+.cf-side-btn.active { background: #fff; color: var(--cf-teal); }
+.cf-side-btn.active::before {
+  content:''; position:absolute; right:-12px; top:8px; bottom:8px; width:4px;
+  border-radius: 4px; background: var(--cf-turq);
+}
+
+/* Turquoise pill toolbar buttons */
+.cf-pill {
+  display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px;
+  border-radius:9999px; border:1px solid var(--cf-turq); background:#fff;
+  color:#0A6E66; font-size:13px; font-weight:600; transition:all 150ms ease; white-space:nowrap;
+}
+.cf-pill:hover { background: var(--cf-turq); color:#fff; }
+.cf-pill.active { background: var(--cf-teal); color:#fff; border-color: var(--cf-teal); }
+
+/* Scoped badge + plan pill → turquoise inside Confirmili */
+.confirmili-theme .badge-blue { background: var(--cf-turq); color: #fff; border-radius: 9999px; padding: 0 10px; height: 22px; font-weight: 700; }
+.confirmili-theme .btn-primary { background: var(--cf-turq); box-shadow: none; }
+.confirmili-theme .btn-primary:hover { background: var(--color-accent-dark); }
+.confirmili-theme .data-table tr:hover td { background: transparent; }

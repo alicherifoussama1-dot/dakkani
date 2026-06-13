@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Tajawal } from 'next/font/google'
+import { Inter, Tajawal, Montserrat } from 'next/font/google'
 import './globals.css'
 import ScrollProgress from '@/components/layout/ScrollProgress'
 
@@ -13,6 +13,13 @@ const tajawal = Tajawal({
   subsets: ['arabic', 'latin'],
   weight: ['300','400','500','700','800','900'],
   variable: '--font-tajawal',
+  display: 'swap',
+})
+// Confirmili design system — Montserrat
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['400','500','600','700','800'],
+  variable: '--font-montserrat',
   display: 'swap',
 })
 
@@ -30,7 +37,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={`${inter.variable} ${tajawal.variable}`} style={{ colorScheme: 'light' }}>
+    <html lang="ar" dir="rtl" className={`${inter.variable} ${tajawal.variable} ${montserrat.variable}`} style={{ colorScheme: 'light' }}>
       <head>
         {/* Preconnect to Supabase storage for fast image loading (LCP) */}
         <link rel="preconnect" href="https://airbzyeircmhzhwenxqb.supabase.co" />

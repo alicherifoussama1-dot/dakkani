@@ -60,7 +60,7 @@ const CONFIRM_STATUSES_STATIC = [
   { key:'postponed', label:'مؤجلة',    color:'#9D76C1' },
   { key:'duplicate', label:'مكررة',    color:'#1A1A1A' },
 ]
-const PIE_COLORS = ['#198754','#DC3545','#FFC107','#0D6EFD','#7B2FBE','#FF8C00']
+const PIE_COLORS = ['#198754','#DC3545','#FFC107','#3CC6B9','#7B2FBE','#FF8C00']
 
 const TUTORIALS = [
   {n:'01',title:'مقدمة'},{n:'02',title:'الإحصائيات'},{n:'03',title:'إعدادات الحساب'},
@@ -785,13 +785,13 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       return <span title="يدوي" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#EEE5FF',color:'#7B2FBE'}}>✎</span>
     }
     if (source === 'storefront' || source === 'Dakkani') {
-      return <span title="دكاني" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#EBF5FF',color:'#0D6EFD'}}>د</span>
+      return <span title="دكاني" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#E0F5F2',color:'#3CC6B9'}}>د</span>
     }
     if (source?.includes('sheet') || source?.includes('Sheet')) {
       return <span title="Google Sheet" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#D1E7DD',color:'#198754'}}>📊</span>
     }
     if (source?.includes('facebook') || source === 'fb') {
-      return <span title="Facebook" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#EBF5FF',color:'#1877F2'}}>f</span>
+      return <span title="Facebook" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#E0F5F2',color:'#1877F2'}}>f</span>
     }
     return <span title={source} className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#F1F3F5',color:'#495057'}}>{source[0]?.toUpperCase()}</span>
   }
@@ -800,8 +800,8 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   const TrackingBadge = ({ trackingNum, deliveryType }: { trackingNum: string; deliveryType: string }) => {
     const [copied, setCopied] = useState(false)
     const prefix = deliveryType === 'stopdesk' ? 'SD' : 'HM'
-    const prefixBg = deliveryType === 'stopdesk' ? '#EEE5FF' : '#EBF5FF'
-    const prefixColor = deliveryType === 'stopdesk' ? '#7B2FBE' : '#0D6EFD'
+    const prefixBg = deliveryType === 'stopdesk' ? '#EEE5FF' : '#E0F5F2'
+    const prefixColor = deliveryType === 'stopdesk' ? '#7B2FBE' : '#3CC6B9'
     const copy = () => {
       navigator.clipboard.writeText(trackingNum)
       setCopied(true)
@@ -828,7 +828,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
           onClick={e => { e.stopPropagation(); setActionMenu(isOpen ? null : order.id) }}
           disabled={updating === order.id}
           className="flex items-center gap-1 btn btn-sm text-xs"
-          style={{ background: '#EBF5FF', color: 'var(--color-accent)', border: 'none', minHeight: '26px', padding: '0 8px' }}
+          style={{ background: '#E0F5F2', color: 'var(--color-accent)', border: 'none', minHeight: '26px', padding: '0 8px' }}
         >
           {updating === order.id ? '⏳' : 'إجراء'}<ChevronDown size={10}/>
         </button>
@@ -862,7 +862,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
               <button
                 onClick={() => updateCallAttempt(order.id, order.call_attempts ?? 0)}
                 className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-[#F8F9FA] transition-colors text-right"
-                style={{ color: '#0D6EFD', fontFamily: 'var(--font-arabic)' }}
+                style={{ color: '#3CC6B9', fontFamily: 'var(--font-arabic)' }}
               >
                 <PhoneCall size={13}/>محاولة اتصال ({order.call_attempts ?? 0})
               </button>
@@ -1090,7 +1090,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                   <YAxis tick={{fontSize:10,fill:'#868E96'}} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/>
                   <Tooltip formatter={(v:number) => [`${v.toLocaleString('ar-DZ')} دج`]}/>
                   <Legend/>
-                  <Line type="monotone" dataKey="income" stroke="#0D6EFD" strokeWidth={2} dot={false} name="الدخل"/>
+                  <Line type="monotone" dataKey="income" stroke="#3CC6B9" strokeWidth={2} dot={false} name="الدخل"/>
                   <Line type="monotone" dataKey="delivery_cost" stroke="#DC3545" strokeWidth={2} dot={false} name="التوصيل"/>
                   <Line type="monotone" dataKey="net" stroke="#198754" strokeWidth={2} dot={false} name="الصافي"/>
                 </LineChart>
@@ -1105,7 +1105,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
             <div className="flex items-center justify-between card p-3">
               <span className="text-xs font-medium" style={{fontFamily:'var(--font-arabic)',color:'var(--color-text-secondary)'}}>إحصائيات الفريق</span>
               <button onClick={()=>setTeamStatsOn(v=>!v)}
-                className="w-9 h-5 rounded-full flex items-center transition-colors" style={{background: teamStatsOn ? '#0D6EFD' : '#DEE2E6'}}>
+                className="w-9 h-5 rounded-full flex items-center transition-colors" style={{background: teamStatsOn ? '#3CC6B9' : '#DEE2E6'}}>
                 <span className="w-4 h-4 bg-white rounded-full shadow transition-transform" style={{transform: teamStatsOn ? 'translateX(-2px)' : 'translateX(-18px)'}}/>
               </button>
             </div>
@@ -1504,7 +1504,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                       <td>
                         {/* 9.1 / 8.1 — Automatic sending toggle (functional) */}
                         <button onClick={() => toggleCompany(co, 'is_automatic')} className="flex items-center gap-2" title="إرسال تلقائي عند التأكيد">
-                          <span className="w-8 h-4 rounded-full relative transition-colors" style={{background: co.is_automatic ? '#0D6EFD' : '#DEE2E6'}}>
+                          <span className="w-8 h-4 rounded-full relative transition-colors" style={{background: co.is_automatic ? '#3CC6B9' : '#DEE2E6'}}>
                             <span className="absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all" style={{[co.is_automatic?'right':'left']:'2px'} as any}/>
                           </span>
                           <span className="text-xs" style={{color: co.is_automatic ? 'var(--color-accent)' : 'var(--color-text-muted)'}}>{co.is_automatic ? 'تلقائي' : 'يدوي'}</span>
@@ -1625,7 +1625,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                     <td><div className="flex items-center gap-2"><span>🔵</span><span className="text-xs font-mono" style={{color:'var(--color-accent)'}}>Dakkani</span></div></td>
                     <td className="font-medium text-sm">{storeName}</td>
                     <td><span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{background:'#D1E7DD',color:'#198754'}}>متصل ✓</span></td>
-                    <td><a href="/settings" className="btn btn-sm" style={{background:'#EBF5FF',color:'var(--color-accent)'}}>إعدادات</a></td>
+                    <td><a href="/settings" className="btn btn-sm" style={{background:'#E0F5F2',color:'var(--color-accent)'}}>إعدادات</a></td>
                   </tr>
                   {integrations.filter(i=>i.platform!=='google_sheet').map(it => (
                     <tr key={it.id}>
@@ -1734,7 +1734,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                 {[
                   {label:'إجمالي المبيعات', v:`${grossRevenue.toLocaleString('ar-DZ')} دج`, color:'var(--color-accent)', tip:'السعر الكلي المدفوع من الزبون'},
                   {label:'رسوم التوصيل المعلنة', v:`${declaredDelivery.toLocaleString('ar-DZ')} دج`, color:'#FFA500', tip:'رسوم التوصيل المضافة للزبون'},
-                  {label:'دخل المنتجات', v:`${productRevenue.toLocaleString('ar-DZ')} دج`, color:'#0D6EFD', tip:'إجمالي - رسوم التوصيل المعلنة'},
+                  {label:'دخل المنتجات', v:`${productRevenue.toLocaleString('ar-DZ')} دج`, color:'#3CC6B9', tip:'إجمالي - رسوم التوصيل المعلنة'},
                   {label:'رسوم التوصيل الحقيقية', v:`${realDelivery.toLocaleString('ar-DZ')} دج`, color:'#DC3545', tip:'التكلفة الحقيقية للشركة'},
                   {label:'صافي الربح', v:`${netProfit.toLocaleString('ar-DZ')} دج`, color:'#198754', tip:'دخل المنتجات - رسوم الشركة'},
                   {label:'نسبة الربح', v:`${grossRevenue > 0 ? Math.round(netProfit/grossRevenue*100) : 0}%`, color:'#198754', tip:''},
@@ -1988,7 +1988,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                   <p className="text-sm font-semibold mb-2" style={{color:'var(--color-text-primary)'}}>عملاء {mgr.name}</p>
                   <div className="flex flex-wrap gap-2">
                     {team.filter(m => m.role !== 'manager').map(m => (
-                      <span key={m.id} className="text-xs px-2 py-1 rounded-full" style={{background:'#EBF5FF',color:'#0D6EFD'}}>{m.name}</span>
+                      <span key={m.id} className="text-xs px-2 py-1 rounded-full" style={{background:'#E0F5F2',color:'#3CC6B9'}}>{m.name}</span>
                     ))}
                   </div>
                 </div>
@@ -2067,7 +2067,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
               {[
                 {l:'إجمالي الإيرادات', v:`${totalRevenue.toLocaleString('ar-DZ')} دج`, color:'var(--color-accent)'},
                 {l:'طلبات مسلمة',       v:String(delivered.length),                     color:'#22C55E'},
-                {l:'طلبات مؤكدة',       v:String(confirmedArr.length),                  color:'#0D6EFD'},
+                {l:'طلبات مؤكدة',       v:String(confirmedArr.length),                  color:'#3CC6B9'},
                 {l:'الخطة الحالية',     v:plan.toUpperCase(),                           color:'#9D76C1'},
               ].map(({l,v,color}) => (
                 <div key={l} className="card p-4 text-center">
@@ -2138,7 +2138,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     ai: () => (
       <div className="space-y-6">
         <div className="flex flex-col items-center justify-center py-16 rounded-2xl border-2 border-dashed" style={{borderColor:'var(--color-border)'}}>
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6" style={{background:'linear-gradient(135deg,#EEE5FF,#EBF5FF)'}}>
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6" style={{background:'linear-gradient(135deg,#EEE5FF,#E0F5F2)'}}>
             <Bot size={36} style={{color:'var(--color-accent)'}}/>
           </div>
           <p className="font-black text-xl mb-2" style={{color:'var(--color-text-primary)'}}>الذكاء الاصطناعي 🤖</p>
@@ -2245,7 +2245,30 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
   }
 
   return (
-    <div className="flex flex-col h-full" dir={lang === 'ar' ? 'rtl' : 'ltr'} onClick={() => actionMenu && setActionMenu(null)}>
+    <div className="confirmili-theme flex h-full" dir={lang === 'ar' ? 'rtl' : 'ltr'} onClick={() => actionMenu && setActionMenu(null)}>
+      {/* ── Right-edge vertical icon sidebar ───────────────── */}
+      <aside className="cf-sidebar">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 flex-shrink-0" style={{background:'var(--cf-turq)',color:'#00414D',fontWeight:800,fontSize:18}}>C</div>
+        {TABS.map(tab => {
+          const newCount = tab.id === 'orders' ? localOrders.filter(o=>o.status==='new'&&!trashedOrders.has(o.id)).length : 0
+          return (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} title={tab.label}
+              className={`cf-side-btn ${activeTab === tab.id ? 'active' : ''}`}>
+              <tab.icon size={19}/>
+              {newCount > 0 && (
+                <span className="absolute -top-0.5 -left-0.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold text-white flex items-center justify-center" style={{background:'#DC2626'}}>{newCount}</span>
+              )}
+            </button>
+          )
+        })}
+        <a href="https://wa.me/213555000000?text=مرحبا، أحتاج دعم في Confirmili" target="_blank" rel="noopener noreferrer"
+          title="الدعم" className="mt-auto w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-transform hover:scale-110" style={{background:'#22C55E',color:'#fff'}}>
+          <Headphones size={19}/>
+        </a>
+      </aside>
+
+      {/* ── Main column ────────────────────────────────────── */}
+      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
       {/* HistoryModal */}
       <HistoryModal />
 
@@ -2275,8 +2298,8 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                 <button onClick={() => setVerifyModal(null)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><X size={16}/></button>
               </div>
               <div className="p-5 space-y-4 text-center" style={{fontFamily:'var(--font-arabic)'}}>
-                <div className="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style={{background:'#EBF5FF'}}>
-                  <Package size={26} style={{color:'#0D6EFD'}}/>
+                <div className="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style={{background:'#E0F5F2'}}>
+                  <Package size={26} style={{color:'#3CC6B9'}}/>
                 </div>
                 <div>
                   <p className="font-bold text-sm" style={{color:'var(--color-text-primary)'}}>{verifyModal.customer_name}</p>
@@ -2331,7 +2354,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                 <option value="manager">مسير</option>
               </select>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={teamForm.is_active ?? true} onChange={e=>setTeamForm((f:any)=>({...f,is_active:e.target.checked}))} className="w-4 h-4 accent-[#0D6EFD]"/>
+                <input type="checkbox" checked={teamForm.is_active ?? true} onChange={e=>setTeamForm((f:any)=>({...f,is_active:e.target.checked}))} className="w-4 h-4 accent-[#3CC6B9]"/>
                 نشط
               </label>
               <div className="flex gap-2 pt-1">
@@ -2356,11 +2379,11 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
               <input className="input text-sm w-full" placeholder="اسم الشركة *" value={companyForm.name ?? ''} onChange={e=>setCompanyForm((f:any)=>({...f,name:e.target.value}))}/>
               <input className="input text-sm w-full" placeholder="الاختصار (مثل ZR)" dir="ltr" value={companyForm.short_name ?? ''} onChange={e=>setCompanyForm((f:any)=>({...f,short_name:e.target.value}))}/>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={companyForm.is_automatic ?? false} onChange={e=>setCompanyForm((f:any)=>({...f,is_automatic:e.target.checked}))} className="w-4 h-4 accent-[#0D6EFD]"/>
+                <input type="checkbox" checked={companyForm.is_automatic ?? false} onChange={e=>setCompanyForm((f:any)=>({...f,is_automatic:e.target.checked}))} className="w-4 h-4 accent-[#3CC6B9]"/>
                 إرسال تلقائي عند التأكيد
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={companyForm.is_active ?? true} onChange={e=>setCompanyForm((f:any)=>({...f,is_active:e.target.checked}))} className="w-4 h-4 accent-[#0D6EFD]"/>
+                <input type="checkbox" checked={companyForm.is_active ?? true} onChange={e=>setCompanyForm((f:any)=>({...f,is_active:e.target.checked}))} className="w-4 h-4 accent-[#3CC6B9]"/>
                 مفعّلة
               </label>
               <div className="flex gap-2 pt-1">
@@ -2390,7 +2413,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
               <div className="grid grid-cols-2 gap-3">
                 <input className="input text-sm" placeholder="حد التنبيه للمخزون" type="number" value={prodForm.min_stock_alert??5} onChange={e=>setProdForm((f:any)=>({...f,min_stock_alert:+e.target.value}))}/>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={prodForm.confirmili_is_known??true} onChange={e=>setProdForm((f:any)=>({...f,confirmili_is_known:e.target.checked}))} className="w-4 h-4 accent-[#0D6EFD]"/>
+                  <input type="checkbox" checked={prodForm.confirmili_is_known??true} onChange={e=>setProdForm((f:any)=>({...f,confirmili_is_known:e.target.checked}))} className="w-4 h-4 accent-[#3CC6B9]"/>
                   معروف؟
                 </label>
               </div>
@@ -2429,7 +2452,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                     <label key={c.key} className="flex items-center gap-2 text-sm cursor-pointer">
                       <input type="checkbox" defaultChecked={tempCols.has(c.key)}
                         onChange={e => { e.target.checked ? tempCols.add(c.key) : tempCols.delete(c.key) }}
-                        className="w-3.5 h-3.5 accent-[#0D6EFD]"/>
+                        className="w-3.5 h-3.5 accent-[#3CC6B9]"/>
                       {c.label}
                     </label>
                   ))}
@@ -2559,8 +2582,8 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
         <Headphones size={22}/>
       </a>
 
-      {/* Feature banner — Dakkani blue (STEP 4) */}
-      <div className="flex items-center justify-center gap-3 px-4 py-2 text-white text-xs" style={{background:'#0D6EFD',fontFamily:'var(--font-arabic)'}}>
+      {/* Feature banner — deep teal */}
+      <div className="flex items-center justify-center gap-3 px-4 py-2 text-white text-xs" style={{background:'var(--cf-teal)',fontFamily:'var(--font-arabic)'}}>
         <span>📦 تقرير الإرسال متاح الآن — Confirmili إدارة الطلبات الاحترافية</span>
         <button onClick={() => { setActiveTab('tutorials') }} className="flex items-center gap-1 underline font-semibold flex-shrink-0">
           <Video size={12}/>الفيديو
@@ -2591,9 +2614,9 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                       {label:'طلبات', count: notifications.filter(n=>n.type==='order'&&!n.is_read).length},
                     ].map(({label,count},i)=>(
                       <button key={label} onClick={()=>setNotifTab(i)}
-                        className={`flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1 ${notifTab===i?'text-[#0D6EFD] border-b-2 border-[#0D6EFD]':'text-[#868E96]'}`}>
+                        className={`flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1 ${notifTab===i?'text-[#3CC6B9] border-b-2 border-[#3CC6B9]':'text-[#868E96]'}`}>
                         {label}
-                        {count > 0 && <span className="w-4 h-4 rounded-full text-[8px] font-bold text-white flex items-center justify-center" style={{background:'#0D6EFD'}}>{count}</span>}
+                        {count > 0 && <span className="w-4 h-4 rounded-full text-[8px] font-bold text-white flex items-center justify-center" style={{background:'#3CC6B9'}}>{count}</span>}
                       </button>
                     ))}
                   </div>
@@ -2609,7 +2632,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                       )
                       return filtered.map(n => (
                         <div key={n.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-[#F8F9FA] transition-colors">
-                          <span className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{background: n.is_read ? '#DEE2E6' : '#0D6EFD'}}/>
+                          <span className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{background: n.is_read ? '#DEE2E6' : '#3CC6B9'}}/>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium truncate" style={{color:'var(--color-text-primary)'}}>{n.title ?? n.message}</p>
                             {n.message && n.message !== n.title && <p className="text-[10px] truncate" style={{color:'var(--color-text-muted)'}}>{n.message}</p>}
@@ -2617,7 +2640,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
                           </div>
                           {n.type === 'order' && n.is_read === false && (
                             <button onClick={()=>{setActiveTab('orders');setNotifOpen(false)}}
-                              className="text-[9px] px-1.5 py-0.5 rounded flex-shrink-0" style={{background:'#EBF5FF',color:'#0D6EFD'}}>عرض</button>
+                              className="text-[9px] px-1.5 py-0.5 rounded flex-shrink-0" style={{background:'#E0F5F2',color:'#3CC6B9'}}>عرض</button>
                           )}
                         </div>
                       ))
@@ -2710,36 +2733,21 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
         </div>
       </div>
 
-      {/* Sub-navigation */}
-      <div className="bg-white border-b overflow-x-auto scrollbar-none" style={{borderColor:'var(--color-border)'}}>
-        <div className="flex px-4 min-w-max">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-3 border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'border-[#0D6EFD] text-[#0D6EFD]'
-                  : 'border-transparent text-[#868E96] hover:text-[#495057]'
-              }`}
-              style={{fontFamily:'var(--font-arabic)'}}
-            >
-              <tab.icon size={13}/>
-              {tab.label}
-              {tab.id === 'orders' && localOrders.filter(o=>o.status==='new'&&!trashedOrders.has(o.id)).length > 0 && (
-                <span className="w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center" style={{background:'var(--color-error)'}}>
-                  {localOrders.filter(o=>o.status==='new'&&!trashedOrders.has(o.id)).length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+      {/* Page-title strip (tabs now live in the teal sidebar) */}
+      <div className="bg-white border-b px-4 py-2 flex items-center gap-2" style={{borderColor:'var(--color-border)'}}>
+        {(() => { const at = TABS.find(t=>t.id===activeTab); const Icon = at?.icon; return (
+          <>
+            {Icon && <Icon size={16} style={{color:'var(--cf-teal)'}}/>}
+            <h2 className="text-sm font-bold" style={{color:'var(--cf-teal)',fontFamily:'var(--font-arabic)'}}>{at?.label ?? 'Confirmili'}</h2>
+          </>
+        )})()}
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
         {SECTION_RENDERERS[activeTab]?.() ?? COMING_SOON}
       </div>
+      </div>{/* /main column */}
     </div>
   )
 }

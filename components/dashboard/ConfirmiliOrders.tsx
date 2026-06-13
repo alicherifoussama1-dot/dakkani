@@ -1,7 +1,7 @@
 'use client'
 // ============================================================
 // ConfirmiliOrders — Exact Octomatic /orders page replica
-// Dakkani blue #0D6EFD · Exact status colors · RTL Arabic · Tajawal
+// Dakkani blue #3CC6B9 · Exact status colors · RTL Arabic · Tajawal
 // ============================================================
 import React, {
   useState, useMemo, useCallback, useEffect,
@@ -15,18 +15,19 @@ import {
 } from 'lucide-react'
 // statuses import used for type parity — getStatusDef is inlined below for exact Octomatic colors
 
-// ─── EXACT STATUS COLORS (Octomatic) ─────────────────────────
+// ─── EXACT STATUS COLORS (Confirmili design system) ──────────
+// color = solid pill bg · text = contrast-aware label color
 const SB = {
   pending:   { label:'معلقة',    color:'#80BCBD', text:'#fff' },
-  failed_01: { label:'فاشلة 01', color:'#FFA447', text:'#fff' },
+  failed_01: { label:'فاشلة 01', color:'#FFA447', text:'#3A2400' },
   failed_02: { label:'فاشلة 02', color:'#FF8C1A', text:'#fff' },
   failed_03: { label:'فاشلة 03', color:'#E67300', text:'#fff' },
-  confirmed: { label:'مؤكدة',    color:'#22C55E', text:'#fff' },
+  confirmed: { label:'مؤكدة',    color:'#39FF14', text:'#06400A' },
   cancelled: { label:'ملغاة',    color:'#E23024', text:'#fff' },
   postponed: { label:'مؤجلة',    color:'#9D76C1', text:'#fff' },
-  duplicate: { label:'مكررة',    color:'#1A1A1A', text:'#fff' },
+  duplicate: { label:'مكررة',    color:'#040D12', text:'#fff' },
   // ── Logistics statuses (DB allows these too — migration 009) ──
-  processing:       { label:'قيد المعالجة', color:'#0D6EFD', text:'#fff' },
+  processing:       { label:'قيد المعالجة', color:'#3CC6B9', text:'#06403B' },
   shipped:          { label:'مشحونة',       color:'#3B82F6', text:'#fff' },
   in_transit:       { label:'في الطريق',     color:'#3B82F6', text:'#fff' },
   out_for_delivery: { label:'خرجت للتوصيل',  color:'#6366F1', text:'#fff' },
@@ -34,9 +35,22 @@ const SB = {
   at_stopdesk:      { label:'بالمكتب',       color:'#8B5CF6', text:'#fff' },
   delivered:        { label:'مسلمة',         color:'#16A34A', text:'#fff' },
   returned:         { label:'مرجعة',         color:'#DC2626', text:'#fff' },
-  failed:           { label:'فاشلة',         color:'#FFA447', text:'#fff' },
+  failed:           { label:'فاشلة',         color:'#FFA447', text:'#3A2400' },
   exception:        { label:'مشكلة',         color:'#EF4444', text:'#fff' },
 } as Record<string, {label:string;color:string;text:string}>
+
+// Row-background tint = 40% of status color (duplicate uses a light neutral
+// so dark text stays legible). Falls back to 40% of the pill color.
+const ROW_TINT: Record<string,string> = {
+  pending:   'rgba(128,188,189,0.32)',
+  failed_01: 'rgba(255,164,71,0.40)',
+  failed_02: 'rgba(255,140,26,0.40)',
+  failed_03: 'rgba(230,115,0,0.36)',
+  confirmed: 'rgba(57,255,20,0.32)',
+  cancelled: 'rgba(226,48,36,0.34)',
+  postponed: 'rgba(157,118,193,0.40)',
+  duplicate: 'rgba(4,13,18,0.10)',
+}
 
 function normStatus(raw?: string|null): string {
   const m: Record<string,string> = { new:'pending','':'pending',failed_1:'failed_01',failed_2:'failed_02',failed_3:'failed_03' }
@@ -63,7 +77,7 @@ function hexToRgba(hex: string, alpha: number): string {
 function SourceBadge({ source }: { source: string }) {
   const s = (source ?? '').toLowerCase()
   if (s.includes('dakkani') || s.includes('storefront')) return (
-    <span title="Dakkani" className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{background:'#EBF5FF',color:'#0D6EFD'}}>🔵 Dakkani</span>
+    <span title="Dakkani" className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{background:'#E0F5F2',color:'#3CC6B9'}}>🔵 Dakkani</span>
   )
   if (s.includes('sheet') || s.includes('google'))  return (
     <span title="Google Sheet" className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{background:'#E8F5E9',color:'#2E7D32'}}>📊 Sheet</span>
@@ -397,25 +411,25 @@ export default function ConfirmiliOrders({
 
   // ── TOOLBAR ───────────────────────────────────────────────────
   const Toolbar = () => (
-    <div className="flex flex-wrap items-center gap-1.5 px-3 py-2.5 border-b" style={{borderColor:'var(--color-border)',background:'#FAFAFA',fontFamily:'var(--font-arabic)'}}>
+    <div className="flex flex-wrap items-center gap-1.5 px-3 py-2.5 border-b" style={{borderColor:'var(--color-border)',background:'#fff',fontFamily:'var(--font-arabic)'}}>
 
       {/* Search */}
       <div className="relative">
-        <Search size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2" style={{color:'#868E96'}}/>
+        <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2" style={{color:'#3CC6B9'}}/>
         <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}}
           placeholder="بحث..." dir="rtl"
-          className="pr-7 pl-2 h-7 text-xs border rounded-lg outline-none focus:ring-1 focus:ring-[#0D6EFD]"
-          style={{borderColor:'var(--color-border)',background:'#fff',width:160,fontFamily:'var(--font-arabic)'}}/>
+          className="pr-8 pl-3 h-8 text-xs border rounded-full outline-none focus:ring-2"
+          style={{borderColor:'#3CC6B9',background:'#fff',width:170,color:'#0A6E66',fontFamily:'var(--font-arabic)'}}/>
       </div>
 
       {/* Bulk select toggle */}
       <button
         onClick={() => { setBulkMode(m=>!m); if (bulkMode) { setSelected(new Set()) } }}
-        className="relative h-7 px-2.5 text-xs rounded-lg border flex items-center gap-1.5 transition-colors"
-        style={{ borderColor: bulkMode ? '#0D6EFD' : 'var(--color-border)', background: bulkMode ? '#EBF5FF' : '#fff', color: bulkMode ? '#0D6EFD' : '#495057' }}>
+        className="relative h-7 px-2.5 text-xs rounded-full border flex items-center gap-1.5 transition-colors"
+        style={{ borderColor: bulkMode ? '#3CC6B9' : 'var(--color-border)', background: bulkMode ? '#E0F5F2' : '#fff', color: bulkMode ? '#3CC6B9' : '#495057' }}>
         مهام متعددة
         {selected.size > 0 && (
-          <span className="w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center" style={{background:'#0D6EFD'}}>
+          <span className="w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center" style={{background:'#3CC6B9'}}>
             {selected.size}
           </span>
         )}
@@ -425,7 +439,7 @@ export default function ConfirmiliOrders({
       {bulkMode && selected.size > 0 && (
         <div className="relative">
           <button onClick={()=>setBulkMenuOpen(o=>!o)}
-            className="h-7 px-2.5 text-xs rounded-lg border flex items-center gap-1" style={{borderColor:'#0D6EFD',background:'#EBF5FF',color:'#0D6EFD'}}>
+            className="h-7 px-2.5 text-xs rounded-full border flex items-center gap-1" style={{borderColor:'#3CC6B9',background:'#E0F5F2',color:'#3CC6B9'}}>
             إجراء ({selected.size}) <ChevronDown size={10}/>
           </button>
           {bulkMenuOpen && (
@@ -454,11 +468,12 @@ export default function ConfirmiliOrders({
         const L = {today:'اليوم',yesterday:'الأمس',week:'أسبوع',month:'شهر'}
         return (
           <button key={d} onClick={()=>{setDatePreset(p=>p===d?'all':d);setPage(1)}}
-            className="h-7 px-2.5 text-xs rounded-lg border transition-colors"
+            className="h-7 px-2.5 text-xs rounded-full border transition-colors"
             style={{
-              borderColor: datePreset===d ? '#0D6EFD' : 'var(--color-border)',
-              background:  datePreset===d ? '#0D6EFD' : '#fff',
-              color:       datePreset===d ? '#fff'    : '#495057',
+              borderColor: '#3CC6B9',
+              background:  datePreset===d ? '#00414D' : '#fff',
+              color:       datePreset===d ? '#fff'    : '#0A6E66',
+              fontWeight:  600,
               fontFamily:  'var(--font-arabic)',
             }}>
             {L[d]}
@@ -469,8 +484,8 @@ export default function ConfirmiliOrders({
       {/* Calendar date range */}
       <div className="relative">
         <button onClick={()=>setShowCal(o=>!o)}
-          className="h-7 w-7 flex items-center justify-center rounded-lg border"
-          style={{borderColor:'var(--color-border)',background:'#fff',color:'#495057'}}>
+          className="h-7 w-7 flex items-center justify-center rounded-full border"
+          style={{borderColor:'#3CC6B9',background:'#fff',color:'#0A6E66'}}>
           <Calendar size={13}/>
         </button>
         {showCal && (
@@ -489,8 +504,8 @@ export default function ConfirmiliOrders({
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={()=>setShowCal(false)} className="flex-1 h-7 text-xs rounded-lg text-white" style={{background:'#0D6EFD'}}>تطبيق</button>
-                <button onClick={()=>{setCalendarFrom('');setCalendarTo('');setShowCal(false)}} className="flex-1 h-7 text-xs rounded-lg border" style={{borderColor:'var(--color-border)'}}>مسح</button>
+                <button onClick={()=>setShowCal(false)} className="flex-1 h-7 text-xs rounded-lg text-white" style={{background:'#3CC6B9'}}>تطبيق</button>
+                <button onClick={()=>{setCalendarFrom('');setCalendarTo('');setShowCal(false)}} className="flex-1 h-7 text-xs rounded-full border" style={{borderColor:'var(--color-border)'}}>مسح</button>
               </div>
             </div>
           </>
@@ -499,21 +514,21 @@ export default function ConfirmiliOrders({
 
       {/* Column settings */}
       <button onClick={()=>setShowColSettings(true)}
-        className="h-7 px-2.5 text-xs rounded-lg border flex items-center gap-1.5"
-        style={{borderColor:'var(--color-border)',background:'#fff',color:'#495057'}}>
+        className="h-7 px-2.5 text-xs rounded-full border flex items-center gap-1.5"
+        style={{borderColor:'#3CC6B9',background:'#fff',color:'#0A6E66'}}>
         <SlidersHorizontal size={12}/>إعدادات الأعمدة
       </button>
 
       {/* Refresh */}
       <button onClick={()=>{onRefresh();setToast('جارٍ التحديث...')}}
-        className="h-7 w-7 flex items-center justify-center rounded-lg border"
-        style={{borderColor:'var(--color-border)',background:'#fff',color:'#495057'}}>
+        className="h-7 w-7 flex items-center justify-center rounded-full border"
+        style={{borderColor:'#3CC6B9',background:'#fff',color:'#0A6E66'}}>
         <RefreshCw size={13}/>
       </button>
 
       {/* Trash toggle */}
       <button onClick={()=>{setTrashMode(m=>!m);setPage(1)}}
-        className="h-7 px-2.5 text-xs rounded-lg border flex items-center gap-1.5 transition-colors"
+        className="h-7 px-2.5 text-xs rounded-full border flex items-center gap-1.5 transition-colors"
         style={{
           borderColor: trashMode ? '#DC3545' : 'var(--color-border)',
           background:  trashMode ? '#FEF2F2' : '#fff',
@@ -525,21 +540,21 @@ export default function ConfirmiliOrders({
 
       {/* Send report */}
       <button onClick={()=>{setShowSendReport(true);loadSendReports()}}
-        className="h-7 px-2.5 text-xs rounded-lg border flex items-center gap-1.5"
-        style={{borderColor:'var(--color-border)',background:'#fff',color:'#495057'}}>
+        className="h-7 px-2.5 text-xs rounded-full border flex items-center gap-1.5"
+        style={{borderColor:'#3CC6B9',background:'#fff',color:'#0A6E66'}}>
         📊 تقرير الإرسال
       </button>
 
       {/* Add manual order */}
       <button onClick={()=>{setShowManual(true);setManualForm({})}}
         className="h-7 px-2.5 text-xs rounded-lg flex items-center gap-1 text-white"
-        style={{background:'#0D6EFD'}}>
+        style={{background:'#3CC6B9'}}>
         <Plus size={12}/>
       </button>
 
       {/* Info */}
       <div className="relative">
-        <button onClick={()=>setInfoOpen(o=>!o)} className="h-7 w-7 flex items-center justify-center rounded-lg border" style={{borderColor:'var(--color-border)',background:'#fff',color:'#868E96'}}>
+        <button onClick={()=>setInfoOpen(o=>!o)} className="h-7 w-7 flex items-center justify-center rounded-full border" style={{borderColor:'var(--color-border)',background:'#fff',color:'#868E96'}}>
           <Info size={13}/>
         </button>
         {infoOpen && (
@@ -556,13 +571,13 @@ export default function ConfirmiliOrders({
       <div className="flex-1"/>
       {/* Active filter chips */}
       {datePreset !== 'all' && (
-        <button onClick={()=>setDatePreset('all')} className="h-6 px-2 text-[10px] rounded-full flex items-center gap-1" style={{background:'#EBF5FF',color:'#0D6EFD'}}>
+        <button onClick={()=>setDatePreset('all')} className="h-6 px-2 text-[10px] rounded-full flex items-center gap-1" style={{background:'#E0F5F2',color:'#3CC6B9'}}>
           {({today:'اليوم',yesterday:'الأمس',week:'أسبوع',month:'شهر'} as any)[datePreset]}
           <X size={10}/>
         </button>
       )}
       {statusFilter.length > 0 && (
-        <button onClick={()=>setStatusFilter([])} className="h-6 px-2 text-[10px] rounded-full flex items-center gap-1" style={{background:'#EBF5FF',color:'#0D6EFD'}}>
+        <button onClick={()=>setStatusFilter([])} className="h-6 px-2 text-[10px] rounded-full flex items-center gap-1" style={{background:'#E0F5F2',color:'#3CC6B9'}}>
           {statusFilter.length} حالة <X size={10}/>
         </button>
       )}
@@ -606,7 +621,7 @@ export default function ConfirmiliOrders({
                     style={{fontFamily:'var(--font-arabic)',background:isCurrent?'#F8F9FA':'',fontWeight:isCurrent?700:400}}>
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{background:s.color}}/>
                     {s.label}
-                    {isCurrent && <span className="mr-auto text-[9px]" style={{color:'#0D6EFD'}}>✓</span>}
+                    {isCurrent && <span className="mr-auto text-[9px]" style={{color:'#3CC6B9'}}>✓</span>}
                   </button>
                 )
               })}
@@ -656,7 +671,7 @@ export default function ConfirmiliOrders({
       {!trashMode && (
         <button title="أرسل إلى شركة التوصيل" onClick={()=>sendToDelivery(order)}
           className="p-1.5 rounded hover:bg-blue-50 transition-colors">
-          <Truck size={13} style={{color:'#0D6EFD'}}/>
+          <Truck size={13} style={{color:'#3CC6B9'}}/>
         </button>
       )}
     </div>
@@ -665,8 +680,8 @@ export default function ConfirmiliOrders({
   // ── TRACKING BADGE ────────────────────────────────────────────
   const TrackingBadge = ({ num, type }: { num: string; type: string }) => {
     const prefix = type === 'stopdesk' ? 'SD' : 'HM'
-    const bg     = type === 'stopdesk' ? '#EEE5FF' : '#EBF5FF'
-    const col    = type === 'stopdesk' ? '#9D76C1' : '#0D6EFD'
+    const bg     = type === 'stopdesk' ? '#EEE5FF' : '#E0F5F2'
+    const col    = type === 'stopdesk' ? '#9D76C1' : '#3CC6B9'
     return (
       <button onClick={() => copyText(num, num)} title="نسخ رقم التتبع"
         className="inline-flex items-center gap-1 hover:opacity-80">
@@ -682,7 +697,7 @@ export default function ConfirmiliOrders({
     <div className="relative inline-block">
       <button onClick={()=>{setShowSourceFilter(o=>!o);setShowStatusFilter(false);setShowWilayaFilter(false)}}
         className="flex items-center gap-1" title="فلتر المصدر">
-        <Filter size={10} style={{color: sourceFilter.length > 0 ? '#0D6EFD' : '#868E96'}}/>
+        <Filter size={10} style={{color: sourceFilter.length > 0 ? '#3CC6B9' : '#868E96'}}/>
       </button>
       {showSourceFilter && (
         <>
@@ -695,7 +710,7 @@ export default function ConfirmiliOrders({
               <label key={s} className="flex items-center gap-2 px-3 py-1.5 hover:bg-[#F8F9FA] cursor-pointer">
                 <input type="checkbox" checked={sourceFilter.includes(s)}
                   onChange={e => setSourceFilter(prev => e.target.checked ? [...prev,s] : prev.filter(x=>x!==s))}
-                  className="w-3 h-3 accent-[#0D6EFD]"/>
+                  className="w-3 h-3 accent-[#3CC6B9]"/>
                 <span className="text-xs" style={{fontFamily:'var(--font-arabic)'}}>{s}</span>
               </label>
             ))}
@@ -713,7 +728,7 @@ export default function ConfirmiliOrders({
     <div className="relative inline-block">
       <button onClick={()=>{setShowStatusFilter(o=>!o);setShowSourceFilter(false);setShowWilayaFilter(false)}}
         className="flex items-center gap-1 mr-1" title="فلتر الحالة">
-        <Filter size={10} style={{color: statusFilter.length > 0 ? '#0D6EFD' : '#868E96'}}/>
+        <Filter size={10} style={{color: statusFilter.length > 0 ? '#3CC6B9' : '#868E96'}}/>
       </button>
       {showStatusFilter && (
         <>
@@ -726,7 +741,7 @@ export default function ConfirmiliOrders({
               <label key={key} className="flex items-center gap-2 px-3 py-1.5 hover:bg-[#F8F9FA] cursor-pointer">
                 <input type="checkbox" checked={statusFilter.includes(key)}
                   onChange={e => setStatusFilter(prev => e.target.checked ? [...prev,key] : prev.filter(x=>x!==key))}
-                  className="w-3 h-3 accent-[#0D6EFD]"/>
+                  className="w-3 h-3 accent-[#3CC6B9]"/>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{background:s.color}}/>
                 <span className="text-xs" style={{fontFamily:'var(--font-arabic)'}}>{s.label}</span>
               </label>
@@ -745,7 +760,7 @@ export default function ConfirmiliOrders({
     <div className="relative inline-block">
       <button onClick={()=>{setShowWilayaFilter(o=>!o);setShowStatusFilter(false);setShowSourceFilter(false)}}
         className="flex items-center gap-1" title="فلتر الولاية">
-        <Filter size={10} style={{color: wilayaFilter.length > 0 ? '#0D6EFD' : '#868E96'}}/>
+        <Filter size={10} style={{color: wilayaFilter.length > 0 ? '#3CC6B9' : '#868E96'}}/>
       </button>
       {showWilayaFilter && (
         <>
@@ -759,7 +774,7 @@ export default function ConfirmiliOrders({
                 <label key={w} className="flex items-center gap-2 px-3 py-1.5 hover:bg-[#F8F9FA] cursor-pointer">
                   <input type="checkbox" checked={wilayaFilter.includes(w)}
                     onChange={e => setWilayaFilter(prev => e.target.checked ? [...prev,w] : prev.filter(x=>x!==w))}
-                    className="w-3 h-3 accent-[#0D6EFD]"/>
+                    className="w-3 h-3 accent-[#3CC6B9]"/>
                   <span className="text-xs" style={{fontFamily:'var(--font-arabic)'}}>{w}</span>
                 </label>
               ))}
@@ -779,10 +794,10 @@ export default function ConfirmiliOrders({
       <Toolbar/>
 
       {/* TABLE */}
-      <div className="overflow-x-auto" style={{scrollbarWidth:'thin'}}>
-        <table style={{borderCollapse:'collapse',minWidth:'1800px',fontSize:'12px',fontFamily:'var(--font-arabic)'}}>
+      <div className="overflow-x-auto rounded-xl" style={{scrollbarWidth:'thin'}}>
+        <table style={{borderCollapse:'separate',borderSpacing:0,minWidth:'1800px',fontSize:'12px',fontFamily:'var(--font-arabic)'}}>
           <thead>
-            <tr style={{background:'#212529',color:'#fff',userSelect:'none'}}>
+            <tr style={{background:'#00414D',color:'#fff',userSelect:'none'}}>
               {/* Checkbox */}
               <th style={TH}>
                 <input type="checkbox" checked={allSelected}
@@ -790,7 +805,7 @@ export default function ConfirmiliOrders({
                     if (e.target.checked) setSelected(new Set(pagedOrders.map(o=>o.id)))
                     else setSelected(new Set())
                   }}
-                  className="w-3.5 h-3.5 accent-[#0D6EFD]"/>
+                  className="w-3.5 h-3.5 accent-[#3CC6B9]"/>
               </th>
               {/* Source */}
               {show('source')        && <th style={TH}><span className="flex items-center gap-1">المصدر<SourceFilter/></span></th>}
@@ -846,23 +861,24 @@ export default function ConfirmiliOrders({
                 const item0 = (o.items as any[])?.[0] ?? {}
                 const co = companies.find(c => c.id === o.delivery_company_id)
                 const statusColor = getStatusDef(o.status).color
-                const rowBg      = hexToRgba(statusColor, 0.13)
-                const rowBgHover = hexToRgba(statusColor, 0.24)
+                const nk = normStatus(o.status)
+                const rowBg      = ROW_TINT[nk] ?? hexToRgba(statusColor, 0.18)
+                const rowBgHover = ROW_TINT[nk] ? hexToRgba(statusColor, 0.48) : hexToRgba(statusColor, 0.30)
 
                 rows.push(
                   <tr key={o.id}
                     style={{
-                      background: selected.has(o.id) ? '#EBF5FF' : rowBg,
+                      background: selected.has(o.id) ? '#E0F5F2' : rowBg,
                       borderBottom:'1px solid #F1F3F5',
                     }}
-                    onMouseEnter={e=>(e.currentTarget.style.background=selected.has(o.id)?'#EBF5FF':rowBgHover)}
-                    onMouseLeave={e=>(e.currentTarget.style.background=selected.has(o.id)?'#EBF5FF':rowBg)}>
+                    onMouseEnter={e=>(e.currentTarget.style.background=selected.has(o.id)?'#E0F5F2':rowBgHover)}
+                    onMouseLeave={e=>(e.currentTarget.style.background=selected.has(o.id)?'#E0F5F2':rowBg)}>
 
                     {/* Checkbox */}
                     <td style={TD}>
                       <input type="checkbox" checked={selected.has(o.id)}
                         onChange={e => setSelected(prev => { const s=new Set(prev); e.target.checked?s.add(o.id):s.delete(o.id); return s })}
-                        className="w-3.5 h-3.5 accent-[#0D6EFD]"/>
+                        className="w-3.5 h-3.5 accent-[#3CC6B9]"/>
                     </td>
 
                     {/* Source (+ sheet routing badge when order also went to a Google Sheet) */}
@@ -883,7 +899,7 @@ export default function ConfirmiliOrders({
                     {/* ر.الطلبية */}
                     {show('order_number') && (
                       <td style={TD}>
-                        <span className="font-mono font-bold" style={{color:'#0D6EFD',fontSize:11}}>{o.order_number}</span>
+                        <span className="font-mono font-bold" style={{color:'#3CC6B9',fontSize:11}}>{o.order_number}</span>
                       </td>
                     )}
 
@@ -944,8 +960,8 @@ export default function ConfirmiliOrders({
                       <td style={TD}>
                         <span style={{
                           fontSize:10, fontWeight:600, padding:'2px 6px', borderRadius:999,
-                          background: o.delivery_type === 'stopdesk' ? '#EEE5FF' : '#EBF5FF',
-                          color:      o.delivery_type === 'stopdesk' ? '#9D76C1' : '#0D6EFD',
+                          background: o.delivery_type === 'stopdesk' ? '#EEE5FF' : '#E0F5F2',
+                          color:      o.delivery_type === 'stopdesk' ? '#9D76C1' : '#3CC6B9',
                         }}>
                           {o.delivery_type === 'stopdesk' ? 'المكتب' : 'المنزل'}
                         </span>
@@ -969,7 +985,7 @@ export default function ConfirmiliOrders({
                           ? <TrackingBadge num={o.tracking_number} type={o.delivery_type ?? 'home'}/>
                           : <button onClick={()=>sendToDelivery(o)}
                               className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded hover:opacity-80"
-                              style={{background:'#EBF5FF',color:'#0D6EFD',fontFamily:'var(--font-arabic)'}}>
+                              style={{background:'#E0F5F2',color:'#3CC6B9',fontFamily:'var(--font-arabic)'}}>
                               <Truck size={10}/>إرسال
                             </button>
                         }
@@ -983,7 +999,7 @@ export default function ConfirmiliOrders({
 
                     {/* Product price */}
                     {show('product_price') && (
-                      <td style={TD}><span style={{fontWeight:600,color:'#0D6EFD',fontSize:11,fontFamily:'monospace'}}>{item0.unit_price?.toLocaleString('ar-DZ') ?? '—'} دج</span></td>
+                      <td style={TD}><span style={{fontWeight:600,color:'#3CC6B9',fontSize:11,fontFamily:'monospace'}}>{item0.unit_price?.toLocaleString('ar-DZ') ?? '—'} دج</span></td>
                     )}
 
                     {/* Quantity */}
@@ -998,7 +1014,7 @@ export default function ConfirmiliOrders({
 
                     {/* Total */}
                     {show('total_price') && (
-                      <td style={TD}><span style={{fontWeight:700,color:'#0D6EFD',fontSize:12,fontFamily:'monospace'}}>{o.total?.toLocaleString('ar-DZ')} دج</span></td>
+                      <td style={TD}><span style={{fontWeight:700,color:'#3CC6B9',fontSize:12,fontFamily:'monospace'}}>{o.total?.toLocaleString('ar-DZ')} دج</span></td>
                     )}
 
                     {/* Notes */}
@@ -1049,7 +1065,7 @@ export default function ConfirmiliOrders({
       </div>
 
       {/* PAGINATION */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-t" style={{borderColor:'var(--color-border)',background:'#FAFAFA'}}>
+      <div className="flex items-center justify-between px-4 py-2.5 border-t" style={{borderColor:'var(--color-border)',background:'#fff'}}>
         <div className="flex items-center gap-2">
           <select value={perPage} onChange={e=>{setPerPage(+e.target.value);setPage(1)}}
             className="border rounded-lg px-2 h-7 text-xs outline-none" style={{borderColor:'var(--color-border)'}}>
@@ -1130,7 +1146,7 @@ export default function ConfirmiliOrders({
             )}
             <Field label="ملاحظات"><textarea rows={2} className="input text-sm w-full resize-none" value={manualForm.notes??''} onChange={e=>setManualForm((f:any)=>({...f,notes:e.target.value}))}/></Field>
             <div className="flex gap-2 pt-1">
-              <button onClick={saveManual} disabled={savingManual||!manualForm.customer_name||!manualForm.customer_phone} className="flex-1 h-9 rounded-xl text-sm font-bold text-white" style={{background:'#0D6EFD'}}>
+              <button onClick={saveManual} disabled={savingManual||!manualForm.customer_name||!manualForm.customer_phone} className="flex-1 h-9 rounded-xl text-sm font-bold text-white" style={{background:'#3CC6B9'}}>
                 {savingManual ? 'جارٍ الحفظ...' : 'إنشاء الطلبية'}
               </button>
               <button onClick={()=>setShowManual(false)} className="flex-1 h-9 rounded-xl text-sm font-bold border" style={{borderColor:'#DC3545',color:'#DC3545'}}>إلغاء</button>
@@ -1176,7 +1192,7 @@ export default function ConfirmiliOrders({
                 const defNew = getStatusDef(h.new_status)
                 return (
                   <div key={h.id} className="flex items-start gap-3 pb-3 border-b" style={{borderColor:'#F1F3F5'}}>
-                    <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{background:'#0D6EFD'}}/>
+                    <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{background:'#3CC6B9'}}/>
                     <div>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {h.old_status && (
@@ -1208,8 +1224,8 @@ export default function ConfirmiliOrders({
         return (
           <Modal title="التحقق من العميل" onClose={()=>setVerifyModal(null)} width={360}>
             <div className="space-y-4 text-center">
-              <div className="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style={{background:'#EBF5FF'}}>
-                <Package size={26} style={{color:'#0D6EFD'}}/>
+              <div className="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style={{background:'#E0F5F2'}}>
+                <Package size={26} style={{color:'#3CC6B9'}}/>
               </div>
               <div>
                 <p className="font-bold text-sm" style={{color:'#212529'}}>{verifyModal.customer_name}</p>
@@ -1247,7 +1263,7 @@ export default function ConfirmiliOrders({
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
               {[
-                {l:'إجمالي الإرسال',v:sendReports.length,c:'#0D6EFD'},
+                {l:'إجمالي الإرسال',v:sendReports.length,c:'#3CC6B9'},
                 {l:'نجح',v:sendReports.filter(r=>r.status==='sent').length,c:'#22C55E'},
                 {l:'فشل',v:sendReports.filter(r=>r.status==='failed').length,c:'#E23024'},
               ].map(i=>(
@@ -1264,7 +1280,7 @@ export default function ConfirmiliOrders({
                   <div key={r.id} className="flex items-center gap-3 p-3 rounded-xl border" style={{borderColor:'#F1F3F5'}}>
                     <span className="w-2 h-2 rounded-full" style={{background:r.status==='sent'?'#22C55E':'#E23024'}}/>
                     <div className="flex-1 min-w-0">
-                      <p className="font-mono text-xs font-bold" style={{color:'#0D6EFD'}}>{r.tracking_num??'—'}</p>
+                      <p className="font-mono text-xs font-bold" style={{color:'#3CC6B9'}}>{r.tracking_num??'—'}</p>
                       <p className="text-[10px]" style={{color:'#868E96'}}>{r.is_auto?'⚡ تلقائي':'✋ يدوي'} · {new Date(r.sent_at).toLocaleString('ar-DZ')}</p>
                     </div>
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
@@ -1291,7 +1307,7 @@ function ConfirmedByCell({ order, team, onSave }: { order:any; team:any[]; onSav
     <div className="relative">
       <button onClick={()=>setOpen(o=>!o)}
         className="flex items-center gap-1 text-xs hover:opacity-80"
-        style={{color: current ? '#0D6EFD' : '#868E96', fontFamily:'var(--font-arabic)'}}>
+        style={{color: current ? '#3CC6B9' : '#868E96', fontFamily:'var(--font-arabic)'}}>
         <Users size={10}/>{current?.name ?? '—'}<ChevronDown size={9}/>
       </button>
       {open && (
@@ -1301,8 +1317,8 @@ function ConfirmedByCell({ order, team, onSave }: { order:any; team:any[]; onSav
             <button onClick={()=>{onSave(null);setOpen(false)}} className="w-full text-xs px-3 py-1.5 hover:bg-[#F8F9FA] text-right" style={{color:'#868E96'}}>— لا أحد</button>
             {team.map(m=>(
               <button key={m.id} onClick={()=>{onSave(m.id);setOpen(false)}}
-                className="w-full text-xs px-3 py-1.5 hover:bg-[#EBF5FF] text-right font-medium"
-                style={{color: order.confirmed_by===m.id?'#0D6EFD':'#212529',fontFamily:'var(--font-arabic)'}}>
+                className="w-full text-xs px-3 py-1.5 hover:bg-[#E0F5F2] text-right font-medium"
+                style={{color: order.confirmed_by===m.id?'#3CC6B9':'#212529',fontFamily:'var(--font-arabic)'}}>
                 {m.name}
               </button>
             ))}
@@ -1360,9 +1376,9 @@ function ColSettingsModal({ visibleCols, onSave, onClose }: { visibleCols:Set<st
             <button key={s} onClick={()=>setStyle(s as 1|2)}
               className="px-3 h-7 rounded-lg text-xs font-bold border transition-colors"
               style={{
-                background: style===s ? '#0D6EFD' : '#fff',
+                background: style===s ? '#3CC6B9' : '#fff',
                 color:      style===s ? '#fff'    : '#495057',
-                borderColor: style===s ? '#0D6EFD' : 'var(--color-border)',
+                borderColor: style===s ? '#3CC6B9' : 'var(--color-border)',
               }}>
               ستايل 0{s}
             </button>
@@ -1398,7 +1414,7 @@ function ColSettingsModal({ visibleCols, onSave, onClose }: { visibleCols:Set<st
             title="قريباً — سحب وإفلات لترتيب الأعمدة">
             ترتيب الأعمدة
           </button>
-          <button onClick={()=>onSave(local)} className="flex-1 h-9 rounded-xl text-xs font-bold text-white" style={{background:'#0D6EFD',minWidth:80}}>
+          <button onClick={()=>onSave(local)} className="flex-1 h-9 rounded-xl text-xs font-bold text-white" style={{background:'#3CC6B9',minWidth:80}}>
             حفظ
           </button>
           <button onClick={onClose} className="flex-1 h-9 rounded-xl text-xs font-bold border" style={{borderColor:'#DC3545',color:'#DC3545',minWidth:80}}>
@@ -1440,11 +1456,11 @@ function Field({ label, children, required }: { label:string; children:React.Rea
 function PagBtn({ label, onClick, disabled, active }: { label:string; onClick:()=>void; disabled?:boolean; active?:boolean }) {
   return (
     <button onClick={onClick} disabled={disabled}
-      className="h-7 min-w-[28px] px-1.5 rounded-lg text-xs border transition-colors disabled:opacity-40"
+      className="h-7 min-w-[28px] px-1.5 rounded-full text-xs border transition-colors disabled:opacity-40"
       style={{
-        borderColor: active ? '#0D6EFD' : 'var(--color-border)',
-        background:  active ? '#0D6EFD' : '#fff',
-        color:       active ? '#fff'    : '#495057',
+        borderColor: active ? '#00414D' : '#3CC6B9',
+        background:  active ? '#00414D' : '#fff',
+        color:       active ? '#fff'    : '#0A6E66',
         fontFamily:  'var(--font-arabic)',
       }}>
       {label}
@@ -1454,9 +1470,9 @@ function PagBtn({ label, onClick, disabled, active }: { label:string; onClick:()
 
 // ─── TABLE CELL STYLES ────────────────────────────────────────
 const TH: React.CSSProperties = {
-  padding: '8px 10px', textAlign: 'right', fontSize: 11, fontWeight: 600,
+  padding: '10px 10px', textAlign: 'right', fontSize: 11.5, fontWeight: 700,
   whiteSpace: 'nowrap', fontFamily: 'var(--font-arabic)', letterSpacing: 0,
-  borderLeft: '1px solid rgba(255,255,255,0.1)',
+  borderLeft: '1px solid rgba(255,255,255,0.12)', color: '#fff',
 }
 const TD: React.CSSProperties = {
   padding: '7px 10px', textAlign: 'right', verticalAlign: 'middle',
