@@ -47,6 +47,7 @@ interface Props {
 export default function DashboardShell({ children, store, user, newOrdersCount = 0, allStores = [] }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
+
   const [sidebarOpen,  setSidebarOpen]  = useState(true)
   const [mobileOpen,   setMobileOpen]   = useState(false)
   const [avatarOpen,   setAvatarOpen]   = useState(false)
@@ -278,6 +279,13 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
       </div>
     </div>
   )
+
+  // Confirmili is a self-contained module with its own teal chrome + sidebar
+  // (see ConfirmiliClient). Render it full-bleed without the Dakkani shell so
+  // the design system takes over the whole screen. (After all hooks above.)
+  if (pathname?.startsWith('/confirmili')) {
+    return <div className="h-screen overflow-hidden">{children}</div>
+  }
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--color-bg-soft)' }}>

@@ -2248,7 +2248,8 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     <div className="confirmili-theme flex h-full" dir={lang === 'ar' ? 'rtl' : 'ltr'} onClick={() => actionMenu && setActionMenu(null)}>
       {/* ── Right-edge vertical icon sidebar ───────────────── */}
       <aside className="cf-sidebar">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 flex-shrink-0" style={{background:'var(--cf-turq)',color:'#00414D',fontWeight:800,fontSize:18}}>C</div>
+        <a href="/dashboard" title="العودة إلى لوحة دكاني"
+          className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 flex-shrink-0 transition-transform hover:scale-105" style={{background:'var(--cf-turq)',color:'#00414D',fontWeight:800,fontSize:18}}>C</a>
         {TABS.map(tab => {
           const newCount = tab.id === 'orders' ? localOrders.filter(o=>o.status==='new'&&!trashedOrders.has(o.id)).length : 0
           return (
