@@ -49,16 +49,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'المتجر غير موجود' }, { status: 404 })
     }
 
-    // 2. Get wilaya delivery fee
+    // 2. Get wilaya delivery fee (static fallback)
     const { data: wilaya } = await supabase
       .from('wilayas')
-      .select('name_ar, delivery_fee_home, delivery_fee_stopdesk')
+      .select('code, name_ar, delivery_fee_home, delivery_fee_stopdesk')
       .eq('id', data.wilaya_id)
       .single()
 
-    const deliveryFee = data.delivery_type === 'stopdesk'
+    let deliveryFee = data.delivery_type === 'stopdesk'
       ? (wilaya?.delivery_fee_stopdesk ?? 0)
       : (wilaya?.delivery_fee_home ?? 0)
+
+    // 2b. Unified delivery routing: resolve provider for this wilaya, then
+    // use its DECLARED price (shown to customer) + REAL price (profit only).
+    const wilayaCode = String(wilaya?.code ?? data.wilaya_id).padStart(2, '0')
+    let unifiedProviderId: string | null = null
+    let realDeliveryFee = deliveryFee
+    {
+      const { data: route } = await supabase
+        .from('wilaya_company_map').select('provider_id')
+        .eq('store_id', data.store_id).eq('wilaya_code', wilayaCode).maybeSingle()
+      unifiedProviderId = route?.provider_id ?? null
+      if (!unifiedProviderId) {
+        const { data: anyProv } = await supabase
+          .from('delivery_providers').select('id')
+          .eq('store_id', data.store_id).eq('is_active', true).order('created_at').limit(1).maybeSingle()
+        unifiedProviderId = anyProv?.id ?? null
+      }
+      if (unifiedProviderId) {
+        const [{ data: dp }, { data: rp }] = await Promise.all([
+          supabase.from('delivery_declared_prices').select('home_price,stopdesk_price').eq('provider_id', unifiedProviderId).eq('wilaya_code', wilayaCode).maybeSingle(),
+          supabase.from('delivery_real_prices').select('home_price,stopdesk_price').eq('provider_id', unifiedProviderId).eq('wilaya_code', wilayaCode).maybeSingle(),
+        ])
+        if (dp) deliveryFee = data.delivery_type === 'stopdesk' ? Number(dp.stopdesk_price) : Number(dp.home_price)
+        if (rp) realDeliveryFee = data.delivery_type === 'stopdesk' ? Number(rp.stopdesk_price) : Number(rp.home_price)
+        else realDeliveryFee = deliveryFee
+      }
+    }
 
     // 3. Get product prices and calculate totals
     const productIds = data.items.map(i => i.product_id)
@@ -173,6 +200,7 @@ export async function POST(req: Request) {
         stopdesk_code: data.stopdesk_code,
         delivery_fee: deliveryFee,
         declared_delivery_fee: deliveryFee,
+        real_delivery_fee: realDeliveryFee,
         subtotal,
         discount_amount: discountAmount,
         coupon_id: couponId,
@@ -183,6 +211,7 @@ export async function POST(req: Request) {
         is_blacklisted: fraudResult.isBlacklisted,
         status: finalStatus,
         delivery_company_id: autoDeliveryCompanyId,
+        delivery_provider_id: unifiedProviderId,
         source: data.source ?? 'storefront',
         utm_source: data.utm_source,
         utm_medium: data.utm_medium,
@@ -210,6 +239,7 @@ export async function POST(req: Request) {
             stopdesk_code: data.stopdesk_code,
             delivery_fee: deliveryFee,
             declared_delivery_fee: deliveryFee,
+            real_delivery_fee: realDeliveryFee,
             subtotal,
             discount_amount: discountAmount,
             coupon_id: couponId,
@@ -220,6 +250,7 @@ export async function POST(req: Request) {
             is_blacklisted: fraudResult.isBlacklisted,
             status: 'new', // fallback
             delivery_company_id: autoDeliveryCompanyId,
+            delivery_provider_id: unifiedProviderId,
             source: data.source ?? 'storefront',
             utm_source: data.utm_source,
             utm_medium: data.utm_medium,

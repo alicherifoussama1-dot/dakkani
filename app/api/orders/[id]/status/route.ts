@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { adapterFromRow, type CreateOrderData } from '@/lib/delivery'
 
 const schema = z.object({
   status:     z.string().min(1),
@@ -69,36 +70,51 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       notes,
     })
 
-    // Auto-send to delivery company if status = confirmed AND company has is_automatic
+    // Auto-ship via the unified provider when confirmed AND provider is_automatic.
     if (newStatus === 'confirmed') {
-      const { data: orderFull } = await supabase
-        .from('orders')
-        .select('*, delivery_company_id')
-        .eq('id', orderId)
-        .single()
+      try {
+        const { data: o } = await supabase
+          .from('orders')
+          .select('*, items:order_items(product_name,quantity), wilaya:wilayas(code,name_ar,name_fr), commune:communes(id,name_fr,name_ar), stores(name,phone)')
+          .eq('id', orderId)
+          .single()
 
-      if (orderFull?.delivery_company_id) {
-        const { data: company } = await supabase
-          .from('confirmili_delivery_companies')
-          .select('*')
-          .eq('id', orderFull.delivery_company_id)
-          .maybeSingle()
+        if (o?.delivery_provider_id && !o.tracking_number) {
+          const { data: provider } = await supabase
+            .from('delivery_providers').select('*').eq('id', o.delivery_provider_id).eq('is_automatic', true).maybeSingle()
 
-        if (company?.is_automatic) {
-          // Create send report with auto tracking number
-          const trackingNum = `${company.short_name}-${Date.now().toString(36).toUpperCase()}`
-          await supabase.from('confirmili_send_reports').insert({
-            store_id:    order.store_id,
-            order_id:    orderId,
-            company_id:  company.id,
-            tracking_num: trackingNum,
-            is_auto:     true,
-          })
-          await supabase.from('orders')
-            .update({ tracking_number: trackingNum })
-            .eq('id', orderId)
+          if (provider) {
+            const dto: CreateOrderData = {
+              orderId: o.id, orderNumber: o.order_number,
+              customerName: o.customer_name, phone: o.customer_phone, phone2: o.customer_phone2 ?? undefined,
+              address: o.address ?? undefined,
+              wilayaCode: String((o.wilaya as any)?.code ?? '').padStart(2, '0'),
+              wilayaName: (o.wilaya as any)?.name_fr ?? (o.wilaya as any)?.name_ar ?? '',
+              communeId: o.commune_id ?? undefined,
+              communeName: (o.commune as any)?.name_fr ?? (o.commune as any)?.name_ar ?? '',
+              productList: (o.items as any[] ?? []).map(i => `${i.product_name} x${i.quantity}`).join(', ') || 'منتج',
+              codAmount: Number(o.total ?? 0),
+              deliveryType: o.delivery_type === 'stopdesk' ? 'stopdesk' : 'home',
+              stopdeskId: o.stopdesk_code ?? undefined, notes: o.notes ?? undefined,
+              fromWilayaCode: provider.from_wilaya_code ?? '16',
+              storeName: (o.stores as any)?.name ?? '', storePhone: (o.stores as any)?.phone ?? undefined,
+            }
+            const result = await adapterFromRow(provider).createShipment(dto)
+            if (result.success) {
+              await supabase.from('orders').update({
+                tracking_number: result.trackingNumber,
+                tracking_status: 'pending',
+                label_url: result.labelUrl ?? null,
+                shipped_at: new Date().toISOString(),
+              }).eq('id', orderId)
+              await supabase.from('confirmili_send_reports').insert({
+                store_id: order.store_id, order_id: orderId,
+                tracking_num: result.trackingNumber, is_auto: true,
+              }).then(() => {}, () => {})
+            }
+          }
         }
-      }
+      } catch { /* auto-ship is best-effort; manual 🚚 remains available */ }
     }
 
     return NextResponse.json({ success: true, old_status: oldStatus, new_status: newStatus })

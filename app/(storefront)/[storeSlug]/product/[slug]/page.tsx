@@ -54,6 +54,30 @@ export default async function ProductPage({ params }: Props) {
     supabase.from('warehouse_stock').select('quantity,reserved,variant_key').eq('product_id', product.id).eq('store_id', store.id),
   ])
 
+  // ── Unified declared prices override the static wilaya fees ──
+  // Single source of truth: delivery_declared_prices (+ wilaya_company_map
+  // routing). The checkout form keeps reading wilaya.delivery_fee_*, so we
+  // just overwrite those fields with the merchant's declared price per wilaya.
+  const [declaredRes, routeRes] = await Promise.all([
+    supabase.from('delivery_declared_prices').select('provider_id,wilaya_code,home_price,stopdesk_price').eq('store_id', store.id),
+    supabase.from('wilaya_company_map').select('wilaya_code,provider_id').eq('store_id', store.id),
+  ])
+  if ((declaredRes.data?.length ?? 0) > 0) {
+    const routeMap = new Map<string, string>((routeRes.data ?? []).map((r: any) => [r.wilaya_code, r.provider_id]))
+    // For each wilaya code, prefer the price from its routed provider.
+    const priceByCode = new Map<string, { home: number; desk: number }>()
+    for (const row of declaredRes.data ?? []) {
+      const routed = routeMap.get(row.wilaya_code)
+      const existing = priceByCode.get(row.wilaya_code)
+      const isPreferred = routed ? row.provider_id === routed : !existing
+      if (isPreferred || !existing) priceByCode.set(row.wilaya_code, { home: Number(row.home_price), desk: Number(row.stopdesk_price) })
+    }
+    for (const w of (wilayasRes.data ?? []) as any[]) {
+      const p = priceByCode.get(String(w.code).padStart(2, '0')) ?? priceByCode.get(w.code)
+      if (p) { w.delivery_fee_home = p.home; w.delivery_fee_stopdesk = p.desk }
+    }
+  }
+
   const totalStock = (stockRes.data ?? []).reduce((s, r) => s + r.quantity - r.reserved, 0)
 
   // Per-variant available stock (qty - reserved), keyed by variant_key —

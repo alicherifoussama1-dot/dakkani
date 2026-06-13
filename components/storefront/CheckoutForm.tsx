@@ -23,6 +23,7 @@ const schema = z.object({
   commune_id:     z.number().int().optional(),
   baladia:        z.string().min(1, 'اختر البلدية'),
   address:        z.string().optional(),
+  stopdesk_code:  z.string().optional(),
   notes:          z.string().max(200).optional(),
   payment_method: z.enum(['cod', 'chargily_cib', 'chargily_edahabia']),
   coupon_code:    z.string().optional(),
@@ -75,6 +76,8 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const [orderNumber, setOrderNumber] = useState('')
   const [fraudScore, setFraudScore] = useState<number | null>(null)
   const [orderId, setOrderId] = useState('')
+  const [offices, setOffices] = useState<{ code: string; name: string }[]>([])
+  const [loadingOffices, setLoadingOffices] = useState(false)
 
   const { pixelId, tiktokId, trackPurchase } = useOrderPixels(store, product)
 
@@ -92,6 +95,28 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const watchedQty          = useWatch({ control, name: 'quantity' }) ?? 1
   const watchedPayment      = useWatch({ control, name: 'payment_method' })
   const watchedCommuneId    = useWatch({ control, name: 'commune_id' })
+
+  // Fetch stopdesk offices when delivery_type or wilaya_id changes
+  useEffect(() => {
+    if (watchedDeliveryType !== 'stopdesk' || !watchedWilayaId) {
+      setOffices([])
+      setValue('stopdesk_code', undefined)
+      return
+    }
+    setLoadingOffices(true)
+    setValue('stopdesk_code', '')
+    fetch(`/api/storefront/stopdesks?store_id=${store.id}&wilaya_id=${watchedWilayaId}`)
+      .then(res => res.json())
+      .then(data => {
+        setOffices(data.offices || [])
+      })
+      .catch(() => {
+        setOffices([])
+      })
+      .finally(() => {
+        setLoadingOffices(false)
+      })
+  }, [watchedDeliveryType, watchedWilayaId, store.id, setValue])
 
   // ── Calculate totals ────────────────────────────────────────
   const unitPrice    = product?.price ?? 0
@@ -189,6 +214,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           commune_id: data.commune_id,
           baladia: data.baladia,
           address: data.address,
+          stopdesk_code: data.stopdesk_code,
           payment_method: data.payment_method,
           coupon_code: data.coupon_code,
           notes: data.notes,
@@ -419,7 +445,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
             <div className="grid grid-cols-2 gap-3">
               {([
                 ['home', 'توصيل للمنزل', Truck],
-                ['stopdesk', 'نقطة توزيع', Store],
+                ['stopdesk', 'التوصيل للمكتب', Store],
               ] as const).map(([val, label, Icon]) => (
                 <label
                   key={val}
@@ -503,6 +529,47 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                   <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
                 {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
+              </div>
+            )}
+
+            {/* Stopdesk / Delivery Office select/input */}
+            {watchedDeliveryType === 'stopdesk' && watchedWilayaId > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  مكتب التوصيل <span className="text-red-500">*</span>
+                </label>
+                {loadingOffices ? (
+                  <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    جاري تحميل مكاتب التوصيل...
+                  </div>
+                ) : offices.length > 0 ? (
+                  <div className="relative">
+                    <select
+                      {...register('stopdesk_code', { required: 'يرجى اختيار مكتب التوصيل' })}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#0D6EFD] outline-none appearance-none"
+                    >
+                      <option value="">اختر مكتب التوصيل...</option>
+                      {offices.map(o => (
+                        <option key={o.code} value={o.code}>{o.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="text"
+                      {...register('stopdesk_code', { required: 'يرجى إدخال اسم مكتب التوصيل' })}
+                      placeholder="أدخل اسم أو عنوان مكتب التوصيل المفضل لديك"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#0D6EFD] outline-none"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      سيتم شحن الطلب إلى أقرب مكتب توصيل متوفر في ولايتك.
+                    </p>
+                  </div>
+                )}
+                {errors.stopdesk_code && <p className="text-red-500 text-xs mt-1">{errors.stopdesk_code.message}</p>}
               </div>
             )}
 

@@ -16,6 +16,7 @@ const schema = z.object({
   wilaya_id: z.number({ required_error: 'اختر الولاية' }).int().min(1),
   baladia: z.string().min(1, 'اختر البلدية'),
   address: z.string().optional(),
+  stopdesk_code: z.string().optional(),
   quantity: z.number().int().min(1).max(99),
   coupon_code: z.string().optional(),
   notes: z.string().optional(),
@@ -83,6 +84,8 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   const [submitted, setSubmitted] = useState(false)
   const [orderId, setOrderId] = useState('')
   const [selectedWilaya, setSelectedWilaya] = useState<Wilaya | null>(null)
+  const [offices, setOffices] = useState<{ code: string; name: string }[]>([])
+  const [loadingOffices, setLoadingOffices] = useState(false)
 
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -96,6 +99,29 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
 
   // Reset البلدية whenever الولاية changes (cascading + required)
   useEffect(() => { setValue('baladia', '', { shouldValidate: false }) }, [wilayaId, setValue])
+
+  // Fetch stopdesk offices when delivery_type or wilaya changes
+  useEffect(() => {
+    if (deliveryType !== 'stopdesk' || !wilayaId) {
+      setOffices([])
+      setValue('stopdesk_code', undefined)
+      return
+    }
+    setLoadingOffices(true)
+    setValue('stopdesk_code', '')
+    fetch(`/api/storefront/stopdesks?store_id=${store.id}&wilaya_id=${wilayaId}`)
+      .then(res => res.json())
+      .then(data => {
+        setOffices(data.offices || [])
+      })
+      .catch(() => {
+        setOffices([])
+      })
+      .finally(() => {
+        setLoadingOffices(false)
+      })
+  }, [deliveryType, wilayaId, store.id, setValue])
+
   const deliveryFee = selectedWilaya
     ? (deliveryType === 'stopdesk' ? selectedWilaya.delivery_fee_stopdesk : selectedWilaya.delivery_fee_home)
     : 0
@@ -133,7 +159,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
 
       {/* Delivery Type */}
       <div className="grid grid-cols-2 gap-2">
-        {([['home', 'توصيل للمنزل'], ['stopdesk', 'نقطة توزيع']] as const).map(([val, label]) => (
+        {([['home', 'توصيل للمنزل'], ['stopdesk', 'التوصيل للمكتب']] as const).map(([val, label]) => (
           <button
             key={val}
             type="button"
@@ -181,6 +207,46 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         onChange={v => setValue('baladia', v, { shouldValidate: true })}
         error={errors.baladia?.message}
       />
+
+      {/* Stopdesk / Delivery Office select/input */}
+      {deliveryType === 'stopdesk' && wilayaId > 0 && (
+        <div>
+          <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--pt-text-soft)' }}>
+            مكتب التوصيل *
+          </label>
+          {loadingOffices ? (
+            <div className="text-sm text-gray-500 py-2.5 px-3 border border-dashed rounded-xl bg-gray-50/50 flex items-center justify-center gap-2">
+              <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
+              جاري تحميل مكاتب التوصيل...
+            </div>
+          ) : offices.length > 0 ? (
+            <select
+              {...register('stopdesk_code', { required: 'يرجى اختيار مكتب التوصيل' })}
+              className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none bg-white text-gray-900"
+              style={{ borderRadius: 'var(--pt-radius-md)' }}
+            >
+              <option value="">اختر مكتب التوصيل...</option>
+              {offices.map(o => (
+                <option key={o.code} value={o.code}>{o.name}</option>
+              ))}
+            </select>
+          ) : (
+            <div>
+              <input
+                type="text"
+                {...register('stopdesk_code', { required: 'يرجى إدخال اسم مكتب التوصيل' })}
+                placeholder="أدخل اسم أو عنوان مكتب التوصيل المفضل لديك"
+                className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none bg-white text-gray-900"
+                style={{ borderRadius: 'var(--pt-radius-md)' }}
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                سيتم شحن الطلب إلى أقرب مكتب توصيل متوفر في ولايتك.
+              </p>
+            </div>
+          )}
+          {errors.stopdesk_code && <p className="text-red-500 text-xs mt-1">{errors.stopdesk_code.message}</p>}
+        </div>
+      )}
 
       {/* Name & Phone */}
       <div className="grid grid-cols-1 gap-3">
