@@ -25,6 +25,17 @@ const SB = {
   cancelled: { label:'ملغاة',    color:'#E23024', text:'#fff' },
   postponed: { label:'مؤجلة',    color:'#9D76C1', text:'#fff' },
   duplicate: { label:'مكررة',    color:'#1A1A1A', text:'#fff' },
+  // ── Logistics statuses (DB allows these too — migration 009) ──
+  processing:       { label:'قيد المعالجة', color:'#0D6EFD', text:'#fff' },
+  shipped:          { label:'مشحونة',       color:'#3B82F6', text:'#fff' },
+  in_transit:       { label:'في الطريق',     color:'#3B82F6', text:'#fff' },
+  out_for_delivery: { label:'خرجت للتوصيل',  color:'#6366F1', text:'#fff' },
+  with_driver:      { label:'مع السائق',     color:'#6366F1', text:'#fff' },
+  at_stopdesk:      { label:'بالمكتب',       color:'#8B5CF6', text:'#fff' },
+  delivered:        { label:'مسلمة',         color:'#16A34A', text:'#fff' },
+  returned:         { label:'مرجعة',         color:'#DC2626', text:'#fff' },
+  failed:           { label:'فاشلة',         color:'#FFA447', text:'#fff' },
+  exception:        { label:'مشكلة',         color:'#EF4444', text:'#fff' },
 } as Record<string, {label:string;color:string;text:string}>
 
 function normStatus(raw?: string|null): string {
@@ -39,7 +50,7 @@ function getStatusDef(raw?: string|null) {
   return SB[normStatus(raw)] ?? { label: raw ?? '—', color:'#868E96', text:'#fff' }
 }
 
-// ─── Row tint: ~10% of status color (hover ~20%) ──────────────
+// ─── Row tint: ~13% of status color (hover ~24%) ──────────────
 function hexToRgba(hex: string, alpha: number): string {
   const h = hex.replace('#','')
   const r = parseInt(h.substring(0,2),16)
@@ -835,8 +846,8 @@ export default function ConfirmiliOrders({
                 const item0 = (o.items as any[])?.[0] ?? {}
                 const co = companies.find(c => c.id === o.delivery_company_id)
                 const statusColor = getStatusDef(o.status).color
-                const rowBg      = hexToRgba(statusColor, 0.08)
-                const rowBgHover = hexToRgba(statusColor, 0.18)
+                const rowBg      = hexToRgba(statusColor, 0.13)
+                const rowBgHover = hexToRgba(statusColor, 0.24)
 
                 rows.push(
                   <tr key={o.id}
