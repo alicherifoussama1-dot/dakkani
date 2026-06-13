@@ -27,9 +27,22 @@ export default async function ConfirmiliPage() {
       commune:communes(id,name_ar),
       items:order_items(id,product_name,quantity,unit_price,total_price,product_id,variant_key,variant_sku)`
 
+  // SAFE_COLS = columns guaranteed by migration 001 only. Used as a last
+  // resort so orders ALWAYS appear even when optional columns (added by
+  // later migrations: confirmed_by, variant_sku, declared/real_delivery_fee,
+  // delivery_company_id, is_trashed, call_attempts…) are missing because a
+  // migration hasn't been run yet.
+  const SAFE_COLS = `
+      id,order_number,customer_name,customer_phone,customer_phone2,address,
+      total,subtotal,status,delivery_fee,delivery_type,tracking_number,notes,
+      confirmed_at,shipped_at,delivered_at,created_at,updated_at,source,utm_source,
+      wilaya:wilayas(id,name_ar),
+      commune:communes(id,name_ar),
+      items:order_items(id,product_name,quantity,unit_price,total_price,product_id,variant_key)`
+
   // With migration 015: exclude sheet_only orders (they live in the Google
-  // Sheet, not in Confirmili) and expose routing badges. Falls back to the
-  // plain query when the routing columns don't exist yet.
+  // Sheet, not in Confirmili) and expose routing badges. Falls back through
+  // progressively-safer column sets when later migrations haven't run yet.
   let { data: orders, error: ordersErr } = await supabase
     .from('orders')
     .select(`${BASE_COLS},routed_to,sheet_status`)
@@ -38,14 +51,29 @@ export default async function ConfirmiliPage() {
     .order('created_at', { ascending: false })
     .limit(1000)
 
+  // Tier 2 — drop routing columns (migration 015 not run)
   if (ordersErr) {
-    const fallback = await supabase
+    const t2 = await supabase
       .from('orders')
       .select(BASE_COLS)
       .eq('store_id', store.id)
       .order('created_at', { ascending: false })
       .limit(1000)
-    orders = fallback.data as any
+    orders = t2.data as any
+    ordersErr = t2.error
+  }
+
+  // Tier 3 — minimal guaranteed columns (migrations 008–017 not run).
+  // Without this an unknown column (e.g. confirmed_by / variant_sku) makes
+  // the whole SELECT fail and NO orders show up in Confirmili.
+  if (ordersErr) {
+    const t3 = await supabase
+      .from('orders')
+      .select(SAFE_COLS)
+      .eq('store_id', store.id)
+      .order('created_at', { ascending: false })
+      .limit(1000)
+    orders = t3.data as any
   }
 
   const [productsRes, teamRes, companiesRes] = await Promise.all([
