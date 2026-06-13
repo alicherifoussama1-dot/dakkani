@@ -19,6 +19,7 @@ import {
 } from 'recharts'
 import { getStatus, statusLabel, STATUS_LIST } from '@/lib/confirmili/statuses'
 import ConfirmiliOrders from './ConfirmiliOrders'
+import ConfirmiliDelivery from './ConfirmiliDelivery'
 
 // ── Sub-nav tabs ──────────────────────────────────────────
 const TABS = [
@@ -1471,7 +1472,9 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     )
   }
 
-  const renderDelivery = () => {
+  const renderDelivery = () => <ConfirmiliDelivery storeId={storeId} setToast={setToast} />
+
+  const _renderDeliveryOLD = () => {
     const dTabs = ['شركة التوصيل','أسعار التوصيل المعلنة','الولاية ↔ شركة التوصيل','أسعار التوصيل الحقيقية']
     return (
       <div>
