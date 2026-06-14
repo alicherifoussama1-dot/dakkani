@@ -89,7 +89,7 @@ function ProvidersTab({ providers, reload, setToast }: { providers: Provider[]; 
                   <td>
                     <div className="flex items-center gap-1">
                       <button onClick={() => remove(p.id)} className="p-1.5 rounded hover:bg-red-50" title="حذف"><Trash2 size={12} style={{ color: '#DC3545' }} /></button>
-                      <button onClick={() => setForm({ id: p.id, provider_type: p.provider_type, display_name: p.display_name, json: JSON.stringify(p.credentials ?? {}, null, 2), is_automatic: p.is_automatic, from_wilaya_code: p.from_wilaya_code })} className="p-1.5 rounded hover:bg-[#F8F9FA]" title="تعديل"><Edit2 size={12} style={{ color: 'var(--color-text-muted)' }} /></button>
+                      <button onClick={() => setForm({ id: p.id, provider_type: p.provider_type, display_name: p.display_name, json: '', is_automatic: p.is_automatic, from_wilaya_code: p.from_wilaya_code })} className="p-1.5 rounded hover:bg-[#F8F9FA]" title="تعديل"><Edit2 size={12} style={{ color: 'var(--color-text-muted)' }} /></button>
                     </div>
                   </td>
                   <td>
@@ -125,10 +125,15 @@ function ProviderModal({ form, setForm, onSaved, setToast }: { form: any; setFor
 
   const template = JSON.stringify(meta.credTemplate, null, 2)
 
-  // Parse + validate the JSON textarea → credentials object (Arabic errors).
-  const parseCreds = (): Record<string, string> | null => {
+  // Has the merchant typed real, fresh JSON? (Empty or masked = "keep existing".)
+  const freshJson = (): string | null => {
     const txt = String(form.json ?? '').trim()
-    if (!txt) { setErr('أدخل بيانات الدخول (JSON)'); return null }
+    if (!txt || txt.includes('•')) return null   // U+2022 = masked placeholder
+    return txt
+  }
+
+  // Parse + validate fresh JSON → credentials object (Arabic errors).
+  const parseCreds = (txt: string): Record<string, string> | null => {
     let creds: any
     try { creds = JSON.parse(txt) } catch { setErr('JSON غير صحيح'); return null }
     if (typeof creds !== 'object' || creds === null || Array.isArray(creds)) { setErr('JSON غير صحيح'); return null }
@@ -139,13 +144,30 @@ function ProviderModal({ form, setForm, onSaved, setToast }: { form: any; setFor
   }
 
   const test = async () => {
-    const creds = parseCreds(); if (!creds) return
+    const txt = freshJson()
+    // Edit + no fresh paste → test the STORED (decrypted server-side) credentials.
+    let body: any
+    if (!txt) {
+      if (!form.id) { setErr('أدخل بيانات الدخول (JSON)'); return }
+      body = { provider_id: form.id }
+    } else {
+      const creds = parseCreds(txt); if (!creds) return
+      body = { provider_type: form.provider_type, credentials: creds }
+    }
     setTesting(true); setTestMsg(null)
-    const res = await fetch('/api/delivery/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider_type: form.provider_type, credentials: creds }) })
+    const res = await fetch('/api/delivery/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     const d = await res.json(); setTestMsg({ ok: !!d.ok, msg: d.message }); setTesting(false)
   }
   const save = async () => {
-    const creds = parseCreds(); if (!creds) return
+    const txt = freshJson()
+    let creds: Record<string, string> = {}
+    if (txt) {
+      const parsed = parseCreds(txt); if (!parsed) return
+      creds = parsed
+    } else if (!form.id) {
+      setErr('أدخل بيانات الدخول (JSON)'); return   // creating requires creds
+    }
+    // Edit with empty/masked json → creds {} → server keeps existing creds.
     setSaving(true)
     const res = await fetch('/api/delivery/providers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: form.id, provider_type: form.provider_type, display_name: form.display_name || meta.label, credentials: creds, is_automatic: !!form.is_automatic, from_wilaya_code: form.from_wilaya_code }) })
     setSaving(false)
@@ -184,6 +206,11 @@ function ProviderModal({ form, setForm, onSaved, setToast }: { form: any; setFor
               className="input text-xs w-full font-mono" style={{ height: 'auto', lineHeight: 1.6, resize: 'vertical' }}
               placeholder={template}
               value={form.json ?? ''} onChange={e => { setForm((f: any) => ({ ...f, json: e.target.value })); setErr(null) }} />
+            {form.id && (
+              <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                🔒 البيانات محفوظة ومشفّرة — اتركها فارغة للإبقاء عليها، أو الصق JSON جديداً لتغييرها.
+              </p>
+            )}
           </div>
 
           {/* Origin wilaya */}
