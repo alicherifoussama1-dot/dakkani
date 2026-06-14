@@ -16,7 +16,11 @@ export class ZRExpressAdapter implements DeliveryAdapter {
   private headers: Record<string, string>
 
   constructor(c: ProviderCredentials) {
-    this.headers = { 'Content-Type': 'application/json', token: c.token ?? '', key: c.key ?? '' }
+    // Accept both {token, key} (Procolis dashboard) and {id, token} aliases.
+    const anyC = c as Record<string, string | undefined>
+    const token = (c.token && c.key) ? c.token : (anyC.id ?? c.token ?? '')
+    const key = c.key ?? c.token ?? ''
+    this.headers = { 'Content-Type': 'application/json', token: token ?? '', key: key ?? '' }
   }
 
   async testCredentials(): Promise<TestResult> {

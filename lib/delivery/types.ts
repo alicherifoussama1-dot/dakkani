@@ -114,45 +114,71 @@ export interface ProviderMeta {
   logo: string              // emoji / short tag for the UI chip
   hasRatesApi: boolean      // can auto-import prices?
   fields: { key: keyof ProviderCredentials; label: string; placeholder?: string }[]
+  // JSON credentials UX
+  requiredKeys: string[]              // keys the merchant must provide (real dashboard names)
+  credTemplate: Record<string, string> // placeholder shown in the JSON textarea
 }
 
 export const PROVIDERS: ProviderMeta[] = [
+  {
+    type: 'ecotrack', label: 'Ecotrack', logo: '🟢', hasRatesApi: true,
+    fields: [{ key: 'token', label: 'API Token', placeholder: 'Bearer token' }],
+    requiredKeys: ['token'], credTemplate: { token: '' },
+  },
+  {
+    type: 'zrexpress', label: 'ZR Express (Procolis)', logo: '🔴', hasRatesApi: true,
+    fields: [
+      { key: 'token', label: 'Token', placeholder: 'token' },
+      { key: 'key',   label: 'Key',   placeholder: 'key' },
+    ],
+    requiredKeys: ['token', 'key'], credTemplate: { token: '', key: '' },
+  },
   {
     type: 'yalidine', label: 'Yalidine', logo: '🟡', hasRatesApi: true,
     fields: [
       { key: 'apiId',    label: 'API ID',    placeholder: 'X-API-ID' },
       { key: 'apiToken', label: 'API Token', placeholder: 'X-API-TOKEN' },
     ],
-  },
-  {
-    type: 'zrexpress', label: 'ZR Express', logo: '🔴', hasRatesApi: true,
-    fields: [
-      { key: 'token', label: 'Token', placeholder: 'token' },
-      { key: 'key',   label: 'Key',   placeholder: 'key' },
-    ],
-  },
-  {
-    type: 'ecotrack', label: 'Ecotrack', logo: '🟢', hasRatesApi: true,
-    fields: [
-      { key: 'token', label: 'API Token', placeholder: 'Bearer token' },
-    ],
-  },
-  {
-    type: 'maystro', label: 'Maystro', logo: '🔵', hasRatesApi: false,
-    fields: [
-      { key: 'token', label: 'API Token', placeholder: 'Bearer token' },
-    ],
+    requiredKeys: ['id', 'token'], credTemplate: { id: '', token: '' },
   },
   {
     type: 'noest', label: 'Noest (Ecotrack)', logo: '🟣', hasRatesApi: true,
-    fields: [
-      { key: 'token', label: 'API Token (Ecotrack)', placeholder: 'Bearer token' },
-    ],
+    fields: [{ key: 'token', label: 'API Token (Ecotrack)', placeholder: 'Bearer token' }],
+    requiredKeys: ['token'], credTemplate: { token: '' },
+  },
+  {
+    type: 'maystro', label: 'Maystro', logo: '🔵', hasRatesApi: false,
+    fields: [{ key: 'token', label: 'API Token', placeholder: 'Bearer token' }],
+    requiredKeys: ['token'], credTemplate: { token: '' },
   },
 ]
 
 export function providerMeta(type: ProviderType): ProviderMeta | undefined {
   return PROVIDERS.find(p => p.type === type)
+}
+
+// Validate pasted credentials for a provider. Accepts the real dashboard key
+// names + aliases (so {id,token}|{token,key} both work for ZR/Yalidine).
+const KEY_ALIASES: Record<string, string[]> = {
+  id: ['id', 'apiId', 'api_id'],
+  token: ['token', 'apiToken', 'api_token'],
+  key: ['key', 'apiKey', 'api_key'],
+}
+export function validateCreds(type: ProviderType, creds: Record<string, unknown>): { ok: boolean; missing?: string } {
+  const meta = providerMeta(type)
+  if (!meta) return { ok: false, missing: type }
+  const has = (k: string) => (KEY_ALIASES[k] ?? [k]).some(a => {
+    const v = (creds as any)[a]
+    return v != null && String(v).trim() !== ''
+  })
+  // ZR/Yalidine accept either naming convention (2 distinct credential values).
+  if (type === 'zrexpress' || type === 'yalidine') {
+    const pairs = [['token', 'key'], ['id', 'token']]
+    if (pairs.some(([a, b]) => has(a) && has(b))) return { ok: true }
+    return { ok: false, missing: meta.requiredKeys.find(k => !has(k)) ?? meta.requiredKeys.join('+') }
+  }
+  for (const k of meta.requiredKeys) if (!has(k)) return { ok: false, missing: k }
+  return { ok: true }
 }
 
 // ── Status normalization: every courier's strings → UnifiedStatus

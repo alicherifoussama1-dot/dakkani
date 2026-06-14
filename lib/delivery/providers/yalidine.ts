@@ -18,10 +18,12 @@ export class YalidineAdapter implements DeliveryAdapter {
   private fromWilaya: number
 
   constructor(c: ProviderCredentials) {
+    // Accept Yalidine's real names {id, token} as well as {apiId, apiToken}.
+    const anyC = c as Record<string, string | undefined>
     this.headers = {
       'Content-Type': 'application/json',
-      'X-API-ID': c.apiId ?? '',
-      'X-API-TOKEN': c.apiToken ?? '',
+      'X-API-ID': c.apiId ?? anyC.id ?? '',
+      'X-API-TOKEN': c.apiToken ?? anyC.token ?? '',
     }
     this.fromWilaya = parseInt(c.fromWilayaCode ?? '16', 10)
   }
