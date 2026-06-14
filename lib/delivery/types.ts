@@ -129,9 +129,9 @@ export const PROVIDERS: ProviderMeta[] = [
     type: 'zrexpress', label: 'ZR Express (Procolis)', logo: '🔴', hasRatesApi: true,
     fields: [
       { key: 'token', label: 'Token', placeholder: 'token' },
-      { key: 'key',   label: 'Key',   placeholder: 'key' },
     ],
-    requiredKeys: ['token', 'key'], credTemplate: { token: '', key: '' },
+    // ZR needs a single code; an optional "key" is still accepted if present.
+    requiredKeys: ['token'], credTemplate: { token: '' },
   },
   {
     type: 'yalidine', label: 'Yalidine', logo: '🟡', hasRatesApi: true,
@@ -192,10 +192,10 @@ export function resolveCreds(type: ProviderType, raw: Record<string, unknown>): 
       return { apiId, apiToken }
     }
     case 'zrexpress': {
-      // Procolis needs token + key headers (accept {token,key} or {id,token}).
+      // ZR needs a single code (token). A separate key is optional — only used
+      // when the merchant explicitly provides both token + key.
       if (token && key) return { token, key }
-      if (id && token)  return { token: id, key: token }
-      return { token: token ?? id, key: key ?? token }
+      return { token: token ?? key ?? id, key: undefined }
     }
     default: // ecotrack, noest, maystro → a single token (accept token|key|apiKey|…)
       return { token: token ?? key ?? id }
@@ -212,8 +212,7 @@ export function validateCreds(type: ProviderType, creds: Record<string, unknown>
   }
   if (type === 'zrexpress') {
     if (!r.token) return { ok: false, missing: 'token' }
-    if (!r.key || r.key === r.token) return { ok: false, missing: 'key' }
-    return { ok: true }
+    return { ok: true } // key optional
   }
   if (!r.token) return { ok: false, missing: 'token' }
   return { ok: true }
