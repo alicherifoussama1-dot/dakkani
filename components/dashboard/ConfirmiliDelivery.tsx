@@ -184,9 +184,6 @@ function ProviderModal({ form, setForm, onSaved, setToast }: { form: any; setFor
               className="input text-xs w-full font-mono" style={{ height: 'auto', lineHeight: 1.6, resize: 'vertical' }}
               placeholder={template}
               value={form.json ?? ''} onChange={e => { setForm((f: any) => ({ ...f, json: e.target.value })); setErr(null) }} />
-            <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-muted)' }}>
-              المفاتيح المطلوبة لـ {meta.label}: <span dir="ltr" className="font-mono">{meta.requiredKeys.join(', ')}</span>
-            </p>
           </div>
 
           {/* Origin wilaya */}
