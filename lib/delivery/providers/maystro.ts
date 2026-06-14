@@ -7,7 +7,7 @@ import type {
   DeliveryAdapter, ProviderCredentials, CreateOrderData,
   OrderData, TrackingData, RateData, LabelData, CancelData, TestResult,
 } from '../types'
-import { normalizeStatus } from '../types'
+import { normalizeStatus, resolveCreds } from '../types'
 import { httpJson } from './base'
 
 const BASE = 'https://backend.maystro-delivery.com/api'
@@ -17,7 +17,8 @@ export class MaystroAdapter implements DeliveryAdapter {
   private headers: Record<string, string>
 
   constructor(c: ProviderCredentials) {
-    this.headers = { 'Content-Type': 'application/json', Authorization: `Token ${c.token ?? ''}` }
+    const token = resolveCreds('maystro', c as Record<string, unknown>).token ?? ''
+    this.headers = { 'Content-Type': 'application/json', Authorization: `Token ${token}` }
   }
 
   async testCredentials(): Promise<TestResult> {

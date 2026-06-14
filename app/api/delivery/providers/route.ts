@@ -15,7 +15,7 @@ const addSchema = z.object({
   id: z.string().uuid().optional(),
   provider_type: z.enum(['yalidine', 'zrexpress', 'ecotrack', 'maystro', 'noest']),
   display_name: z.string().min(1),
-  credentials: z.record(z.string()).default({}),
+  credentials: z.record(z.any()).default({}),
   is_automatic: z.boolean().optional(),
   from_wilaya_code: z.string().optional(),
 })

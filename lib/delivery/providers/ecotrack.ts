@@ -7,7 +7,7 @@ import type {
   DeliveryAdapter, ProviderType, ProviderCredentials, CreateOrderData,
   OrderData, TrackingData, RateData, LabelData, CancelData, TestResult,
 } from '../types'
-import { normalizeStatus } from '../types'
+import { normalizeStatus, resolveCreds } from '../types'
 import { httpJson } from './base'
 
 const BASE = 'https://app.ecotrack.dz/api/v1'
@@ -18,7 +18,7 @@ export class EcotrackAdapter implements DeliveryAdapter {
   private token: string
 
   constructor(c: ProviderCredentials, type: ProviderType = 'ecotrack') {
-    this.token = c.token ?? ''
+    this.token = resolveCreds(type, c as Record<string, unknown>).token ?? ''
     this.type = type
   }
 

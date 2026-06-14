@@ -6,7 +6,7 @@ import type {
   DeliveryAdapter, ProviderCredentials, CreateOrderData,
   OrderData, TrackingData, RateData, LabelData, CancelData, TestResult,
 } from '../types'
-import { normalizeStatus } from '../types'
+import { normalizeStatus, resolveCreds } from '../types'
 import { httpJson } from './base'
 
 const BASE = 'https://procolis.com/api_v1'
@@ -16,11 +16,8 @@ export class ZRExpressAdapter implements DeliveryAdapter {
   private headers: Record<string, string>
 
   constructor(c: ProviderCredentials) {
-    // Accept both {token, key} (Procolis dashboard) and {id, token} aliases.
-    const anyC = c as Record<string, string | undefined>
-    const token = (c.token && c.key) ? c.token : (anyC.id ?? c.token ?? '')
-    const key = c.key ?? c.token ?? ''
-    this.headers = { 'Content-Type': 'application/json', token: token ?? '', key: key ?? '' }
+    const r = resolveCreds('zrexpress', c as Record<string, unknown>)
+    this.headers = { 'Content-Type': 'application/json', token: r.token ?? '', key: r.key ?? '' }
   }
 
   async testCredentials(): Promise<TestResult> {

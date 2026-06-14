@@ -157,27 +157,65 @@ export function providerMeta(type: ProviderType): ProviderMeta | undefined {
   return PROVIDERS.find(p => p.type === type)
 }
 
-// Validate pasted credentials for a provider. Accepts the real dashboard key
-// names + aliases (so {id,token}|{token,key} both work for ZR/Yalidine).
-const KEY_ALIASES: Record<string, string[]> = {
-  id: ['id', 'apiId', 'api_id'],
-  token: ['token', 'apiToken', 'api_token'],
-  key: ['key', 'apiKey', 'api_key'],
-}
-export function validateCreds(type: ProviderType, creds: Record<string, unknown>): { ok: boolean; missing?: string } {
-  const meta = providerMeta(type)
-  if (!meta) return { ok: false, missing: type }
-  const has = (k: string) => (KEY_ALIASES[k] ?? [k]).some(a => {
-    const v = (creds as any)[a]
-    return v != null && String(v).trim() !== ''
-  })
-  // ZR/Yalidine accept either naming convention (2 distinct credential values).
-  if (type === 'zrexpress' || type === 'yalidine') {
-    const pairs = [['token', 'key'], ['id', 'token']]
-    if (pairs.some(([a, b]) => has(a) && has(b))) return { ok: true }
-    return { ok: false, missing: meta.requiredKeys.find(k => !has(k)) ?? meta.requiredKeys.join('+') }
+// Flatten credentials → lowercase, separators stripped (apiToken/api_token/API-TOKEN
+// all collapse to "apitoken"), ignoring nested objects + metadata-only values.
+function flatten(creds: Record<string, unknown>): Record<string, string> {
+  const m: Record<string, string> = {}
+  for (const k of Object.keys(creds ?? {})) {
+    const v = (creds as any)[k]
+    if (v == null || typeof v === 'object') continue
+    m[k.toLowerCase().replace(/[_\s-]/g, '')] = String(v).trim()
   }
-  for (const k of meta.requiredKeys) if (!has(k)) return { ok: false, missing: k }
+  return m
+}
+
+// Resolve whatever the merchant pasted into the concrete values each adapter
+// needs. Tolerant of many key names + casings so real dashboard exports work.
+const TOKEN_NAMES = ['token', 'apitoken', 'accesstoken', 'bearer', 'apptoken', 'authtoken']
+const KEY_NAMES   = ['key', 'apikey', 'cle', 'secret', 'secretkey', 'privatekey']
+const ID_NAMES    = ['id', 'apiid', 'clientid', 'identifiant', 'userid', 'tenantid']
+
+export interface ResolvedCreds { apiId?: string; apiToken?: string; token?: string; key?: string }
+
+export function resolveCreds(type: ProviderType, raw: Record<string, unknown>): ResolvedCreds {
+  const m = flatten(raw)
+  const pick = (...names: string[]) => { for (const n of names) if (m[n]) return m[n]; return undefined }
+  const id    = pick(...ID_NAMES)
+  const token = pick(...TOKEN_NAMES)
+  const key   = pick(...KEY_NAMES)
+
+  switch (type) {
+    case 'yalidine': {
+      // Yalidine needs API ID + API TOKEN (accept {id,token} or {token,key}).
+      const apiId = id ?? token
+      const apiToken = id ? (token ?? key) : (key ?? token)
+      return { apiId, apiToken }
+    }
+    case 'zrexpress': {
+      // Procolis needs token + key headers (accept {token,key} or {id,token}).
+      if (token && key) return { token, key }
+      if (id && token)  return { token: id, key: token }
+      return { token: token ?? id, key: key ?? token }
+    }
+    default: // ecotrack, noest, maystro → a single token (accept token|key|apiKey|…)
+      return { token: token ?? key ?? id }
+  }
+}
+
+// Validate pasted credentials for a provider (Arabic "missing key" message).
+export function validateCreds(type: ProviderType, creds: Record<string, unknown>): { ok: boolean; missing?: string } {
+  const r = resolveCreds(type, creds)
+  if (type === 'yalidine') {
+    if (!r.apiId)    return { ok: false, missing: 'id' }
+    if (!r.apiToken || r.apiToken === r.apiId) return { ok: false, missing: 'token' }
+    return { ok: true }
+  }
+  if (type === 'zrexpress') {
+    if (!r.token) return { ok: false, missing: 'token' }
+    if (!r.key || r.key === r.token) return { ok: false, missing: 'key' }
+    return { ok: true }
+  }
+  if (!r.token) return { ok: false, missing: 'token' }
   return { ok: true }
 }
 

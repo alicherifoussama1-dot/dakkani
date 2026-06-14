@@ -7,7 +7,7 @@ import type {
   DeliveryAdapter, ProviderCredentials, CreateOrderData,
   OrderData, TrackingData, RateData, LabelData, CancelData, TestResult,
 } from '../types'
-import { normalizeStatus } from '../types'
+import { normalizeStatus, resolveCreds } from '../types'
 import { httpJson, pool, WILAYA_CODES } from './base'
 
 const BASE = 'https://api.yalidine.app/v1'
@@ -18,12 +18,11 @@ export class YalidineAdapter implements DeliveryAdapter {
   private fromWilaya: number
 
   constructor(c: ProviderCredentials) {
-    // Accept Yalidine's real names {id, token} as well as {apiId, apiToken}.
-    const anyC = c as Record<string, string | undefined>
+    const r = resolveCreds('yalidine', c as Record<string, unknown>)
     this.headers = {
       'Content-Type': 'application/json',
-      'X-API-ID': c.apiId ?? anyC.id ?? '',
-      'X-API-TOKEN': c.apiToken ?? anyC.token ?? '',
+      'X-API-ID': r.apiId ?? '',
+      'X-API-TOKEN': r.apiToken ?? '',
     }
     this.fromWilaya = parseInt(c.fromWilayaCode ?? '16', 10)
   }
