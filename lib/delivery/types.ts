@@ -139,8 +139,9 @@ export const PROVIDERS: ProviderMeta[] = [
     fields: [
       { key: 'token', label: 'Token', placeholder: 'token' },
     ],
-    // Verified: ZR Express (Procolis) API authenticates with Token + Clé(Key).
-    requiredKeys: ['token'], credTemplate: { token: '', key: '' },
+    // ZR Express "Token API" issues {secretKey, tenantId}; classic Procolis
+    // {token, key} is still accepted and auto-detected.
+    requiredKeys: ['token'], credTemplate: { secretKey: '', tenantId: '' },
   },
   {
     type: 'yalidine', label: 'Yalidine', logo: '🟡', hasRatesApi: true,
