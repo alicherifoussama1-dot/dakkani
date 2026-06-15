@@ -26,3 +26,16 @@ export async function pool<I, O>(items: I[], limit: number, fn: (item: I) => Pro
 }
 
 export const WILAYA_CODES: string[] = Array.from({ length: 58 }, (_, i) => String(i + 1).padStart(2, '0'))
+
+// Raw fetch that never throws — returns status + body for diagnostics.
+export async function fetchRaw(url: string, init?: RequestInit): Promise<{ ok: boolean; status: number; text: string; json: any }> {
+  try {
+    const res = await fetch(url, { ...init, cache: 'no-store' })
+    const text = await res.text()
+    let json: any = null
+    try { json = text ? JSON.parse(text) : null } catch { json = null }
+    return { ok: res.ok, status: res.status, text, json }
+  } catch (e) {
+    return { ok: false, status: 0, text: (e as Error).message, json: null }
+  }
+}

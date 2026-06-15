@@ -77,9 +77,18 @@ export interface CancelData {
   error?: string
 }
 
+export interface TestDebug {
+  url?: string
+  method?: string
+  httpStatus?: number
+  sentKeys?: string[]      // which credential keys were sent (names only, no values)
+  response?: string        // raw carrier response (trimmed)
+}
+
 export interface TestResult {
   ok: boolean
   message: string
+  debug?: TestDebug
 }
 
 // ── The adapter interface every provider implements ─────────
@@ -130,8 +139,8 @@ export const PROVIDERS: ProviderMeta[] = [
     fields: [
       { key: 'token', label: 'Token', placeholder: 'token' },
     ],
-    // ZR needs a single code; an optional "key" is still accepted if present.
-    requiredKeys: ['token'], credTemplate: { token: '' },
+    // ZR token panel exports {secretKey, tenantId, …}; classic {token, key} also OK.
+    requiredKeys: ['token'], credTemplate: { secretKey: '', tenantId: '' },
   },
   {
     type: 'yalidine', label: 'Yalidine', logo: '🟡', hasRatesApi: true,

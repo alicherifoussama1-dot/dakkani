@@ -8,7 +8,7 @@ import type {
   OrderData, TrackingData, RateData, LabelData, CancelData, TestResult,
 } from '../types'
 import { normalizeStatus, resolveCreds } from '../types'
-import { httpJson } from './base'
+import { httpJson, fetchRaw } from './base'
 
 const BASE = 'https://app.ecotrack.dz/api/v1'
 const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' }
@@ -23,12 +23,15 @@ export class EcotrackAdapter implements DeliveryAdapter {
   }
 
   async testCredentials(): Promise<TestResult> {
-    try {
-      await httpJson(`${BASE}/get/fees?api_token=${encodeURIComponent(this.token)}`, { headers: JSON_HEADERS })
-      return { ok: true, message: 'تم التحقق من بيانات Ecotrack بنجاح' }
-    } catch (e) {
-      return { ok: false, message: `فشل التحقق: ${(e as Error).message}` }
+    const url = `${BASE}/get/fees?api_token=${encodeURIComponent(this.token)}`
+    const r = await fetchRaw(url, { headers: JSON_HEADERS })
+    const label = this.type === 'noest' ? 'Noest' : 'Ecotrack'
+    const debug: TestResult['debug'] = {
+      url: url.replace(/api_token=[^&]+/, 'api_token=••••'), method: 'GET',
+      httpStatus: r.status, sentKeys: ['token'], response: r.text.slice(0, 400),
     }
+    if (r.ok) return { ok: true, message: `تم التحقق من بيانات ${label} بنجاح`, debug }
+    return { ok: false, message: `فشل التحقق (HTTP ${r.status}): ${r.text.slice(0, 200) || 'لا استجابة'}`, debug }
   }
 
   async createShipment(o: CreateOrderData): Promise<OrderData> {

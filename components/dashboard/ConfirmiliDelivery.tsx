@@ -120,7 +120,7 @@ function ProviderModal({ form, setForm, onSaved, setToast }: { form: any; setFor
   const meta = providerMeta(form.provider_type)!
   const [testing, setTesting] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [testMsg, setTestMsg] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [testMsg, setTestMsg] = useState<{ ok: boolean; msg: string; raw?: string } | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
   const template = JSON.stringify(meta.credTemplate, null, 2)
@@ -156,7 +156,7 @@ function ProviderModal({ form, setForm, onSaved, setToast }: { form: any; setFor
     }
     setTesting(true); setTestMsg(null)
     const res = await fetch('/api/delivery/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    const d = await res.json(); setTestMsg({ ok: !!d.ok, msg: d.message }); setTesting(false)
+    const d = await res.json(); setTestMsg({ ok: !!d.ok, msg: d.message, raw: d.debug?.response }); setTesting(false)
   }
   const save = async () => {
     const txt = freshJson()
@@ -224,7 +224,12 @@ function ProviderModal({ form, setForm, onSaved, setToast }: { form: any; setFor
 
           {!meta.hasRatesApi && <p className="text-[11px]" style={{ color: '#C76B00' }}>⚠️ هذه الشركة لا توفّر استيراد الأسعار تلقائياً — أدخل الأسعار يدوياً.</p>}
           {err && <p className="text-xs flex items-center gap-1" style={{ color: '#DC3545' }}><AlertTriangle size={12} />{err}</p>}
-          {testMsg && <p className="text-xs flex items-center gap-1" style={{ color: testMsg.ok ? '#198754' : '#DC3545' }}>{testMsg.ok ? <CheckCircle size={12} /> : <AlertTriangle size={12} />}{testMsg.msg}</p>}
+          {testMsg && (
+            <div>
+              <p className="text-xs flex items-center gap-1" style={{ color: testMsg.ok ? '#198754' : '#DC3545' }}>{testMsg.ok ? <CheckCircle size={12} /> : <AlertTriangle size={12} />}{testMsg.msg}</p>
+              {testMsg.raw && <pre dir="ltr" className="mt-1 p-2 rounded text-[10px] overflow-x-auto" style={{ background: '#F8F9FA', color: '#495057', maxHeight: 80 }}>{testMsg.raw}</pre>}
+            </div>
+          )}
 
           <div className="flex gap-2 pt-1">
             <button onClick={test} disabled={testing} className="btn btn-sm" style={{ border: '1px solid var(--cf-turq)', color: '#0A6E66' }}>{testing ? <Loader2 size={13} className="animate-spin" /> : 'اختبار الاتصال'}</button>
