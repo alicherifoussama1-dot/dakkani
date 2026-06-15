@@ -47,26 +47,46 @@ export class ZRExpressAdapter implements DeliveryAdapter {
     this.procolisHeaders = { 'Content-Type': 'application/json', token: m.token ?? this.secretKey, key: classicKey }
   }
 
-  private zrxHeaders(): Record<string, string> {
-    return {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      Authorization: `Bearer ${this.secretKey}`,
-      // Tenant sent under several common header names (extras are ignored).
-      'X-Tenant-Id': this.tenantId,
-      'X-TenantId': this.tenantId,
-      'Tenant-Id': this.tenantId,
+  private workingHeaders?: Record<string, string>
+  private lastDebug: TestResult['debug'] = {}
+
+  // Auto-discover the auth scheme: try the common header schemes with the
+  // stored secretKey until ZR's API stops returning 401/403. Memoized.
+  private async auth(): Promise<Record<string, string> | null> {
+    if (this.workingHeaders) return this.workingHeaders
+    const tenant: Record<string, string> = {
+      'X-Tenant-Id': this.tenantId, 'X-TenantId': this.tenantId, 'Tenant-Id': this.tenantId, 'X-Tenant': this.tenantId,
     }
+    const base = { 'Content-Type': 'application/json', Accept: 'application/json', ...tenant }
+    const variants: { name: string; h: Record<string, string> }[] = [
+      { name: 'Bearer',        h: { Authorization: `Bearer ${this.secretKey}` } },
+      { name: 'Authorization', h: { Authorization: this.secretKey } },
+      { name: 'X-Api-Key',     h: { 'X-Api-Key': this.secretKey } },
+      { name: 'Api-Key',       h: { 'Api-Key': this.secretKey } },
+      { name: 'X-Secret-Key',  h: { 'X-Secret-Key': this.secretKey } },
+      { name: 'secret-key',    h: { 'secret-key': this.secretKey } },
+      { name: 'Bearer+noTenant', h: { Authorization: `Bearer ${this.secretKey}` }, },
+    ]
+    for (const v of variants) {
+      const headers = v.name === 'Bearer+noTenant'
+        ? { 'Content-Type': 'application/json', Accept: 'application/json', ...v.h }
+        : { ...base, ...v.h }
+      const url = `${ZRX}/parcels?page=1&perPage=1`
+      const r = await fetchRaw(url, { headers })
+      this.lastDebug = { url, method: 'GET', httpStatus: r.status, sentKeys: [`${v.name} (secretKey)`, 'tenantId'], response: r.text.slice(0, 300) }
+      if (r.status !== 401 && r.status !== 403 && r.status < 500) {
+        this.workingHeaders = headers
+        return headers
+      }
+    }
+    return null
   }
 
   async testCredentials(): Promise<TestResult> {
     if (this.mode === 'zrx') {
-      const url = `${ZRX}/parcels?page=1&perPage=1`
-      const r = await fetchRaw(url, { headers: this.zrxHeaders() })
-      const debug: TestResult['debug'] = { url, method: 'GET', httpStatus: r.status, sentKeys: ['secretKey', 'tenantId'], response: r.text.slice(0, 400) }
-      if (r.status === 401 || r.status === 403) return { ok: false, message: 'بيانات غير صحيحة — تحقق من secretKey و tenantId', debug }
-      if (r.ok || r.status === 400 || r.status === 422) return { ok: true, message: 'تم التحقق من بيانات ZR Express بنجاح', debug }
-      return { ok: false, message: `فشل التحقق (HTTP ${r.status}): ${r.text.slice(0, 200) || 'لا استجابة'}`, debug }
+      const h = await this.auth()
+      if (!h) return { ok: false, message: 'بيانات غير صحيحة — تحقق من secretKey و tenantId', debug: this.lastDebug }
+      return { ok: true, message: 'تم التحقق من بيانات ZR Express بنجاح', debug: this.lastDebug }
     }
     // classic Procolis
     const url = `${PROCOLIS}/token`
@@ -95,7 +115,9 @@ export class ZRExpressAdapter implements DeliveryAdapter {
         note: o.notes ?? '',
       }
       try {
-        const data = await httpJson<any>(`${ZRX}/parcels`, { method: 'POST', headers: this.zrxHeaders(), body: JSON.stringify(body) })
+        const h = await this.auth()
+        if (!h) return { success: false, error: 'تعذّر المصادقة مع ZR Express' }
+        const data = await httpJson<any>(`${ZRX}/parcels`, { method: 'POST', headers: h, body: JSON.stringify(body) })
         const tracking = data?.tracking ?? data?.data?.tracking ?? data?.id ?? data?.data?.id
         if (!tracking) return { success: false, error: data?.message ?? 'تعذّر إنشاء الشحنة', raw: data }
         return { success: true, trackingNumber: String(tracking), labelUrl: data?.label ?? data?.data?.label, raw: data }
@@ -122,7 +144,9 @@ export class ZRExpressAdapter implements DeliveryAdapter {
   async getTracking(tracking: string): Promise<TrackingData> {
     if (this.mode === 'zrx') {
       try {
-        const data = await httpJson<any>(`${ZRX}/parcels/tracking?tracking=${encodeURIComponent(tracking)}`, { headers: this.zrxHeaders() })
+        const h = await this.auth()
+        if (!h) return { success: false, error: 'تعذّر المصادقة مع ZR Express' }
+        const data = await httpJson<any>(`${ZRX}/parcels/tracking?tracking=${encodeURIComponent(tracking)}`, { headers: h })
         const info = data?.data ?? data
         const raw = info?.status ?? info?.situation ?? info?.[0]?.status
         return { success: true, trackingNumber: tracking, rawStatus: String(raw ?? ''), status: normalizeStatus(raw) }
@@ -146,7 +170,9 @@ export class ZRExpressAdapter implements DeliveryAdapter {
   async importRates(): Promise<RateData[]> {
     if (this.mode === 'zrx') {
       try {
-        const data = await httpJson<any>(`${ZRX}/parcels/fees`, { headers: this.zrxHeaders() })
+        const h = await this.auth()
+        if (!h) return []
+        const data = await httpJson<any>(`${ZRX}/parcels/fees`, { headers: h })
         const list: any[] = Array.isArray(data) ? data : (data?.data ?? data?.fees ?? (Object.values(data ?? {}).find(v => Array.isArray(v)) as any[]) ?? [])
         return list.map((w: any) => ({
           wilayaCode: String(w.wilaya_code ?? w.wilaya_id ?? w.wilaya ?? w.code ?? '').padStart(2, '0'),
