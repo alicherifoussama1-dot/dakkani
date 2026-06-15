@@ -306,18 +306,24 @@ export default function ConfirmiliOrders({
   }, [])
 
   const sendToDelivery = useCallback(async (order: any) => {
-    const sb = createClient()
-    const co = companies.find(c => c.id === order.delivery_company_id)
-    const prefix = order.delivery_type === 'stopdesk' ? 'SD' : 'HM'
-    const tracking = `${co?.short_name ?? prefix}-${Date.now().toString(36).toUpperCase()}`
-    await sb.from('orders').update({ tracking_number: tracking, shipped_at: new Date().toISOString() }).eq('id', order.id)
-    await sb.from('confirmili_send_reports').insert({
-      store_id: storeId, order_id: order.id,
-      company_id: order.delivery_company_id ?? null, tracking_num: tracking, is_auto: false, status: 'sent',
-    }).then(()=>{},()=>{})
-    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, tracking_number: tracking } : o))
-    setToast(`✓ أُرسل — ${tracking}`)
-  }, [companies, storeId, setToast])
+    if (order.tracking_number) { setToast('الطلب مُرسَل مسبقاً'); return }
+    setToast('جارٍ الإرسال إلى شركة التوصيل...')
+    try {
+      // Real shipment via the unified provider (resolves wilaya routing /
+      // delivery_provider_id / first active provider) → creates a REAL parcel.
+      const res = await fetch(`/api/delivery/ship/${order.id}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) { setToast(d.error ?? 'تعذّر الإرسال — تأكد من تفعيل شركة توصيل وربطها'); return }
+      setOrders(prev => prev.map(o => o.id === order.id
+        ? { ...o, tracking_number: d.trackingNumber, status: 'processing', tracking_status: 'pending', label_url: d.labelUrl ?? o.label_url }
+        : o))
+      setToast(`✓ أُرسل عبر ${d.provider ?? 'شركة التوصيل'} — ${d.trackingNumber}`)
+    } catch {
+      setToast('تعذّر الإرسال إلى شركة التوصيل')
+    }
+  }, [setToast])
 
   const bulkUpdateStatus = useCallback(async (uiStatus: string) => {
     if (selected.size === 0) return
