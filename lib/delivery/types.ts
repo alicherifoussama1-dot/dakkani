@@ -139,8 +139,8 @@ export const PROVIDERS: ProviderMeta[] = [
     fields: [
       { key: 'token', label: 'Token', placeholder: 'token' },
     ],
-    // ZR token panel exports {secretKey, tenantId, …}; classic {token, key} also OK.
-    requiredKeys: ['token'], credTemplate: { secretKey: '', tenantId: '' },
+    // Verified: ZR Express (Procolis) API authenticates with Token + Clé(Key).
+    requiredKeys: ['token'], credTemplate: { token: '', key: '' },
   },
   {
     type: 'yalidine', label: 'Yalidine', logo: '🟡', hasRatesApi: true,
