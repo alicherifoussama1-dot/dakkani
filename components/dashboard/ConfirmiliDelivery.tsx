@@ -213,8 +213,14 @@ function ProviderModal({ form, setForm, onSaved, setToast }: { form: any; setFor
             )}
           </div>
 
-          {/* Origin wilaya */}
-          <input className="input text-sm w-full" dir="ltr" placeholder="ولاية الإرسال (رمز، مثل 16)" value={form.from_wilaya_code ?? '16'} onChange={e => setForm((f: any) => ({ ...f, from_wilaya_code: e.target.value }))} />
+          {/* Origin wilaya — only Yalidine uses it (from_wilaya_id for fees + parcel) */}
+          {form.provider_type === 'yalidine' && (
+            <div>
+              <label className="block text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>ولاية الإرسال (المصدر)</label>
+              <input className="input text-sm w-full" dir="ltr" placeholder="رمز الولاية، مثل 16" value={form.from_wilaya_code ?? '16'} onChange={e => setForm((f: any) => ({ ...f, from_wilaya_code: e.target.value }))} />
+              <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-muted)' }}>الولاية التي تُرسل منها الطرود — تستخدمها Yalidine لحساب السعر وإنشاء الشحنة.</p>
+            </div>
+          )}
 
           {/* Automatic */}
           <label className="flex items-center gap-2 text-sm cursor-pointer">
