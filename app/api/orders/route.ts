@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     // 2. Get wilaya delivery fee (static fallback)
     const { data: wilaya } = await supabase
       .from('wilayas')
-      .select('code, name_ar, delivery_fee_home, delivery_fee_stopdesk')
+      .select('code, name_ar, name_fr, delivery_fee_home, delivery_fee_stopdesk')
       .eq('id', data.wilaya_id)
       .single()
 
@@ -358,9 +358,10 @@ export async function POST(req: Request) {
             created_at: order.created_at,
             customer_name: data.customer_name,
             customer_phone: data.customer_phone,
-            wilaya_name: (wilaya as any)?.name_ar ?? String(data.wilaya_id),
+            wilaya_name: (wilaya as any)?.name_fr ?? (wilaya as any)?.name_ar ?? String(data.wilaya_id),
             baladia: data.baladia,
             address: data.address,
+            delivery_type: data.delivery_type,
             delivery_fee: deliveryFee,
             discount_amount: discountAmount,
             total,
@@ -370,6 +371,7 @@ export async function POST(req: Request) {
           },
           items: orderItems.map(i => ({
             product_name: i.product_name,
+            sku: i.product_sku,
             variant_key: i.variant_key,
             quantity: i.quantity,
             unit_price: i.unit_price,

@@ -72,6 +72,7 @@ export async function pushOrderToSheet(opts: {
     wilaya_name?: string
     baladia?: string | null
     address?: string | null
+    delivery_type?: string | null
     delivery_fee: number
     discount_amount: number
     total: number
@@ -79,7 +80,7 @@ export async function pushOrderToSheet(opts: {
     status: string
     source?: string | null
   }
-  items: { product_name: string; variant_key?: string; quantity: number; unit_price: number }[]
+  items: { product_name: string; sku?: string | null; variant_key?: string; quantity: number; unit_price: number }[]
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const admin = adminClient()
   if (!admin) return { ok: false, error: 'SUPABASE_SERVICE_ROLE_KEY غير مهيأ' }
@@ -102,28 +103,31 @@ export async function pushOrderToSheet(opts: {
       : first?.product_name ?? ''
     const qty = opts.items.reduce((s, i) => s + i.quantity, 0)
 
+    const variant = first?.variant_key && first.variant_key !== 'default'
+      ? first.variant_key.replace(/\s*\|\s*/g, ', ')   // 'noire|38' → 'noire, 38'
+      : ''
+    // "2025-11-26 10:08:19" in Algeria local time, matching the storefront sheet.
+    const createdAt = new Date(o.created_at ?? Date.now())
+      .toLocaleString('sv-SE', { timeZone: 'Africa/Algiers' })
+
     return appendOrderRow({
       refreshToken: account.refresh_token,
       spreadsheetId: sheet.spreadsheet_id,
       worksheetName: sheet.worksheet_name,
       row: {
-        order_ref: o.order_number,
-        date: new Date(o.created_at ?? Date.now()).toLocaleString('fr-DZ', { dateStyle: 'short', timeStyle: 'short' }),
-        name: o.customer_name,
+        username: o.customer_name,
         phone: o.customer_phone,
-        wilaya: o.wilaya_name ?? '',
-        baladia: o.baladia ?? '',
-        address: o.address ?? '',
-        product: productLabel,
-        variant: first?.variant_key && first.variant_key !== 'default' ? first.variant_key : '',
+        city: o.wilaya_name ?? '',
+        state: o.baladia ?? '',
+        sku: first?.sku ?? '',
+        variant,
         qty,
-        unit_price: first?.unit_price ?? 0,
-        delivery_fee: o.delivery_fee,
-        discount: o.discount_amount,
+        price: first?.unit_price ?? 0,
+        shipping_price: o.delivery_fee,
         total: o.total,
-        notes: o.notes ?? '',
-        status: 'معلقة',
-        source: o.source ?? 'storefront',
+        shipping_to: o.delivery_type === 'stopdesk' ? 'Desk' : 'Home',
+        product_name: productLabel,
+        created_at: createdAt,
       },
     })
   } catch (e) {

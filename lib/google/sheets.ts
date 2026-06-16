@@ -160,30 +160,27 @@ export async function getSpreadsheetMeta(accessToken: string, spreadsheetId: str
 }
 
 // ── Header row for order sheets (written once if sheet empty) ─
+// EXACT column layout used by the storefront sheets (Username … Created At).
+// City = wilaya · State = commune · ShippingTo? = Home/Desk.
 export const ORDER_SHEET_HEADER = [
-  'رقم الطلب', 'التاريخ', 'الاسم', 'الهاتف', 'الولاية', 'البلدية', 'العنوان',
-  'المنتج', 'المتغير', 'الكمية', 'سعر الوحدة', 'التوصيل', 'الخصم', 'الإجمالي',
-  'ملاحظات', 'الحالة', 'المصدر',
+  'Username', 'Phone', 'City', 'State', 'SKU', 'Variant', 'Quantity',
+  'Price', 'Shipping Price', 'Total', 'ShippingTo?', 'Product Name', 'Created At',
 ]
 
 export interface OrderSheetRow {
-  order_ref: string
-  date: string
-  name: string
+  username: string        // customer name
   phone: string
-  wilaya: string
-  baladia: string
-  address: string
-  product: string
+  city: string            // wilaya
+  state: string           // commune / baladia
+  sku: string
   variant: string
   qty: number
-  unit_price: number
-  delivery_fee: number
-  discount: number
+  price: number           // unit price
+  shipping_price: number  // delivery fee
   total: number
-  notes: string
-  status: string
-  source: string
+  shipping_to: string     // 'Home' | 'Desk'
+  product_name: string
+  created_at: string      // YYYY-MM-DD HH:MM:SS
 }
 
 // ── Append an order row (writes header first if sheet empty) ──
@@ -209,9 +206,8 @@ export async function appendOrderRow(opts: {
 
     const r = opts.row
     const dataRow = [
-      r.order_ref, r.date, r.name, r.phone, r.wilaya, r.baladia, r.address,
-      r.product, r.variant, r.qty, r.unit_price, r.delivery_fee, r.discount, r.total,
-      r.notes, r.status, r.source,
+      r.username, r.phone, r.city, r.state, r.sku, r.variant, r.qty,
+      r.price, r.shipping_price, r.total, r.shipping_to, r.product_name, r.created_at,
     ]
     const values = isEmpty ? [ORDER_SHEET_HEADER, dataRow] : [dataRow]
 
