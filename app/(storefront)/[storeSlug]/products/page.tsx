@@ -33,12 +33,12 @@ export default async function CataloguePage({ params, searchParams }: Props) {
 
   return (
     <StorefrontLayout store={store as any}>
-      <div className="pt-16 min-h-screen bg-[#FAFAF8]">
+      <div className="pt-16 min-h-screen" style={{ background: 'var(--pt-bg,#FAFAF8)' }}>
         {/* Header */}
-        <div className="bg-gradient-hero py-10 px-4 mb-0">
+        <div className="py-10 px-4 mb-0" style={{ background: 'linear-gradient(135deg, rgba(0,0,0,0.82), rgba(0,0,0,0.5)), var(--pt-accent,#0D6EFD)' }}>
           <div className="max-w-6xl mx-auto" dir="rtl">
             <FadeUp>
-              <h1 className="text-3xl font-black text-white mb-1">جميع المنتجات</h1>
+              <h1 className="text-3xl font-black text-white mb-1" style={{ fontFamily: 'var(--pt-font-heading)' }}>جميع المنتجات</h1>
               <p className="text-white/60">{total} منتج متوفر</p>
             </FadeUp>
           </div>

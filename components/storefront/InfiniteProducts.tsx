@@ -92,7 +92,7 @@ export default function InfiniteProducts({
   return (
     <div>
       <p className="text-sm text-gray-500 mb-3">{total} منتج</p>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {products.map(p => {
           const img     = p.images?.[0]?.url
           const hasDisc = p.compare_price && p.compare_price > p.price
@@ -102,24 +102,25 @@ export default function InfiniteProducts({
             <Link
               key={p.id}
               href={`/store/${storeSlug}/product/${p.slug}`}
-              className="group bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition"
+              className="group overflow-hidden border transition hover:-translate-y-1"
+              style={{ background: 'var(--pt-surface,#fff)', borderColor: 'var(--pt-border,#eee)', borderRadius: 'var(--pt-radius-lg,16px)', boxShadow: 'var(--pt-shadow-sm)' }}
             >
-              <div className="relative aspect-square overflow-hidden bg-gray-50">
+              <div className="relative aspect-square overflow-hidden" style={{ background: 'var(--pt-surface-soft,#f5f5f5)' }}>
                 {img
-                  ? <Image src={img} alt={p.name_ar ?? p.name} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition duration-300" />
-                  : <div className="w-full h-full flex items-center justify-center text-5xl text-gray-200">{(p.name_ar ?? p.name)[0]}</div>
+                  ? <Image src={img} alt={p.name_ar ?? p.name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover group-hover:scale-105 transition duration-300" />
+                  : <div className="w-full h-full flex items-center justify-center text-5xl" style={{ color: 'var(--pt-text-muted,#ddd)' }}>{(p.name_ar ?? p.name)[0]}</div>
                 }
                 {hasDisc && (
-                  <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-lg">
+                  <span className="absolute top-2 right-2 text-white text-xs font-bold px-1.5 py-0.5 rounded-lg" style={{ background: 'var(--pt-danger,#EF4444)' }}>
                     -{discPct}%
                   </span>
                 )}
               </div>
               <div className="p-3">
-                <p className="font-semibold text-gray-900 text-sm line-clamp-2">{p.name_ar ?? p.name}</p>
+                <p className="font-semibold text-sm line-clamp-2" style={{ color: 'var(--pt-text,#111827)' }}>{p.name_ar ?? p.name}</p>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <span className="font-black text-[#0D6EFD]">{formatDZD(p.price)}</span>
-                  {hasDisc && <span className="text-xs text-gray-400 line-through">{formatDZD(p.compare_price!)}</span>}
+                  <span className="font-black" style={{ color: 'var(--pt-accent,#0D6EFD)' }}>{formatDZD(p.price)}</span>
+                  {hasDisc && <span className="text-xs line-through" style={{ color: 'var(--pt-text-muted,#9CA3AF)' }}>{formatDZD(p.compare_price!)}</span>}
                 </div>
               </div>
             </Link>
@@ -129,7 +130,7 @@ export default function InfiniteProducts({
 
       {/* Infinite scroll sentinel */}
       <div ref={bottomRef} className="h-8 flex items-center justify-center mt-6">
-        {loading && <Loader2 className="w-6 h-6 text-[#0D6EFD] animate-spin" />}
+        {loading && <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--pt-accent,#0D6EFD)' }} />}
         {!hasMore && products.length > 0 && (
           <p className="text-sm text-gray-400">تم عرض جميع المنتجات</p>
         )}

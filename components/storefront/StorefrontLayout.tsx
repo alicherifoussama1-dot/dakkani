@@ -38,12 +38,12 @@ export default function StorefrontLayout({ store, children }: Props) {
             {store.logo_url ? (
               <Image src={store.logo_url} alt={store.name} width={36} height={36} className="w-9 h-9 rounded-xl object-cover" />
             ) : (
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-lg"
-                style={{ background: 'linear-gradient(135deg,#0D6EFD,#0B5ED7)' }}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-lg"
+                style={{ background: 'var(--pt-btn-primary-bg,linear-gradient(135deg,#0D6EFD,#0B5ED7))', color: 'var(--pt-btn-primary-text,#fff)' }}>
                 {store.name[0]}
               </div>
             )}
-            <span className={`font-black text-lg hidden sm:block transition-colors ${scrolled ? 'text-white' : 'text-[#0D6EFD]'}`}>
+            <span className={`font-black text-lg hidden sm:block transition-colors ${scrolled ? 'text-white' : 'text-[var(--pt-accent)]'}`}>
               {store.name_ar ?? store.name}
             </span>
           </Link>
@@ -56,7 +56,7 @@ export default function StorefrontLayout({ store, children }: Props) {
             ].map(link => (
               <Link key={link.href} href={link.href}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                  scrolled ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-[#0D6EFD] hover:bg-primary/5'
+                  scrolled ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-[var(--pt-accent)] hover:bg-primary/5'
                 }`}>
                 {link.label}
               </Link>
@@ -66,11 +66,11 @@ export default function StorefrontLayout({ store, children }: Props) {
           {/* Icons */}
           <div className="flex items-center gap-2">
             <button onClick={() => setSearchOpen(true)}
-              className={`p-2 rounded-xl transition-colors ${scrolled ? 'text-white/80 hover:bg-white/10' : 'text-[#0D6EFD] hover:bg-primary/5'}`}>
+              className={`p-2 rounded-xl transition-colors ${scrolled ? 'text-white/80 hover:bg-white/10' : 'text-[var(--pt-accent)] hover:bg-primary/5'}`}>
               <Search className="w-5 h-5" />
             </button>
             <button onClick={() => setMobileOpen(!mobileOpen)}
-              className={`md:hidden p-2 rounded-xl ${scrolled ? 'text-white' : 'text-[#0D6EFD]'}`}>
+              className={`md:hidden p-2 rounded-xl ${scrolled ? 'text-white' : 'text-[var(--pt-accent)]'}`}>
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>

@@ -13,36 +13,36 @@ function ProductCard({ product, storeSlug }: { product: Product; storeSlug: stri
   const discPct = hasDisc ? Math.round(((product.compare_price! - product.price) / product.compare_price!) * 100) : 0
   return (
     <Link href={`/store/${storeSlug}/product/${product.slug}`} className="group block">
-      <div className="bg-white rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1.5">
-        <div className="relative product-img aspect-[4/5] bg-[#F3F4F6]">
+      <div className="overflow-hidden transition-all duration-300 hover:-translate-y-1.5"
+        style={{ background: 'var(--pt-surface,#fff)', borderRadius: 'var(--pt-radius-lg,16px)', boxShadow: 'var(--pt-shadow-sm)' }}>
+        <div className="relative product-img aspect-[4/5]" style={{ background: 'var(--pt-surface-soft,#F3F4F6)' }}>
           {img
             ? <Image src={img} alt={product.name_ar ?? product.name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
-            : <div className="w-full h-full flex items-center justify-center text-5xl text-gray-200">{(product.name_ar ?? product.name)[0]}</div>
+            : <div className="w-full h-full flex items-center justify-center text-5xl" style={{ color: 'var(--pt-text-muted,#ddd)' }}>{(product.name_ar ?? product.name)[0]}</div>
           }
           {hasDisc && (
-            <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-black px-2.5 py-1.5 rounded-xl shadow-md">-{discPct}%</span>
+            <span className="absolute top-3 right-3 text-white text-xs font-black px-2.5 py-1.5 rounded-xl shadow-md" style={{ background: 'var(--pt-danger,#EF4444)' }}>-{discPct}%</span>
           )}
-          <button onClick={e => { e.preventDefault(); e.stopPropagation() }}
-            className="absolute top-3 left-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50">
-            <Heart className="w-4 h-4 text-gray-400 hover:text-red-500 transition-colors" />
+          <button onClick={e => { e.preventDefault(); e.stopPropagation() }} aria-label="المفضلة"
+            className="absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'var(--pt-surface,#fff)' }}>
+            <Heart className="w-4 h-4" style={{ color: 'var(--pt-text-muted,#9CA3AF)' }} />
           </button>
           <div className="absolute bottom-0 inset-x-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out p-3">
-            <div
-              className="w-full flex items-center justify-center gap-2 bg-[#0D6EFD] hover:bg-[#0B5ED7] text-white font-bold py-2.5 rounded-xl text-sm transition-colors cursor-pointer"
-              style={{boxShadow:'0 4px 12px rgba(13,110,253,0.3)'}}>
+            <div className="w-full flex items-center justify-center gap-2 font-bold py-2.5 text-sm cursor-pointer"
+              style={{ background: 'var(--pt-btn-primary-bg,#0D6EFD)', color: 'var(--pt-btn-primary-text,#fff)', borderRadius: 'var(--pt-btn-radius,12px)' }}>
               <ShoppingCart className="w-4 h-4" /> اطلب الآن
             </div>
           </div>
         </div>
         <div className="p-4">
           <div className="flex gap-0.5 mb-2">
-            {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-accent text-accent" />)}
-            <span className="text-xs text-gray-400 mr-1">(4.8)</span>
+            {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3" style={{ fill: 'var(--pt-star,#FBBF24)', color: 'var(--pt-star,#FBBF24)' }} />)}
+            <span className="text-xs mr-1" style={{ color: 'var(--pt-text-muted,#9CA3AF)' }}>(4.8)</span>
           </div>
-          <p className="font-bold text-[#111827] text-sm line-clamp-2 mb-2">{product.name_ar ?? product.name}</p>
+          <p className="font-bold text-sm line-clamp-2 mb-2" style={{ color: 'var(--pt-text,#111827)' }}>{product.name_ar ?? product.name}</p>
           <div className="flex items-center gap-2">
-            <span className="font-black text-accent text-lg">{formatDZD(product.price)}</span>
-            {hasDisc && <span className="text-xs text-gray-400 line-through">{formatDZD(product.compare_price!)}</span>}
+            <span className="font-black text-lg" style={{ color: 'var(--pt-accent,#0D6EFD)' }}>{formatDZD(product.price)}</span>
+            {hasDisc && <span className="text-xs line-through" style={{ color: 'var(--pt-text-muted,#9CA3AF)' }}>{formatDZD(product.compare_price!)}</span>}
           </div>
         </div>
       </div>
@@ -53,11 +53,11 @@ function ProductCard({ product, storeSlug }: { product: Product; storeSlug: stri
 export default function ProductsGrid({ products, storeSlug, title, subtitle, dark = false }: Props) {
   if (!products?.length) return null
   return (
-    <section className={`py-14 px-4 ${dark ? 'bg-[#111827]' : 'bg-[#FAFAF8]'}`}>
+    <section className="py-14 px-4" style={{ background: dark ? 'var(--pt-surface-soft,#111827)' : 'var(--pt-bg,#FAFAF8)' }}>
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-10" dir="rtl">
-          <h2 className={`text-3xl font-black mb-2 ${dark ? 'text-white' : 'text-[#111827]'}`}>{title}</h2>
-          {subtitle && <p className={dark ? 'text-white/50' : 'text-gray-500'}>{subtitle}</p>}
+          <h2 className="text-3xl mb-2" style={{ color: 'var(--pt-text,#111827)', fontFamily: 'var(--pt-font-heading)', fontWeight: 'var(--pt-heading-weight,800)' as any }}>{title}</h2>
+          {subtitle && <p style={{ color: 'var(--pt-text-soft,#6B7280)' }}>{subtitle}</p>}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" dir="rtl">
           {products.map(p => <ProductCard key={p.id} product={p} storeSlug={storeSlug} />)}

@@ -17,11 +17,11 @@ const BENTO_COLORS = [
 
 export default function CategoriesBento({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
   return (
-    <section className="py-14 px-4 bg-[#111827]">
+    <section className="py-14 px-4" style={{ background: 'var(--pt-surface-soft,#111827)' }}>
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-10" dir="rtl">
-          <h2 className="text-3xl font-black text-white mb-2">تسوق حسب الفئة</h2>
-          <p className="text-white/50">اكتشف مجموعتنا الكاملة من المنتجات</p>
+          <h2 className="text-3xl mb-2" style={{ color: 'var(--pt-text,#fff)', fontFamily: 'var(--pt-font-heading)', fontWeight: 'var(--pt-heading-weight,800)' as any }}>تسوق حسب الفئة</h2>
+          <p style={{ color: 'var(--pt-text-soft,rgba(255,255,255,0.5))' }}>اكتشف مجموعتنا الكاملة من المنتجات</p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 auto-rows-[160px] gap-3" dir="rtl">

@@ -31,7 +31,7 @@ export default function StorefrontSections({
           case 'announcement':
             return <MarqueeBar key={section.id} text={s.text} />
           case 'hero':
-            return <HeroSection key={section.id} store={store} />
+            return <HeroSection key={section.id} store={store} settings={s} />
           case 'featured':
             return data.featured.length > 0
               ? <FlashSaleSection key={section.id} products={data.featured} storeSlug={store.slug} />
