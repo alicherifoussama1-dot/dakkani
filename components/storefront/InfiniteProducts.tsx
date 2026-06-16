@@ -102,8 +102,8 @@ export default function InfiniteProducts({
             <Link
               key={p.id}
               href={`/store/${storeSlug}/product/${p.slug}`}
-              className="group overflow-hidden border transition hover:-translate-y-1"
-              style={{ background: 'var(--pt-surface,#fff)', borderColor: 'var(--pt-border,#eee)', borderRadius: 'var(--pt-radius-lg,16px)', boxShadow: 'var(--pt-shadow-sm)' }}
+              className="group overflow-hidden border hover:-translate-y-1"
+              style={{ background: 'var(--pt-surface,#fff)', borderColor: 'var(--pt-border,#eee)', borderRadius: 'var(--pt-radius-lg,16px)', boxShadow: 'var(--pt-shadow-sm)', transition: 'transform .4s var(--pt-ease,ease-out), box-shadow .4s var(--pt-ease,ease-out)' }}
             >
               <div className="relative aspect-square overflow-hidden" style={{ background: 'var(--pt-surface-soft,#f5f5f5)' }}>
                 {img

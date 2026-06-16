@@ -13,8 +13,8 @@ function ProductCard({ product, storeSlug }: { product: Product; storeSlug: stri
   const discPct = hasDisc ? Math.round(((product.compare_price! - product.price) / product.compare_price!) * 100) : 0
   return (
     <Link href={`/store/${storeSlug}/product/${product.slug}`} className="group block">
-      <div className="overflow-hidden transition-all duration-300 hover:-translate-y-1.5"
-        style={{ background: 'var(--pt-surface,#fff)', borderRadius: 'var(--pt-radius-lg,16px)', boxShadow: 'var(--pt-shadow-sm)' }}>
+      <div className="overflow-hidden hover:-translate-y-1.5"
+        style={{ background: 'var(--pt-surface,#fff)', borderRadius: 'var(--pt-radius-lg,16px)', boxShadow: 'var(--pt-shadow-sm)', transition: 'transform .45s var(--pt-ease,ease-out), box-shadow .45s var(--pt-ease,ease-out)' }}>
         <div className="relative product-img aspect-[4/5]" style={{ background: 'var(--pt-surface-soft,#F3F4F6)' }}>
           {img
             ? <Image src={img} alt={product.name_ar ?? product.name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />

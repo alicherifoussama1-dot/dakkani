@@ -35,8 +35,8 @@ export default function HeroSection({ store, settings }: { store: Store & { stor
         </div>
 
         {/* Headline */}
-        <h1 className="text-5xl md:text-7xl font-black text-white leading-tight mb-4" style={{ fontFamily: 'var(--pt-font-heading)' }}>
-          {headline ? headline : <>تسوق الآن<span className="block gradient-text-gold mt-1">بكل ثقة</span></>}
+        <h1 className="text-5xl md:text-7xl font-black text-white leading-tight mb-4" style={{ fontFamily: 'var(--pt-font-heading)', letterSpacing: 'var(--pt-heading-tracking)' }}>
+          {headline ? headline : <>تسوق الآن<span className="block mt-1" style={{ color: 'var(--pt-accent,#fff)' }}>بكل ثقة</span></>}
         </h1>
 
         <p className="text-white/75 text-xl md:text-2xl font-medium mb-10 max-w-2xl mx-auto leading-relaxed">
@@ -47,8 +47,8 @@ export default function HeroSection({ store, settings }: { store: Store & { stor
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
           <Link
             href={`${storeUrl}/products`}
-            className="flex items-center gap-3 font-black px-8 py-4 text-lg transition-all hover:-translate-y-1 hover:scale-[1.03] active:scale-95"
-            style={{ background: 'var(--pt-btn-primary-bg,#0D6EFD)', color: 'var(--pt-btn-primary-text,#fff)', borderRadius: 'var(--pt-btn-radius,16px)', boxShadow: 'var(--pt-shadow-lg)' }}
+            className="flex items-center gap-3 font-black px-8 py-4 text-lg hover:-translate-y-1 hover:scale-[1.02] active:scale-95"
+            style={{ background: 'var(--pt-btn-primary-bg,#0D6EFD)', color: 'var(--pt-btn-primary-text,#fff)', borderRadius: 'var(--pt-btn-radius,16px)', boxShadow: 'var(--pt-shadow-lg)', transition: 'transform .4s var(--pt-ease), box-shadow .4s var(--pt-ease)' }}
           >
             <ShoppingBag className="w-6 h-6" />
             {cta}
