@@ -18,6 +18,7 @@ const NAV_MAIN = [
   { href: '/dashboard',      label: 'الرئيسية',    icon: Home },
   { href: '/orders',         label: 'الطلبات',     icon: ShoppingCart },
   { href: '/products',       label: 'المنتجات',    icon: Package },
+  { href: '/store-builder',  label: 'مُنشئ المتجر', icon: Store, badge: 'جديد' },
   { href: '/customers',      label: 'الزبائن',     icon: Users },
   { href: '/analytics',      label: 'الإحصائيات', icon: BarChart2 },
   { href: '/reviews',        label: 'التقييمات',   icon: Star },
