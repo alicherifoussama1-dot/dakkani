@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core'
@@ -16,24 +16,31 @@ import {
 } from '@/lib/storefront/sections'
 import { PRODUCT_THEMES } from '@/lib/product-themes'
 
-type FieldType = 'text' | 'textarea' | 'bool' | 'list'
+type FieldType = 'text' | 'textarea' | 'bool' | 'list' | 'image' | 'imagelist'
+
+async function uploadFile(file: File): Promise<string | null> {
+  const fd = new FormData(); fd.append('file', file); fd.append('folder', 'store')
+  const res = await fetch('/api/upload', { method: 'POST', body: fd })
+  if (!res.ok) return null
+  const d = await res.json().catch(() => ({})); return d.url ?? null
+}
 const FIELDS: Record<StorefrontSectionType, { key: string; label: string; type: FieldType }[]> = {
   announcement: [{ key: 'text', label: 'النص (افصل الجمل بـ ·)', type: 'textarea' }],
   hero: [
     { key: 'headline', label: 'العنوان', type: 'text' }, { key: 'subheadline', label: 'العنوان الفرعي', type: 'text' },
-    { key: 'cta_label', label: 'نص الزر', type: 'text' }, { key: 'image_url', label: 'رابط الصورة', type: 'text' },
+    { key: 'cta_label', label: 'نص الزر', type: 'text' }, { key: 'image_url', label: 'صورة الخلفية', type: 'image' },
   ],
   featured: [{ key: 'title', label: 'العنوان', type: 'text' }],
   collections: [{ key: 'title', label: 'العنوان', type: 'text' }],
   product_grid: [{ key: 'title', label: 'العنوان', type: 'text' }, { key: 'subtitle', label: 'الوصف', type: 'text' }],
   image_text: [
     { key: 'title', label: 'العنوان', type: 'text' }, { key: 'body', label: 'النص', type: 'textarea' },
-    { key: 'image_url', label: 'رابط الصورة', type: 'text' }, { key: 'cta_label', label: 'نص الزر', type: 'text' },
+    { key: 'image_url', label: 'الصورة', type: 'image' }, { key: 'cta_label', label: 'نص الزر', type: 'text' },
     { key: 'cta_href', label: 'رابط الزر', type: 'text' }, { key: 'reverse', label: 'عكس الترتيب', type: 'bool' },
   ],
   icon_list: [],
   testimonials: [{ key: 'title', label: 'العنوان', type: 'text' }],
-  gallery: [{ key: 'title', label: 'العنوان', type: 'text' }, { key: 'images', label: 'روابط الصور (سطر لكل صورة)', type: 'list' }],
+  gallery: [{ key: 'title', label: 'العنوان', type: 'text' }, { key: 'images', label: 'الصور', type: 'imagelist' }],
   newsletter: [{ key: 'title', label: 'العنوان', type: 'text' }, { key: 'cta_label', label: 'نص الزر', type: 'text' }],
 }
 
@@ -50,11 +57,22 @@ export default function StoreBuilder({ storeId, storeSlug, storeName, initialLay
   const [themeOpen, setThemeOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [previewKey, setPreviewKey] = useState(0)
   const [toast, setToast] = useState('')
+  const iframeRef = useRef<HTMLIFrameElement>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500) }
+
+  // Push the (unsaved) layout + theme to the preview iframe — live, debounced.
+  const pushPreview = useCallback(() => {
+    iframeRef.current?.contentWindow?.postMessage({ type: 'dakkani-preview', layout, theme }, '*')
+  }, [layout, theme])
+  useEffect(() => { const t = setTimeout(pushPreview, 250); return () => clearTimeout(t) }, [pushPreview])
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => { if (e.data?.type === 'dakkani-preview-ready') pushPreview() }
+    window.addEventListener('message', onMsg)
+    return () => window.removeEventListener('message', onMsg)
+  }, [pushPreview])
 
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e
@@ -79,8 +97,7 @@ export default function StoreBuilder({ storeId, storeSlug, storeName, initialLay
         body: JSON.stringify({ storeId, layout, theme_key: theme }),
       })
       if (!res.ok) { flash('تعذّر الحفظ'); return }
-      setPreviewKey(k => k + 1)
-      flash('✓ تم الحفظ — حدّثت المعاينة')
+      flash('✓ تم الحفظ ونشره على المتجر')
     } catch { flash('خطأ في الشبكة') }
     finally { setSaving(false) }
   }, [storeId, layout, theme])
@@ -171,9 +188,9 @@ export default function StoreBuilder({ storeId, storeSlug, storeName, initialLay
         {/* Live preview (reflects last save) */}
         <div className="bg-[#E9ECEF] overflow-hidden hidden lg:flex flex-col">
           <div className="px-4 py-1.5 text-[11px] text-gray-500 bg-white border-b" style={{ borderColor: '#E9ECEF' }}>
-            معاينة المتجر — تتحدّث بعد الحفظ
+            معاينة حيّة — تتحدّث فور التعديل · اضغط حفظ للنشر
           </div>
-          <iframe key={previewKey} src={`/store/${storeSlug}?preview=${previewKey}`} className="flex-1 w-full bg-white" title="معاينة" />
+          <iframe ref={iframeRef} src={`/store/${storeSlug}/preview`} className="flex-1 w-full bg-white" title="معاينة حيّة" />
         </div>
       </div>
 
@@ -225,6 +242,12 @@ function SortableRow({ section, expanded, onExpand, onToggle, onRemove, onField 
                   onChange={e => onField(section.id, f.key, e.target.value.split('\n').map(s => s.trim()).filter(Boolean))}
                   className="w-full border rounded-lg px-2 py-1.5 text-xs outline-none" style={{ borderColor: '#E9ECEF' }} />
               </div>
+            )
+            if (f.type === 'image') return (
+              <ImageField key={f.key} label={f.label} value={typeof val === 'string' ? val : ''} onChange={v => onField(section.id, f.key, v)} />
+            )
+            if (f.type === 'imagelist') return (
+              <ImageListField key={f.key} label={f.label} value={Array.isArray(val) ? val : []} onChange={v => onField(section.id, f.key, v)} />
             )
             const Tag = f.type === 'textarea' ? 'textarea' : 'input'
             return (
@@ -297,4 +320,56 @@ function AIModal({ storeId, defaultName, onClose, onResult }: {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div><label className="block text-xs font-medium mb-1 text-gray-600">{label}</label>{children}</div>
+}
+
+/* eslint-disable @next/next/no-img-element */
+function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const [busy, setBusy] = useState(false)
+  const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return
+    setBusy(true); const url = await uploadFile(file); setBusy(false)
+    if (url) onChange(url)
+  }
+  return (
+    <div>
+      <label className="block text-[11px] mb-0.5 text-gray-500">{label}</label>
+      {value ? (
+        <div className="relative">
+          <img src={value} alt="" className="w-full h-24 object-cover rounded-lg border" style={{ borderColor: '#E9ECEF' }} />
+          <button onClick={() => onChange('')} className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] text-white" style={{ background: '#DC3545' }}>حذف</button>
+        </div>
+      ) : (
+        <label className="block border-2 border-dashed rounded-lg p-3 text-center text-xs cursor-pointer" style={{ borderColor: '#0D6EFD', color: '#0D6EFD' }}>
+          {busy ? 'جارٍ الرفع…' : '📷 ارفع صورة'}
+          <input type="file" accept="image/*" className="hidden" onChange={pick} disabled={busy} />
+        </label>
+      )}
+    </div>
+  )
+}
+
+function ImageListField({ label, value, onChange }: { label: string; value: string[]; onChange: (v: string[]) => void }) {
+  const [busy, setBusy] = useState(false)
+  const add = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return
+    setBusy(true); const url = await uploadFile(file); setBusy(false)
+    if (url) onChange([...value, url])
+  }
+  return (
+    <div>
+      <label className="block text-[11px] mb-0.5 text-gray-500">{label}</label>
+      <div className="grid grid-cols-3 gap-2">
+        {value.map((src, i) => (
+          <div key={i} className="relative">
+            <img src={src} alt="" className="w-full h-16 object-cover rounded-lg border" style={{ borderColor: '#E9ECEF' }} />
+            <button onClick={() => onChange(value.filter((_, j) => j !== i))} className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full text-white text-xs leading-none" style={{ background: '#DC3545' }}>×</button>
+          </div>
+        ))}
+        <label className="h-16 border-2 border-dashed rounded-lg flex items-center justify-center text-base cursor-pointer" style={{ borderColor: '#0D6EFD', color: '#0D6EFD' }}>
+          {busy ? '…' : '+'}
+          <input type="file" accept="image/*" className="hidden" onChange={add} disabled={busy} />
+        </label>
+      </div>
+    </div>
+  )
 }
