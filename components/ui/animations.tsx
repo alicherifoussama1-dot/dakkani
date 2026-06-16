@@ -4,11 +4,34 @@
 // JS-critical interactions (drag, spring, presence)
 // ============================================================
 import {
-  motion, AnimatePresence, useInView, type Variants,
+  motion, AnimatePresence, useInView, useReducedMotion, type Variants,
 } from 'framer-motion'
 import { useRef, type ReactNode, type CSSProperties } from 'react'
 
 const ease = [0.22, 1, 0.36, 1] as const
+const easeOutExpo = [0.16, 1, 0.3, 1] as const
+
+// ── Scroll-reveal section wrapper (impeccable: ease-out-expo, staggered
+// per section, reduced-motion aware). Used by the storefront renderer. ──
+export function RevealSection({ children, index = 0, className = '' }: {
+  children: ReactNode; index?: number; className?: string
+}) {
+  const ref     = useRef<HTMLDivElement>(null)
+  const inView  = useInView(ref, { once: true, margin: '-80px' })
+  const reduce  = useReducedMotion()
+  if (reduce) return <div ref={ref} className={className}>{children}</div>
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 28 }}
+      animate={inView ? { opacity: 1, y: 0 } : undefined}
+      transition={{ duration: 0.6, ease: easeOutExpo, delay: Math.min(index * 0.06, 0.3) }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  )
+}
 
 export const fadeUpVariants: Variants = {
   hidden:  { opacity: 0, y: 24 },

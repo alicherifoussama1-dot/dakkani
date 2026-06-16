@@ -12,6 +12,7 @@ import ReviewsSection from './ReviewsSection'
 import ImageTextBlock from './sections/ImageTextBlock'
 import GalleryBlock from './sections/GalleryBlock'
 import NewsletterBlock from './sections/NewsletterBlock'
+import { RevealSection } from '@/components/ui/animations'
 
 export interface StorefrontData {
   featured: any[]
@@ -23,43 +24,31 @@ export interface StorefrontData {
 export default function StorefrontSections({
   store, layout, data,
 }: { store: any; layout: StoreSection[]; data: StorefrontData }) {
+  const visible = layout.filter(s => s.visible)
   return (
     <>
-      {layout.filter(s => s.visible).map(section => {
+      {visible.map((section, i) => {
         const s = section.settings ?? {}
+        let el: React.ReactNode = null
         switch (section.type) {
-          case 'announcement':
-            return <MarqueeBar key={section.id} text={s.text} />
-          case 'hero':
-            return <HeroSection key={section.id} store={store} settings={s} />
-          case 'featured':
-            return data.featured.length > 0
-              ? <FlashSaleSection key={section.id} products={data.featured} storeSlug={store.slug} />
-              : null
-          case 'collections':
-            return data.categories.length > 0
-              ? <CategoriesBento key={section.id} categories={data.categories} storeSlug={store.slug} />
-              : null
-          case 'product_grid':
-            return (
-              <ProductsGrid key={section.id} products={data.products} storeSlug={store.slug}
-                title={s.title ?? 'منتجاتنا'} subtitle={s.subtitle ?? ''} dark={!!s.dark} />
-            )
-          case 'image_text':
-            return <ImageTextBlock key={section.id} {...s} />
-          case 'icon_list':
-            return <TrustSection key={section.id} />
-          case 'testimonials':
-            return data.reviews.length > 0
-              ? <ReviewsSection key={section.id} reviews={data.reviews} />
-              : null
-          case 'gallery':
-            return <GalleryBlock key={section.id} title={s.title} images={s.images} />
-          case 'newsletter':
-            return <NewsletterBlock key={section.id} storeId={store.id} title={s.title} placeholder={s.placeholder} cta_label={s.cta_label} />
-          default:
-            return null
+          case 'announcement': el = <MarqueeBar text={s.text} />; break
+          case 'hero':         el = <HeroSection store={store} settings={s} />; break
+          case 'featured':     el = data.featured.length > 0 ? <FlashSaleSection products={data.featured} storeSlug={store.slug} /> : null; break
+          case 'collections':  el = data.categories.length > 0 ? <CategoriesBento categories={data.categories} storeSlug={store.slug} /> : null; break
+          case 'product_grid': el = <ProductsGrid products={data.products} storeSlug={store.slug} title={s.title ?? 'منتجاتنا'} subtitle={s.subtitle ?? ''} dark={!!s.dark} />; break
+          case 'image_text':   el = <ImageTextBlock {...s} />; break
+          case 'icon_list':    el = <TrustSection />; break
+          case 'testimonials': el = data.reviews.length > 0 ? <ReviewsSection reviews={data.reviews} /> : null; break
+          case 'gallery':      el = <GalleryBlock title={s.title} images={s.images} />; break
+          case 'newsletter':   el = <NewsletterBlock storeId={store.id} title={s.title} placeholder={s.placeholder} cta_label={s.cta_label} />; break
         }
+        if (!el) return null
+        // Hero + announcement are above the fold → render immediately.
+        // Everything below reveals on scroll with a subtle per-section stagger.
+        if (section.type === 'hero' || section.type === 'announcement') {
+          return <div key={section.id}>{el}</div>
+        }
+        return <RevealSection key={section.id} index={i}>{el}</RevealSection>
       })}
     </>
   )
