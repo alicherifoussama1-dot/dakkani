@@ -4,14 +4,9 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { notFound }           from 'next/navigation'
 import type { Metadata }      from 'next'
 import StorefrontLayout       from '@/components/storefront/StorefrontLayout'
-import HeroSection            from '@/components/storefront/HeroSection'
-import MarqueeBar             from '@/components/storefront/MarqueeBar'
-import CategoriesBento        from '@/components/storefront/CategoriesBento'
-import ProductsGrid           from '@/components/storefront/ProductsGrid'
-import FlashSaleSection       from '@/components/storefront/FlashSaleSection'
-import ReviewsSection         from '@/components/storefront/ReviewsSection'
-import TrustSection           from '@/components/storefront/TrustSection'
+import StorefrontSections     from '@/components/storefront/StorefrontSections'
 import WhatsAppFloat          from '@/components/storefront/WhatsAppFloat'
+import { normalizeLayout }    from '@/lib/storefront/sections'
 
 interface Props { params: { storeSlug: string } }
 
@@ -59,50 +54,22 @@ export default async function StorefrontHome({ params }: Props) {
     address: { '@type': 'PostalAddress', addressCountry: 'DZ' },
   }
 
+  // Builder layout (JSON) → ordered sections. NULL falls back to the
+  // default layout, which reproduces the original hardcoded home page.
+  const layout = normalizeLayout((store as any).layout)
+  const data = {
+    featured:   (featuredRes.data ?? []) as any[],
+    categories: (categoriesRes.data ?? []) as any[],
+    products:   (bestsellersRes.data ?? []) as any[],
+    reviews:    (reviewsRes.data ?? []) as any[],
+  }
+
   return (
     <StorefrontLayout store={store as any}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBiz) }} />
 
-      {/* HERO */}
-      <HeroSection store={store as any} />
+      <StorefrontSections store={store as any} layout={layout} data={data} />
 
-      {/* MARQUEE */}
-      <MarqueeBar />
-
-      {/* FLASH SALE */}
-      {(featuredRes.data?.length ?? 0) > 0 && (
-        <FlashSaleSection
-          products={featuredRes.data as any[]}
-          storeSlug={store.slug}
-        />
-      )}
-
-      {/* CATEGORIES BENTO */}
-      {(categoriesRes.data?.length ?? 0) > 0 && (
-        <CategoriesBento
-          categories={categoriesRes.data as any[]}
-          storeSlug={store.slug}
-        />
-      )}
-
-      {/* BESTSELLERS */}
-      <ProductsGrid
-        products={bestsellersRes.data as any[]}
-        storeSlug={store.slug}
-        title="الأكثر مبيعاً"
-        subtitle="منتجات مختارة بعناية لك"
-        dark={false}
-      />
-
-      {/* TRUST */}
-      <TrustSection />
-
-      {/* REVIEWS */}
-      {(reviewsRes.data?.length ?? 0) > 0 && (
-        <ReviewsSection reviews={reviewsRes.data as any[]} />
-      )}
-
-      {/* WHATSAPP FLOAT */}
       {storePhone && (
         <WhatsAppFloat phone={storePhone} storeName={store.name_ar ?? store.name} />
       )}

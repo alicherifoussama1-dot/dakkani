@@ -4,8 +4,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Search, Menu, X } from 'lucide-react'
 import type { Store } from '@/types'
+import { getProductTheme, themeToCSSVars } from '@/lib/product-themes'
 
-interface Props { store: Store & { store_settings?: any }; children: React.ReactNode }
+interface Props { store: Store & { store_settings?: any; theme_key?: string }; children: React.ReactNode }
 
 export default function StorefrontLayout({ store, children }: Props) {
   const [scrolled,    setScrolled]    = useState(false)
@@ -20,9 +21,11 @@ export default function StorefrontLayout({ store, children }: Props) {
   }, [])
 
   const storeUrl = `/store/${store.slug}`
+  const theme = getProductTheme(store.theme_key)
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8]" dir="rtl">
+    <div className="min-h-screen" dir="rtl" data-theme={theme.key}
+      style={{ ...themeToCSSVars(theme), background: 'var(--pt-bg)', color: 'var(--pt-text)' }}>
       {/* ── Navigation ── */}
       <header
         className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
