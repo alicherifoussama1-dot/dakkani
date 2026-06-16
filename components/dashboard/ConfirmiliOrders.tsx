@@ -127,6 +127,27 @@ function loadSavedCols(): Set<string> {
   return new Set(COL_DEFS.filter(c => c.defaultOn).map(c => c.key))
 }
 
+// Reorderable middle columns (☑ is always first, الإجراءات always last).
+const MIDDLE_COLS = COL_DEFS.map(c => c.key).filter(k => k !== 'actions')
+const LS_ORDER = 'confirmili_col_order_v1'
+const LS_DENSITY = 'confirmili_density_v1'
+function loadSavedOrder(): string[] {
+  try {
+    if (typeof window === 'undefined') throw new Error()
+    const raw = localStorage.getItem(LS_ORDER)
+    if (raw) {
+      const saved: string[] = JSON.parse(raw)
+      // keep only known keys, then append any new columns not yet in saved order
+      const known = saved.filter(k => MIDDLE_COLS.includes(k))
+      return [...known, ...MIDDLE_COLS.filter(k => !known.includes(k))]
+    }
+  } catch {}
+  return MIDDLE_COLS
+}
+function loadSavedDensity(): 1|2 {
+  try { return (localStorage.getItem(LS_DENSITY) === '2' ? 2 : 1) } catch { return 1 }
+}
+
 // ─── PROPS ────────────────────────────────────────────────────
 interface Props {
   storeId:   string
@@ -170,14 +191,23 @@ export default function ConfirmiliOrders({
   const [updating,        setUpdating]        = useState<string|null>(null)
   const [statusDropdown,  setStatusDropdown]  = useState<string|null>(null) // orderId
   const [visibleCols,     setVisibleCols]     = useState<Set<string>>(loadSavedCols)
+  const [colOrder,        setColOrder]        = useState<string[]>(loadSavedOrder)
+  const [density,         setDensity]         = useState<1|2>(loadSavedDensity)
 
   // modals
   const [showColSettings, setShowColSettings] = useState(false)
   const [showManual,      setShowManual]      = useState(false)
   const [manualForm,      setManualForm]      = useState<any>({})
   const [savingManual,    setSavingManual]    = useState(false)
+  const [wilayasList,     setWilayasList]     = useState<{id:number;name_ar:string}[]>([])
+  const [manualCommunes,  setManualCommunes]  = useState<{id:number;name_ar:string}[]>([])
   const [showSendReport,  setShowSendReport]  = useState(false)
   const [sendReports,     setSendReports]     = useState<any[]>([])
+  const [srSearch,        setSrSearch]        = useState('')
+  const [srStatus,        setSrStatus]        = useState<'all'|'sent'|'failed'>('all')
+  const [srDate,          setSrDate]          = useState('')
+  const [srPage,          setSrPage]          = useState(1)
+  const [srPerPage,       setSrPerPage]       = useState(10)
   const [historyModal,    setHistoryModal]    = useState<any|null>(null)
   const [historyRows,     setHistoryRows]     = useState<any[]>([])
   const [editModal,       setEditModal]       = useState<any|null>(null)
@@ -192,6 +222,21 @@ export default function ConfirmiliOrders({
     setOrders(initOrders)
     setTrashedIds(new Set(initOrders.filter(o => o.is_trashed).map((o:any)=>o.id)))
   }, [initOrders])
+
+  // Lazy-load the 58 wilayas the first time the manual-order modal opens.
+  useEffect(() => {
+    if (!showManual || wilayasList.length > 0) return
+    createClient().from('wilayas').select('id,name_ar').order('id')
+      .then(({ data }) => setWilayasList((data ?? []) as any))
+  }, [showManual, wilayasList.length])
+
+  // Dependent communes: reload whenever the chosen wilaya changes.
+  useEffect(() => {
+    const wid = manualForm.wilaya_id
+    if (!wid) { setManualCommunes([]); return }
+    createClient().from('communes').select('id,name_ar').eq('wilaya_id', +wid).order('name_ar')
+      .then(({ data }) => setManualCommunes((data ?? []) as any))
+  }, [manualForm.wilaya_id])
 
   // ── filtering ─────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -363,7 +408,7 @@ export default function ConfirmiliOrders({
   }, [editModal, setToast])
 
   const saveManual = useCallback(async () => {
-    if (!manualForm.customer_name || !manualForm.customer_phone) return
+    if (!manualForm.customer_name || !manualForm.customer_phone || !manualForm.wilaya_id) return
     setSavingManual(true)
     try {
       const res = await fetch('/api/orders', {
@@ -372,7 +417,8 @@ export default function ConfirmiliOrders({
           store_id: storeId, source: 'manual', payment_method: 'cod',
           customer_name: manualForm.customer_name, customer_phone: manualForm.customer_phone,
           address: manualForm.address ?? '',
-          wilaya_id: manualForm.wilaya_id ? +manualForm.wilaya_id : 1,
+          wilaya_id: +manualForm.wilaya_id,
+          commune_id: manualForm.commune_id ? +manualForm.commune_id : undefined,
           delivery_type: manualForm.delivery_type ?? 'home',
           notes: manualForm.notes ?? '',
           items: manualForm.product_id ? [{ product_id: manualForm.product_id, quantity: +(manualForm.qty??1), variant_key:'default' }] : [],
@@ -387,19 +433,32 @@ export default function ConfirmiliOrders({
 
   const loadSendReports = useCallback(async () => {
     const sb = createClient()
-    const { data } = await sb.from('confirmili_send_reports').select('*')
-      .eq('store_id', storeId).order('sent_at', { ascending: false }).limit(100)
+    // Join client (orders) + company so cards can show name/company/message.
+    let { data, error } = await sb.from('confirmili_send_reports')
+      .select('*, order:orders(customer_name,order_number), company:confirmili_delivery_companies(short_name,name)')
+      .eq('store_id', storeId).order('sent_at', { ascending: false }).limit(300)
+    if (error) { // fallback if FK-embeds unavailable
+      const r = await sb.from('confirmili_send_reports').select('*')
+        .eq('store_id', storeId).order('sent_at', { ascending: false }).limit(300)
+      data = r.data as any
+    }
     setSendReports(data ?? [])
   }, [storeId])
 
-  const saveColSettings = useCallback((cols: Set<string>) => {
-    setVisibleCols(cols)
-    localStorage.setItem(LS_COLS, JSON.stringify(Array.from(cols)))
+  const saveColSettings = useCallback((cols: Set<string>, order: string[], dens: 1|2) => {
+    setVisibleCols(cols); setColOrder(order); setDensity(dens)
+    try {
+      localStorage.setItem(LS_COLS, JSON.stringify(Array.from(cols)))
+      localStorage.setItem(LS_ORDER, JSON.stringify(order))
+      localStorage.setItem(LS_DENSITY, String(dens))
+    } catch {}
     setShowColSettings(false); setToast('✓ تم حفظ إعدادات الأعمدة')
   }, [setToast])
 
   // col visibility helper
   const show = (key: string) => visibleCols.has(key)
+  // density-aware cell padding (ستايل 01 = مريح · ستايل 02 = مضغوط)
+  const td: React.CSSProperties = { ...TD, padding: density === 2 ? '3px 8px' : '7px 10px' }
 
   // ── date label for separators ─────────────────────────────────
   function dateSep(iso: string) {
@@ -794,6 +853,80 @@ export default function ConfirmiliOrders({
     </div>
   )
 
+  // ── COLUMN HEADER RENDERER (order-driven) ─────────────────────
+  const HEADERS: Record<string, React.ReactNode> = {
+    source:        <span className="flex items-center gap-1">المصدر<SourceFilter/></span>,
+    order_number:  'ر.الطلبية', date: 'التاريخ', customer_name: 'الإسم الكامل', phone: 'الهاتف', verify: 'تحقق',
+    status:        <span className="flex items-center gap-1">الحالة<StatusFilter/></span>,
+    address:       'العنوان', delivery_co: 'ش.ت', delivery_type: 'نوعية التوصيل',
+    wilaya:        <span className="flex items-center gap-1">الولاية<WilayaFilter/></span>,
+    baladia:       'البلدية', delivery_action: 'ش ت إجراء', product: 'المنتج', product_price: 'سعر المنتج',
+    quantity:      'الكمية', delivery_price: 'س.التوصيل', total_price: 'السعر الكلي', notes: 'ملاحظات',
+    variant:       'المتغيرات', sku: 'SKU', confirmed_by: 'التأكيد بواسطة',
+  }
+  const renderHeader = (k: string) => show(k) ? <th key={k} style={TH}>{HEADERS[k]}</th> : null
+
+  // ── COLUMN CELL RENDERER (order-driven) ───────────────────────
+  const renderCell = (k: string, o: any, vc: any, item0: any, co: any): React.ReactNode => {
+    if (!show(k)) return null
+    let inner: React.ReactNode = null
+    switch (k) {
+      case 'source': inner = (
+        <span className="inline-flex items-center gap-1 flex-wrap">
+          <SourceBadge source={o.source ?? o.utm_source ?? ''}/>
+          {(o as any).sheet_status === 'sent' && <span title="أُرسل نسخة للقوقل شيت" className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{background:'#D1E7DD',color:'#198754'}}>📊 أُرسل للشيت</span>}
+          {(o as any).sheet_status === 'failed' && <span title={(o as any).sheet_error ?? 'فشل الإرسال للشيت'} className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{background:'#F8D7DA',color:'#DC3545'}}>⚠️ فشل الشيت</span>}
+        </span>); break
+      case 'order_number': inner = <span className="font-mono font-bold" style={{color:'#3CC6B9',fontSize:11}}>{o.order_number}</span>; break
+      case 'date': inner = (<>
+        <div style={{color:'#495057',fontSize:10}}>{new Date(o.created_at).toLocaleDateString('ar-DZ')}</div>
+        <div style={{color:'#868E96',fontSize:10}}>{new Date(o.created_at).toLocaleTimeString('ar-DZ',{hour:'2-digit',minute:'2-digit'})}</div>
+      </>); break
+      case 'customer_name': inner = <span style={{fontWeight:500,color:'#212529'}}>{o.customer_name}</span>; break
+      case 'phone': inner = (
+        <button onClick={()=>openWhatsApp(o.customer_phone, o.customer_name)} className="font-mono hover:underline flex items-center gap-1.5" style={{color:'#212529',fontSize:11}} title="واتساب / اتصال">
+          <span className="inline-flex items-center justify-center rounded-full" style={{width:18,height:18,background:'#22C55E',color:'#fff',flexShrink:0}}><Phone size={10}/></span>
+          +{o.customer_phone}
+        </button>); break
+      case 'verify': inner = (
+        <button onClick={()=>setVerifyModal(o)} className="inline-flex items-center gap-1.5 rounded-full hover:opacity-80" title="التحقق من العميل" style={{background:'#FFFDEE',border:'1px solid #F0EBC8',padding:'2px 8px'}}>
+          <span style={{color:'#198754',fontSize:10,fontWeight:800}}>{vc.green}</span>
+          <span style={{color:'#CED4DA',fontSize:9}}>·</span>
+          <span style={{color:'#DC3545',fontSize:10,fontWeight:800}}>{vc.red}</span>
+        </button>); break
+      case 'status': inner = <StatusCell order={o}/>; break
+      case 'address': inner = <span style={{color:'#495057',fontSize:10,maxWidth:120,display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{o.address ?? (o.wilaya as any)?.name_ar ?? '—'}</span>; break
+      case 'delivery_co': inner = <span style={{fontWeight:600,color:'#495057',fontSize:11}}>{co?.short_name ?? '—'}</span>; break
+      case 'delivery_type': inner = (
+        <span style={{fontSize:10,fontWeight:600,padding:'2px 6px',borderRadius:999,background:o.delivery_type==='stopdesk'?'#EEE5FF':'#E0F5F2',color:o.delivery_type==='stopdesk'?'#9D76C1':'#3CC6B9'}}>
+          {o.delivery_type==='stopdesk'?'المكتب':'المنزل'}
+        </span>); break
+      case 'wilaya': inner = <span style={{color:'#495057',fontSize:11}}>{(o.wilaya as any)?.name_ar ?? '—'}</span>; break
+      case 'baladia': inner = <span style={{color:'#868E96',fontSize:10}}>{(o.commune as any)?.name_ar ?? '—'}</span>; break
+      case 'delivery_action': inner = o.tracking_number
+        ? <TrackingBadge num={o.tracking_number} type={o.delivery_type ?? 'home'}/>
+        : <button onClick={()=>sendToDelivery(o)} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded hover:opacity-80" style={{background:'#E0F5F2',color:'#3CC6B9',fontFamily:'var(--font-arabic)'}}><Truck size={10}/>إرسال</button>; break
+      case 'product': inner = <span style={{color:'#495057',fontSize:11}}>{item0.product_name?.slice(0,18) ?? '—'}</span>; break
+      case 'product_price': inner = <span style={{fontWeight:600,color:'#3CC6B9',fontSize:11,fontFamily:'monospace'}}>{item0.unit_price?.toLocaleString('ar-DZ') ?? '—'} دج</span>; break
+      case 'quantity': inner = <span style={{fontWeight:600,color:'#212529',fontSize:12}}>{item0.quantity ?? 1}</span>; break
+      case 'delivery_price': inner = <span style={{color:'#495057',fontSize:11,fontFamily:'monospace'}}>{(o.declared_delivery_fee ?? o.delivery_fee ?? 0).toLocaleString('ar-DZ')} دج</span>; break
+      case 'total_price': inner = <span style={{fontWeight:700,color:'#3CC6B9',fontSize:12,fontFamily:'monospace'}}>{o.total?.toLocaleString('ar-DZ')} دج</span>; break
+      case 'notes': inner = <span style={{color:'#868E96',fontSize:10,maxWidth:100,display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{o.notes ?? '—'}</span>; break
+      case 'variant': inner = (item0.variant_key && item0.variant_key !== 'default')
+        ? <button onClick={()=>setEditModal({...o})} className="inline-flex items-center gap-1 hover:opacity-80"><span style={{fontSize:10,padding:'1px 6px',borderRadius:999,background:'#D1E7DD',color:'#198754',fontWeight:600}}>{item0.variant_key}</span><Edit2 size={9} style={{color:'#22C55E'}}/></button>
+        : <span style={{color:'#DEE2E6',fontSize:10}}>—</span>; break
+      case 'sku': inner = <span style={{fontFamily:'monospace',fontSize:10,color:'#868E96'}}>{item0.variant_sku ?? o.sku ?? '—'}</span>; break
+      case 'confirmed_by': inner = (
+        <ConfirmedByCell order={o} team={team} onSave={(teamId)=>{
+          const sb = createClient()
+          sb.from('orders').update({ confirmed_by: teamId ?? null }).eq('id', o.id)
+          setOrders(prev=>prev.map(x=>x.id===o.id?{...x,confirmed_by:teamId}:x))
+        }}/>); break
+      default: return null
+    }
+    return <td key={k} style={td}>{inner}</td>
+  }
+
   // ── MAIN RENDER ───────────────────────────────────────────────
   return (
     <div className="space-y-0" style={{fontFamily:'var(--font-arabic)'}} dir="rtl">
@@ -813,30 +946,9 @@ export default function ConfirmiliOrders({
                   }}
                   className="w-3.5 h-3.5 accent-[#3CC6B9]"/>
               </th>
-              {/* Source */}
-              {show('source')        && <th style={TH}><span className="flex items-center gap-1">المصدر<SourceFilter/></span></th>}
-              {show('order_number')  && <th style={TH}>ر.الطلبية</th>}
-              {show('date')          && <th style={TH}>التاريخ</th>}
-              {show('customer_name') && <th style={TH}>الإسم الكامل</th>}
-              {show('phone')         && <th style={TH}>الهاتف</th>}
-              {show('verify')        && <th style={TH}>تحقق</th>}
-              {show('status')        && <th style={TH}><span className="flex items-center gap-1">الحالة<StatusFilter/></span></th>}
-              {show('address')       && <th style={TH}>العنوان</th>}
-              {show('delivery_co')   && <th style={TH}>ش.ت</th>}
-              {show('delivery_type') && <th style={TH}>نوعية التوصيل</th>}
-              {show('wilaya')        && <th style={TH}><span className="flex items-center gap-1">الولاية<WilayaFilter/></span></th>}
-              {show('baladia')       && <th style={TH}>البلدية</th>}
-              {show('delivery_action')&&<th style={TH}>ش ت إجراء</th>}
-              {show('product')       && <th style={TH}>المنتج</th>}
-              {show('product_price') && <th style={TH}>سعر المنتج</th>}
-              {show('quantity')      && <th style={TH}>الكمية</th>}
-              {show('delivery_price')&& <th style={TH}>س.التوصيل</th>}
-              {show('total_price')   && <th style={TH}>السعر الكلي</th>}
-              {show('notes')         && <th style={TH}>ملاحظات</th>}
-              {show('variant')       && <th style={TH}>المتغيرات</th>}
-              {show('sku')           && <th style={TH}>SKU</th>}
-              {show('confirmed_by')  && <th style={TH}>التأكيد بواسطة</th>}
-              {show('actions')       && <th style={TH}>الإجراءات</th>}
+              {/* Reorderable columns (order-driven) */}
+              {colOrder.map(k => renderHeader(k))}
+              {show('actions') && <th style={TH}>الإجراءات</th>}
             </tr>
           </thead>
           <tbody>
@@ -887,182 +999,8 @@ export default function ConfirmiliOrders({
                         className="w-3.5 h-3.5 accent-[#3CC6B9]"/>
                     </td>
 
-                    {/* Source (+ sheet routing badge when order also went to a Google Sheet) */}
-                    {show('source') && (
-                      <td style={TD}>
-                        <span className="inline-flex items-center gap-1 flex-wrap">
-                          <SourceBadge source={o.source ?? o.utm_source ?? ''}/>
-                          {(o as any).sheet_status === 'sent' && (
-                            <span title="أُرسل نسخة للقوقل شيت" className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{background:'#D1E7DD',color:'#198754'}}>📊 أُرسل للشيت</span>
-                          )}
-                          {(o as any).sheet_status === 'failed' && (
-                            <span title={(o as any).sheet_error ?? 'فشل الإرسال للشيت'} className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{background:'#F8D7DA',color:'#DC3545'}}>⚠️ فشل الشيت</span>
-                          )}
-                        </span>
-                      </td>
-                    )}
-
-                    {/* ر.الطلبية */}
-                    {show('order_number') && (
-                      <td style={TD}>
-                        <span className="font-mono font-bold" style={{color:'#3CC6B9',fontSize:11}}>{o.order_number}</span>
-                      </td>
-                    )}
-
-                    {/* Date */}
-                    {show('date') && (
-                      <td style={TD}>
-                        <div style={{color:'#495057',fontSize:10}}>
-                          {new Date(o.created_at).toLocaleDateString('ar-DZ')}
-                        </div>
-                        <div style={{color:'#868E96',fontSize:10}}>
-                          {new Date(o.created_at).toLocaleTimeString('ar-DZ',{hour:'2-digit',minute:'2-digit'})}
-                        </div>
-                      </td>
-                    )}
-
-                    {/* Name */}
-                    {show('customer_name') && (
-                      <td style={TD}><span style={{fontWeight:500,color:'#212529'}}>{o.customer_name}</span></td>
-                    )}
-
-                    {/* Phone — number + green call circle */}
-                    {show('phone') && (
-                      <td style={TD}>
-                        <button onClick={()=>openWhatsApp(o.customer_phone, o.customer_name)}
-                          className="font-mono hover:underline flex items-center gap-1.5" style={{color:'#212529',fontSize:11}} title="واتساب / اتصال">
-                          <span className="inline-flex items-center justify-center rounded-full" style={{width:18,height:18,background:'#22C55E',color:'#fff',flexShrink:0}}>
-                            <Phone size={10}/>
-                          </span>
-                          +{o.customer_phone}
-                        </button>
-                      </td>
-                    )}
-
-                    {/* Verify — cream rounded pill */}
-                    {show('verify') && (
-                      <td style={TD}>
-                        <button onClick={()=>setVerifyModal(o)} className="inline-flex items-center gap-1.5 rounded-full hover:opacity-80" title="التحقق من العميل"
-                          style={{background:'#FFFDEE',border:'1px solid #F0EBC8',padding:'2px 8px'}}>
-                          <span style={{color:'#198754',fontSize:10,fontWeight:800}}>{vc.green}</span>
-                          <span style={{color:'#CED4DA',fontSize:9}}>·</span>
-                          <span style={{color:'#DC3545',fontSize:10,fontWeight:800}}>{vc.red}</span>
-                        </button>
-                      </td>
-                    )}
-
-                    {/* Status */}
-                    {show('status') && <td style={TD}><StatusCell order={o}/></td>}
-
-                    {/* Address */}
-                    {show('address') && (
-                      <td style={TD}><span style={{color:'#495057',fontSize:10,maxWidth:120,display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{o.address ?? (o.wilaya as any)?.name_ar ?? '—'}</span></td>
-                    )}
-
-                    {/* Delivery company */}
-                    {show('delivery_co') && (
-                      <td style={TD}>
-                        <span style={{fontWeight:600,color:'#495057',fontSize:11}}>{co?.short_name ?? '—'}</span>
-                      </td>
-                    )}
-
-                    {/* Delivery type */}
-                    {show('delivery_type') && (
-                      <td style={TD}>
-                        <span style={{
-                          fontSize:10, fontWeight:600, padding:'2px 6px', borderRadius:999,
-                          background: o.delivery_type === 'stopdesk' ? '#EEE5FF' : '#E0F5F2',
-                          color:      o.delivery_type === 'stopdesk' ? '#9D76C1' : '#3CC6B9',
-                        }}>
-                          {o.delivery_type === 'stopdesk' ? 'المكتب' : 'المنزل'}
-                        </span>
-                      </td>
-                    )}
-
-                    {/* Wilaya */}
-                    {show('wilaya') && (
-                      <td style={TD}><span style={{color:'#495057',fontSize:11}}>{(o.wilaya as any)?.name_ar ?? '—'}</span></td>
-                    )}
-
-                    {/* Baladia */}
-                    {show('baladia') && (
-                      <td style={TD}><span style={{color:'#868E96',fontSize:10}}>{(o.commune as any)?.name_ar ?? '—'}</span></td>
-                    )}
-
-                    {/* Delivery action (tracking badge or send) */}
-                    {show('delivery_action') && (
-                      <td style={TD}>
-                        {o.tracking_number
-                          ? <TrackingBadge num={o.tracking_number} type={o.delivery_type ?? 'home'}/>
-                          : <button onClick={()=>sendToDelivery(o)}
-                              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded hover:opacity-80"
-                              style={{background:'#E0F5F2',color:'#3CC6B9',fontFamily:'var(--font-arabic)'}}>
-                              <Truck size={10}/>إرسال
-                            </button>
-                        }
-                      </td>
-                    )}
-
-                    {/* Product */}
-                    {show('product') && (
-                      <td style={TD}><span style={{color:'#495057',fontSize:11}}>{item0.product_name?.slice(0,18) ?? '—'}</span></td>
-                    )}
-
-                    {/* Product price */}
-                    {show('product_price') && (
-                      <td style={TD}><span style={{fontWeight:600,color:'#3CC6B9',fontSize:11,fontFamily:'monospace'}}>{item0.unit_price?.toLocaleString('ar-DZ') ?? '—'} دج</span></td>
-                    )}
-
-                    {/* Quantity */}
-                    {show('quantity') && (
-                      <td style={TD}><span style={{fontWeight:600,color:'#212529',fontSize:12}}>{item0.quantity ?? 1}</span></td>
-                    )}
-
-                    {/* Delivery price */}
-                    {show('delivery_price') && (
-                      <td style={TD}><span style={{color:'#495057',fontSize:11,fontFamily:'monospace'}}>{(o.declared_delivery_fee ?? o.delivery_fee ?? 0).toLocaleString('ar-DZ')} دج</span></td>
-                    )}
-
-                    {/* Total */}
-                    {show('total_price') && (
-                      <td style={TD}><span style={{fontWeight:700,color:'#3CC6B9',fontSize:12,fontFamily:'monospace'}}>{o.total?.toLocaleString('ar-DZ')} دج</span></td>
-                    )}
-
-                    {/* Notes */}
-                    {show('notes') && (
-                      <td style={TD}><span style={{color:'#868E96',fontSize:10,maxWidth:100,display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{o.notes ?? '—'}</span></td>
-                    )}
-
-                    {/* Variant */}
-                    {show('variant') && (
-                      <td style={TD}>
-                        {item0.variant_key && item0.variant_key !== 'default'
-                          ? (
-                            <button onClick={()=>setEditModal({...o})} className="inline-flex items-center gap-1 hover:opacity-80">
-                              <span style={{fontSize:10,padding:'1px 6px',borderRadius:999,background:'#D1E7DD',color:'#198754',fontWeight:600}}>{item0.variant_key}</span>
-                              <Edit2 size={9} style={{color:'#22C55E'}}/>
-                            </button>
-                          )
-                          : <span style={{color:'#DEE2E6',fontSize:10}}>—</span>
-                        }
-                      </td>
-                    )}
-
-                    {/* SKU */}
-                    {show('sku') && (
-                      <td style={TD}><span style={{fontFamily:'monospace',fontSize:10,color:'#868E96'}}>{item0.variant_sku ?? o.sku ?? '—'}</span></td>
-                    )}
-
-                    {/* Confirmed by */}
-                    {show('confirmed_by') && (
-                      <td style={TD}>
-                        <ConfirmedByCell order={o} team={team} onSave={(teamId)=>{
-                          const sb = createClient()
-                          sb.from('orders').update({ confirmed_by: teamId ?? null }).eq('id', o.id)
-                          setOrders(prev=>prev.map(x=>x.id===o.id?{...x,confirmed_by:teamId}:x))
-                        }}/>
-                      </td>
-                    )}
+                    {/* Reorderable cells (order-driven) */}
+                    {colOrder.map(k => renderCell(k, o, vc, item0, co))}
 
                     {/* Actions */}
                     {show('actions') && <td style={TD}><RowActions order={o}/></td>}
@@ -1127,7 +1065,7 @@ export default function ConfirmiliOrders({
       )}
 
       {/* Column settings */}
-      {showColSettings && <ColSettingsModal visibleCols={visibleCols} onSave={saveColSettings} onClose={()=>setShowColSettings(false)}/>}
+      {showColSettings && <ColSettingsModal visibleCols={visibleCols} order={colOrder} density={density} onSave={saveColSettings} onClose={()=>setShowColSettings(false)}/>}
 
       {/* Manual order */}
       {showManual && (
@@ -1136,6 +1074,20 @@ export default function ConfirmiliOrders({
             <div className="grid grid-cols-2 gap-3">
               <Field label="الاسم الكامل *" required><input className="input text-sm w-full" value={manualForm.customer_name??''} onChange={e=>setManualForm((f:any)=>({...f,customer_name:e.target.value}))}/></Field>
               <Field label="رقم الهاتف *" required><input className="input text-sm w-full" dir="ltr" value={manualForm.customer_phone??''} onChange={e=>setManualForm((f:any)=>({...f,customer_phone:e.target.value}))}/></Field>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="الولاية *" required>
+                <select className="input text-sm w-full" value={manualForm.wilaya_id??''} onChange={e=>setManualForm((f:any)=>({...f,wilaya_id:e.target.value,commune_id:''}))}>
+                  <option value="">اختر الولاية</option>
+                  {wilayasList.map(w=><option key={w.id} value={w.id}>{w.id} - {w.name_ar}</option>)}
+                </select>
+              </Field>
+              <Field label="البلدية">
+                <select className="input text-sm w-full" value={manualForm.commune_id??''} disabled={!manualForm.wilaya_id} onChange={e=>setManualForm((f:any)=>({...f,commune_id:e.target.value}))}>
+                  <option value="">{manualForm.wilaya_id ? 'اختر البلدية' : 'اختر الولاية أولاً'}</option>
+                  {manualCommunes.map(c=><option key={c.id} value={c.id}>{c.name_ar}</option>)}
+                </select>
+              </Field>
             </div>
             <Field label="العنوان"><input className="input text-sm w-full" value={manualForm.address??''} onChange={e=>setManualForm((f:any)=>({...f,address:e.target.value}))}/></Field>
             <div className="grid grid-cols-2 gap-3">
@@ -1157,7 +1109,7 @@ export default function ConfirmiliOrders({
             )}
             <Field label="ملاحظات"><textarea rows={2} className="input text-sm w-full resize-none" value={manualForm.notes??''} onChange={e=>setManualForm((f:any)=>({...f,notes:e.target.value}))}/></Field>
             <div className="flex gap-2 pt-1">
-              <button onClick={saveManual} disabled={savingManual||!manualForm.customer_name||!manualForm.customer_phone} className="flex-1 h-9 rounded-xl text-sm font-bold text-white" style={{background:'#3CC6B9'}}>
+              <button onClick={saveManual} disabled={savingManual||!manualForm.customer_name||!manualForm.customer_phone||!manualForm.wilaya_id} className="flex-1 h-9 rounded-xl text-sm font-bold text-white" style={{background:'#3CC6B9'}}>
                 {savingManual ? 'جارٍ الحفظ...' : 'إنشاء الطلبية'}
               </button>
               <button onClick={()=>setShowManual(false)} className="flex-1 h-9 rounded-xl text-sm font-bold border" style={{borderColor:'#DC3545',color:'#DC3545'}}>إلغاء</button>
@@ -1242,6 +1194,7 @@ export default function ConfirmiliOrders({
                 <p className="font-bold text-sm" style={{color:'#212529'}}>{verifyModal.customer_name}</p>
                 <p className="text-xs font-mono" style={{color:'#868E96'}}>{masked}</p>
                 <p className="text-xs" style={{color:'#868E96'}}>{(verifyModal.wilaya as any)?.name_ar ?? ''}</p>
+                {verifyModal.address && <p className="text-xs mt-0.5" style={{color:'#ADB5BD'}}>{verifyModal.address}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl p-3" style={{background:'#D1E7DD'}}>
@@ -1269,8 +1222,21 @@ export default function ConfirmiliOrders({
       })()}
 
       {/* Send report modal */}
-      {showSendReport && (
-        <Modal title="تقرير الإرسال" onClose={()=>setShowSendReport(false)} width={540}>
+      {showSendReport && (() => {
+        const srFiltered = sendReports.filter(r => {
+          if (srStatus !== 'all' && r.status !== srStatus) return false
+          if (srDate && (r.sent_at ?? '').slice(0,10) !== srDate) return false
+          if (srSearch.trim()) {
+            const q = srSearch.trim().toLowerCase()
+            const hay = `${r.tracking_num ?? ''} ${r.order?.customer_name ?? ''} ${r.order?.order_number ?? ''} ${r.company?.short_name ?? r.company?.name ?? ''}`.toLowerCase()
+            if (!hay.includes(q)) return false
+          }
+          return true
+        })
+        const srTotalPages = Math.max(1, Math.ceil(srFiltered.length / srPerPage))
+        const srPaged = srFiltered.slice((srPage-1)*srPerPage, srPage*srPerPage)
+        return (
+        <Modal title="تقرير الإرسال" onClose={()=>setShowSendReport(false)} width={560}>
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
               {[
@@ -1284,17 +1250,39 @@ export default function ConfirmiliOrders({
                 </div>
               ))}
             </div>
+
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-2">
+              <input value={srSearch} onChange={e=>{setSrSearch(e.target.value);setSrPage(1)}} placeholder="بحث: عميل / رقم تتبع / طلبية" dir="rtl"
+                className="flex-1 min-w-[160px] border rounded-lg px-3 h-8 text-xs outline-none" style={{borderColor:'var(--color-border)'}}/>
+              <select value={srStatus} onChange={e=>{setSrStatus(e.target.value as any);setSrPage(1)}} className="border rounded-lg px-2 h-8 text-xs outline-none" style={{borderColor:'var(--color-border)'}}>
+                <option value="all">كل الحالات</option><option value="sent">نجح</option><option value="failed">فشل</option>
+              </select>
+              <input type="date" value={srDate} onChange={e=>{setSrDate(e.target.value);setSrPage(1)}} className="border rounded-lg px-2 h-8 text-xs outline-none" style={{borderColor:'var(--color-border)'}}/>
+              <select value={srPerPage} onChange={e=>{setSrPerPage(+e.target.value);setSrPage(1)}} className="border rounded-lg px-2 h-8 text-xs outline-none" style={{borderColor:'var(--color-border)'}}>
+                {[10,20,50].map(n=><option key={n} value={n}>{n}/صفحة</option>)}
+              </select>
+            </div>
+
             <div className="max-h-64 overflow-y-auto space-y-2">
-              {sendReports.length === 0
+              {srFiltered.length === 0
                 ? <p className="text-center py-6 text-sm" style={{color:'#868E96'}}>لا توجد تقارير إرسال</p>
-                : sendReports.map(r=>(
+                : srPaged.map(r=>(
                   <div key={r.id} className="flex items-center gap-3 p-3 rounded-xl border" style={{borderColor:'#F1F3F5'}}>
-                    <span className="w-2 h-2 rounded-full" style={{background:r.status==='sent'?'#22C55E':'#E23024'}}/>
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{background:r.status==='sent'?'#22C55E':'#E23024'}}/>
                     <div className="flex-1 min-w-0">
-                      <p className="font-mono text-xs font-bold" style={{color:'#3CC6B9'}}>{r.tracking_num??'—'}</p>
-                      <p className="text-[10px]" style={{color:'#868E96'}}>{r.is_auto?'⚡ تلقائي':'✋ يدوي'} · {new Date(r.sent_at).toLocaleString('ar-DZ')}</p>
+                      <p className="text-xs font-bold truncate" style={{color:'#212529',fontFamily:'var(--font-arabic)'}}>
+                        {r.order?.customer_name ?? '—'}
+                        {r.order?.order_number && <span className="font-mono mr-1" style={{color:'#868E96',fontWeight:400}}> #{r.order.order_number}</span>}
+                      </p>
+                      <p className="font-mono text-[11px] font-bold" style={{color:'#3CC6B9'}}>{r.tracking_num??'—'}</p>
+                      <p className="text-[10px]" style={{color:'#868E96'}}>
+                        {(r.company?.short_name ?? r.company?.name) ? `🚚 ${r.company.short_name ?? r.company.name} · ` : ''}
+                        {r.is_auto?'⚡ تلقائي':'✋ يدوي'} · {new Date(r.sent_at).toLocaleString('ar-DZ')}
+                      </p>
+                      <p className="text-[10px]" style={{color:r.status==='sent'?'#198754':'#DC3545'}}>{r.status==='sent'?'تم الإرسال بنجاح':'فشل الإرسال'}</p>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0"
                       style={{background:r.status==='sent'?'#D1E7DD':'#F8D7DA',color:r.status==='sent'?'#198754':'#DC3545'}}>
                       {r.status==='sent'?'نجح':'فشل'}
                     </span>
@@ -1302,10 +1290,25 @@ export default function ConfirmiliOrders({
                 ))
               }
             </div>
+
+            {/* Pagination */}
+            {srFiltered.length > srPerPage && (
+              <div className="flex items-center justify-between">
+                <span className="text-[11px]" style={{color:'#868E96'}}>
+                  {Math.min((srPage-1)*srPerPage+1, srFiltered.length)}-{Math.min(srPage*srPerPage, srFiltered.length)} من {srFiltered.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <PagBtn label="‹" onClick={()=>setSrPage(p=>Math.max(1,p-1))} disabled={srPage<=1}/>
+                  <span className="text-xs px-2" style={{color:'#495057'}}>{srPage} / {srTotalPages}</span>
+                  <PagBtn label="›" onClick={()=>setSrPage(p=>Math.min(srTotalPages,p+1))} disabled={srPage>=srTotalPages}/>
+                </div>
+              </div>
+            )}
             <button onClick={()=>setShowSendReport(false)} className="w-full h-9 rounded-xl text-sm font-bold text-white" style={{background:'#DC3545'}}>إغلاق</button>
           </div>
         </Modal>
-      )}
+        )
+      })()}
     </div>
   )
 }
@@ -1341,91 +1344,70 @@ function ConfirmedByCell({ order, team, onSave }: { order:any; team:any[]; onSav
 }
 
 // ─── COL SETTINGS MODAL (exact Octomatic) ────────────────────
-function ColSettingsModal({ visibleCols, onSave, onClose }: { visibleCols:Set<string>; onSave:(s:Set<string>)=>void; onClose:()=>void }) {
-  const [local, setLocal] = useState(new Set(visibleCols))
-  const [style, setStyle] = useState<1|2>(1)
+function ColSettingsModal({ visibleCols, order, density, onSave, onClose }: { visibleCols:Set<string>; order:string[]; density:1|2; onSave:(s:Set<string>,o:string[],d:1|2)=>void; onClose:()=>void }) {
+  const [local, setLocal]           = useState(new Set(visibleCols))
+  const [localOrder, setLocalOrder] = useState<string[]>(order)
+  const [style, setStyle]           = useState<1|2>(density)
 
-  // Exact Octomatic column list with section grouping
-  const OCTO_COLS = [
-    { key:'order_number',    label:'رقم الطلب',          defaultOn: true  },
-    { key:'source',          label:'المصدر',             defaultOn: true  },
-    { key:'date',            label:'التاريخ',            defaultOn: true  },
-    { key:'customer_name',   label:'الإسم الكامل',        defaultOn: true  },
-    { key:'phone',           label:'الهاتف',             defaultOn: true  },
-    { key:'verify',          label:'تحقق',               defaultOn: true  },
-    { key:'status',          label:'الحالة',             defaultOn: true  },
-    { key:'address',         label:'العنوان',            defaultOn: true  },
-    { key:'delivery_co',     label:'ش.ت',                defaultOn: true  },
-    { key:'delivery_type',   label:'نوعية التوصيل',       defaultOn: true  },
-    { key:'wilaya',          label:'الولاية',             defaultOn: true  },
-    { key:'baladia',         label:'البلدية',             defaultOn: false },
-    { key:'delivery_action', label:'ش ت إجراء',           defaultOn: true  },
-    { key:'product',         label:'المنتج',              defaultOn: true  },
-    { key:'product_price',   label:'سعر المنتج',          defaultOn: true  },
-    { key:'quantity',        label:'الكمية',              defaultOn: true  },
-    { key:'delivery_price',  label:'س.التوصيل',           defaultOn: true  },
-    { key:'total_price',     label:'السعر الكلي',         defaultOn: true  },
-    { key:'notes',           label:'ملاحظات',             defaultOn: true  },
-    { key:'variant',         label:'المتغيرات',           defaultOn: true  },
-    { key:'sku',             label:'SKU',                 defaultOn: false },
-    { key:'confirmed_by',    label:'التأكيد بواسطة',      defaultOn: true  },
-  ]
+  const LABELS: Record<string,string> = Object.fromEntries(COL_DEFS.map(c => [c.key, c.label]))
+  const DEFAULT_ON = COL_DEFS.filter(c => c.defaultOn && c.key !== 'actions').map(c => c.key)
 
   const toggle = (key: string) => setLocal(prev => {
-    const s = new Set(Array.from(prev))
-    s.has(key) ? s.delete(key) : s.add(key)
-    return s
+    const s = new Set(Array.from(prev)); s.has(key) ? s.delete(key) : s.add(key); return s
+  })
+  const move = (idx: number, dir: -1|1) => setLocalOrder(prev => {
+    const a = [...prev]; const j = idx + dir
+    if (j < 0 || j >= a.length) return a
+    ;[a[idx], a[j]] = [a[j], a[idx]]; return a
   })
 
   return (
     <Modal title="إعدادات الأعمدة / تغيير شكل الجدول" onClose={onClose} width={520}>
       <div className="space-y-4">
-        {/* Layout style toggle */}
-        <div className="flex items-center gap-2">
+        {/* Row density (ستايل 01/02) */}
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-medium" style={{color:'#495057'}}>شكل الجدول:</span>
-          {[1,2].map(s => (
-            <button key={s} onClick={()=>setStyle(s as 1|2)}
+          {([1,2] as const).map(s => (
+            <button key={s} onClick={()=>setStyle(s)}
               className="px-3 h-7 rounded-lg text-xs font-bold border transition-colors"
               style={{
                 background: style===s ? '#3CC6B9' : '#fff',
                 color:      style===s ? '#fff'    : '#495057',
                 borderColor: style===s ? '#3CC6B9' : 'var(--color-border)',
               }}>
-              ستايل 0{s}
+              {s===1 ? 'ستايل 01 — مريح' : 'ستايل 02 — مضغوط'}
             </button>
           ))}
         </div>
 
-        {/* Column toggles */}
-        <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
-          {OCTO_COLS.map(c => {
-            const on = local.has(c.key)
+        {/* Column list: reorder (▲▼) + On/Off, rendered in saved order */}
+        <p className="text-[10px]" style={{color:'#868E96',fontFamily:'var(--font-arabic)'}}>استخدم ▲▼ لإعادة الترتيب والمفتاح للإظهار/الإخفاء</p>
+        <div className="space-y-1.5 max-h-72 overflow-y-auto pr-0.5">
+          {localOrder.map((key, idx) => {
+            const on = local.has(key)
             return (
-              <div key={c.key}
-                className="flex items-center justify-between px-3 py-2 rounded-xl border cursor-pointer select-none"
-                style={{borderColor: on ? '#DEE2E6' : '#FEE2E2', background: on ? '#FAFFFE' : '#FFFAFA'}}
-                onClick={() => toggle(c.key)}>
-                <span className="text-xs font-medium" style={{fontFamily:'var(--font-arabic)',color:'#212529'}}>{c.label}</span>
-                <div className="w-9 h-5 rounded-full relative flex-shrink-0" style={{background: on?'#22C55E':'#DC3545'}}>
-                  <span className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all"
-                    style={{[on?'right':'left']:'2px'} as any}/>
+              <div key={key} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border select-none"
+                style={{borderColor: on ? '#DEE2E6' : '#FEE2E2', background: on ? '#FAFFFE' : '#FFFAFA'}}>
+                <div className="flex flex-col leading-none">
+                  <button onClick={()=>move(idx,-1)} disabled={idx===0} className="text-[10px] disabled:opacity-25 hover:opacity-70" style={{color:'#3CC6B9'}} title="أعلى">▲</button>
+                  <button onClick={()=>move(idx,1)} disabled={idx===localOrder.length-1} className="text-[10px] disabled:opacity-25 hover:opacity-70" style={{color:'#3CC6B9'}} title="أسفل">▼</button>
                 </div>
+                <span className="text-xs font-medium flex-1" style={{fontFamily:'var(--font-arabic)',color:'#212529'}}>{LABELS[key] ?? key}</span>
+                <button onClick={()=>toggle(key)} className="w-9 h-5 rounded-full relative flex-shrink-0" style={{background: on?'#22C55E':'#DC3545'}} title={on?'ظاهر':'مخفي'}>
+                  <span className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all" style={{[on?'right':'left']:'2px'} as any}/>
+                </button>
               </div>
             )
           })}
         </div>
 
-        {/* Action buttons — exact Octomatic order */}
+        {/* Action buttons */}
         <div className="flex gap-2 pt-1 flex-wrap">
-          <button onClick={()=>setLocal(new Set(OCTO_COLS.filter(c=>c.defaultOn).map(c=>c.key)))}
-            className="flex-1 h-9 rounded-xl text-xs font-bold text-white" style={{background:'#22C55E',minWidth:140}}>
+          <button onClick={()=>{ setLocal(new Set(DEFAULT_ON)); setLocalOrder(MIDDLE_COLS); setStyle(1) }}
+            className="flex-1 h-9 rounded-xl text-xs font-bold text-white" style={{background:'#22C55E',minWidth:160}}>
             إعادة تعيين إلى الافتراضي
           </button>
-          <button className="flex-1 h-9 rounded-xl text-xs font-bold text-white opacity-70 cursor-default" style={{background:'#22C55E',minWidth:100}}
-            title="قريباً — سحب وإفلات لترتيب الأعمدة">
-            ترتيب الأعمدة
-          </button>
-          <button onClick={()=>onSave(local)} className="flex-1 h-9 rounded-xl text-xs font-bold text-white" style={{background:'#3CC6B9',minWidth:80}}>
+          <button onClick={()=>onSave(local, localOrder, style)} className="flex-1 h-9 rounded-xl text-xs font-bold text-white" style={{background:'#3CC6B9',minWidth:80}}>
             حفظ
           </button>
           <button onClick={onClose} className="flex-1 h-9 rounded-xl text-xs font-bold border" style={{borderColor:'#DC3545',color:'#DC3545',minWidth:80}}>

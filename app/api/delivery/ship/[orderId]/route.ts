@@ -57,7 +57,13 @@ export async function POST(req: Request, { params }: { params: { orderId: string
   }
 
   const result = await adapterFromRow(provider).createShipment(dto)
-  if (!result.success) return NextResponse.json({ error: result.error ?? 'فشل إنشاء الشحنة' }, { status: 502 })
+  if (!result.success) {
+    // Record the failed attempt so it surfaces in تقرير الإرسال.
+    await ctx.supabase.from('confirmili_send_reports').insert({
+      store_id: ctx.store.id, order_id: order.id, tracking_num: null, is_auto: false, status: 'failed',
+    }).then(() => {}, () => {})
+    return NextResponse.json({ error: result.error ?? 'فشل إنشاء الشحنة' }, { status: 502 })
+  }
 
   const unified = 'pending'
   await ctx.supabase.from('orders').update({
@@ -72,6 +78,12 @@ export async function POST(req: Request, { params }: { params: { orderId: string
   await ctx.supabase.from('delivery_logs').insert({
     order_id: order.id, store_id: ctx.store.id, status: 'created',
     source: 'system', metadata: { provider: provider.provider_type, tracking: result.trackingNumber },
+  }).then(() => {}, () => {})
+
+  // Surface the send in تقرير الإرسال (confirmili_send_reports).
+  await ctx.supabase.from('confirmili_send_reports').insert({
+    store_id: ctx.store.id, order_id: order.id,
+    tracking_num: result.trackingNumber, is_auto: false, status: 'sent',
   }).then(() => {}, () => {})
 
   return NextResponse.json({ ok: true, trackingNumber: result.trackingNumber, labelUrl: result.labelUrl, provider: provider.display_name })
