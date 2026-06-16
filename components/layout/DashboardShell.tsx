@@ -331,6 +331,23 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
               <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-white text-sm" style={{ background: 'var(--color-accent)' }}>د</div>
               <span className="font-bold text-sm hidden sm:block" style={{ color: 'var(--color-text-primary)' }}>دكاني</span>
             </Link>
+            {store?.slug ? (
+              <a href={`/store/${store.slug}`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 h-8 rounded-full border text-xs sm:text-sm font-semibold transition-all hover:bg-[#F8F9FA]"
+                style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+                title="زيارة المتجر">
+                <ExternalLink size={13} />
+                <span>المتجر</span>
+              </a>
+            ) : (
+              <Link href="/settings"
+                className="flex items-center gap-1.5 px-3 h-8 rounded-full border text-xs sm:text-sm font-semibold transition-all hover:bg-[#F8F9FA]"
+                style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+                title="أضف رابط متجرك في الإعدادات لزيارته">
+                <ExternalLink size={13} />
+                <span>المتجر</span>
+              </Link>
+            )}
           </div>
 
           {/* Left side (RTL) */}
@@ -342,17 +359,7 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
               <Coins size={13} />
               <span>0 كريدت</span>
             </button>
-            {store?.slug ? (
-              <a href={`/store/${store.slug}`} target="_blank" rel="noopener noreferrer"
-                className="p-2 rounded-md hover:bg-[#F8F9FA] transition-colors" title="زيارة المتجر">
-                <ExternalLink size={16} style={{ color: 'var(--color-text-secondary)' }} />
-              </a>
-            ) : (
-              <Link href="/settings"
-                className="p-2 rounded-md hover:bg-[#F8F9FA] transition-colors" title="أضف رابط متجرك في الإعدادات لزيارته">
-                <ExternalLink size={16} style={{ color: 'var(--color-text-secondary)' }} />
-              </Link>
-            )}
+            {/* Store visit link moved to the right side */}
             <Link href="/learn"
               className="p-2 rounded-md hover:bg-[#F8F9FA] transition-colors" title="تعلم">
               <Youtube size={16} style={{ color: '#FF0000' }} />
