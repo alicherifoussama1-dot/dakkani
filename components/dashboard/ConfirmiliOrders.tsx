@@ -22,10 +22,10 @@ const SB = {
   failed_01: { label:'فاشلة 01', color:'#FFA447', text:'#3A2400' },
   failed_02: { label:'فاشلة 02', color:'#FF8C1A', text:'#fff' },
   failed_03: { label:'فاشلة 03', color:'#E67300', text:'#fff' },
-  confirmed: { label:'مؤكدة',    color:'#39FF14', text:'#06400A' },
+  confirmed: { label:'مؤكدة',    color:'#22C55E', text:'#fff' },
   cancelled: { label:'ملغاة',    color:'#E23024', text:'#fff' },
   postponed: { label:'مؤجلة',    color:'#9D76C1', text:'#fff' },
-  duplicate: { label:'مكررة',    color:'#040D12', text:'#fff' },
+  duplicate: { label:'مكررة',    color:'#1A1A1A', text:'#fff' },
   // ── Logistics statuses (DB allows these too — migration 009) ──
   processing:       { label:'قيد المعالجة', color:'#3CC6B9', text:'#06403B' },
   shipped:          { label:'مشحونة',       color:'#3B82F6', text:'#fff' },
@@ -39,17 +39,17 @@ const SB = {
   exception:        { label:'مشكلة',         color:'#EF4444', text:'#fff' },
 } as Record<string, {label:string;color:string;text:string}>
 
-// Row-background tint = 40% of status color (duplicate uses a light neutral
-// so dark text stays legible). Falls back to 40% of the pill color.
+// Row-background tint = 10% of the status color (spec). Falls back to 10%
+// of the pill color for any unlisted status.
 const ROW_TINT: Record<string,string> = {
-  pending:   'rgba(128,188,189,0.32)',
-  failed_01: 'rgba(255,164,71,0.40)',
-  failed_02: 'rgba(255,140,26,0.40)',
-  failed_03: 'rgba(230,115,0,0.36)',
-  confirmed: 'rgba(57,255,20,0.32)',
-  cancelled: 'rgba(226,48,36,0.34)',
-  postponed: 'rgba(157,118,193,0.40)',
-  duplicate: 'rgba(4,13,18,0.10)',
+  pending:   'rgba(128,188,189,0.10)',
+  failed_01: 'rgba(255,164,71,0.10)',
+  failed_02: 'rgba(255,140,26,0.10)',
+  failed_03: 'rgba(230,115,0,0.10)',
+  confirmed: 'rgba(34,197,94,0.10)',
+  cancelled: 'rgba(226,48,36,0.10)',
+  postponed: 'rgba(157,118,193,0.10)',
+  duplicate: 'rgba(26,26,26,0.10)',
 }
 
 function normStatus(raw?: string|null): string {
@@ -980,8 +980,8 @@ export default function ConfirmiliOrders({
                 const co = companies.find(c => c.id === o.delivery_company_id)
                 const statusColor = getStatusDef(o.status).color
                 const nk = normStatus(o.status)
-                const rowBg      = ROW_TINT[nk] ?? hexToRgba(statusColor, 0.18)
-                const rowBgHover = ROW_TINT[nk] ? hexToRgba(statusColor, 0.48) : hexToRgba(statusColor, 0.30)
+                const rowBg      = ROW_TINT[nk] ?? hexToRgba(statusColor, 0.10)
+                const rowBgHover = hexToRgba(statusColor, 0.20)
 
                 rows.push(
                   <tr key={o.id}
