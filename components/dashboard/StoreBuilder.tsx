@@ -61,7 +61,7 @@ export default function StoreBuilder({ storeId, storeSlug, storeName, initialLay
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
-  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500) }
+  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), m.length > 40 ? 6000 : 2500) }
 
   // Push the (unsaved) layout + theme to the preview iframe — live, debounced.
   const pushPreview = useCallback(() => {
@@ -96,7 +96,8 @@ export default function StoreBuilder({ storeId, storeSlug, storeName, initialLay
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ storeId, layout, theme_key: theme }),
       })
-      if (!res.ok) { flash('تعذّر الحفظ'); return }
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) { flash(d.error ?? 'تعذّر الحفظ'); return }
       flash('✓ تم الحفظ ونشره على المتجر')
     } catch { flash('خطأ في الشبكة') }
     finally { setSaving(false) }
@@ -196,7 +197,7 @@ export default function StoreBuilder({ storeId, storeSlug, storeName, initialLay
 
       {aiOpen && <AIModal storeId={storeId} defaultName={storeName} onClose={() => setAiOpen(false)} onResult={onAIResult} />}
       {toast && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-lg" style={{ background: '#0D6EFD' }}>
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-lg max-w-[92vw] text-center leading-relaxed" style={{ background: toast.startsWith('✓') ? '#0D6EFD' : '#DC3545' }}>
           {toast}
         </div>
       )}

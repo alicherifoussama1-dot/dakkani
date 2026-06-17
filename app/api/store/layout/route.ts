@@ -38,6 +38,17 @@ export async function PATCH(req: Request) {
   if (body.theme_key && THEME_KEYS.includes(body.theme_key)) patch.theme_key = body.theme_key
 
   const { error } = await supabase.from('stores').update(patch).eq('id', body.storeId)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    // Most common cause: migration 019 not applied → layout/theme_key columns
+    // don't exist yet. Return a precise, actionable message.
+    const missingColumn = /could not find|does not exist|schema cache|column/i.test(error.message)
+    if (missingColumn) {
+      return NextResponse.json({
+        error: 'يتعذّر الحفظ: قاعدة البيانات تنقصها أعمدة مُنشئ المتجر (layout / theme_key). شغّل ترحيل 019_store_builder.sql في Supabase ثم أعد المحاولة.',
+        code: 'MIGRATION_REQUIRED',
+      }, { status: 409 })
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ ok: true, layout })
 }
