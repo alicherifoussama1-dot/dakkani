@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Home, Package, ShoppingCart, Plug, Users, Navigation2,
+  Home, Package, ShoppingCart, Users, Navigation2,
   Phone, BarChart2, GraduationCap, CreditCard, ChevronDown,
   ChevronRight, Menu, X, LogOut, Settings, Bell, Youtube,
   HelpCircle, Sun, Moon, Globe, User, Store, ExternalLink,
@@ -24,7 +24,6 @@ const NAV_MAIN = [
   { href: '/reviews',        label: 'التقييمات',   icon: Star },
   { href: '/blacklist',      label: 'القائمة السوداء', icon: ShieldOff },
   { href: '/landing-pages',  label: 'صفحات الهبوط', icon: Globe },
-  { href: '/apps',           label: 'التطبيقات',   icon: Plug },
   { href: '/tracking',       label: 'التتبع',      icon: Navigation2 },
 ]
 const NAV_FEATURES = [
