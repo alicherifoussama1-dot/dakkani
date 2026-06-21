@@ -43,6 +43,11 @@ ALTER TABLE products
 
 -- Repoint products.google_sheet_id at the new sheets table.
 ALTER TABLE products DROP CONSTRAINT IF EXISTS products_google_sheet_id_fkey;
+-- Clear stale links that pointed at the OLD google_sheets table (absent from
+-- the new sheets table) so the new FK validates against existing data.
+UPDATE products SET google_sheet_id = NULL
+  WHERE google_sheet_id IS NOT NULL
+    AND google_sheet_id NOT IN (SELECT id FROM sheets);
 ALTER TABLE products
   ADD CONSTRAINT products_google_sheet_id_fkey
   FOREIGN KEY (google_sheet_id) REFERENCES sheets(id) ON DELETE SET NULL;
