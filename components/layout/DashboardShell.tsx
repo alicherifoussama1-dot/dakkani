@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Home, Package, ShoppingCart, Users, Navigation2,
-  Phone, BarChart2, GraduationCap, CreditCard, ChevronDown,
-  ChevronRight, Menu, X, LogOut, Settings, Bell, Youtube,
+  Phone, BarChart2, CreditCard, ChevronDown,
+  ChevronRight, Menu, X, LogOut, Settings, Bell,
   HelpCircle, Sun, Moon, Globe, User, Store, ExternalLink,
   Coins, Star, ShieldOff, Plus, Loader2,
 } from 'lucide-react'
@@ -29,8 +29,6 @@ const NAV_MAIN = [
 const NAV_FEATURES = [
   { href: '/confirmili',    label: 'Confirmili',  icon: Phone,         badge: 'جديد' },
   { href: '/google-sheets', label: 'قوقل شيت',    icon: Globe,         badge: 'جديد' },
-  { href: '/justad',        label: 'JustAd',       icon: BarChart2 },
-  { href: '/learn',         label: 'تعلم',          icon: GraduationCap },
 ]
 const NAV_BILLING = [
   { href: '/billing/plans', label: 'الفواتير والاشتراك', icon: CreditCard },
@@ -359,11 +357,6 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
               <Coins size={13} />
               <span>0 كريدت</span>
             </button>
-            {/* Store visit link moved to the right side */}
-            <Link href="/learn"
-              className="p-2 rounded-md hover:bg-[#F8F9FA] transition-colors" title="تعلم">
-              <Youtube size={16} style={{ color: '#FF0000' }} />
-            </Link>
             <a href="https://wa.me/213000000000?text=مرحبا، أحتاج مساعدة في دكاني" target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 px-2.5 h-8 rounded-md border text-xs font-medium hover:bg-[#F8F9FA] transition-colors"
               style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
