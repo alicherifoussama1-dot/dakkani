@@ -7,7 +7,7 @@ import {
   Phone, BarChart2, CreditCard, ChevronDown,
   ChevronRight, Menu, X, LogOut, Settings, Bell,
   HelpCircle, Sun, Moon, Globe, User, Store, ExternalLink,
-  Coins, Star, ShieldOff, Plus, Loader2,
+  Coins, Star, ShieldOff, Plus, Loader2, Truck,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -19,6 +19,7 @@ const NAV_MAIN = [
   { href: '/orders',         label: 'الطلبات',     icon: ShoppingCart },
   { href: '/products',       label: 'المنتجات',    icon: Package },
   { href: '/store-builder',  label: 'مُنشئ المتجر', icon: Store, badge: 'جديد' },
+  { href: '/store/delivery', label: 'التوصيل',      icon: Truck, badge: 'جديد' },
   { href: '/customers',      label: 'الزبائن',     icon: Users },
   { href: '/analytics',      label: 'الإحصائيات', icon: BarChart2 },
   { href: '/reviews',        label: 'التقييمات',   icon: Star },

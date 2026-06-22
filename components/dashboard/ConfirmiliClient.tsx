@@ -19,7 +19,8 @@ import {
 } from 'recharts'
 import { getStatus, statusLabel, STATUS_LIST } from '@/lib/confirmili/statuses'
 import ConfirmiliOrders from './ConfirmiliOrders'
-import ConfirmiliDelivery from './ConfirmiliDelivery'
+// Store-owned delivery module (Confirmili reuses it; no reverse dependency)
+import ConfirmiliDelivery from '@/components/store/StoreDelivery'
 
 // ── Sub-nav tabs ──────────────────────────────────────────
 const TABS = [

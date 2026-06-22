@@ -1,9 +1,10 @@
 'use client'
 // ============================================================
-// Confirmili → التوصيل tab. Single source of truth for couriers
-// and prices (delivery_providers / delivery_declared_prices /
-// delivery_real_prices / wilaya_company_map). All courier calls
-// go through /api/delivery/* (credentials never touch the client).
+// STORE delivery module — couriers + prices management UI.
+// Store-owned, NO Confirmili coupling. Single source of truth for
+// delivery_providers / delivery_declared_prices / delivery_real_prices
+// / wilaya_company_map. All courier calls go through /api/delivery/*
+// (credentials never touch the client). See lib/delivery/README.md.
 // ============================================================
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -16,7 +17,7 @@ type Provider = { id: string; provider_type: ProviderType; display_name: string;
 type Wilaya = { id: number; code: string; name_ar: string }
 type PriceRow = { home: number; desk: number; source: string }
 
-export default function ConfirmiliDelivery({ storeId, setToast }: { storeId: string; setToast: (m: string) => void }) {
+export default function StoreDelivery({ storeId, setToast }: { storeId: string; setToast: (m: string) => void }) {
   const [tab, setTab] = useState(0)
   const [providers, setProviders] = useState<Provider[]>([])
   const [wilayas, setWilayas] = useState<Wilaya[]>([])
