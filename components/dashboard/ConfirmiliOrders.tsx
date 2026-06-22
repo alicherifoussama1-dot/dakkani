@@ -360,6 +360,14 @@ export default function ConfirmiliOrders({
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
       })
       const d = await res.json().catch(() => ({}))
+      // Confirmili owns its "تقرير الإرسال" logging (the store ship route is
+      // kept free of confirmili_* tables). Best-effort, never blocks.
+      const sb = createClient()
+      sb.from('confirmili_send_reports').insert({
+        store_id: storeId, order_id: order.id, is_auto: false,
+        tracking_num: res.ok ? d.trackingNumber : null,
+        status: res.ok ? 'sent' : 'failed',
+      }).then(() => {}, () => {})
       if (!res.ok) { setToast(d.error ?? 'تعذّر الإرسال — تأكد من تفعيل شركة توصيل وربطها'); return }
       setOrders(prev => prev.map(o => o.id === order.id
         ? { ...o, tracking_number: d.trackingNumber, status: 'processing', tracking_status: 'pending', label_url: d.labelUrl ?? o.label_url }
@@ -368,7 +376,7 @@ export default function ConfirmiliOrders({
     } catch {
       setToast('تعذّر الإرسال إلى شركة التوصيل')
     }
-  }, [setToast])
+  }, [setToast, storeId])
 
   const bulkUpdateStatus = useCallback(async (uiStatus: string) => {
     if (selected.size === 0) return
