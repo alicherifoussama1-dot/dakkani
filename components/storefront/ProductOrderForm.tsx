@@ -230,30 +230,24 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
               <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
               جاري تحميل مكاتب التوصيل...
             </div>
-          ) : offices.length > 0 ? (
+          ) : (
             <select
               {...register('stopdesk_code', { required: 'يرجى اختيار مكتب التوصيل' })}
               className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none bg-white text-gray-900"
               style={{ borderRadius: 'var(--pt-radius-md)' }}
+              disabled={offices.length === 0}
             >
-              <option value="">اختر مكتب التوصيل...</option>
-              {offices.map(o => (
-                <option key={o.code} value={o.code}>{o.name}</option>
-              ))}
+              {offices.length > 0 ? (
+                <>
+                  <option value="">اختر مكتب التوصيل...</option>
+                  {offices.map(o => (
+                    <option key={o.code} value={o.code}>{o.name}</option>
+                  ))}
+                </>
+              ) : (
+                <option value="">لا توجد مكاتب توصيل متاحة لهذه الولاية</option>
+              )}
             </select>
-          ) : (
-            <div>
-              <input
-                type="text"
-                {...register('stopdesk_code', { required: 'يرجى إدخال اسم مكتب التوصيل' })}
-                placeholder="أدخل اسم أو عنوان مكتب التوصيل المفضل لديك"
-                className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none bg-white text-gray-900"
-                style={{ borderRadius: 'var(--pt-radius-md)' }}
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                سيتم شحن الطلب إلى أقرب مكتب توصيل متوفر في ولايتك.
-              </p>
-            </div>
           )}
           {errors.stopdesk_code && <p className="text-red-500 text-xs mt-1">{errors.stopdesk_code.message}</p>}
         </div>

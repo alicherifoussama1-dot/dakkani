@@ -629,30 +629,25 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                             <Loader2 className="w-4 h-4 animate-spin" />
                             جاري تحميل مكاتب التوصيل...
                           </div>
-                        ) : offices.length > 0 ? (
+                        ) : (
                           <div className="relative">
                             <select
                               {...register('stopdesk_code', { required: 'يرجى اختيار مكتب التوصيل' })}
                               className={`${inputClass} appearance-none`}
+                              disabled={offices.length === 0}
                             >
-                              <option value="">اختر مكتب التوصيل...</option>
-                              {offices.map(o => (
-                                <option key={o.code} value={o.code} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>{o.name}</option>
-                              ))}
+                              {offices.length > 0 ? (
+                                <>
+                                  <option value="">اختر مكتب التوصيل...</option>
+                                  {offices.map(o => (
+                                    <option key={o.code} value={o.code} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>{o.name}</option>
+                                  ))}
+                                </>
+                              ) : (
+                                <option value="">لا توجد مكاتب توصيل متاحة لهذه الولاية</option>
+                              )}
                             </select>
                             <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                          </div>
-                        ) : (
-                          <div>
-                            <input
-                              type="text"
-                              {...register('stopdesk_code', { required: 'يرجى إدخال اسم مكتب التوصيل' })}
-                              placeholder="أدخل اسم أو عنوان مكتب التوصيل المفضل لديك"
-                              className={inputClass}
-                            />
-                            <p className="text-xs text-gray-400 mt-1">
-                              سيتم شحن الطلب إلى أقرب مكتب توصيل متوفر في ولايتك.
-                            </p>
                           </div>
                         )}
                         {errors.stopdesk_code && <p className="text-red-500 text-xs mt-1">{errors.stopdesk_code.message}</p>}
