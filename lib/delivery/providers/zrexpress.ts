@@ -171,35 +171,50 @@ export class ZRExpressAdapter implements DeliveryAdapter {
     if (this.mode === 'zrx') {
       const h = await this.auth()
       if (!h) throw new Error('تعذّر المصادقة مع ZR Express — تحقق من secretKey و tenantId')
-      const url = `${ZRX}/parcels/fees`
-      const r = await fetchRaw(url, { headers: h })
-      // The new ZR "Token API" (api.zrexpress.app) is a parcels-only API with
-      // NO bulk price endpoint (it reads "fees" as a tracking number → 404).
-      if (!r.ok) throw new Error('واجهة ZR Express الجديدة لا توفّر استيراد الأسعار تلقائياً — أدخل أسعار التوصيل يدوياً في تبويب «أسعار التوصيل المعلنة» (تظهر للزبون وتُحتسب تلقائياً).')
-      const data = r.json ?? {}
+      const ROOT = 'https://api.zrexpress.app'
 
-      // Accept array, wrapped array ({data|fees|result|[...]}), or a map keyed
-      // by wilaya code ({"01":{...}}). ZR's exact shape is unknown, so be broad.
-      let entries: [string, any][] = []
-      if (Array.isArray(data)) {
-        entries = data.map((v: any, i: number) => [String(v?.wilaya_code ?? v?.wilaya_id ?? v?.code ?? i), v])
-      } else if (data && typeof data === 'object') {
-        const arr = data.data ?? data.fees ?? data.result ?? data.deliveryFees ?? data.tarifs ?? Object.values(data).find((v: any) => Array.isArray(v))
-        if (Array.isArray(arr)) entries = arr.map((v: any, i: number) => [String(v?.wilaya_code ?? v?.wilaya_id ?? v?.code ?? i), v])
-        else entries = Object.entries(data)
+      const parseRows = (data: any): RateData[] => {
+        let entries: [string, any][] = []
+        if (Array.isArray(data)) entries = data.map((v: any, i: number) => [String(v?.wilaya_code ?? v?.wilaya_id ?? v?.code ?? i), v])
+        else if (data && typeof data === 'object') {
+          const arr = data.data ?? data.fees ?? data.result ?? data.items ?? data.deliveryFees ?? data.tarifs ?? Object.values(data).find((v: any) => Array.isArray(v))
+          if (Array.isArray(arr)) entries = arr.map((v: any, i: number) => [String(v?.wilaya_code ?? v?.wilaya_id ?? v?.code ?? i), v])
+          else entries = Object.entries(data)
+        }
+        return entries.map(([key, w]) => ({
+          wilayaCode: String(w?.wilaya_code ?? w?.wilaya_id ?? w?.code ?? key).padStart(2, '0'),
+          wilayaName: w?.wilaya_name ?? w?.name ?? w?.wilaya,
+          homePrice: Number(w?.home ?? w?.domicile ?? w?.tarif ?? w?.price ?? w?.delivery ?? w?.livraison ?? w?.fee ?? 0),
+          stopdeskPrice: Number(w?.stopdesk ?? w?.stop_desk ?? w?.bureau ?? w?.desk ?? w?.point ?? w?.stopDesk ?? 0),
+        })).filter(r => /^\d{2}$/.test(r.wilayaCode) && r.wilayaCode !== '00' && (r.homePrice > 0 || r.stopdeskPrice > 0))
       }
-      const rows = entries.map(([key, w]) => ({
-        wilayaCode: String(w?.wilaya_code ?? w?.wilaya_id ?? w?.code ?? key).padStart(2, '0'),
-        wilayaName: w?.wilaya_name ?? w?.name ?? w?.wilaya,
-        homePrice: Number(w?.home ?? w?.domicile ?? w?.tarif ?? w?.price ?? w?.delivery ?? w?.livraison ?? 0),
-        stopdeskPrice: Number(w?.stopdesk ?? w?.stop_desk ?? w?.bureau ?? w?.desk ?? w?.point ?? 0),
-      })).filter(r => /^\d{2}$/.test(r.wilayaCode) && r.wilayaCode !== '00' && (r.homePrice > 0 || r.stopdeskPrice > 0))
 
-      if (rows.length === 0) {
-        // Surface the real shape so the parser can be fixed precisely.
-        throw new Error(`ZR لم تُرجع قائمة أسعار مقروءة. شكل الرد: ${JSON.stringify(data).slice(0, 280)}`)
+      // 1) Discover the real fees endpoint from ZR's OpenAPI/Swagger spec
+      //    (authenticated). /parcels/fees was wrong — it matched /parcels/{id}.
+      let available: string[] = []
+      const feeRe = /(fee|tarif|tarification|price|pricing|deliver|wilaya|commune|zone)/i
+      for (const sp of ['/swagger/docs/v1', '/swagger/swagger.json', '/swagger/v1/swagger.json']) {
+        const sr = await fetchRaw(`${ROOT}${sp}`, { headers: h })
+        if (sr.ok && sr.json?.paths) { available = Object.keys(sr.json.paths); break }
       }
-      return rows
+      const candidates = [
+        ...available.filter(p => feeRe.test(p) && !p.includes('{')).map(p => `${ROOT}${p}`),
+        `${ZRX}/fees`, `${ZRX}/tarification`, `${ZRX}/delivery-fees`, `${ZRX}/pricing`, `${ZRX}/wilayas`,
+      ]
+
+      // 2) Try each candidate (GET) and return the first that yields prices.
+      for (const u of candidates) {
+        const r = await fetchRaw(u, { headers: h })
+        if (!r.ok) continue
+        const rows = parseRows(r.json ?? {})
+        if (rows.length) return rows
+      }
+
+      // 3) Couldn't find it → show the available endpoints so we can pin it.
+      const hint = available.length
+        ? `المسارات المتاحة في ZR: ${available.filter(p => !p.includes('{')).slice(0, 30).join('، ')}`
+        : 'تعذّر قراءة قائمة نقاط ZR (Swagger محمي أو غير متاح).'
+      throw new Error(`تعذّر العثور على نقطة أسعار ZR تلقائياً. ${hint}`)
     }
     try {
       const data = await httpJson<any>(`${PROCOLIS}/tarification`, { method: 'POST', headers: this.procolisHeaders, body: '{}' })
