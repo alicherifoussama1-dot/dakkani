@@ -211,21 +211,20 @@ export class ZRExpressAdapter implements DeliveryAdapter {
         if (rows.length) return rows
       }
 
-      // 3) ZR's new API computes fees via POST /parcels/calculate (per
-      //    destination). Probe it once and surface the raw contract so the
-      //    request/response shape can be pinned, then looped over 58 wilayas.
-      const calcBody = {
-        wilaya_id: 1, wilaya_code: '01', to_wilaya_id: 1, to_wilaya_code: '01',
-        from_wilaya_id: Number(fromCode), from_wilaya_code: fromCode,
-        delivery_type: 'home', type: 'home', weight: 1, commune_id: null,
+      // 3) /parcels/calculate is a GET (POST → 405). It computes a fee per
+      //    destination. If a GET with destination params returns prices, build
+      //    the table; otherwise surface both responses to pin the contract.
+      const tryGet = async (qs: string) => fetchRaw(`${ZRX}/parcels/calculate${qs}`, { headers: h })
+      const withParams = await tryGet(`?wilaya_id=1&delivery_type=home&from_wilaya_id=${fromCode}&weight=1`)
+      if (withParams.ok) {
+        const rows = parseRows(withParams.json ?? {})
+        if (rows.length) return rows
       }
-      for (const method of ['POST', 'GET'] as const) {
-        const calc = await fetchRaw(`${ZRX}/parcels/calculate`, {
-          method, headers: h, ...(method === 'POST' ? { body: JSON.stringify(calcBody) } : {}),
-        })
-        throw new Error(`ZR /parcels/calculate (${method}) → HTTP ${calc.status}: ${(calc.text || '').slice(0, 350)}`)
-      }
-      throw new Error('تعذّر العثور على نقطة أسعار ZR.')
+      const plain = await tryGet('')
+      throw new Error(
+        `ZR calculate — GET فارغ → HTTP ${plain.status}: ${(plain.text || '').slice(0, 200)} | ` +
+        `GET بمعطيات → HTTP ${withParams.status}: ${(withParams.text || '').slice(0, 200)}`
+      )
     }
     try {
       const data = await httpJson<any>(`${PROCOLIS}/tarification`, { method: 'POST', headers: this.procolisHeaders, body: '{}' })
