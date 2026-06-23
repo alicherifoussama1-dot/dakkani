@@ -147,12 +147,16 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   const total = product.price * quantity + deliveryFee
 
   const onSubmit = async (data: FormData) => {
+    const isStopdesk = data.delivery_type === 'stopdesk'
     const res = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         store_id: store.id,
         ...data,
+        baladia: isStopdesk ? undefined : data.baladia,
+        address: isStopdesk ? undefined : data.address,
+        stopdesk_code: isStopdesk ? data.stopdesk_code : undefined,
         items: [{ product_id: product.id, quantity: data.quantity, variant_key: variantKey ?? 'default' }],
         source: 'storefront',
       }),
