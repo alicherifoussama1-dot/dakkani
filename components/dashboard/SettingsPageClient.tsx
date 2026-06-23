@@ -78,7 +78,7 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
     }
   )
   const [checkoutFieldOrder, setCheckoutFieldOrder] = useState<string[]>(
-    storeSettings?.checkout_field_order ?? ['name', 'wilaya', 'phone', 'address']
+    storeSettings?.checkout_field_order ?? ['name', 'wilaya', 'baladia', 'phone', 'address']
   )
   const [checkoutSaved, setCheckoutSaved] = useState(false)
 
@@ -478,7 +478,8 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
               {checkoutFieldOrder.map((fieldId, idx) => {
                 const fieldMeta: Record<string, { label: string; icon: string }> = {
                   name:    { label: 'الاسم واللقب',       icon: '👤' },
-                  wilaya:  { label: 'الولاية والبلدية',   icon: '📍' },
+                  wilaya:  { label: 'الولاية',           icon: '🌏' },
+                  baladia: { label: 'البلدية',           icon: '📍' },
                   phone:   { label: 'رقم الهاتف',         icon: '📞' },
                   address: { label: 'العنوان التفصيلي',   icon: '🏠' },
                 }
