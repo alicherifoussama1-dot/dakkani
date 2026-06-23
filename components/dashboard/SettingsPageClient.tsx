@@ -24,6 +24,10 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
   const tabParam = searchParams.get('tab')
   const [tab,   setTab]   = useState(tabParam || 'store')
 
+  // ── Normalize store_settings: Supabase returns it as an array via store_settings(*) ──
+  const rawSettings = store.store_settings
+  const storeSettings = Array.isArray(rawSettings) ? (rawSettings[0] ?? null) : (rawSettings ?? null)
+
   useEffect(() => {
     if (tabParam) {
       setTab(tabParam)
@@ -44,11 +48,11 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
   })
 
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' })
-  const [freeThreshold, setFreeThreshold] = useState<string>(String(store.store_settings?.free_delivery_threshold ?? ''))
+  const [freeThreshold, setFreeThreshold] = useState<string>(String(storeSettings?.free_delivery_threshold ?? ''))
   const [notifSettings, setNotifSettings] = useState({
-    order_email: store.store_settings?.order_email ?? true,
-    order_sms:   store.store_settings?.order_sms ?? false,
-    low_stock_alert: store.store_settings?.low_stock_alert ?? true,
+    order_email: storeSettings?.order_email ?? true,
+    order_sms:   storeSettings?.order_sms ?? false,
+    low_stock_alert: storeSettings?.low_stock_alert ?? true,
   })
   const [notifSaved, setNotifSaved] = useState(false)
 
@@ -62,12 +66,12 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
   }
 
   // ── Checkout Customization States ──
-  const [checkoutTheme, setCheckoutTheme] = useState<string>(store.store_settings?.checkout_theme ?? 'default')
+  const [checkoutTheme, setCheckoutTheme] = useState<string>(storeSettings?.checkout_theme ?? 'default')
   const [checkoutSectionOrder, setCheckoutSectionOrder] = useState<string[]>(
-    store.store_settings?.checkout_section_order ?? ['customer_info', 'delivery_info', 'payment_info', 'coupon']
+    storeSettings?.checkout_section_order ?? ['customer_info', 'delivery_info', 'payment_info', 'coupon']
   )
   const [checkoutFields, setCheckoutFields] = useState<any>(
-    store.store_settings?.checkout_fields ?? {
+    storeSettings?.checkout_fields ?? {
       phone2: { visible: true, required: false },
       address: { visible: true, required: false },
       notes: { visible: true, required: false }
