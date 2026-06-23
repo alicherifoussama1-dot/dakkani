@@ -21,7 +21,7 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
   // Load store
   const { data: store } = await supabase
     .from('stores')
-    .select('id, name, name_ar, slug, logo_url, meta_pixel_id, tiktok_pixel_id, store_settings(cash_on_delivery, baridimob, ccp, free_delivery_threshold)')
+    .select('id, name, name_ar, slug, logo_url, meta_pixel_id, tiktok_pixel_id, store_settings(*)')
     .eq('slug', params.storeSlug)
     .eq('is_active', true)
     .single()

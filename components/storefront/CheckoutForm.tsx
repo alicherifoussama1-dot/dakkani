@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -13,7 +13,7 @@ import { TikTokPixel } from '@/components/pixels/TikTokPixel'
 import { Truck, Store, CreditCard, Banknote, CheckCircle, AlertTriangle, Loader2, ChevronDown } from 'lucide-react'
 import type { Wilaya } from '@/types'
 
-// ── Validation schema ────────────────────────────────────────
+// ── Validation schema (Static fallback type) ─────────────────
 const schema = z.object({
   customer_name:  z.string().min(2, 'الاسم يجب أن يكون حرفين على الأقل'),
   phone:          z.string().regex(/^(05|06|07)[0-9]{8}$/, 'رقم الهاتف غير صالح — مثال: 0555123456'),
@@ -35,7 +35,16 @@ type FormData = z.infer<typeof schema>
 interface StoreData {
   id: string; name: string; name_ar?: string; slug: string
   meta_pixel_id?: string; tiktok_pixel_id?: string
-  store_settings?: { cash_on_delivery: boolean; baridimob: boolean; ccp: boolean; free_delivery_threshold?: number }
+  store_settings?: {
+    cash_on_delivery: boolean; baridimob: boolean; ccp: boolean; free_delivery_threshold?: number
+    checkout_theme?: string
+    checkout_section_order?: string[]
+    checkout_fields?: {
+      phone2?: { visible: boolean; required: boolean }
+      address?: { visible: boolean; required: boolean }
+      notes?: { visible: boolean; required: boolean }
+    }
+  }
 }
 interface ProductData {
   id: string; name: string; name_ar?: string; price: number; compare_price?: number
@@ -81,8 +90,28 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
 
   const { pixelId, tiktokId, trackPurchase } = useOrderPixels(store, product)
 
+  const dynamicSchema = useMemo(() => {
+    return z.object({
+      customer_name:  z.string().min(2, 'الاسم يجب أن يكون حرفين على الأقل'),
+      phone:          z.string().regex(/^(05|06|07)[0-9]{8}$/, 'رقم الهاتف غير صالح — مثال: 0555123456'),
+      phone2:         z.string().regex(/^(05|06|07)[0-9]{8}$/, 'رقم الهاتف غير صالح').optional().or(z.literal('')),
+      wilaya_id:      z.number({ required_error: 'اختر الولاية' }).int().min(1).max(58),
+      delivery_type:  z.enum(['home', 'stopdesk']),
+      commune_id:     z.number().int().optional(),
+      baladia:        z.string().min(1, 'اختر البلدية'),
+      address:        store.store_settings?.checkout_fields?.address?.required
+                        ? z.string().min(5, 'العنوان التفصيلي مطلوب ومهم للتوصيل للمنزل')
+                        : z.string().optional(),
+      stopdesk_code:  z.string().optional(),
+      notes:          z.string().max(200).optional(),
+      payment_method: z.enum(['cod', 'chargily_cib', 'chargily_edahabia']),
+      coupon_code:    z.string().optional(),
+      quantity:       z.number().int().min(1).max(99),
+    })
+  }, [store])
+
   const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(dynamicSchema),
     defaultValues: {
       delivery_type: 'home',
       payment_method: 'cod',
@@ -368,6 +397,65 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
     )
   }
 
+  const theme = store.store_settings?.checkout_theme ?? 'default'
+  const sectionOrder = store.store_settings?.checkout_section_order ?? ['customer_info', 'delivery_info', 'payment_info', 'coupon']
+  const fieldsConfig = store.store_settings?.checkout_fields ?? {
+    phone2: { visible: true, required: false },
+    address: { visible: true, required: false },
+    notes: { visible: true, required: false }
+  }
+
+  // Handle glassmorphism body background class injection
+  useEffect(() => {
+    if (theme === 'glassmorphism') {
+      document.body.classList.add('bg-slate-950')
+    } else {
+      document.body.classList.remove('bg-slate-950')
+    }
+    return () => {
+      document.body.classList.remove('bg-slate-950')
+    }
+  }, [theme])
+
+  // Style classes based on theme
+  let cardClass = "bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4"
+  let inputClass = "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none bg-white text-gray-900"
+  let titleClass = "font-bold text-gray-900 flex items-center gap-2"
+  let badgeClass = "w-6 h-6 bg-[#0D6EFD] text-white rounded-full flex items-center justify-center text-xs font-black"
+  let btnClass = "w-full bg-[#0D6EFD] hover:bg-[#0B5ED7] disabled:opacity-60 text-white font-black py-4 rounded-2xl text-base transition flex items-center justify-center gap-2"
+  let textPrimary = "text-gray-900"
+  let textSecondary = "text-gray-500"
+  let textLabel = "block text-sm font-medium text-gray-700 mb-1"
+  
+  if (theme === 'modern') {
+    cardClass = "bg-white rounded-3xl border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.015)] p-6 space-y-4 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.035)]"
+    inputClass = "w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all text-slate-800"
+    titleClass = "font-bold text-slate-850 flex items-center gap-2.5 text-base border-b border-slate-100 pb-2"
+    badgeClass = "w-6.5 h-6.5 bg-gradient-to-br from-amber-500 to-orange-500 text-white rounded-xl flex items-center justify-center text-xs font-bold shadow-sm shadow-orange-500/20"
+    btnClass = "w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-60 text-white font-black py-4 rounded-2xl text-base transition shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
+    textPrimary = "text-slate-850"
+    textSecondary = "text-slate-500"
+    textLabel = "block text-sm font-semibold text-slate-700 mb-1"
+  } else if (theme === 'glassmorphism') {
+    cardClass = "bg-slate-900/40 backdrop-blur-xl border border-slate-700/30 shadow-2xl rounded-3xl p-6 space-y-4 text-slate-200"
+    inputClass = "w-full bg-slate-950/60 border border-slate-700/50 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-slate-500"
+    titleClass = "font-bold text-indigo-200 flex items-center gap-2.5 text-base border-b border-slate-700/50 pb-2"
+    badgeClass = "w-6.5 h-6.5 bg-gradient-to-br from-indigo-500 to-purple-500 text-white rounded-xl flex items-center justify-center text-xs font-black shadow-md shadow-indigo-500/25"
+    btnClass = "w-full bg-gradient-to-r from-indigo-500 to-purple-605 hover:from-indigo-600 hover:to-purple-700 disabled:opacity-60 text-white font-black py-4 rounded-2xl text-base transition shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 border border-indigo-400/20"
+    textPrimary = "text-white"
+    textSecondary = "text-slate-400"
+    textLabel = "block text-sm font-medium text-slate-300 mb-1"
+  } else if (theme === 'compact') {
+    cardClass = "bg-gray-50/80 border border-gray-100 rounded-xl p-4 space-y-3"
+    inputClass = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 outline-none bg-white text-gray-800"
+    titleClass = "font-bold text-gray-805 flex items-center gap-1.5 text-sm border-b pb-1.5"
+    badgeClass = "hidden"
+    btnClass = "w-full bg-blue-600 hover:bg-blue-705 disabled:opacity-60 text-white font-bold py-3.5 rounded-lg text-sm transition flex items-center justify-center gap-2"
+    textPrimary = "text-gray-800"
+    textSecondary = "text-gray-500"
+    textLabel = "block text-xs font-semibold text-gray-600 mb-0.5"
+  }
+
   // ── MAIN FORM ──────────────────────────────────────────────────
   return (
     <>
@@ -380,7 +468,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
         <div className="lg:col-span-3 space-y-4">
           {/* Product summary (mobile) */}
           {product && (
-            <div className="lg:hidden bg-white rounded-2xl border border-gray-100 p-4 flex gap-3">
+            <div className={`lg:hidden flex gap-3 p-4 ${cardClass}`}>
               <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative">
                 {product.images?.[0]?.url ? (
                   <Image src={product.images[0].url} alt={product.name} fill sizes="64px" className="object-cover" />
@@ -389,280 +477,304 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                 )}
               </div>
               <div>
-                <p className="font-semibold text-gray-900">{product.name_ar ?? product.name}</p>
-                <p className="text-[#0D6EFD] font-black">{formatDZD(unitPrice)}</p>
+                <p className={`font-semibold text-sm ${textPrimary}`}>{product.name_ar ?? product.name}</p>
+                <p className="text-[#0D6EFD] font-black text-sm mt-0.5">{formatDZD(unitPrice)}</p>
               </div>
             </div>
           )}
 
-          {/* ── Section 1: Customer Info ── */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-            <h2 className="font-bold text-gray-900 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#0D6EFD] text-white rounded-full flex items-center justify-center text-xs font-black">1</span>
-              معلومات العميل
-            </h2>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">الاسم الكامل <span className="text-red-500">*</span></label>
-              <input
-                {...register('customer_name')}
-                placeholder="محمد بن علي"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none"
-              />
-              {errors.customer_name && <p className="text-red-500 text-xs mt-1">{errors.customer_name.message}</p>}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">رقم الهاتف <span className="text-red-500">*</span></label>
-                <input
-                  {...register('phone')}
-                  type="tel"
-                  placeholder="0555 xx xx xx"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none"
-                />
-                {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">هاتف بديل</label>
-                <input
-                  {...register('phone2')}
-                  type="tel"
-                  placeholder="اختياري"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none"
-                />
-                {errors.phone2 && <p className="text-red-500 text-xs mt-1">{errors.phone2.message}</p>}
-              </div>
-            </div>
-          </div>
+          {/* Render sections in customized order */}
+          {sectionOrder.map((sectionId, sIdx) => {
+            const stepNum = sIdx + 1
 
-          {/* ── Section 2: Delivery ── */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-            <h2 className="font-bold text-gray-900 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#0D6EFD] text-white rounded-full flex items-center justify-center text-xs font-black">2</span>
-              معلومات التوصيل
-            </h2>
+            switch (sectionId) {
+              case 'customer_info':
+                return (
+                  <div key="customer_info" className={cardClass}>
+                    <h2 className={titleClass}>
+                      <span className={badgeClass}>{stepNum}</span>
+                      معلومات العميل
+                    </h2>
+                    <div>
+                      <label className={textLabel}>الاسم الكامل <span className="text-red-500">*</span></label>
+                      <input
+                        {...register('customer_name')}
+                        placeholder="محمد بن علي"
+                        className={inputClass}
+                      />
+                      {errors.customer_name && <p className="text-red-500 text-xs mt-1">{errors.customer_name.message}</p>}
+                    </div>
+                    <div className={fieldsConfig.phone2?.visible !== false ? "grid grid-cols-2 gap-3" : "grid grid-cols-1 gap-3"}>
+                      <div>
+                        <label className={textLabel}>رقم الهاتف <span className="text-red-500">*</span></label>
+                        <input
+                          {...register('phone')}
+                          type="tel"
+                          placeholder="0555 xx xx xx"
+                          className={inputClass}
+                        />
+                        {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
+                      </div>
+                      {fieldsConfig.phone2?.visible !== false && (
+                        <div>
+                          <label className={textLabel}>هاتف بديل</label>
+                          <input
+                            {...register('phone2')}
+                            type="tel"
+                            placeholder="اختياري"
+                            className={inputClass}
+                          />
+                          {errors.phone2 && <p className="text-red-500 text-xs mt-1">{errors.phone2.message}</p>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
 
-            {/* Delivery type toggle */}
-            <div className="grid grid-cols-2 gap-3">
-              {([
-                ['home', 'توصيل للمنزل', Truck],
-                ['stopdesk', 'التوصيل للمكتب', Store],
-              ] as const).map(([val, label, Icon]) => (
-                <label
-                  key={val}
-                  className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${
-                    watchedDeliveryType === val
-                      ? 'border-[#0D6EFD] bg-[#EBF5FF]'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <input
-                    {...register('delivery_type')}
-                    type="radio"
-                    value={val}
-                    className="sr-only"
-                  />
-                  <Icon className={`w-5 h-5 ${watchedDeliveryType === val ? 'text-[#0D6EFD]' : 'text-gray-400'}`} />
-                  <div>
-                    <p className={`text-sm font-semibold ${watchedDeliveryType === val ? 'text-[#0B5ED7]' : 'text-gray-700'}`}>
-                      {label}
-                    </p>
-                    {selectedWilaya && (
-                      <p className="text-xs text-gray-500">
-                        {formatDZD(val === 'stopdesk' ? selectedWilaya.delivery_fee_stopdesk : selectedWilaya.delivery_fee_home)}
-                        {' · '}
-                        {val === 'stopdesk' ? selectedWilaya.delivery_days_stopdesk : selectedWilaya.delivery_days_home}
+              case 'delivery_info':
+                return (
+                  <div key="delivery_info" className={cardClass}>
+                    <h2 className={titleClass}>
+                      <span className={badgeClass}>{stepNum}</span>
+                      معلومات التوصيل
+                    </h2>
+
+                    {/* Delivery type toggle */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {([
+                        ['home', 'توصيل للمنزل', Truck],
+                        ['stopdesk', 'التوصيل للمكتب', Store],
+                      ] as const).map(([val, label, Icon]) => (
+                        <label
+                          key={val}
+                          className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${
+                            watchedDeliveryType === val
+                              ? (theme === 'glassmorphism' ? 'border-indigo-500 bg-indigo-950/40 text-indigo-200' : 'border-[#0D6EFD] bg-[#EBF5FF]')
+                              : (theme === 'glassmorphism' ? 'border-slate-700/50 hover:border-slate-600' : 'border-gray-200 hover:border-gray-300')
+                          }`}
+                        >
+                          <input
+                            {...register('delivery_type')}
+                            type="radio"
+                            value={val}
+                            className="sr-only"
+                          />
+                          <Icon className={`w-5 h-5 ${watchedDeliveryType === val ? (theme === 'glassmorphism' ? 'text-indigo-400' : 'text-[#0D6EFD]') : 'text-gray-400'}`} />
+                          <div>
+                            <p className={`text-sm font-semibold ${watchedDeliveryType === val ? (theme === 'glassmorphism' ? 'text-indigo-300' : 'text-[#0B5ED7]') : (theme === 'glassmorphism' ? 'text-slate-300' : 'text-gray-700')}`}>
+                              {label}
+                            </p>
+                            {selectedWilaya && (
+                              <p className="text-xs text-gray-500">
+                                {formatDZD(val === 'stopdesk' ? selectedWilaya.delivery_fee_stopdesk : selectedWilaya.delivery_fee_home)}
+                                {' · '}
+                                {val === 'stopdesk' ? selectedWilaya.delivery_days_stopdesk : selectedWilaya.delivery_days_home}
+                              </p>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+
+                    {/* Wilaya select */}
+                    <div>
+                      <label className={textLabel}>الولاية <span className="text-red-500">*</span></label>
+                      <div className="relative">
+                        <select
+                          {...register('wilaya_id', { valueAsNumber: true })}
+                          className={`${inputClass} appearance-none`}
+                        >
+                          <option value="">اختر الولاية...</option>
+                          {wilayas.map(w => (
+                            <option key={w.id} value={w.id} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>
+                              {w.code} — {w.name_ar}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      </div>
+                      {errors.wilaya_id && <p className="text-red-500 text-xs mt-1">{errors.wilaya_id.message}</p>}
+                      {selectedWilaya && (
+                        <div className={`mt-2 flex items-center gap-3 text-xs px-3 py-2 rounded-lg ${theme === 'glassmorphism' ? 'text-indigo-300 bg-indigo-950/30' : 'text-[#0D6EFD] bg-[#EBF5FF]'}`}>
+                          <span>🚚 التوصيل خلال {deliveryDays}</span>
+                          <span>•</span>
+                          <span>رسوم التوصيل: {formatDZD(deliveryFee)}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Commune select */}
+                    {watchedWilayaId > 0 && (
+                      <div>
+                        <label className={textLabel}>البلدية <span className="text-red-500">*</span></label>
+                        <div className="relative">
+                          {loadingCommunes ? (
+                            <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              جارٍ التحميل...
+                            </div>
+                          ) : (
+                            <select
+                              {...register('commune_id', { valueAsNumber: true })}
+                              className={`${inputClass} appearance-none`}
+                            >
+                              <option value="">اختر البلدية...</option>
+                              {communes.map(c => (
+                                <option key={c.id} value={c.id} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>{c.name_ar}</option>
+                              ))}
+                            </select>
+                          )}
+                          <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        </div>
+                        {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
+                      </div>
+                    )}
+
+                    {/* Stopdesk offices */}
+                    {watchedDeliveryType === 'stopdesk' && watchedWilayaId > 0 && (
+                      <div>
+                        <label className={textLabel}>
+                          مكتب التوصيل <span className="text-red-500">*</span>
+                        </label>
+                        {loadingOffices ? (
+                          <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            جاري تحميل مكاتب التوصيل...
+                          </div>
+                        ) : offices.length > 0 ? (
+                          <div className="relative">
+                            <select
+                              {...register('stopdesk_code', { required: 'يرجى اختيار مكتب التوصيل' })}
+                              className={`${inputClass} appearance-none`}
+                            >
+                              <option value="">اختر مكتب التوصيل...</option>
+                              {offices.map(o => (
+                                <option key={o.code} value={o.code} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>{o.name}</option>
+                              ))}
+                            </select>
+                            <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                          </div>
+                        ) : (
+                          <div>
+                            <input
+                              type="text"
+                              {...register('stopdesk_code', { required: 'يرجى إدخال اسم مكتب التوصيل' })}
+                              placeholder="أدخل اسم أو عنوان مكتب التوصيل المفضل لديك"
+                              className={inputClass}
+                            />
+                            <p className="text-xs text-gray-400 mt-1">
+                              سيتم شحن الطلب إلى أقرب مكتب توصيل متوفر في ولايتك.
+                            </p>
+                          </div>
+                        )}
+                        {errors.stopdesk_code && <p className="text-red-500 text-xs mt-1">{errors.stopdesk_code.message}</p>}
+                      </div>
+                    )}
+
+                    {/* Address */}
+                    {watchedDeliveryType === 'home' && fieldsConfig.address?.visible !== false && (
+                      <div>
+                        <label className={textLabel}>العنوان التفصيلي {fieldsConfig.address?.required && <span className="text-red-500">*</span>}</label>
+                        <textarea
+                          {...register('address')}
+                          rows={2}
+                          placeholder="الحي، الشارع، رقم البناية..."
+                          className={`${inputClass} resize-none`}
+                        />
+                        {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
+                      </div>
+                    )}
+
+                    {/* Notes */}
+                    {fieldsConfig.notes?.visible !== false && (
+                      <div>
+                        <label className={textLabel}>ملاحظات (اختياري)</label>
+                        <textarea
+                          {...register('notes')}
+                          rows={2}
+                          placeholder="أي تعليمات خاصة للتوصيل..."
+                          className={`${inputClass} resize-none`}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+
+              case 'payment_info':
+                return (
+                  <div key="payment_info" className={cardClass}>
+                    <h2 className={titleClass}>
+                      <span className={badgeClass}>{stepNum}</span>
+                      طريقة الدفع
+                    </h2>
+
+                    {[
+                      { value: 'cod', label: 'الدفع عند الاستلام', desc: 'ادفع نقداً عند تسلم طلبك', icon: Banknote, badge: 'الأكثر استخداماً' },
+                      { value: 'chargily_edahabia', label: 'بطاقة داهبية', desc: 'ادفع ببطاقة البريد الجزائري', icon: CreditCard },
+                      { value: 'chargily_cib', label: 'بطاقة CIB', desc: 'ادفع ببطاقة بنكية CIB', icon: CreditCard },
+                    ].map(opt => (
+                      <label
+                        key={opt.value}
+                        className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition ${
+                          watchedPayment === opt.value
+                            ? (theme === 'glassmorphism' ? 'border-indigo-500 bg-indigo-950/40 text-indigo-200' : 'border-[#0D6EFD] bg-[#EBF5FF]')
+                            : (theme === 'glassmorphism' ? 'border-slate-700/50 hover:border-slate-600' : 'border-gray-200 hover:border-gray-300')
+                        }`}
+                      >
+                        <input {...register('payment_method')} type="radio" value={opt.value} className="sr-only" />
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                          watchedPayment === opt.value ? 'border-[#0D6EFD]' : 'border-gray-300'
+                        }`}>
+                          {watchedPayment === opt.value && <div className="w-2.5 h-2.5 bg-[#0D6EFD] rounded-full" />}
+                        </div>
+                        <opt.icon className={`w-5 h-5 ${watchedPayment === opt.value ? 'text-[#0D6EFD]' : 'text-gray-400'}`} />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className={`text-sm font-semibold ${textPrimary}`}>{opt.label}</p>
+                            {opt.badge && (
+                              <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">{opt.badge}</span>
+                            )}
+                          </div>
+                          <p className={`text-xs ${textSecondary}`}>{opt.desc}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )
+
+              case 'coupon':
+                return (
+                  <div key="coupon" className={cardClass}>
+                    <p className={`text-sm font-medium mb-3 ${textPrimary}`}>هل لديك كوبون خصم؟</p>
+                    <div className="flex gap-2">
+                      <input
+                        {...register('coupon_code')}
+                        placeholder="أدخل الكود..."
+                        className={`${inputClass} uppercase flex-1`}
+                        onBlur={checkCoupon}
+                      />
+                      <button
+                        type="button"
+                        onClick={checkCoupon}
+                        disabled={checkingCoupon}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium transition"
+                        style={{ background: theme === 'glassmorphism' ? 'rgba(255,255,255,0.08)' : undefined, color: theme === 'glassmorphism' ? '#fff' : undefined }}
+                      >
+                        {checkingCoupon ? '...' : 'تطبيق'}
+                      </button>
+                    </div>
+                    {couponResult && (
+                      <p className={`text-xs mt-2 ${couponResult.valid ? 'text-green-600' : 'text-red-500'}`}>
+                        {couponResult.message}
                       </p>
                     )}
                   </div>
-                </label>
-              ))}
-            </div>
+                )
 
-            {/* Wilaya select */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">الولاية <span className="text-red-500">*</span></label>
-              <div className="relative">
-                <select
-                  {...register('wilaya_id', { valueAsNumber: true })}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#0D6EFD] outline-none appearance-none"
-                >
-                  <option value="">اختر الولاية...</option>
-                  {wilayas.map(w => (
-                    <option key={w.id} value={w.id}>
-                      {w.code} — {w.name_ar}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              </div>
-              {errors.wilaya_id && <p className="text-red-500 text-xs mt-1">{errors.wilaya_id.message}</p>}
-              {selectedWilaya && (
-                <div className="mt-2 flex items-center gap-3 text-xs text-[#0D6EFD] bg-[#EBF5FF] px-3 py-2 rounded-lg">
-                  <span>🚚 التوصيل خلال {deliveryDays}</span>
-                  <span>•</span>
-                  <span>رسوم التوصيل: {formatDZD(deliveryFee)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Commune select */}
-            {watchedWilayaId > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">البلدية <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  {loadingCommunes ? (
-                    <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      جارٍ التحميل...
-                    </div>
-                  ) : (
-                    <select
-                      {...register('commune_id', { valueAsNumber: true })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#0D6EFD] outline-none appearance-none"
-                    >
-                      <option value="">اختر البلدية...</option>
-                      {communes.map(c => (
-                        <option key={c.id} value={c.id}>{c.name_ar}</option>
-                      ))}
-                    </select>
-                  )}
-                  <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
-                {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
-              </div>
-            )}
-
-            {/* Stopdesk / Delivery Office select/input */}
-            {watchedDeliveryType === 'stopdesk' && watchedWilayaId > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  مكتب التوصيل <span className="text-red-500">*</span>
-                </label>
-                {loadingOffices ? (
-                  <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    جاري تحميل مكاتب التوصيل...
-                  </div>
-                ) : offices.length > 0 ? (
-                  <div className="relative">
-                    <select
-                      {...register('stopdesk_code', { required: 'يرجى اختيار مكتب التوصيل' })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#0D6EFD] outline-none appearance-none"
-                    >
-                      <option value="">اختر مكتب التوصيل...</option>
-                      {offices.map(o => (
-                        <option key={o.code} value={o.code}>{o.name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  </div>
-                ) : (
-                  <div>
-                    <input
-                      type="text"
-                      {...register('stopdesk_code', { required: 'يرجى إدخال اسم مكتب التوصيل' })}
-                      placeholder="أدخل اسم أو عنوان مكتب التوصيل المفضل لديك"
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#0D6EFD] outline-none"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">
-                      سيتم شحن الطلب إلى أقرب مكتب توصيل متوفر في ولايتك.
-                    </p>
-                  </div>
-                )}
-                {errors.stopdesk_code && <p className="text-red-500 text-xs mt-1">{errors.stopdesk_code.message}</p>}
-              </div>
-            )}
-
-            {/* Address (home only) */}
-            {watchedDeliveryType === 'home' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">العنوان التفصيلي</label>
-                <textarea
-                  {...register('address')}
-                  rows={2}
-                  placeholder="الحي، الشارع، رقم البناية..."
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none resize-none"
-                />
-              </div>
-            )}
-
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">ملاحظات (اختياري)</label>
-              <textarea
-                {...register('notes')}
-                rows={2}
-                placeholder="أي تعليمات خاصة للتوصيل..."
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none resize-none"
-              />
-            </div>
-          </div>
-
-          {/* ── Section 3: Payment ── */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-            <h2 className="font-bold text-gray-900 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#0D6EFD] text-white rounded-full flex items-center justify-center text-xs font-black">3</span>
-              طريقة الدفع
-            </h2>
-
-            {[
-              { value: 'cod', label: 'الدفع عند الاستلام', desc: 'ادفع نقداً عند تسلم طلبك', icon: Banknote, badge: 'الأكثر استخداماً' },
-              { value: 'chargily_edahabia', label: 'بطاقة داهبية', desc: 'ادفع ببطاقة البريد الجزائري', icon: CreditCard },
-              { value: 'chargily_cib', label: 'بطاقة CIB', desc: 'ادفع ببطاقة بنكية CIB', icon: CreditCard },
-            ].map(opt => (
-              <label
-                key={opt.value}
-                className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition ${
-                  watchedPayment === opt.value
-                    ? 'border-[#0D6EFD] bg-[#EBF5FF]'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <input {...register('payment_method')} type="radio" value={opt.value} className="sr-only" />
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                  watchedPayment === opt.value ? 'border-[#0D6EFD]' : 'border-gray-300'
-                }`}>
-                  {watchedPayment === opt.value && <div className="w-2.5 h-2.5 bg-[#0D6EFD] rounded-full" />}
-                </div>
-                <opt.icon className={`w-5 h-5 ${watchedPayment === opt.value ? 'text-[#0D6EFD]' : 'text-gray-400'}`} />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-gray-900">{opt.label}</p>
-                    {opt.badge && (
-                      <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">{opt.badge}</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500">{opt.desc}</p>
-                </div>
-              </label>
-            ))}
-          </div>
-
-          {/* ── Coupon ── */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <p className="text-sm font-medium text-gray-700 mb-3">هل لديك كوبون خصم؟</p>
-            <div className="flex gap-2">
-              <input
-                {...register('coupon_code')}
-                placeholder="أدخل الكود..."
-                className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none uppercase"
-                onBlur={checkCoupon}
-              />
-              <button
-                type="button"
-                onClick={checkCoupon}
-                disabled={checkingCoupon}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium transition"
-              >
-                {checkingCoupon ? '...' : 'تطبيق'}
-              </button>
-            </div>
-            {couponResult && (
-              <p className={`text-xs mt-2 ${couponResult.valid ? 'text-green-600' : 'text-red-500'}`}>
-                {couponResult.message}
-              </p>
-            )}
-          </div>
+              default:
+                return null
+            }
+          })}
         </div>
 
         {/* ── RIGHT: Order Summary ─────────────────────────────────── */}
@@ -670,7 +782,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           <div className="lg:sticky lg:top-20 space-y-4">
             {/* Product card (desktop) */}
             {product && (
-              <div className="hidden lg:block bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <div className={`hidden lg:block p-4 ${cardClass}`}>
                 <div className="flex gap-3">
                   <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative">
                     {product.images?.[0]?.url ? (
@@ -680,37 +792,37 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                     )}
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-900 text-sm">{product.name_ar ?? product.name}</p>
+                    <p className={`font-semibold text-sm ${textPrimary}`}>{product.name_ar ?? product.name}</p>
                     <p className="text-[#0D6EFD] font-black text-lg mt-1">{formatDZD(unitPrice)}</p>
                     {product.compare_price && product.compare_price > unitPrice && (
-                      <p className="text-xs text-gray-400 line-through">{formatDZD(product.compare_price)}</p>
+                      <p className={`text-xs line-through ${textSecondary}`}>{formatDZD(product.compare_price)}</p>
                     )}
                   </div>
                 </div>
 
                 {/* Quantity */}
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                  <span className="text-sm text-gray-600">الكمية</span>
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100" style={{ borderColor: theme === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : undefined }}>
+                  <span className={`text-sm ${textSecondary}`}>الكمية</span>
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => setValue('quantity', Math.max(1, watchedQty - 1))}
-                      className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-sm hover:bg-gray-50">−</button>
-                    <span className="w-8 text-center font-bold">{watchedQty}</span>
+                      className={`w-7 h-7 rounded-full border flex items-center justify-center text-sm transition ${theme === 'glassmorphism' ? 'border-slate-700 hover:bg-slate-800 text-white' : 'border-gray-200 hover:bg-gray-50'}`}>−</button>
+                    <span className={`w-8 text-center font-bold ${textPrimary}`}>{watchedQty}</span>
                     <button type="button" onClick={() => setValue('quantity', watchedQty + 1)}
-                      className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-sm hover:bg-gray-50">+</button>
+                      className={`w-7 h-7 rounded-full border flex items-center justify-center text-sm transition ${theme === 'glassmorphism' ? 'border-slate-700 hover:bg-slate-800 text-white' : 'border-gray-200 hover:bg-gray-50'}`}>+</button>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Order totals */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-2.5">
-              <h3 className="font-bold text-gray-900">ملخص الطلب</h3>
+            <div className={`p-4 space-y-2.5 ${cardClass}`}>
+              <h3 className={`font-bold ${textPrimary}`}>ملخص الطلب</h3>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between" style={{ color: theme === 'glassmorphism' ? 'var(--color-text-secondary)' : 'var(--color-text-muted)' }}>
                   <span>المنتج × {watchedQty}</span>
                   <span>{formatDZD(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between" style={{ color: theme === 'glassmorphism' ? 'var(--color-text-secondary)' : 'var(--color-text-muted)' }}>
                   <span>رسوم التوصيل</span>
                   <span>{selectedWilaya ? formatDZD(deliveryFee) : '—'}</span>
                 </div>
@@ -720,7 +832,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                     <span>−{formatDZD(discount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between font-black text-gray-900 text-base border-t border-gray-100 pt-2.5 mt-2">
+                <div className="flex justify-between font-black text-base border-t pt-2.5 mt-2" style={{ color: theme === 'glassmorphism' ? '#fff' : '#111827', borderColor: theme === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : undefined }}>
                   <span>المجموع</span>
                   <span className="text-[#0D6EFD] text-xl">{formatDZD(total)}</span>
                 </div>
@@ -731,7 +843,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
             <button
               type="submit"
               disabled={submitState === 'submitting'}
-              className="w-full bg-[#0D6EFD] hover:bg-[#0B5ED7] disabled:opacity-60 text-white font-black py-4 rounded-2xl text-base transition flex items-center justify-center gap-2"
+              className={btnClass}
             >
               {submitState === 'submitting' ? (
                 <><Loader2 className="w-5 h-5 animate-spin" />جارٍ تسجيل الطلب...</>
@@ -746,7 +858,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
               </div>
             )}
 
-            <p className="text-xs text-gray-400 text-center">
+            <p className={`text-xs text-center ${textSecondary}`}>
               🔒 معلوماتك آمنة ومحمية · الدفع عند الاستلام متاح
             </p>
           </div>

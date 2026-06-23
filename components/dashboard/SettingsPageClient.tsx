@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Store, Shield, Truck, Bell, CreditCard, Loader2, Check, Eye, EyeOff, Camera } from 'lucide-react'
+import { Store, Shield, Truck, Bell, CreditCard, Loader2, Check, Eye, EyeOff, Camera, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
 
 const TABS = [
@@ -10,6 +10,7 @@ const TABS = [
   { id:'security',label:'الأمان',          icon: Shield },
   { id:'delivery',label:'التوصيل',         icon: Truck },
   { id:'notifs',  label:'الإشعارات',       icon: Bell },
+  { id:'checkout',label:'صفحة الدفع',      icon: ShoppingCart },
   { id:'billing', label:'الاشتراك',        icon: CreditCard },
 ]
 
@@ -51,6 +52,41 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
     setNotifSaved(true)
     setTimeout(() => setNotifSaved(false), 3000)
   }
+
+  // ── Checkout Customization States ──
+  const [checkoutTheme, setCheckoutTheme] = useState<string>(store.store_settings?.checkout_theme ?? 'default')
+  const [checkoutSectionOrder, setCheckoutSectionOrder] = useState<string[]>(
+    store.store_settings?.checkout_section_order ?? ['customer_info', 'delivery_info', 'payment_info', 'coupon']
+  )
+  const [checkoutFields, setCheckoutFields] = useState<any>(
+    store.store_settings?.checkout_fields ?? {
+      phone2: { visible: true, required: false },
+      address: { visible: true, required: false },
+      notes: { visible: true, required: false }
+    }
+  )
+  const [checkoutSaved, setCheckoutSaved] = useState(false)
+
+  const saveCheckout = async () => {
+    setLoading(true)
+    const sb = createClient()
+    const { error } = await sb.from('store_settings').upsert({
+      store_id: store.id,
+      checkout_theme: checkoutTheme,
+      checkout_section_order: checkoutSectionOrder,
+      checkout_fields: checkoutFields,
+    }, { onConflict: 'store_id' })
+    
+    setLoading(false)
+    if (error) {
+      alert('خطأ في الحفظ: يرجى التأكد من تشغيل ملف الهجرة (Migration 021) في قاعدة البيانات لتحديث الجداول.\n\nتفاصيل الخطأ: ' + error.message)
+      return
+    }
+    setCheckoutSaved(true)
+    setTimeout(() => setCheckoutSaved(false), 3000)
+    router.refresh()
+  }
+
   const [delivSaved, setDelivSaved] = useState(false)
 
   const saveDelivery = async () => {
@@ -329,6 +365,186 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
           ))}
           <button onClick={saveNotifications} disabled={loading} className="btn btn-primary btn-sm mt-2" style={{ fontFamily: 'var(--font-arabic)' }}>
             {loading ? 'جارٍ الحفظ...' : notifSaved ? '✓ تم الحفظ' : 'حفظ الإشعارات'}
+          </button>
+        </div>
+      )}
+
+      {/* ── CHECKOUT CUSTOMIZATION ── */}
+      {tab === 'checkout' && (
+        <div className="space-y-6">
+          {/* Themes */}
+          <div className="card p-5 space-y-4">
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>ثيم صفحة الدفع 🎨</h2>
+            <p className="text-xs -mt-2" style={{ color: 'var(--color-text-muted)' }}>اختر المظهر البصري المناسب لصفحة الدفع لزيادة المبيعات</p>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { id: 'default', label: 'الكلاسيكي', desc: 'بسيط وهادئ ومناسب لكل المنتجات', icon: '📝', colors: 'from-gray-100 to-gray-200 text-gray-700' },
+                { id: 'modern', label: 'العصري', desc: 'تصميم جذاب بظلال ناعمة وزوايا مستديرة', icon: '✨', colors: 'from-amber-100 to-orange-200 text-orange-700' },
+                { id: 'glassmorphism', label: 'الزجاجي الفاخر', desc: 'ثيم داكن شفاف وتأثيرات مضيئة', icon: '🔮', colors: 'from-indigo-900 to-slate-800 text-indigo-300' },
+                { id: 'compact', label: 'المدمج السريع', desc: 'تصميم مكثف لتقليل التمرير وزيادة التحويل', icon: '⚡', colors: 'from-blue-100 to-teal-200 text-teal-700' },
+              ].map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setCheckoutTheme(t.id)}
+                  className={`flex flex-col text-right p-4 rounded-2xl border-2 transition relative overflow-hidden h-full ${
+                    checkoutTheme === t.id ? 'border-[#0D6EFD] bg-[#EBF5FF]' : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-3 bg-gradient-to-br ${t.colors}`}>
+                    {t.icon}
+                  </div>
+                  <p className="text-xs font-bold text-gray-900">{t.label}</p>
+                  <p className="text-[10px] text-gray-500 mt-1 line-clamp-3 leading-relaxed">{t.desc}</p>
+                  {checkoutTheme === t.id && (
+                    <span className="absolute top-2 left-2 text-[#0D6EFD] font-black text-xs">✓</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Section Ordering */}
+          <div className="card p-5 space-y-4">
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>ترتيب أقسام صفحة الدفع ↕️</h2>
+            <p className="text-xs -mt-2" style={{ color: 'var(--color-text-muted)' }}>رتب الأقسام الأساسية لصفحة الدفع بالطريقة التي تناسب عملائك</p>
+
+            <div className="space-y-2 max-w-md">
+              {checkoutSectionOrder.map((sec, idx) => {
+                const label =
+                  sec === 'customer_info' ? 'معلومات العميل 👤' :
+                  sec === 'delivery_info' ? 'معلومات التوصيل 🚚' :
+                  sec === 'payment_info' ? 'طريقة الدفع 💳' :
+                  sec === 'coupon' ? 'كوبون الخصم 🏷️' : sec
+
+                const move = (direction: -1 | 1) => {
+                  const newOrder = [...checkoutSectionOrder]
+                  const targetIdx = idx + direction
+                  if (targetIdx < 0 || targetIdx >= newOrder.length) return
+                  ;[newOrder[idx], newOrder[targetIdx]] = [newOrder[targetIdx], newOrder[idx]]
+                  setCheckoutSectionOrder(newOrder)
+                }
+
+                return (
+                  <div key={sec} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <span className="text-xs font-bold text-gray-700">{label}</span>
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => move(-1)}
+                        disabled={idx === 0}
+                        className="w-7 h-7 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-30 flex items-center justify-center text-xs font-bold"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => move(1)}
+                        disabled={idx === checkoutSectionOrder.length - 1}
+                        className="w-7 h-7 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-30 flex items-center justify-center text-xs font-bold"
+                      >
+                        ↓
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Fields Customization */}
+          <div className="card p-5 space-y-4">
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>تخصيص حقول المدخلات ⚙️</h2>
+            <p className="text-xs -mt-2" style={{ color: 'var(--color-text-muted)' }}>اختر الحقول الاختيارية أو المطلوبة لتبسيط عملية إتمام الطلب</p>
+
+            <div className="space-y-3 max-w-lg">
+              {/* Phone 2 */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div>
+                  <p className="text-xs font-bold text-gray-800">حقل الهاتف البديل (هاتف 2)</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">حقل إضافي للعميل لكتابة رقم هاتف احتياطي</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checkoutFields.phone2?.visible ?? true}
+                      onChange={e => setCheckoutFields((f: any) => ({
+                        ...f,
+                        phone2: { ...f.phone2, visible: e.target.checked }
+                      }))}
+                      className="w-3.5 h-3.5 accent-[#0D6EFD]"
+                    />
+                    مفعّل ومظهر
+                  </label>
+                </div>
+              </div>
+
+              {/* Address */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div>
+                  <p className="text-xs font-bold text-gray-800">حقل العنوان التفصيلي</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">الحي، الشارع، ورقم البناية (لالتوصيل المنزلي)</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checkoutFields.address?.visible ?? true}
+                      onChange={e => setCheckoutFields((f: any) => ({
+                        ...f,
+                        address: { ...f.address, visible: e.target.checked }
+                      }))}
+                      className="w-3.5 h-3.5 accent-[#0D6EFD]"
+                    />
+                    مفعّل ومظهر
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checkoutFields.address?.required ?? false}
+                      disabled={!(checkoutFields.address?.visible ?? true)}
+                      onChange={e => setCheckoutFields((f: any) => ({
+                        ...f,
+                        address: { ...f.address, required: e.target.checked }
+                      }))}
+                      className="w-3.5 h-3.5 accent-[#0D6EFD]"
+                    />
+                    مطلوب إجباري
+                  </label>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div>
+                  <p className="text-xs font-bold text-gray-800">حقل ملاحظات الطلب</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">أي تعليمات خاصة بالطلب أو التوصيل</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checkoutFields.notes?.visible ?? true}
+                      onChange={e => setCheckoutFields((f: any) => ({
+                        ...f,
+                        notes: { ...f.notes, visible: e.target.checked }
+                      }))}
+                      className="w-3.5 h-3.5 accent-[#0D6EFD]"
+                    />
+                    مفعّل ومظهر
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action button */}
+          <button onClick={saveCheckout} disabled={loading} className="btn btn-primary gap-2" style={{ fontFamily: 'var(--font-arabic)' }}>
+            {loading ? <><Loader2 size={14} className="animate-spin" />جارٍ الحفظ...</>
+              : checkoutSaved ? <><Check size={14} />تم الحفظ</>
+              : 'حفظ إعدادات صفحة الدفع'}
           </button>
         </div>
       )}
