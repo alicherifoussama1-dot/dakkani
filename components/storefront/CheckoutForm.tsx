@@ -101,6 +101,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const [orderId, setOrderId] = useState('')
   const [offices, setOffices] = useState<{ code: string; name: string }[]>([])
   const [loadingOffices, setLoadingOffices] = useState(false)
+  const [hasProvider, setHasProvider] = useState(false)
 
   const { pixelId, tiktokId, trackPurchase } = useOrderPixels(store, product)
 
@@ -139,27 +140,37 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const watchedPayment      = useWatch({ control, name: 'payment_method' })
   const watchedCommuneId    = useWatch({ control, name: 'commune_id' })
 
-  // Fetch stopdesk offices when delivery_type or wilaya_id changes
+  // Fetch stopdesk offices when wilaya_id changes to check if provider is active
   useEffect(() => {
-    if (watchedDeliveryType !== 'stopdesk' || !watchedWilayaId) {
+    if (!watchedWilayaId) {
       setOffices([])
+      setHasProvider(false)
       setValue('stopdesk_code', undefined)
       return
     }
     setLoadingOffices(true)
-    setValue('stopdesk_code', '')
     fetch(`/api/storefront/stopdesks?store_id=${store.id}&wilaya_id=${watchedWilayaId}`)
       .then(res => res.json())
       .then(data => {
         setOffices(data.offices || [])
+        setHasProvider(!!data.hasProvider)
       })
       .catch(() => {
         setOffices([])
+        setHasProvider(false)
       })
       .finally(() => {
         setLoadingOffices(false)
       })
-  }, [watchedDeliveryType, watchedWilayaId, store.id, setValue])
+  }, [watchedWilayaId, store.id, setValue])
+
+  useEffect(() => {
+    if (watchedDeliveryType !== 'stopdesk') {
+      setValue('stopdesk_code', undefined)
+    } else {
+      setValue('stopdesk_code', '')
+    }
+  }, [watchedDeliveryType, setValue])
 
   // ── Calculate totals ────────────────────────────────────────
   const unitPrice    = product?.price ?? 0
@@ -608,7 +619,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                     )}
 
                     {/* Stopdesk offices */}
-                    {watchedDeliveryType === 'stopdesk' && watchedWilayaId > 0 && (
+                    {watchedDeliveryType === 'stopdesk' && watchedWilayaId > 0 && hasProvider && (
                       <div>
                         <label className={textLabel}>
                           مكتب التوصيل <span className="text-red-500">*</span>

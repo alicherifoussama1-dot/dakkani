@@ -86,6 +86,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   const [selectedWilaya, setSelectedWilaya] = useState<Wilaya | null>(null)
   const [offices, setOffices] = useState<{ code: string; name: string }[]>([])
   const [loadingOffices, setLoadingOffices] = useState(false)
+  const [hasProvider, setHasProvider] = useState(false)
 
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -100,27 +101,37 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   // Reset البلدية whenever الولاية changes (cascading + required)
   useEffect(() => { setValue('baladia', '', { shouldValidate: false }) }, [wilayaId, setValue])
 
-  // Fetch stopdesk offices when delivery_type or wilaya changes
+  // Fetch stopdesk offices when wilaya changes to check if provider is active
   useEffect(() => {
-    if (deliveryType !== 'stopdesk' || !wilayaId) {
+    if (!wilayaId) {
       setOffices([])
+      setHasProvider(false)
       setValue('stopdesk_code', undefined)
       return
     }
     setLoadingOffices(true)
-    setValue('stopdesk_code', '')
     fetch(`/api/storefront/stopdesks?store_id=${store.id}&wilaya_id=${wilayaId}`)
       .then(res => res.json())
       .then(data => {
         setOffices(data.offices || [])
+        setHasProvider(!!data.hasProvider)
       })
       .catch(() => {
         setOffices([])
+        setHasProvider(false)
       })
       .finally(() => {
         setLoadingOffices(false)
       })
-  }, [deliveryType, wilayaId, store.id, setValue])
+  }, [wilayaId, store.id, setValue])
+
+  useEffect(() => {
+    if (deliveryType !== 'stopdesk') {
+      setValue('stopdesk_code', undefined)
+    } else {
+      setValue('stopdesk_code', '')
+    }
+  }, [deliveryType, setValue])
 
   const deliveryFee = selectedWilaya
     ? (deliveryType === 'stopdesk' ? selectedWilaya.delivery_fee_stopdesk : selectedWilaya.delivery_fee_home)
@@ -209,7 +220,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       />
 
       {/* Stopdesk / Delivery Office select/input */}
-      {deliveryType === 'stopdesk' && wilayaId > 0 && (
+      {deliveryType === 'stopdesk' && wilayaId > 0 && hasProvider && (
         <div>
           <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--pt-text-soft)' }}>
             مكتب التوصيل *

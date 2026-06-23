@@ -59,7 +59,7 @@ export async function GET(req: Request) {
     }
 
     if (!provider) {
-      return NextResponse.json({ offices: [] })
+      return NextResponse.json({ offices: [], hasProvider: false })
     }
 
     const creds = decryptCredentials<any>(provider.credentials)
@@ -78,7 +78,7 @@ export async function GET(req: Request) {
       })
 
       if (!res.ok) {
-        return NextResponse.json({ error: 'Failed to fetch centers from Yalidine' }, { status: 502 })
+        return NextResponse.json({ offices: [], hasProvider: true, providerType: 'yalidine' })
       }
 
       const json = await res.json()
@@ -90,12 +90,12 @@ export async function GET(req: Request) {
           name: `${c.name} - ${c.address || ''} (${c.commune_name || ''})`,
         }))
 
-      return NextResponse.json({ offices })
+      return NextResponse.json({ offices, hasProvider: true, providerType: 'yalidine' })
     }
 
-    // Fallback for other providers that don't support dynamic office list via API
-    return NextResponse.json({ offices: [] })
+    // Fallback for other providers that don't support dynamic office list via API (but are connected)
+    return NextResponse.json({ offices: [], hasProvider: true, providerType: provider.provider_type })
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return NextResponse.json({ error: e.message, hasProvider: false }, { status: 500 })
   }
 }
