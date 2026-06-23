@@ -39,6 +39,7 @@ interface StoreData {
     cash_on_delivery: boolean; baridimob: boolean; ccp: boolean; free_delivery_threshold?: number
     checkout_theme?: string
     checkout_section_order?: string[]
+    checkout_field_order?: string[]
     checkout_fields?: {
       phone2?: { visible: boolean; required: boolean }
       address?: { visible: boolean; required: boolean }
@@ -76,7 +77,8 @@ function useOrderPixels(store: StoreData, product: ProductData | null) {
 
 export default function CheckoutForm({ store, product, wilayas, initialQty, initialVariant }: Props) {
   const router = useRouter()
-  const theme = store.store_settings?.checkout_theme ?? 'default'
+  const settings = Array.isArray(store.store_settings) ? store.store_settings[0] : store.store_settings
+  const theme = settings?.checkout_theme ?? 'default'
 
   // Handle glassmorphism body background class injection
   useEffect(() => {
@@ -114,7 +116,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       delivery_type:  z.enum(['home', 'stopdesk']),
       commune_id:     z.number().int().optional(),
       baladia:        z.string().optional(),
-      address:        store.store_settings?.checkout_fields?.address?.required
+      address:        settings?.checkout_fields?.address?.required
                         ? z.string().min(5, 'العنوان التفصيلي مطلوب ومهم للتوصيل للمنزل')
                         : z.string().optional(),
       stopdesk_code:  z.string().optional(),
@@ -430,8 +432,9 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
     )
   }
 
-  const sectionOrder = store.store_settings?.checkout_section_order ?? ['customer_info', 'delivery_info', 'payment_info', 'coupon']
-  const fieldsConfig = store.store_settings?.checkout_fields ?? {
+  const sectionOrder = settings?.checkout_section_order ?? ['customer_info', 'delivery_info', 'payment_info', 'coupon']
+  const fieldOrder   = (settings as any)?.checkout_field_order ?? ['name', 'wilaya', 'phone', 'address']
+  const fieldsConfig = settings?.checkout_fields ?? {
     phone2: { visible: true, required: false },
     address: { visible: true, required: false },
     notes: { visible: true, required: false }
@@ -504,38 +507,22 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           )}
 
           {/* Render sections in customized order */}
-          {sectionOrder.map((sectionId, sIdx) => {
+          {sectionOrder.map((sectionId: string, sIdx: number) => {
             const stepNum = sIdx + 1
 
             switch (sectionId) {
               case 'customer_info':
-                return (
-                  <div key="customer_info" className={cardClass}>
-                    <h2 className={titleClass}>
-                      <span className={badgeClass}>{stepNum}</span>
-                      معلومات العميل
-                    </h2>
-                    <div>
-                      <label className={textLabel}>الاسم الكامل <span className="text-red-500">*</span></label>
-                      <input
-                        {...register('customer_name')}
-                        placeholder="محمد بن علي"
-                        className={inputClass}
-                      />
-                      {errors.customer_name && <p className="text-red-500 text-xs mt-1">{errors.customer_name.message}</p>}
-                    </div>
-                  </div>
-                )
+                return null  // folded into delivery_info section
 
               case 'delivery_info':
                 return (
                   <div key="delivery_info" className={cardClass}>
                     <h2 className={titleClass}>
                       <span className={badgeClass}>{stepNum}</span>
-                      معلومات التوصيل
+                      معلومات الطلب
                     </h2>
 
-                    {/* Delivery type toggle */}
+                    {/* Delivery type toggle — always first */}
                     <div className="grid grid-cols-2 gap-3">
                       {([
                         ['home', 'توصيل للمنزل', Truck],
@@ -549,12 +536,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                               : (theme === 'glassmorphism' ? 'border-slate-700/50 hover:border-slate-600' : 'border-gray-200 hover:border-gray-300')
                           }`}
                         >
-                          <input
-                            {...register('delivery_type')}
-                            type="radio"
-                            value={val}
-                            className="sr-only"
-                          />
+                          <input {...register('delivery_type')} type="radio" value={val} className="sr-only" />
                           <Icon className={`w-5 h-5 ${watchedDeliveryType === val ? (theme === 'glassmorphism' ? 'text-indigo-400' : 'text-[#0D6EFD]') : 'text-gray-400'}`} />
                           <div>
                             <p className={`text-sm font-semibold ${watchedDeliveryType === val ? (theme === 'glassmorphism' ? 'text-indigo-300' : 'text-[#0B5ED7]') : (theme === 'glassmorphism' ? 'text-slate-300' : 'text-gray-700')}`}>
@@ -572,137 +554,166 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                       ))}
                     </div>
 
-                    {/* Wilaya select */}
-                    <div>
-                      <label className={textLabel}>الولاية <span className="text-red-500">*</span></label>
-                      <div className="relative">
-                        <select
-                          {...register('wilaya_id', { valueAsNumber: true })}
-                          className={`${inputClass} appearance-none`}
-                        >
-                          <option value="">اختر الولاية...</option>
-                          {wilayas.map(w => (
-                            <option key={w.id} value={w.id} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>
-                              {w.code} — {w.name_ar}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                      </div>
-                      {errors.wilaya_id && <p className="text-red-500 text-xs mt-1">{errors.wilaya_id.message}</p>}
-                      {selectedWilaya && (
-                        <div className={`mt-2 flex items-center gap-3 text-xs px-3 py-2 rounded-lg ${theme === 'glassmorphism' ? 'text-indigo-300 bg-indigo-950/30' : 'text-[#0D6EFD] bg-[#EBF5FF]'}`}>
-                          <span>🚚 التوصيل خلال {deliveryDays}</span>
-                          <span>•</span>
-                          <span>رسوم التوصيل: {formatDZD(deliveryFee)}</span>
-                        </div>
-                      )}
-                    </div>
+                    {/* ── Fields in configurable order ──────────────────── */}
+                    {fieldOrder.map((fieldId: string) => {
+                      switch (fieldId) {
 
-                    {/* Commune select */}
-                    {watchedDeliveryType === 'home' && watchedWilayaId > 0 && (
-                      <div>
-                        <label className={textLabel}>البلدية <span className="text-red-500">*</span></label>
-                        <div className="relative">
-                          {loadingCommunes ? (
-                            <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              جارٍ التحميل...
+                        case 'name':
+                          return (
+                            <div key="field-name">
+                              <label className={textLabel}>الاسم الكامل <span className="text-red-500">*</span></label>
+                              <input
+                                {...register('customer_name')}
+                                placeholder="محمد بن علي"
+                                className={inputClass}
+                              />
+                              {errors.customer_name && <p className="text-red-500 text-xs mt-1">{errors.customer_name.message}</p>}
                             </div>
-                          ) : (
-                            <select
-                              {...register('commune_id', { valueAsNumber: true })}
-                              className={`${inputClass} appearance-none`}
-                            >
-                              <option value="">اختر البلدية...</option>
-                              {communes.map(c => (
-                                <option key={c.id} value={c.id} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>{c.name_ar}</option>
-                              ))}
-                            </select>
-                          )}
-                          <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                        </div>
-                        {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
-                      </div>
-                    )}
+                          )
 
-                    {/* Stopdesk offices */}
-                    {watchedDeliveryType === 'stopdesk' && watchedWilayaId > 0 && hasProvider && (
-                      <div>
-                        <label className={textLabel}>
-                          مكتب التوصيل <span className="text-red-500">*</span>
-                        </label>
-                        {loadingOffices ? (
-                          <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            جاري تحميل مكاتب التوصيل...
-                          </div>
-                        ) : (
-                          <div className="relative">
-                            <select
-                              {...register('stopdesk_code', { required: 'يرجى اختيار مكتب التوصيل' })}
-                              className={`${inputClass} appearance-none`}
-                              disabled={offices.length === 0}
-                            >
-                              {offices.length > 0 ? (
-                                <>
-                                  <option value="">اختر مكتب التوصيل...</option>
-                                  {offices.map(o => (
-                                    <option key={o.code} value={o.code} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>{o.name}</option>
-                                  ))}
-                                </>
-                              ) : (
-                                <option value="">لا توجد مكاتب توصيل متاحة لهذه الولاية</option>
+                        case 'wilaya':
+                          return (
+                            <div key="field-wilaya" className="space-y-3">
+                              {/* Wilaya select */}
+                              <div>
+                                <label className={textLabel}>الولاية <span className="text-red-500">*</span></label>
+                                <div className="relative">
+                                  <select
+                                    {...register('wilaya_id', { valueAsNumber: true })}
+                                    className={`${inputClass} appearance-none`}
+                                  >
+                                    <option value="">اختر الولاية...</option>
+                                    {wilayas.map(w => (
+                                      <option key={w.id} value={w.id} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>
+                                        {w.code} — {w.name_ar}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                </div>
+                                {errors.wilaya_id && <p className="text-red-500 text-xs mt-1">{errors.wilaya_id.message}</p>}
+                                {selectedWilaya && (
+                                  <div className={`mt-2 flex items-center gap-3 text-xs px-3 py-2 rounded-lg ${theme === 'glassmorphism' ? 'text-indigo-300 bg-indigo-950/30' : 'text-[#0D6EFD] bg-[#EBF5FF]'}`}>
+                                    <span>🚚 التوصيل خلال {deliveryDays}</span>
+                                    <span>•</span>
+                                    <span>رسوم التوصيل: {formatDZD(deliveryFee)}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Commune select — home delivery only */}
+                              {watchedDeliveryType === 'home' && watchedWilayaId > 0 && (
+                                <div>
+                                  <label className={textLabel}>البلدية <span className="text-red-500">*</span></label>
+                                  <div className="relative">
+                                    {loadingCommunes ? (
+                                      <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        جارٍ التحميل...
+                                      </div>
+                                    ) : (
+                                      <select
+                                        {...register('commune_id', { valueAsNumber: true })}
+                                        className={`${inputClass} appearance-none`}
+                                      >
+                                        <option value="">اختر البلدية...</option>
+                                        {communes.map(c => (
+                                          <option key={c.id} value={c.id} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>{c.name_ar}</option>
+                                        ))}
+                                      </select>
+                                    )}
+                                    <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                  </div>
+                                  {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
+                                </div>
                               )}
-                            </select>
-                            <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                          </div>
-                        )}
-                        {errors.stopdesk_code && <p className="text-red-500 text-xs mt-1">{errors.stopdesk_code.message}</p>}
-                      </div>
-                    )}
 
-                    {/* Phone fields */}
-                    <div className={fieldsConfig.phone2?.visible !== false ? "grid grid-cols-2 gap-3" : "grid grid-cols-1 gap-3"}>
-                      <div>
-                        <label className={textLabel}>رقم الهاتف <span className="text-red-500">*</span></label>
-                        <input
-                          {...register('phone')}
-                          type="tel"
-                          placeholder="0555 xx xx xx"
-                          className={inputClass}
-                        />
-                        {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
-                      </div>
-                      {fieldsConfig.phone2?.visible !== false && (
-                        <div>
-                          <label className={textLabel}>هاتف بديل</label>
-                          <input
-                            {...register('phone2')}
-                            type="tel"
-                            placeholder="اختياري"
-                            className={inputClass}
-                          />
-                          {errors.phone2 && <p className="text-red-500 text-xs mt-1">{errors.phone2.message}</p>}
-                        </div>
-                      )}
-                    </div>
+                              {/* Stopdesk offices — stopdesk only */}
+                              {watchedDeliveryType === 'stopdesk' && watchedWilayaId > 0 && hasProvider && (
+                                <div>
+                                  <label className={textLabel}>
+                                    مكتب التوصيل <span className="text-red-500">*</span>
+                                  </label>
+                                  {loadingOffices ? (
+                                    <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                      جاري تحميل مكاتب التوصيل...
+                                    </div>
+                                  ) : (
+                                    <div className="relative">
+                                      <select
+                                        {...register('stopdesk_code', { required: 'يرجى اختيار مكتب التوصيل' })}
+                                        className={`${inputClass} appearance-none`}
+                                        disabled={offices.length === 0}
+                                      >
+                                        {offices.length > 0 ? (
+                                          <>
+                                            <option value="">اختر مكتب التوصيل...</option>
+                                            {offices.map(o => (
+                                              <option key={o.code} value={o.code} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>{o.name}</option>
+                                            ))}
+                                          </>
+                                        ) : (
+                                          <option value="">لا توجد مكاتب توصيل متاحة لهذه الولاية</option>
+                                        )}
+                                      </select>
+                                      <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                    </div>
+                                  )}
+                                  {errors.stopdesk_code && <p className="text-red-500 text-xs mt-1">{errors.stopdesk_code.message}</p>}
+                                </div>
+                              )}
+                            </div>
+                          )
 
-                    {/* Address */}
-                    {watchedDeliveryType === 'home' && fieldsConfig.address?.visible !== false && (
-                      <div>
-                        <label className={textLabel}>العنوان التفصيلي {fieldsConfig.address?.required && <span className="text-red-500">*</span>}</label>
-                        <textarea
-                          {...register('address')}
-                          rows={2}
-                          placeholder="الحي، الشارع، رقم البناية..."
-                          className={`${inputClass} resize-none`}
-                        />
-                        {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
-                      </div>
-                    )}
+                        case 'phone':
+                          return (
+                            <div key="field-phone" className={fieldsConfig.phone2?.visible !== false ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-1 gap-3'}>
+                              <div>
+                                <label className={textLabel}>رقم الهاتف <span className="text-red-500">*</span></label>
+                                <input
+                                  {...register('phone')}
+                                  type="tel"
+                                  placeholder="0555 xx xx xx"
+                                  className={inputClass}
+                                />
+                                {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
+                              </div>
+                              {fieldsConfig.phone2?.visible !== false && (
+                                <div>
+                                  <label className={textLabel}>هاتف بديل</label>
+                                  <input
+                                    {...register('phone2')}
+                                    type="tel"
+                                    placeholder="اختياري"
+                                    className={inputClass}
+                                  />
+                                  {errors.phone2 && <p className="text-red-500 text-xs mt-1">{errors.phone2.message}</p>}
+                                </div>
+                              )}
+                            </div>
+                          )
 
-                    {/* Notes */}
+                        case 'address':
+                          return watchedDeliveryType === 'home' && fieldsConfig.address?.visible !== false ? (
+                            <div key="field-address">
+                              <label className={textLabel}>العنوان التفصيلي {fieldsConfig.address?.required && <span className="text-red-500">*</span>}</label>
+                              <textarea
+                                {...register('address')}
+                                rows={2}
+                                placeholder="الحي، الشارع، رقم البناية..."
+                                className={`${inputClass} resize-none`}
+                              />
+                              {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
+                            </div>
+                          ) : null
+
+                        default:
+                          return null
+                      }
+                    })}
+
+                    {/* Notes — always last (optional) */}
                     {fieldsConfig.notes?.visible !== false && (
                       <div>
                         <label className={textLabel}>ملاحظات (اختياري)</label>

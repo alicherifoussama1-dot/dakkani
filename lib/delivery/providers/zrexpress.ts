@@ -167,64 +167,15 @@ export class ZRExpressAdapter implements DeliveryAdapter {
     return { success: false, error: 'إلغاء الشحنة يتم من لوحة ZR Express' }
   }
 
-  async importRates(fromWilayaCode?: string): Promise<RateData[]> {
-    const fromCode = fromWilayaCode || '16'
+  async importRates(): Promise<RateData[]> {
     if (this.mode === 'zrx') {
-      const h = await this.auth()
-      if (!h) throw new Error('تعذّر المصادقة مع ZR Express — تحقق من secretKey و tenantId')
-      const ROOT = 'https://api.zrexpress.app'
-
-      const parseRows = (data: any): RateData[] => {
-        let entries: [string, any][] = []
-        if (Array.isArray(data)) entries = data.map((v: any, i: number) => [String(v?.wilaya_code ?? v?.wilaya_id ?? v?.code ?? i), v])
-        else if (data && typeof data === 'object') {
-          const arr = data.data ?? data.fees ?? data.result ?? data.items ?? data.deliveryFees ?? data.tarifs ?? Object.values(data).find((v: any) => Array.isArray(v))
-          if (Array.isArray(arr)) entries = arr.map((v: any, i: number) => [String(v?.wilaya_code ?? v?.wilaya_id ?? v?.code ?? i), v])
-          else entries = Object.entries(data)
-        }
-        return entries.map(([key, w]) => ({
-          wilayaCode: String(w?.wilaya_code ?? w?.wilaya_id ?? w?.code ?? key).padStart(2, '0'),
-          wilayaName: w?.wilaya_name ?? w?.name ?? w?.wilaya,
-          homePrice: Number(w?.home ?? w?.domicile ?? w?.tarif ?? w?.price ?? w?.delivery ?? w?.livraison ?? w?.fee ?? 0),
-          stopdeskPrice: Number(w?.stopdesk ?? w?.stop_desk ?? w?.bureau ?? w?.desk ?? w?.point ?? w?.stopDesk ?? 0),
-        })).filter(r => /^\d{2}$/.test(r.wilayaCode) && r.wilayaCode !== '00' && (r.homePrice > 0 || r.stopdeskPrice > 0))
-      }
-
-      // 1) Discover the real fees endpoint from ZR's OpenAPI/Swagger spec
-      //    (authenticated). /parcels/fees was wrong — it matched /parcels/{id}.
-      let available: string[] = []
-      const feeRe = /(fee|tarif|tarification|price|pricing|deliver|wilaya|commune|zone)/i
-      for (const sp of ['/swagger/docs/v1', '/swagger/swagger.json', '/swagger/v1/swagger.json']) {
-        const sr = await fetchRaw(`${ROOT}${sp}`, { headers: h })
-        if (sr.ok && sr.json?.paths) { available = Object.keys(sr.json.paths); break }
-      }
-      const candidates = [
-        ...available.filter(p => feeRe.test(p) && !p.includes('{')).map(p => `${ROOT}${p}`),
-        `${ZRX}/fees`, `${ZRX}/tarification`, `${ZRX}/delivery-fees`, `${ZRX}/pricing`, `${ZRX}/wilayas`,
-      ]
-
-      // 2) Try each candidate (GET) and return the first that yields prices.
-      for (const u of candidates) {
-        const r = await fetchRaw(u, { headers: h })
-        if (!r.ok) continue
-        const rows = parseRows(r.json ?? {})
-        if (rows.length) return rows
-      }
-
-      // 3) /parcels/calculate is a GET (POST → 405). It computes a fee per
-      //    destination. If a GET with destination params returns prices, build
-      //    the table; otherwise surface both responses to pin the contract.
-      const tryGet = async (qs: string) => fetchRaw(`${ZRX}/parcels/calculate${qs}`, { headers: h })
-      const withParams = await tryGet(`?wilaya_id=1&delivery_type=home&from_wilaya_id=${fromCode}&weight=1`)
-      if (withParams.ok) {
-        const rows = parseRows(withParams.json ?? {})
-        if (rows.length) return rows
-      }
-      const plain = await tryGet('')
-      throw new Error(
-        `ZR calculate — GET فارغ → HTTP ${plain.status}: ${(plain.text || '').slice(0, 200)} | ` +
-        `GET بمعطيات → HTTP ${withParams.status}: ${(withParams.text || '').slice(0, 200)}`
-      )
+      // CONFIRMED: the new ZR "Token API" (secretKey/tenantId, api.zrexpress.app)
+      // is a parcels-only API — every /parcels/<x> path resolves to
+      // /parcels/{trackingNumber}, and no fees/tarification controller exists.
+      // So a bulk price list cannot be imported from it. Octomatic-style auto
+      // import uses the CLASSIC Procolis API (token + key), which has
+      // `tarification` — that path is supported below in 'procolis' mode.
+      throw new Error('واجهة ZR الجديدة (secretKey/tenantId) لا تتيح استيراد الأسعار — هي للطرود فقط. للاستيراد التلقائي: استعمل مفاتيح Procolis الكلاسيكية {"token":"...","key":"..."} من حساب ZR. أو أدخل الأسعار يدوياً في «أسعار التوصيل المعلنة» (تظهر للزبون وتُحتسب تلقائياً).')
     }
     try {
       const data = await httpJson<any>(`${PROCOLIS}/tarification`, { method: 'POST', headers: this.procolisHeaders, body: '{}' })

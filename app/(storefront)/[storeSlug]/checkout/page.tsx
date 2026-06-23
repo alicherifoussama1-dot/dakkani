@@ -49,7 +49,8 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
     .order('id')
   const wilayas = await applyStoreDeliveryPrices(store.id, (wilayasRaw ?? []) as any[])
 
-  const settings = (store as any).store_settings
+  const rawSettings = (store as any).store_settings
+  const settings = Array.isArray(rawSettings) ? rawSettings[0] : rawSettings
   const theme = settings?.checkout_theme ?? 'default'
 
   let bgClass = "bg-gray-50 text-gray-900"

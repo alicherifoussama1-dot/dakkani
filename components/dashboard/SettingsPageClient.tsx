@@ -77,6 +77,9 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
       notes: { visible: true, required: false }
     }
   )
+  const [checkoutFieldOrder, setCheckoutFieldOrder] = useState<string[]>(
+    storeSettings?.checkout_field_order ?? ['name', 'wilaya', 'phone', 'address']
+  )
   const [checkoutSaved, setCheckoutSaved] = useState(false)
 
   const saveCheckout = async () => {
@@ -87,6 +90,7 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
       checkout_theme: checkoutTheme,
       checkout_section_order: checkoutSectionOrder,
       checkout_fields: checkoutFields,
+      checkout_field_order: checkoutFieldOrder,
     }, { onConflict: 'store_id' })
     
     setLoading(false)
@@ -458,6 +462,55 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
                       >
                         ↓
                       </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Field Ordering */}
+          <div className="card p-5 space-y-4">
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>ترتيب الحقول الأساسية 📋</h2>
+            <p className="text-xs -mt-2" style={{ color: 'var(--color-text-muted)' }}>رتّب الحقول الأساسية للشاكوت بالترتيب الذي تريد أن يراها عميلك</p>
+
+            <div className="space-y-2 max-w-md">
+              {checkoutFieldOrder.map((fieldId, idx) => {
+                const fieldMeta: Record<string, { label: string; icon: string }> = {
+                  name:    { label: 'الاسم واللقب',       icon: '👤' },
+                  wilaya:  { label: 'الولاية والبلدية',   icon: '📍' },
+                  phone:   { label: 'رقم الهاتف',         icon: '📞' },
+                  address: { label: 'العنوان التفصيلي',   icon: '🏠' },
+                }
+                const meta = fieldMeta[fieldId] ?? { label: fieldId, icon: '▪️' }
+
+                const move = (direction: -1 | 1) => {
+                  const newOrder = [...checkoutFieldOrder]
+                  const targetIdx = idx + direction
+                  if (targetIdx < 0 || targetIdx >= newOrder.length) return
+                  ;[newOrder[idx], newOrder[targetIdx]] = [newOrder[targetIdx], newOrder[idx]]
+                  setCheckoutFieldOrder(newOrder)
+                }
+
+                return (
+                  <div key={fieldId} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{meta.icon}</span>
+                      <span className="text-xs font-bold text-gray-700">{meta.label}</span>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => move(-1)}
+                        disabled={idx === 0}
+                        className="w-7 h-7 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-30 flex items-center justify-center text-xs font-bold"
+                      >↑</button>
+                      <button
+                        type="button"
+                        onClick={() => move(1)}
+                        disabled={idx === checkoutFieldOrder.length - 1}
+                        className="w-7 h-7 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-30 flex items-center justify-center text-xs font-bold"
+                      >↓</button>
                     </div>
                   </div>
                 )
