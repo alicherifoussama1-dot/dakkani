@@ -4,6 +4,7 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import CheckoutForm from '@/components/storefront/CheckoutForm'
+import { applyStoreDeliveryPrices } from '@/lib/delivery/pricing'
 
 interface Props {
   params: { storeSlug: string }
@@ -39,12 +40,14 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
     product = data
   }
 
-  // Load all 58 wilayas
-  const { data: wilayas } = await supabase
+  // Load all 58 wilayas, then override fees with the store's declared prices
+  // (service-role read so the customer sees the store's imported courier fee).
+  const { data: wilayasRaw } = await supabase
     .from('wilayas')
     .select('*')
     .eq('is_active', true)
     .order('id')
+  const wilayas = await applyStoreDeliveryPrices(store.id, (wilayasRaw ?? []) as any[])
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">

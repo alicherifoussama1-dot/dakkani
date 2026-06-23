@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { checkFraud } from '@/lib/fraud/score'
 import { resolveRouting, pushOrderToSheet, markOrderRouting } from '@/lib/orders/route-order'
+import { resolveDeclaredFee } from '@/lib/delivery/pricing'
 
 const orderSchema = z.object({
   store_id: z.string().uuid(),
@@ -60,32 +61,19 @@ export async function POST(req: Request) {
       ? (wilaya?.delivery_fee_stopdesk ?? 0)
       : (wilaya?.delivery_fee_home ?? 0)
 
-    // 2b. Unified delivery routing: resolve provider for this wilaya, then
-    // use its DECLARED price (shown to customer) + REAL price (profit only).
+    // 2b. Unified delivery routing: resolve the provider's DECLARED price
+    // (shown to customer) + REAL price (profit only) via service role, so the
+    // CHARGED fee equals the fee the storefront showed (anon RLS would block
+    // these tables, falling back to the static wilaya fee → mismatch).
     const wilayaCode = String(wilaya?.code ?? data.wilaya_id).padStart(2, '0')
-    let unifiedProviderId: string | null = null
-    let realDeliveryFee = deliveryFee
-    {
-      const { data: route } = await supabase
-        .from('wilaya_company_map').select('provider_id')
-        .eq('store_id', data.store_id).eq('wilaya_code', wilayaCode).maybeSingle()
-      unifiedProviderId = route?.provider_id ?? null
-      if (!unifiedProviderId) {
-        const { data: anyProv } = await supabase
-          .from('delivery_providers').select('id')
-          .eq('store_id', data.store_id).eq('is_active', true).order('created_at').limit(1).maybeSingle()
-        unifiedProviderId = anyProv?.id ?? null
-      }
-      if (unifiedProviderId) {
-        const [{ data: dp }, { data: rp }] = await Promise.all([
-          supabase.from('delivery_declared_prices').select('home_price,stopdesk_price').eq('provider_id', unifiedProviderId).eq('wilaya_code', wilayaCode).maybeSingle(),
-          supabase.from('delivery_real_prices').select('home_price,stopdesk_price').eq('provider_id', unifiedProviderId).eq('wilaya_code', wilayaCode).maybeSingle(),
-        ])
-        if (dp) deliveryFee = data.delivery_type === 'stopdesk' ? Number(dp.stopdesk_price) : Number(dp.home_price)
-        if (rp) realDeliveryFee = data.delivery_type === 'stopdesk' ? Number(rp.stopdesk_price) : Number(rp.home_price)
-        else realDeliveryFee = deliveryFee
-      }
-    }
+    const resolved = await resolveDeclaredFee({
+      storeId: data.store_id, wilayaCode,
+      deliveryType: data.delivery_type === 'stopdesk' ? 'stopdesk' : 'home',
+      fallbackFee: deliveryFee,
+    })
+    deliveryFee = resolved.deliveryFee
+    const realDeliveryFee = resolved.realDeliveryFee
+    const unifiedProviderId = resolved.providerId
 
     // 3. Get product prices and calculate totals
     const productIds = data.items.map(i => i.product_id)
