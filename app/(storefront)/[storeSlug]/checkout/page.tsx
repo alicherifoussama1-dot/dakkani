@@ -49,21 +49,50 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
     .order('id')
   const wilayas = await applyStoreDeliveryPrices(store.id, (wilayasRaw ?? []) as any[])
 
+  const settings = (store as any).store_settings
+  const theme = settings?.checkout_theme ?? 'default'
+
+  let bgClass = "bg-gray-50 text-gray-900"
+  let headerClass = "bg-white shadow-sm sticky top-0 z-10"
+  let headerTextClass = "text-gray-900"
+  let headerSecClass = "text-gray-400"
+  let logoBgClass = "bg-[#0D6EFD]"
+
+  if (theme === 'glassmorphism') {
+    bgClass = "bg-slate-950 text-slate-100 min-h-screen"
+    headerClass = "bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-10"
+    headerTextClass = "text-indigo-200"
+    headerSecClass = "text-slate-400"
+    logoBgClass = "bg-indigo-600"
+  } else if (theme === 'modern') {
+    bgClass = "bg-slate-50/50 text-slate-850 min-h-screen"
+    headerClass = "bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-10"
+    headerTextClass = "text-slate-800"
+    headerSecClass = "text-slate-400"
+    logoBgClass = "bg-gradient-to-r from-amber-500 to-orange-500"
+  } else if (theme === 'compact') {
+    bgClass = "bg-white text-gray-900 min-h-screen"
+    headerClass = "bg-gray-50 border-b border-gray-150 sticky top-0 z-10"
+    headerTextClass = "text-gray-800"
+    headerSecClass = "text-gray-500"
+    logoBgClass = "bg-blue-650"
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className={`min-h-screen ${bgClass}`} dir="rtl">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
+      <header className={headerClass}>
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
           {store.logo_url ? (
             <img src={store.logo_url} alt={store.name} className="w-9 h-9 rounded-xl object-cover" />
           ) : (
-            <div className="w-9 h-9 bg-[#0D6EFD] rounded-xl flex items-center justify-center text-white font-black">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-black ${logoBgClass}`}>
               {store.name[0]}
             </div>
           )}
           <div>
-            <p className="font-bold text-gray-900">{store.name_ar ?? store.name}</p>
-            <p className="text-xs text-gray-400">إتمام الطلب</p>
+            <p className={`font-bold ${headerTextClass}`}>{store.name_ar ?? store.name}</p>
+            <p className={`text-xs ${headerSecClass}`}>إتمام الطلب</p>
           </div>
         </div>
       </header>

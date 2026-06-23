@@ -169,20 +169,35 @@ export class ZRExpressAdapter implements DeliveryAdapter {
 
   async importRates(): Promise<RateData[]> {
     if (this.mode === 'zrx') {
-      try {
-        const h = await this.auth()
-        if (!h) return []
-        const data = await httpJson<any>(`${ZRX}/parcels/fees`, { headers: h })
-        const list: any[] = Array.isArray(data) ? data : (data?.data ?? data?.fees ?? (Object.values(data ?? {}).find(v => Array.isArray(v)) as any[]) ?? [])
-        return list.map((w: any) => ({
-          wilayaCode: String(w.wilaya_code ?? w.wilaya_id ?? w.wilaya ?? w.code ?? '').padStart(2, '0'),
-          wilayaName: w.wilaya_name ?? w.name ?? w.wilaya,
-          homePrice: Number(w.home ?? w.domicile ?? w.tarif ?? w.price ?? 0),
-          stopdeskPrice: Number(w.stopdesk ?? w.stop_desk ?? w.bureau ?? w.desk ?? 0),
-        })).filter(r => r.wilayaCode && r.wilayaCode !== '00' && (r.homePrice > 0 || r.stopdeskPrice > 0))
-      } catch {
-        return []
+      const h = await this.auth()
+      if (!h) throw new Error('تعذّر المصادقة مع ZR Express — تحقق من secretKey و tenantId')
+      const url = `${ZRX}/parcels/fees`
+      const r = await fetchRaw(url, { headers: h })
+      if (!r.ok) throw new Error(`ZR ${url} → HTTP ${r.status}: ${(r.text || '').slice(0, 200)}`)
+      const data = r.json ?? {}
+
+      // Accept array, wrapped array ({data|fees|result|[...]}), or a map keyed
+      // by wilaya code ({"01":{...}}). ZR's exact shape is unknown, so be broad.
+      let entries: [string, any][] = []
+      if (Array.isArray(data)) {
+        entries = data.map((v: any, i: number) => [String(v?.wilaya_code ?? v?.wilaya_id ?? v?.code ?? i), v])
+      } else if (data && typeof data === 'object') {
+        const arr = data.data ?? data.fees ?? data.result ?? data.deliveryFees ?? data.tarifs ?? Object.values(data).find((v: any) => Array.isArray(v))
+        if (Array.isArray(arr)) entries = arr.map((v: any, i: number) => [String(v?.wilaya_code ?? v?.wilaya_id ?? v?.code ?? i), v])
+        else entries = Object.entries(data)
       }
+      const rows = entries.map(([key, w]) => ({
+        wilayaCode: String(w?.wilaya_code ?? w?.wilaya_id ?? w?.code ?? key).padStart(2, '0'),
+        wilayaName: w?.wilaya_name ?? w?.name ?? w?.wilaya,
+        homePrice: Number(w?.home ?? w?.domicile ?? w?.tarif ?? w?.price ?? w?.delivery ?? w?.livraison ?? 0),
+        stopdeskPrice: Number(w?.stopdesk ?? w?.stop_desk ?? w?.bureau ?? w?.desk ?? w?.point ?? 0),
+      })).filter(r => /^\d{2}$/.test(r.wilayaCode) && r.wilayaCode !== '00' && (r.homePrice > 0 || r.stopdeskPrice > 0))
+
+      if (rows.length === 0) {
+        // Surface the real shape so the parser can be fixed precisely.
+        throw new Error(`ZR لم تُرجع قائمة أسعار مقروءة. شكل الرد: ${JSON.stringify(data).slice(0, 280)}`)
+      }
+      return rows
     }
     try {
       const data = await httpJson<any>(`${PROCOLIS}/tarification`, { method: 'POST', headers: this.procolisHeaders, body: '{}' })

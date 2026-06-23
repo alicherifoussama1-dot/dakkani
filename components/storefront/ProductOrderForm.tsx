@@ -197,6 +197,20 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         ))}
       </div>
 
+      {/* Name */}
+      <div>
+        <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--pt-text-soft)' }}>الاسم الكامل *</label>
+        <input
+          {...register('customer_name')}
+          placeholder="محمد بن علي"
+          className="w-full border border-gray-200 px-3 py-2.5 text-sm outline-none bg-white text-gray-900"
+          style={{ borderRadius: 'var(--pt-radius-md)' }}
+        />
+        {errors.customer_name && (
+          <p className="text-red-500 text-xs mt-1">{errors.customer_name.message}</p>
+        )}
+      </div>
+
       {/* Wilaya */}
       <div>
         <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--pt-text-soft)' }}>الولاية *</label>
@@ -267,10 +281,9 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         </div>
       )}
 
-      {/* Name & Phone */}
+      {/* Phone */}
       <div className="grid grid-cols-1 gap-3">
         {[
-          { name: 'customer_name', label: 'الاسم الكامل *', placeholder: 'محمد بن علي' },
           { name: 'customer_phone', label: 'رقم الهاتف *', placeholder: '0555 xx xx xx' },
           { name: 'customer_phone2', label: 'رقم هاتف بديل', placeholder: 'اختياري' },
         ].map(f => (
@@ -289,6 +302,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         ))}
       </div>
 
+      {/* Address */}
       {deliveryType === 'home' && (
         <div>
           <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--pt-text-soft)' }}>العنوان التفصيلي</label>
