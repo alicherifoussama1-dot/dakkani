@@ -105,7 +105,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
 
   const { pixelId, tiktokId, trackPurchase } = useOrderPixels(store, product)
 
-  const dynamicSchema = useMemo(() => {
+   const dynamicSchema = useMemo(() => {
     return z.object({
       customer_name:  z.string().min(2, 'الاسم يجب أن يكون حرفين على الأقل'),
       phone:          z.string().regex(/^(05|06|07)[0-9]{8}$/, 'رقم الهاتف غير صالح — مثال: 0555123456'),
@@ -113,7 +113,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       wilaya_id:      z.number({ required_error: 'اختر الولاية' }).int().min(1).max(58),
       delivery_type:  z.enum(['home', 'stopdesk']),
       commune_id:     z.number().int().optional(),
-      baladia:        z.string().min(1, 'اختر البلدية'),
+      baladia:        z.string().optional(),
       address:        store.store_settings?.checkout_fields?.address?.required
                         ? z.string().min(5, 'العنوان التفصيلي مطلوب ومهم للتوصيل للمنزل')
                         : z.string().optional(),
@@ -122,6 +122,14 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       payment_method: z.enum(['cod', 'chargily_cib', 'chargily_edahabia']),
       coupon_code:    z.string().optional(),
       quantity:       z.number().int().min(1).max(99),
+    }).superRefine((data, ctx) => {
+      if (data.delivery_type === 'home' && (!data.baladia || data.baladia.trim() === '')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['baladia'],
+          message: 'اختر البلدية التابعة لعنوانك',
+        })
+      }
     })
   }, [store])
 
@@ -592,7 +600,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                     </div>
 
                     {/* Commune select */}
-                    {watchedWilayaId > 0 && (
+                    {watchedDeliveryType === 'home' && watchedWilayaId > 0 && (
                       <div>
                         <label className={textLabel}>البلدية <span className="text-red-500">*</span></label>
                         <div className="relative">

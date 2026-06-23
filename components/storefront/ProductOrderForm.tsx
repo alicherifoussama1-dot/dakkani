@@ -14,12 +14,20 @@ const schema = z.object({
   customer_phone2: z.string().optional(),
   delivery_type: z.enum(['home', 'stopdesk']),
   wilaya_id: z.number({ required_error: 'اختر الولاية' }).int().min(1),
-  baladia: z.string().min(1, 'اختر البلدية'),
+  baladia: z.string().optional(),
   address: z.string().optional(),
   stopdesk_code: z.string().optional(),
   quantity: z.number().int().min(1).max(99),
   coupon_code: z.string().optional(),
   notes: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.delivery_type === 'home' && (!data.baladia || data.baladia.trim() === '')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['baladia'],
+      message: 'اختر البلدية التابعة لعنوانك',
+    })
+  }
 })
 type FormData = z.infer<typeof schema>
 
@@ -211,13 +219,15 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         )}
       </div>
 
-      {/* Baladia (commune) — cascades from الولاية, required */}
-      <BaladiaField
-        wilayaId={wilayaId ?? null}
-        value={baladia ?? ''}
-        onChange={v => setValue('baladia', v, { shouldValidate: true })}
-        error={errors.baladia?.message}
-      />
+      {/* Baladia (commune) — cascades from الولاية, required (Only for home delivery) */}
+      {deliveryType === 'home' && (
+        <BaladiaField
+          wilayaId={wilayaId ?? null}
+          value={baladia ?? ''}
+          onChange={v => setValue('baladia', v, { shouldValidate: true })}
+          error={errors.baladia?.message}
+        />
+      )}
 
       {/* Stopdesk / Delivery Office select/input */}
       {deliveryType === 'stopdesk' && wilayaId > 0 && hasProvider && (
