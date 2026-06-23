@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import {
   Home, Package, ShoppingCart, Users, Navigation2,
   Phone, BarChart2, CreditCard, ChevronDown,
@@ -20,6 +20,7 @@ const NAV_MAIN = [
   { href: '/products',       label: 'المنتجات',    icon: Package },
   { href: '/store-builder',  label: 'مُنشئ المتجر', icon: Store, badge: 'جديد' },
   { href: '/store/delivery', label: 'التوصيل',      icon: Truck, badge: 'جديد' },
+  { href: '/settings?tab=checkout', label: 'صفحة الدفع', icon: ShoppingCart },
   { href: '/customers',      label: 'الزبائن',     icon: Users },
   { href: '/analytics',      label: 'الإحصائيات', icon: BarChart2 },
   { href: '/reviews',        label: 'التقييمات',   icon: Star },
@@ -46,6 +47,8 @@ interface Props {
 export default function DashboardShell({ children, store, user, newOrdersCount = 0, allStores = [] }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
+  const searchParams = useSearchParams()
+  const activeTab = searchParams ? searchParams.get('tab') : null
 
   const [sidebarOpen,  setSidebarOpen]  = useState(true)
   const [mobileOpen,   setMobileOpen]   = useState(false)
@@ -133,8 +136,18 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
   // Close on route change
   useEffect(() => { setMobileOpen(false); setAvatarOpen(false) }, [pathname])
 
-  const isActive = (href: string) =>
-    pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+  const isActive = (href: string) => {
+    if (href.includes('?')) {
+      const [path, query] = href.split('?')
+      const params = new URLSearchParams(query)
+      const tab = params.get('tab')
+      return pathname === path && activeTab === tab
+    }
+    if (href === '/settings') {
+      return pathname === '/settings' && !activeTab
+    }
+    return pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+  }
 
   const signOut = async () => {
     const sb = createClient()

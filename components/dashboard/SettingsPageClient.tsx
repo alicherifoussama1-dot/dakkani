@@ -1,6 +1,6 @@
 'use client'
-import { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useRef, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Store, Shield, Truck, Bell, CreditCard, Loader2, Check, Eye, EyeOff, Camera, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
@@ -20,7 +20,15 @@ interface Props { store: any; user: any; wilayas: { id: number; name_ar: string 
 
 export default function SettingsPageClient({ store, user, wilayas }: Props) {
   const router  = useRouter()
-  const [tab,   setTab]   = useState('store')
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const [tab,   setTab]   = useState(tabParam || 'store')
+
+  useEffect(() => {
+    if (tabParam) {
+      setTab(tabParam)
+    }
+  }, [tabParam])
   const [saved, setSaved] = useState(false)
   const [loading,setLoading] = useState(false)
   const [showPw, setShowPw] = useState(false)
