@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { PROVIDERS, providerMeta, validateCreds, type ProviderType } from '@/lib/delivery/types'
-import { Plus, Trash2, Edit2, Link2, RefreshCw, CheckCircle, X, Download, AlertTriangle, Loader2 } from 'lucide-react'
+import { Trash2, Link2, RefreshCw, CheckCircle, X, Download, AlertTriangle, Loader2 } from 'lucide-react'
 
 const SUB_TABS = ['شركة التوصيل', 'أسعار التوصيل المعلنة', 'الولاية ⇄ شركة التوصيل', 'أسعار التوصيل الحقيقية']
 
@@ -54,62 +54,103 @@ export default function StoreDelivery({ storeId, setToast }: { storeId: string; 
   )
 }
 
-// ── Sub-tab 0: providers ─────────────────────────────────────
+// ── Sub-tab 0: providers — JustSell-style integration cards ──
+const PROVIDER_DESC: Record<string, string> = {
+  zrexpress: 'خدمة توصيل سريعة وموثوقة عبر ZR Express.',
+  yalidine:  'مزوّد التوصيل واللوجستيك الرائد في الجزائر.',
+  ecotrack:  'تكامل التوصيل والتتبع عبر حسابات Ecotrack.',
+  noest:     'لوجستيك وشحن احترافي عبر منصّة Noest.',
+  maystro:   'خدمات توصيل احترافية مع تتبّع كامل.',
+}
+const PROVIDER_ICON_BG: Record<string, string> = {
+  zrexpress: '#FEE2E2', yalidine: '#FEF3C7', ecotrack: '#DCFCE7', noest: '#EDE9FE', maystro: '#DBEAFE',
+}
+
 function ProvidersTab({ providers, reload, setToast }: { providers: Provider[]; reload: () => Promise<void>; setToast: (m: string) => void }) {
   const [form, setForm] = useState<any | null>(null)
+  const [syncing, setSyncing] = useState<string | null>(null)
 
-  const toggle = async (p: Provider, field: 'is_active' | 'is_automatic') => {
-    await fetch('/api/delivery/providers', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, [field]: !p[field] }) })
+  const toggleActive = async (p: Provider) => {
+    await fetch('/api/delivery/providers', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, is_active: !p.is_active }) })
     reload()
   }
   const remove = async (id: string) => {
-    if (!confirm('حذف شركة التوصيل؟')) return
+    if (!confirm('فصل شركة التوصيل؟')) return
     await fetch(`/api/delivery/providers?id=${id}`, { method: 'DELETE' })
-    setToast('تم حذف الشركة'); reload()
+    setToast('تم فصل الشركة'); reload()
+  }
+  const sync = async (p: Provider) => {
+    setSyncing(p.id)
+    try {
+      const res = await fetch(`/api/delivery/import-rates/${p.id}`, { method: 'POST' })
+      const d = await res.json().catch(() => ({}))
+      setToast(res.ok ? `✓ تمت مزامنة ${d.count ?? ''} سعر توصيل` : (d.error ?? 'تعذّرت المزامنة'))
+    } catch { setToast('تعذّرت المزامنة') }
+    finally { setSyncing(null) }
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-          عمود «تلقائي» = عند تأكيد الطلب يُرسَل للشركة تلقائياً دون النقر على 🚚.
-        </p>
-        <button onClick={() => setForm({ provider_type: 'ecotrack', json: '', is_automatic: false, from_wilaya_code: '16' })} className="btn btn-primary btn-sm gap-1.5"><Plus size={13} />إضافة شركة</button>
-      </div>
+    <div className="space-y-4">
+      <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+        اربط متجرك بشركة التوصيل، ثم فعّل «مزامنة الأسعار» لاستيرادها تلقائياً. عند تأكيد الطلب يمكن إرساله تلقائياً للشركة.
+      </p>
 
-      <div className="card overflow-hidden">
-        <table className="data-table">
-          <thead><tr>{['الإجراءات', 'الحالة', 'تلقائي', 'الاسم', 'الشركة'].map(h => <th key={h}>{h}</th>)}</tr></thead>
-          <tbody>
-            {providers.length === 0 ? (
-              <tr><td colSpan={5} className="text-center py-10 text-sm" style={{ color: 'var(--color-text-muted)' }}>لا توجد شركات — أضف شركة توصيل</td></tr>
-            ) : providers.map(p => {
-              const meta = providerMeta(p.provider_type)
-              return (
-                <tr key={p.id}>
-                  <td>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => remove(p.id)} className="p-1.5 rounded hover:bg-red-50" title="حذف"><Trash2 size={12} style={{ color: '#DC3545' }} /></button>
-                      <button onClick={() => setForm({ id: p.id, provider_type: p.provider_type, display_name: p.display_name, json: '', is_automatic: p.is_automatic, from_wilaya_code: p.from_wilaya_code })} className="p-1.5 rounded hover:bg-[#F8F9FA]" title="تعديل"><Edit2 size={12} style={{ color: 'var(--color-text-muted)' }} /></button>
-                    </div>
-                  </td>
-                  <td>
-                    <button onClick={() => toggle(p, 'is_active')} className="w-9 h-5 rounded-full flex items-center transition-colors" style={{ background: p.is_active ? '#22C55E' : '#DEE2E6' }}>
-                      <span className="w-4 h-4 bg-white rounded-full shadow transition-transform" style={{ transform: p.is_active ? 'translateX(-2px)' : 'translateX(-18px)' }} />
-                    </button>
-                  </td>
-                  <td>
-                    <button onClick={() => toggle(p, 'is_automatic')} className="w-9 h-5 rounded-full flex items-center transition-colors" style={{ background: p.is_automatic ? 'var(--cf-turq)' : '#DEE2E6' }}>
-                      <span className="w-4 h-4 bg-white rounded-full shadow transition-transform" style={{ transform: p.is_automatic ? 'translateX(-2px)' : 'translateX(-18px)' }} />
-                    </button>
-                  </td>
-                  <td className="font-medium text-sm">{p.display_name}</td>
-                  <td><span className="inline-flex items-center gap-1.5 text-xs font-semibold">{meta?.logo} {meta?.label ?? p.provider_type}</span></td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {PROVIDERS.map(meta => {
+          const p = providers.find(x => x.provider_type === meta.type)
+          const connected = !!p
+          return (
+            <div key={meta.type}
+              className="relative rounded-2xl border bg-white p-4 flex flex-col gap-3 transition-shadow hover:shadow-md"
+              style={{ borderColor: 'var(--color-border)' }}>
+              {connected && (
+                <button onClick={() => remove(p!.id)} className="absolute top-3 left-3 p-1 rounded hover:bg-red-50" title="فصل">
+                  <Trash2 size={13} style={{ color: '#DC3545' }} />
+                </button>
+              )}
+              <div className="flex items-start gap-3">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: PROVIDER_ICON_BG[meta.type] ?? '#F1F3F5' }}>
+                  {meta.logo}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-sm leading-tight" style={{ color: 'var(--color-text-primary)' }}>{meta.label}</p>
+                  <p className="text-[11px] leading-snug mt-0.5 line-clamp-2" style={{ color: 'var(--color-text-muted)' }}>{PROVIDER_DESC[meta.type] ?? ''}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 mt-auto border-t" style={{ borderColor: 'var(--color-border)' }}>
+                {connected ? (
+                  <button onClick={() => setForm({ id: p!.id, provider_type: p!.provider_type, display_name: p!.display_name, json: '', is_automatic: p!.is_automatic, from_wilaya_code: p!.from_wilaya_code })}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg"
+                    style={{ background: p!.is_active ? '#DCFCE7' : '#F1F3F5', color: p!.is_active ? '#16A34A' : '#6C757D' }}>
+                    <CheckCircle size={12} /> {p!.is_active ? 'متصل — إدارة' : 'موقوف — إدارة'}
+                  </button>
+                ) : (
+                  <button onClick={() => setForm({ provider_type: meta.type, json: '', is_automatic: false, from_wilaya_code: '16' })}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg" style={{ background: '#E7F0FF', color: '#0D6EFD' }}>
+                    <Link2 size={12} /> ربط
+                  </button>
+                )}
+                <button
+                  onClick={() => connected ? toggleActive(p!) : setForm({ provider_type: meta.type, json: '', is_automatic: false, from_wilaya_code: '16' })}
+                  className="w-10 h-5 rounded-full relative transition-colors shrink-0"
+                  style={{ background: connected && p!.is_active ? '#0D6EFD' : '#DEE2E6' }} title={connected ? (p!.is_active ? 'مفعّل' : 'موقوف') : 'غير مربوط'}>
+                  <span className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all"
+                    style={{ [connected && p!.is_active ? 'right' : 'left']: '2px' } as any} />
+                </button>
+              </div>
+
+              {connected && meta.hasRatesApi && (
+                <button onClick={() => sync(p!)} disabled={syncing === p!.id}
+                  className="inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold h-8 rounded-lg border disabled:opacity-60"
+                  style={{ borderColor: 'var(--color-border)', color: '#0D6EFD' }}>
+                  {syncing === p!.id ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                  مزامنة الأسعار تلقائياً
+                </button>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {form && <ProviderModal form={form} setForm={setForm} onSaved={reload} setToast={setToast} />}
