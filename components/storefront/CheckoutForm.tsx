@@ -505,30 +505,6 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                       />
                       {errors.customer_name && <p className="text-red-500 text-xs mt-1">{errors.customer_name.message}</p>}
                     </div>
-                    <div className={fieldsConfig.phone2?.visible !== false ? "grid grid-cols-2 gap-3" : "grid grid-cols-1 gap-3"}>
-                      <div>
-                        <label className={textLabel}>رقم الهاتف <span className="text-red-500">*</span></label>
-                        <input
-                          {...register('phone')}
-                          type="tel"
-                          placeholder="0555 xx xx xx"
-                          className={inputClass}
-                        />
-                        {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
-                      </div>
-                      {fieldsConfig.phone2?.visible !== false && (
-                        <div>
-                          <label className={textLabel}>هاتف بديل</label>
-                          <input
-                            {...register('phone2')}
-                            type="tel"
-                            placeholder="اختياري"
-                            className={inputClass}
-                          />
-                          {errors.phone2 && <p className="text-red-500 text-xs mt-1">{errors.phone2.message}</p>}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 )
 
@@ -671,6 +647,32 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                         {errors.stopdesk_code && <p className="text-red-500 text-xs mt-1">{errors.stopdesk_code.message}</p>}
                       </div>
                     )}
+
+                    {/* Phone fields */}
+                    <div className={fieldsConfig.phone2?.visible !== false ? "grid grid-cols-2 gap-3" : "grid grid-cols-1 gap-3"}>
+                      <div>
+                        <label className={textLabel}>رقم الهاتف <span className="text-red-500">*</span></label>
+                        <input
+                          {...register('phone')}
+                          type="tel"
+                          placeholder="0555 xx xx xx"
+                          className={inputClass}
+                        />
+                        {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
+                      </div>
+                      {fieldsConfig.phone2?.visible !== false && (
+                        <div>
+                          <label className={textLabel}>هاتف بديل</label>
+                          <input
+                            {...register('phone2')}
+                            type="tel"
+                            placeholder="اختياري"
+                            className={inputClass}
+                          />
+                          {errors.phone2 && <p className="text-red-500 text-xs mt-1">{errors.phone2.message}</p>}
+                        </div>
+                      )}
+                    </div>
 
                     {/* Address */}
                     {watchedDeliveryType === 'home' && fieldsConfig.address?.visible !== false && (
