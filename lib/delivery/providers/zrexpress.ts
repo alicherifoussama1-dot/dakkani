@@ -167,7 +167,8 @@ export class ZRExpressAdapter implements DeliveryAdapter {
     return { success: false, error: 'إلغاء الشحنة يتم من لوحة ZR Express' }
   }
 
-  async importRates(): Promise<RateData[]> {
+  async importRates(fromWilayaCode?: string): Promise<RateData[]> {
+    const fromCode = fromWilayaCode || '16'
     if (this.mode === 'zrx') {
       const h = await this.auth()
       if (!h) throw new Error('تعذّر المصادقة مع ZR Express — تحقق من secretKey و tenantId')
@@ -210,11 +211,21 @@ export class ZRExpressAdapter implements DeliveryAdapter {
         if (rows.length) return rows
       }
 
-      // 3) Couldn't find it → show the available endpoints so we can pin it.
-      const hint = available.length
-        ? `المسارات المتاحة في ZR: ${available.filter(p => !p.includes('{')).slice(0, 30).join('، ')}`
-        : 'تعذّر قراءة قائمة نقاط ZR (Swagger محمي أو غير متاح).'
-      throw new Error(`تعذّر العثور على نقطة أسعار ZR تلقائياً. ${hint}`)
+      // 3) ZR's new API computes fees via POST /parcels/calculate (per
+      //    destination). Probe it once and surface the raw contract so the
+      //    request/response shape can be pinned, then looped over 58 wilayas.
+      const calcBody = {
+        wilaya_id: 1, wilaya_code: '01', to_wilaya_id: 1, to_wilaya_code: '01',
+        from_wilaya_id: Number(fromCode), from_wilaya_code: fromCode,
+        delivery_type: 'home', type: 'home', weight: 1, commune_id: null,
+      }
+      for (const method of ['POST', 'GET'] as const) {
+        const calc = await fetchRaw(`${ZRX}/parcels/calculate`, {
+          method, headers: h, ...(method === 'POST' ? { body: JSON.stringify(calcBody) } : {}),
+        })
+        throw new Error(`ZR /parcels/calculate (${method}) → HTTP ${calc.status}: ${(calc.text || '').slice(0, 350)}`)
+      }
+      throw new Error('تعذّر العثور على نقطة أسعار ZR.')
     }
     try {
       const data = await httpJson<any>(`${PROCOLIS}/tarification`, { method: 'POST', headers: this.procolisHeaders, body: '{}' })
