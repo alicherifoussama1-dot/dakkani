@@ -76,6 +76,20 @@ function useOrderPixels(store: StoreData, product: ProductData | null) {
 
 export default function CheckoutForm({ store, product, wilayas, initialQty, initialVariant }: Props) {
   const router = useRouter()
+  const theme = store.store_settings?.checkout_theme ?? 'default'
+
+  // Handle glassmorphism body background class injection
+  useEffect(() => {
+    if (theme === 'glassmorphism') {
+      document.body.classList.add('bg-slate-950')
+    } else {
+      document.body.classList.remove('bg-slate-950')
+    }
+    return () => {
+      document.body.classList.remove('bg-slate-950')
+    }
+  }, [theme])
+
   const [communes, setCommunes] = useState<{ id: number; name_ar: string }[]>([])
   const [loadingCommunes, setLoadingCommunes] = useState(false)
   const [selectedWilaya, setSelectedWilaya] = useState<Wilaya | null>(null)
@@ -397,25 +411,12 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
     )
   }
 
-  const theme = store.store_settings?.checkout_theme ?? 'default'
   const sectionOrder = store.store_settings?.checkout_section_order ?? ['customer_info', 'delivery_info', 'payment_info', 'coupon']
   const fieldsConfig = store.store_settings?.checkout_fields ?? {
     phone2: { visible: true, required: false },
     address: { visible: true, required: false },
     notes: { visible: true, required: false }
   }
-
-  // Handle glassmorphism body background class injection
-  useEffect(() => {
-    if (theme === 'glassmorphism') {
-      document.body.classList.add('bg-slate-950')
-    } else {
-      document.body.classList.remove('bg-slate-950')
-    }
-    return () => {
-      document.body.classList.remove('bg-slate-950')
-    }
-  }, [theme])
 
   // Style classes based on theme
   let cardClass = "bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4"
