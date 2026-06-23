@@ -19,6 +19,8 @@ import {
 } from 'recharts'
 import { getStatus, statusLabel, STATUS_LIST } from '@/lib/confirmili/statuses'
 import ConfirmiliOrders from './ConfirmiliOrders'
+// Store-owned delivery module (Confirmili reuses it; store has no reverse dep)
+import ConfirmiliDelivery from '@/components/store/StoreDelivery'
 
 // ── Sub-nav tabs ──────────────────────────────────────────
 const TABS = [
@@ -27,6 +29,7 @@ const TABS = [
   { id: 'tracking',          label: 'التتبع',          icon: Map },
   { id: 'validation',        label: 'التحقق',          icon: CheckSquare },
   { id: 'products',          label: 'المخزون',         icon: Warehouse },
+  { id: 'delivery',          label: 'التوصيل',         icon: Truck },
   { id: 'store-integration', label: 'قنوات البيع',     icon: Link2 },
   { id: 'finances',          label: 'الحسابات',        icon: DollarSign },
   { id: 'team',              label: 'الفريق',           icon: Users },
@@ -1470,7 +1473,9 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     )
   }
 
-  // Delivery management moved out of Confirmili → store-only at /store/delivery.
+  // Reuses the store delivery module (also available standalone at /store/delivery).
+  const renderDelivery = () => <ConfirmiliDelivery storeId={storeId} setToast={setToast} />
+
   const _renderDeliveryOLD = () => {
     const dTabs = ['شركة التوصيل','أسعار التوصيل المعلنة','الولاية ↔ شركة التوصيل','أسعار التوصيل الحقيقية']
     return (
@@ -2129,6 +2134,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     tracking:          renderTracking,
     validation:        renderValidation,
     products:          renderProducts,
+    delivery:          renderDelivery,
     'store-integration': renderStoreIntegration,
     finances:          renderFinances,
     team:              renderTeam,
