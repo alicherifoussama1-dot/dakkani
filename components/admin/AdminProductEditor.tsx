@@ -17,22 +17,21 @@ import { CSS } from '@dnd-kit/utilities'
 
 // ── Schema ────────────────────────────────────────────────
 const variantGroupSchema = z.object({
-  name:    z.string().min(1),
-  options: z.array(z.string().min(1)).min(1),
+  name:    z.string().min(1, 'اسم خيار المتغير مطلوب (مثال: اللون، المقاس)'),
+  options: z.array(z.string().min(1, 'يجب ملء جميع قيم الخيارات')).min(1, 'يجب إضافة خيار واحد على الأقل للمتغير'),
 })
 
 const schema = z.object({
-  name:             z.string().min(1, 'اسم المنتج مطلوب'),
+  name:             z.string().min(1, 'اسم المنتج بالفرنسية / الإنجليزية مطلوب'),
   name_ar:          z.string().optional(),
-  slug:             z.string().min(1, 'الرابط مطلوب'),
+  slug:             z.string().min(1, 'رابط المنتج (Slug) مطلوب'),
   description:      z.string().optional(),
   description_ar:   z.string().optional(),
   sku:              z.string().optional(),
   barcode:          z.string().optional(),
-  price:            z.number({ invalid_type_error: 'أدخل السعر' }).positive(),
-  compare_price:    z.number().positive().optional(),
-  cost_price:       z.number().positive().optional(),
-  weight:           z.number().positive().optional(),
+  price:            z.number({ invalid_type_error: 'سعر البيع مطلوب ويجب أن يكون رقماً' }).positive('سعر البيع يجب أن يكون أكبر من 0'),
+  compare_price:    z.number({ invalid_type_error: 'السعر المقارن يجب أن يكون رقماً' }).positive('السعر المقارن يجب أن يكون أكبر من 0').optional(),
+  cost_price:       z.number({ invalid_type_error: 'سعر التكلفة يجب أن يكون رقماً' }).positive('سعر التكلفة يجب أن يكون أكبر من 0').optional(),
   category_id:      z.string().optional(),
   tags:             z.string().optional(),
   is_active:        z.boolean().default(true),
@@ -43,7 +42,7 @@ const schema = z.object({
   meta_title:       z.string().optional(),
   meta_description: z.string().optional(),
   variant_groups:   z.array(variantGroupSchema).default([]),
-  initial_stock:    z.number().int().min(0).default(0),
+  initial_stock:    z.number({ invalid_type_error: 'الكمية الابتدائية يجب أن تكون رقماً' }).int('يجب أن تكون الكمية عدداً صحيحاً').min(0, 'الكمية الابتدائية يجب ألا تكون سالبة').default(0),
   warehouse_id:     z.string().optional(),
   theme_key:        z.string().default(DEFAULT_THEME_KEY),
   section_order:    z.array(z.string()).default([...DEFAULT_SECTION_ORDER]),
@@ -83,6 +82,25 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 const IC = 'input text-sm'
 const LC = 'block text-xs font-medium mb-1.5'
 const CC = 'card p-5 space-y-4'
+
+// ── Validation errors helper ──
+function getErrorMessages(errors: any): string[] {
+  const messages: string[] = []
+  const traverse = (obj: any) => {
+    if (!obj || typeof obj !== 'object') return
+    if (typeof obj.message === 'string') {
+      messages.push(obj.message)
+      return
+    }
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        traverse(obj[key])
+      }
+    }
+  }
+  traverse(errors)
+  return messages
+}
 
 // ═══════════════════════════════════════════════════════════
 // PURE FIELD COMPONENTS — defined outside, never re-created
@@ -612,7 +630,6 @@ export default function AdminProductEditor({
       price:            product?.price,
       compare_price:    product?.compare_price,
       cost_price:       product?.cost_price,
-      weight:           product?.weight,
       category_id:      product?.category_id     ?? '',
       tags:             Array.isArray(product?.tags) ? product.tags.join(', ') : '',
       is_active:        product?.is_active       ?? true,
@@ -853,6 +870,23 @@ export default function AdminProductEditor({
         ))}
       </div>
 
+      {/* Global Validation Errors Alert */}
+      {Object.keys(errors).length > 0 && (
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-2xl p-4 text-sm space-y-2 shadow-sm animate-pulse duration-1000">
+          <div className="flex items-center gap-2 font-bold text-base text-red-900">
+            <span>⚠️</span>
+            <span>يرجى ملء الحقول المطلوبة وإكمال المعلومات التالية لحفظ المنتج:</span>
+          </div>
+          <ul className="list-disc list-inside space-y-1 pr-4">
+            {getErrorMessages(errors).map((msg, i) => (
+              <li key={i} className="text-red-700 font-medium list-item">
+                {msg}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* ── BASIC TAB ── */}
       {tab === 'basic' && (
         <div className="space-y-4">
@@ -928,7 +962,7 @@ export default function AdminProductEditor({
               <Field label="سعر التكلفة (دج)" name="cost_price" type="number" placeholder="1100" register={register} errors={errors} />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={LC}>الفئة</label>
                 <select {...register('category_id')} className={IC}>
@@ -937,7 +971,6 @@ export default function AdminProductEditor({
                 </select>
               </div>
               <Field label="SKU" name="sku" placeholder="SKU-001" register={register} errors={errors} />
-              <Field label="الوزن (كغ)" name="weight" type="number" placeholder="0.5" register={register} errors={errors} />
             </div>
 
             <Field label="الوسوم (مفصولة بفاصلة)" name="tags" placeholder="صيف, قطن, رجالي" register={register} errors={errors} />
