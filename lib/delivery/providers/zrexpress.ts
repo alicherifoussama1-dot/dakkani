@@ -173,7 +173,9 @@ export class ZRExpressAdapter implements DeliveryAdapter {
       if (!h) throw new Error('تعذّر المصادقة مع ZR Express — تحقق من secretKey و tenantId')
       const url = `${ZRX}/parcels/fees`
       const r = await fetchRaw(url, { headers: h })
-      if (!r.ok) throw new Error(`ZR ${url} → HTTP ${r.status}: ${(r.text || '').slice(0, 200)}`)
+      // The new ZR "Token API" (api.zrexpress.app) is a parcels-only API with
+      // NO bulk price endpoint (it reads "fees" as a tracking number → 404).
+      if (!r.ok) throw new Error('واجهة ZR Express الجديدة لا توفّر استيراد الأسعار تلقائياً — أدخل أسعار التوصيل يدوياً في تبويب «أسعار التوصيل المعلنة» (تظهر للزبون وتُحتسب تلقائياً).')
       const data = r.json ?? {}
 
       // Accept array, wrapped array ({data|fees|result|[...]}), or a map keyed
