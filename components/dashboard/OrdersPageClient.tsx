@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { RefreshCw, Plus, Search, Filter, Calendar, ChevronDown, Edit2, Download } from 'lucide-react'
+import { RefreshCw, Plus, Search, Filter, Calendar, ChevronDown, Edit2, Download, Truck, Loader2 } from 'lucide-react'
 import { formatDZD, formatDateShort } from '@/lib/utils/format'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -32,7 +32,21 @@ export default function OrdersPageClient({
   const [type,    setType]    = useState('الكل')
   const [sit,     setSit]     = useState('الكل')
   const [pp,      setPp]      = useState(perPage)
+  const [shipping, setShipping] = useState<string | null>(null)
+  const [toast,    setToast]    = useState('')
   const debouncedSearch = useDebounce(search, 400)
+
+  // Send an order to the courier via the STORE delivery module (no Confirmili).
+  const sendToDelivery = async (orderId: string) => {
+    setShipping(orderId)
+    try {
+      const res = await fetch(`/api/delivery/ship/${orderId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) { setToast(d.error ?? 'تعذّر الإرسال — فعّل شركة توصيل من صفحة التوصيل'); }
+      else { setToast(`✓ أُرسل عبر ${d.provider ?? 'شركة التوصيل'} — ${d.trackingNumber}`); router.refresh() }
+    } catch { setToast('تعذّر الإرسال إلى شركة التوصيل') }
+    finally { setShipping(null); setTimeout(() => setToast(''), 3000) }
+  }
 
   const push = (updates: Record<string, string | undefined>) => {
     const p = new URLSearchParams(params.toString())
@@ -177,7 +191,11 @@ export default function OrdersPageClient({
                   <td>
                     {order.tracking_number
                       ? <span className="font-mono text-xs" style={{ color: 'var(--color-accent)' }}>{order.tracking_number}</span>
-                      : <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>—</span>
+                      : <button onClick={() => sendToDelivery(order.id)} disabled={shipping === order.id}
+                          className="inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg disabled:opacity-60"
+                          style={{ background: '#E7F0FF', color: '#0D6EFD' }} title="أرسل إلى شركة التوصيل">
+                          {shipping === order.id ? <Loader2 size={12} className="animate-spin" /> : <Truck size={12} />} إرسال
+                        </button>
                     }
                   </td>
                   <td>
@@ -223,6 +241,12 @@ export default function OrdersPageClient({
           )}
         </div>
       </div>
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-lg max-w-[92vw] text-center"
+          style={{ background: toast.startsWith('✓') ? '#0D6EFD' : '#DC3545' }}>
+          {toast}
+        </div>
+      )}
     </div>
   )
 }
