@@ -113,6 +113,7 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
     const dragged = arr.splice(dragSectionItem.current, 1)[0]
     arr.splice(dragSectionOverItem.current, 0, dragged)
     setCheckoutSectionOrder(arr)
+    autoSaveSectionOrder(arr)
     dragSectionItem.current = null
     dragSectionOverItem.current = null
   }
@@ -127,7 +128,7 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
     const arr = [...checkoutFieldOrder]
     const dragged = arr.splice(dragFieldItem.current, 1)[0]
     arr.splice(dragFieldOverItem.current, 0, dragged)
-    setCheckoutFieldOrder(arr)
+    autoSaveFieldOrder(arr)
     dragFieldItem.current = null
     dragFieldOverItem.current = null
   }
@@ -171,6 +172,36 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
     await sb.from('store_settings').upsert({
       store_id: store.id,
       checkout_fields: newFields,
+    }, { onConflict: 'store_id' })
+  }
+
+  // ── Auto-save field required status immediately ──
+  const autoSaveFieldRequired = async (fieldId: string, required: boolean) => {
+    const newFields = { ...checkoutFields, [fieldId]: { ...checkoutFields[fieldId], required } }
+    setCheckoutFields(newFields)
+    const sb = createClient()
+    await sb.from('store_settings').upsert({
+      store_id: store.id,
+      checkout_fields: newFields,
+    }, { onConflict: 'store_id' })
+  }
+
+  // ── Auto-save theme immediately ──
+  const autoSaveTheme = async (theme: string) => {
+    setCheckoutTheme(theme)
+    const sb = createClient()
+    await sb.from('store_settings').upsert({
+      store_id: store.id,
+      checkout_theme: theme,
+    }, { onConflict: 'store_id' })
+  }
+
+  // ── Auto-save section order immediately ──
+  const autoSaveSectionOrder = async (newOrder: string[]) => {
+    const sb = createClient()
+    await sb.from('store_settings').upsert({
+      store_id: store.id,
+      checkout_section_order: newOrder,
     }, { onConflict: 'store_id' })
   }
 
@@ -474,7 +505,7 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
                 <button
                   key={t.id}
                   type="button"
-                  onClick={() => setCheckoutTheme(t.id)}
+                  onClick={() => autoSaveTheme(t.id)}
                   className={`flex flex-col text-right p-4 rounded-2xl border-2 transition relative overflow-hidden h-full ${
                     checkoutTheme === t.id ? 'border-[#0D6EFD] bg-[#EBF5FF]' : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
@@ -616,7 +647,7 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
                         onClick={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
-                          setCheckoutFieldOrder(prev => [...prev, f.id])
+                          autoSaveFieldOrder([...checkoutFieldOrder, f.id])
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-dashed border-blue-300 text-blue-600 text-xs rounded-xl hover:bg-blue-50 transition-colors font-medium"
                       >
@@ -646,10 +677,7 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setCheckoutFields((f: any) => ({
-                      ...f,
-                      [id]: { ...f[id], required: !(f[id]?.required ?? false) }
-                    }))}
+                    onClick={() => autoSaveFieldRequired(id, !(checkoutFields[id]?.required ?? false))}
                     className="w-9 h-5 rounded-full relative transition-colors duration-200 flex-shrink-0"
                     style={{ background: (checkoutFields[id]?.required ?? false) ? 'var(--color-accent)' : '#DEE2E6' }}
                   >
