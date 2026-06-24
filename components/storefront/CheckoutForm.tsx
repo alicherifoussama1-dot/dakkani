@@ -159,10 +159,14 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       return
     }
     setLoadingOffices(true)
-    fetch(`/api/storefront/stopdesks?store_id=${store.id}&wilaya_id=${watchedWilayaId}`)
+    fetch(`/api/store/delivery/desks?store_id=${store.id}&wilaya_id=${watchedWilayaId}`)
       .then(res => res.json())
       .then(data => {
-        setOffices(data.offices || [])
+        // Normalize {id,name,address,commune} → the {code,name} the select uses.
+        setOffices((data.offices || []).map((o: any) => ({
+          code: o.code ?? o.id,
+          name: [o.name, o.commune, o.address].filter(Boolean).join(' — '),
+        })))
         setHasProvider(!!data.hasProvider)
       })
       .catch(() => {

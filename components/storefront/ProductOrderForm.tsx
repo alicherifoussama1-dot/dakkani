@@ -185,10 +185,13 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       return
     }
     setLoadingOffices(true)
-    fetch(`/api/storefront/stopdesks?store_id=${store.id}&wilaya_id=${wilayaId}`)
+    fetch(`/api/store/delivery/desks?store_id=${store.id}&wilaya_id=${wilayaId}`)
       .then(res => res.json())
       .then(data => {
-        setOffices(data.offices || [])
+        setOffices((data.offices || []).map((o: any) => ({
+          code: o.code ?? o.id,
+          name: [o.name, o.commune, o.address].filter(Boolean).join(' — '),
+        })))
         setHasProvider(!!data.hasProvider)
       })
       .catch(() => {
