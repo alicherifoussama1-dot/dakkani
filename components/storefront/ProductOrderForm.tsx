@@ -36,7 +36,21 @@ function BaladiaField({ wilayaId, value, onChange, error, textLabel, inputClass,
   const [open, setOpen] = useState(false)
   const options = getBaladiasForWilaya(wilayaId)
 
-  if (!wilayaId) return null
+  if (!wilayaId) {
+    return (
+      <div>
+        <label className={textLabel}>البلدية *</label>
+        <button
+          type="button"
+          disabled
+          className={`${inputClass} opacity-50 cursor-not-allowed flex items-center justify-between text-right`}
+        >
+          <span>اختر الولاية أولاً</span>
+          <ChevronDown size={15} className="text-gray-400" />
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -49,7 +63,7 @@ function BaladiaField({ wilayaId, value, onChange, error, textLabel, inputClass,
           onFocus={e => { e.currentTarget.style.boxShadow = '0 0 0 2px var(--pt-accent-soft)' }}
           onBlur={e => { e.currentTarget.style.boxShadow = 'none' }}
         >
-          <span className={value ? (theme === 'glassmorphism' ? 'text-white' : 'text-gray-900') : 'text-gray-400'}>
+          <span className={value ? (theme === 'glassmorphism' ? 'text-white' : 'text-gray-900') : 'text-gray-450'}>
             {value || 'اختر البلدية'}
           </span>
           <ChevronDown size={15} className="text-gray-400" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
@@ -243,32 +257,41 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   let btnStyle = { background: 'var(--pt-btn-primary-bg, #0D6EFD)', color: 'var(--pt-btn-primary-text, #fff)', borderRadius: 'var(--pt-btn-radius, 12px)', boxShadow: 'var(--pt-shadow-md)' } as any
 
   if (theme === 'modern') {
-    cardClass = "bg-white rounded-3xl border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.015)] p-6 space-y-4 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.035)]"
+    cardClass = "bg-[#FFFDFB] rounded-3xl border-2 border-dashed border-amber-350 shadow-[0_8px_30px_rgb(0,0,0,0.015)] p-6 space-y-4 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.035)]"
     cardStyle = {} as any
-    inputClass = "w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all text-slate-800"
+    inputClass = "w-full border-2 border-slate-100 rounded-xl px-4 py-2.5 text-sm bg-white focus:border-amber-500 focus:ring-0 outline-none transition-all text-slate-805 shadow-sm focus:shadow-md"
     textPrimary = "text-slate-850"
     textSecondary = "text-slate-500"
     textLabel = "block text-sm font-semibold text-slate-700 mb-1"
-    btnClass = "w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-60 text-white font-black py-4 rounded-2xl text-base transition shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
+    btnClass = "w-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:from-amber-600 hover:via-orange-600 hover:to-red-600 disabled:opacity-60 text-white font-black py-4 rounded-2xl text-base transition shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 transform hover:scale-[1.01] duration-200"
     btnStyle = {} as any
   } else if (theme === 'glassmorphism') {
-    cardClass = "bg-slate-900/40 backdrop-blur-xl border border-slate-700/30 shadow-2xl rounded-3xl p-6 space-y-4 text-slate-200"
+    cardClass = "bg-slate-900/60 backdrop-blur-2xl border-2 border-indigo-500/20 shadow-2xl rounded-3xl p-6 space-y-4 text-slate-200"
     cardStyle = {} as any
-    inputClass = "w-full bg-slate-950/60 border border-slate-700/50 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder-slate-500"
+    inputClass = "w-full bg-slate-950/80 border border-slate-700/80 rounded-xl px-4 py-2.5 text-sm text-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all placeholder-slate-500"
     textPrimary = "text-white"
     textSecondary = "text-slate-400"
     textLabel = "block text-sm font-medium text-slate-300 mb-1"
-    btnClass = "w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 disabled:opacity-60 text-white font-black py-4 rounded-2xl text-base transition shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 border border-indigo-400/20"
+    btnClass = "w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 disabled:opacity-60 text-white font-black py-4 rounded-2xl text-base transition shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 border border-indigo-400/20 transform hover:scale-[1.01] duration-200"
     btnStyle = {} as any
   } else if (theme === 'compact') {
-    cardClass = "bg-gray-50/80 border border-gray-100 rounded-xl p-4 space-y-3"
+    cardClass = "bg-blue-50/20 border-2 border-dashed border-blue-200 rounded-xl p-4 space-y-3 shadow-sm"
     cardStyle = {} as any
-    inputClass = "w-full border border-gray-350 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-600 outline-none bg-white text-gray-800"
+    inputClass = "w-full border border-gray-305 rounded-lg px-3 py-2 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 outline-none bg-white text-gray-800"
     textPrimary = "text-gray-800"
     textSecondary = "text-gray-500"
     textLabel = "block text-xs font-semibold text-gray-600 mb-0.5"
-    btnClass = "w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-lg text-sm transition flex items-center justify-center gap-2"
+    btnClass = "w-full bg-blue-600 hover:bg-blue-705 disabled:opacity-60 text-white font-bold py-3.5 rounded-lg text-sm transition-all flex items-center justify-center gap-2 hover:shadow-md"
     btnStyle = {} as any
+  } else {
+    // Default / classic: clean card outline with a solid border and subtle shadows
+    cardClass = "bg-white rounded-3xl border-2 border-gray-200/80 shadow-[0_10px_30px_rgba(0,0,0,0.03)] p-6 space-y-4"
+    cardStyle = {} as any
+    inputClass = "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-[#0D6EFD] focus:ring-2 focus:ring-[#0D6EFD]/10 outline-none bg-white text-gray-900 transition-all"
+    textPrimary = "text-gray-900"
+    textSecondary = "text-gray-500"
+    textLabel = "block text-sm font-medium text-gray-700 mb-1"
+    btnClass = "w-full bg-[#0D6EFD] hover:bg-[#0B5ED7] disabled:opacity-60 text-white font-black py-4 rounded-2xl text-base transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
   }
 
   return (
@@ -292,7 +315,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
             activeBtnClass += ` rounded-xl ${
               isActive
                 ? 'border-orange-500 bg-orange-50 text-orange-700'
-                : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-slate-50/50'
+                : 'border-slate-200 hover:border-slate-300 text-slate-605 bg-slate-50/50'
             }`
           } else if (theme === 'compact') {
             activeBtnClass += ` rounded-lg ${
@@ -545,7 +568,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         {isSubmitting ? 'جارٍ تسجيل الطلب...' : `🛒 اطلب الآن — ${formatDZD(total)}`}
       </button>
 
-      <p className="text-xs text-center" style={{ color: theme === 'glassmorphism' ? '#cbd5e1' : 'var(--pt-text-muted)' }}>الدفع عند الاستلام · توصيل لكل ولايات الجزائر</p>
+      <p className="text-xs text-center" style={{ color: theme === 'glassmorphism' ? '#cbd5e1/60' : 'var(--pt-text-muted)' }}>الدفع عند الاستلام · توصيل لكل ولايات الجزائر</p>
     </form>
   )
 }
