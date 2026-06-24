@@ -225,10 +225,14 @@ export default function ProductsPageClient({
                       </span>
                     </td>
                     <td>
-                      <span className={`font-semibold text-sm ${stock <= 0 ? 'text-red-500' : stock <= 5 ? 'text-yellow-600' : ''}`}
-                        style={{ color: stock > 5 ? 'var(--color-text-primary)' : undefined, fontFamily: 'var(--font-primary)' }}>
-                        {stock <= 0 ? '⚠️ نفد' : stock}
-                      </span>
+                      {p.track_inventory === false ? (
+                        <span className="text-gray-400 text-xs">♾️ غير محدود</span>
+                      ) : (
+                        <span className={`font-semibold text-sm ${stock <= 0 ? 'text-red-500' : stock <= 5 ? 'text-yellow-600' : ''}`}
+                          style={{ color: stock > 5 ? 'var(--color-text-primary)' : undefined, fontFamily: 'var(--font-primary)' }}>
+                          {stock <= 0 ? '⚠️ نفد' : stock}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <button

@@ -42,6 +42,7 @@ const schema = z.object({
   meta_title:       z.string().optional(),
   meta_description: z.string().optional(),
   variant_groups:   z.array(variantGroupSchema).default([]),
+  track_inventory:  z.boolean().default(true),
   initial_stock:    z.number({ invalid_type_error: 'الكمية الابتدائية يجب أن تكون رقماً' }).int('يجب أن تكون الكمية عدداً صحيحاً').min(0, 'الكمية الابتدائية يجب ألا تكون سالبة').default(0),
   warehouse_id:     z.string().optional(),
   theme_key:        z.string().default(DEFAULT_THEME_KEY),
@@ -640,6 +641,7 @@ export default function AdminProductEditor({
       meta_title:       product?.meta_title      ?? '',
       meta_description: product?.meta_description ?? '',
       variant_groups:   Array.isArray(product?.variants) ? product.variants : [],
+      track_inventory:  product?.track_inventory ?? true,
       initial_stock:    0,
       warehouse_id:     warehouses[0]?.id ?? '',
       theme_key:          product?.theme_key ?? DEFAULT_THEME_KEY,
@@ -655,6 +657,7 @@ export default function AdminProductEditor({
   })
 
   const descriptionImageUrl = useWatch({ control, name: 'description_image_url' })
+  const trackInventory = useWatch({ control, name: 'track_inventory' }) ?? true
 
   // ── Stable callbacks (useCallback prevents recreation) ────
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -815,6 +818,12 @@ export default function AdminProductEditor({
           delete nextPayload.google_sheet_id
           modified = true
         }
+
+        // Fallback 3: track_inventory column missing
+        if (/track_inventory/i.test(res.error.message)) {
+          delete nextPayload.track_inventory
+          modified = true
+        }
         
         if (modified) {
           res = await saveProduct(nextPayload)
@@ -843,7 +852,7 @@ export default function AdminProductEditor({
     if (err || !np) { setError(err?.message ?? 'خطأ في الحفظ'); return }
     const productId = np.id
 
-    if (productId && initial_stock > 0 && warehouse_id) {
+    if (productId && initial_stock > 0 && warehouse_id && data.track_inventory !== false) {
       await supabase.from('warehouse_stock').upsert({
         store_id: storeId, product_id: productId,
         warehouse_id, variant_key: 'default',
@@ -1024,40 +1033,68 @@ export default function AdminProductEditor({
         <div className={CC}>
           <h3 className="font-semibold text-sm pb-2 border-b" style={{color:"var(--color-text-primary)",borderColor:"var(--color-border)"}}>المخزون 📦</h3>
 
-          {isEdit && stockData.length > 0 && (
-            <div className="border border-[#DEE2E6] rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-[#F8F9FA]">
-                  <tr>
-                    {['المستودع', 'المتغير', 'الكمية', 'محجوز', 'متاح'].map(h => (
-                      <th key={h} className="px-3 py-2 text-right text-xs font-semibold">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {stockData.map((row, i) => (
-                    <tr key={i}>
-                      <td className="px-3 py-2 text-xs text-sm">{warehouses.find(w => w.id === row.warehouse_id)?.name ?? 'مستودع'}</td>
-                      <td className="px-3 py-2 text-xs font-mono text-xs">{row.variant_key === 'default' ? '—' : row.variant_key}</td>
-                      <td className="px-3 py-2 font-semibold">{row.quantity}</td>
-                      <td className="px-3 py-2 text-yellow-600">{row.reserved}</td>
-                      <td className="px-3 py-2 font-bold text-green-600">{row.quantity - row.reserved}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Track Inventory Toggle */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 mb-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">تفعيل تتبع المخزون</p>
+              <p className="text-xs text-gray-500 mt-0.5">عند تعطيله، يكون المنتج متوفراً للشراء بكميات غير محدودة</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setValue('track_inventory', !trackInventory)}
+              className="w-12 h-6 rounded-full relative transition-colors duration-200"
+              style={{ background: trackInventory ? '#0D6EFD' : '#DEE2E6' }}
+            >
+              <span
+                className="absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200"
+                style={{ right: trackInventory ? '4px' : 'calc(100% - 20px)' }}
+              />
+            </button>
+          </div>
+
+          {trackInventory ? (
+            <>
+              {isEdit && stockData.length > 0 && (
+                <div className="border border-[#DEE2E6] rounded-xl overflow-hidden mb-4">
+                  <table className="w-full text-sm">
+                    <thead className="bg-[#F8F9FA]">
+                      <tr>
+                        {['المستودع', 'المتغير', 'الكمية', 'محجوز', 'متاح'].map(h => (
+                          <th key={h} className="px-3 py-2 text-right text-xs font-semibold">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {stockData.map((row, i) => (
+                        <tr key={i}>
+                          <td className="px-3 py-2 text-xs text-sm">{warehouses.find(w => w.id === row.warehouse_id)?.name ?? 'مستودع'}</td>
+                          <td className="px-3 py-2 text-xs font-mono text-xs">{row.variant_key === 'default' ? '—' : row.variant_key}</td>
+                          <td className="px-3 py-2 font-semibold">{row.quantity}</td>
+                          <td className="px-3 py-2 text-yellow-600">{row.reserved}</td>
+                          <td className="px-3 py-2 font-bold text-green-600">{row.quantity - row.reserved}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={LC}>المستودع</label>
+                  <select {...register('warehouse_id')} className={IC}>
+                    {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                  </select>
+                </div>
+                <Field label="الكمية الابتدائية" name="initial_stock" type="number" placeholder="100" register={register} errors={errors} />
+              </div>
+            </>
+          ) : (
+            <div className="p-6 border-2 border-dashed border-gray-200 rounded-2xl text-center text-gray-500">
+              <span className="text-3xl block mb-2">📦</span>
+              تتبع المخزون معطل للمنتج حالياً (مخزون غير محدود)
             </div>
           )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={LC}>المستودع</label>
-              <select {...register('warehouse_id')} className={IC}>
-                {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-              </select>
-            </div>
-            <Field label="الكمية الابتدائية" name="initial_stock" type="number" placeholder="100" register={register} errors={errors} />
-          </div>
         </div>
       )}
 
