@@ -93,9 +93,13 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
     ...defaultCheckoutFields,
     ...(storeSettings?.checkout_fields ?? {}),
   })
-  const [checkoutFieldOrder, setCheckoutFieldOrder] = useState<string[]>(
-    storeSettings?.checkout_field_order ?? ['name', 'wilaya', 'baladia', 'phone', 'address']
-  )
+  const savedFieldOrder: string[] = storeSettings?.checkout_field_order ?? []
+  // Always ensure baladia is in the list (backward compat)
+  const defaultFieldOrder = ['name', 'wilaya', 'baladia', 'phone', 'address']
+  const mergedFieldOrder = savedFieldOrder.length > 0
+    ? (savedFieldOrder.includes('baladia') ? savedFieldOrder : [...savedFieldOrder, 'baladia'])
+    : defaultFieldOrder
+  const [checkoutFieldOrder, setCheckoutFieldOrder] = useState<string[]>(mergedFieldOrder)
   const [checkoutSaved, setCheckoutSaved] = useState(false)
 
   // ── Drag state refs (section order) ──
@@ -147,6 +151,27 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
     setCheckoutSaved(true)
     setTimeout(() => setCheckoutSaved(false), 3000)
     router.refresh()
+  }
+
+  // ── Auto-save field order immediately ──
+  const autoSaveFieldOrder = async (newOrder: string[]) => {
+    const sb = createClient()
+    await sb.from('store_settings').upsert({
+      store_id: store.id,
+      checkout_field_order: newOrder,
+    }, { onConflict: 'store_id' })
+    setCheckoutFieldOrder(newOrder)
+  }
+
+  // ── Auto-save field visibility immediately ──
+  const autoSaveFieldVisible = async (fieldId: string, visible: boolean) => {
+    const newFields = { ...checkoutFields, [fieldId]: { ...checkoutFields[fieldId], visible } }
+    setCheckoutFields(newFields)
+    const sb = createClient()
+    await sb.from('store_settings').upsert({
+      store_id: store.id,
+      checkout_fields: newFields,
+    }, { onConflict: 'store_id' })
   }
 
   const [delivSaved, setDelivSaved] = useState(false)
@@ -500,13 +525,14 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
           </div>
 
           {/* Field Ordering + Visibility + Add/Delete */}
-          <div className="card p-5 space-y-4">
+          <div className="card p-5 space-y-5">
             <div>
               <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>تخصيص حقول الشاكوت 📋</h2>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>اسحب لترتيب • اضغط العين لإخفاء حقل • اضغط ✕ لحذف حقل</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>اسحب لترتيب • 👁 لإخفاء حقل • ✕ لحذفه • كل تغيير يُحفظ تلقائيًا</p>
             </div>
 
-            <div className="space-y-2 max-w-md">
+            {/* Active fields list (draggable) */}
+            <div className="space-y-2">
               {checkoutFieldOrder.map((fieldId, idx) => {
                 const fieldDef = ALL_CHECKOUT_FIELDS.find(f => f.id === fieldId)
                 if (!fieldDef) return null
@@ -520,44 +546,53 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
                     onDragEnter={() => { dragFieldOverItem.current = idx }}
                     onDragEnd={handleFieldDragEnd}
                     onDragOver={e => e.preventDefault()}
-                    className={`flex items-center gap-2 p-3 rounded-xl border cursor-grab active:cursor-grabbing select-none transition-all ${
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all cursor-grab active:cursor-grabbing select-none ${
                       isVisible
-                        ? 'bg-gray-50 border-gray-100 hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm'
-                        : 'bg-gray-50/50 border-gray-100 opacity-50'
+                        ? 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                        : 'bg-gray-50 border-dashed border-gray-200 opacity-60'
                     }`}
                     style={{ userSelect: 'none' }}
                   >
                     {/* Drag handle */}
-                    <span className="text-gray-300 text-lg leading-none flex-shrink-0">⠿</span>
+                    <span className="text-gray-300 text-lg flex-shrink-0 cursor-grab">⠿</span>
 
                     {/* Icon + Label */}
-                    <span className="text-base flex-shrink-0">{fieldDef.icon}</span>
-                    <span className="text-xs font-bold text-gray-700 flex-1">{fieldDef.label}</span>
+                    <span className="text-lg flex-shrink-0">{fieldDef.icon}</span>
+                    <span className="text-sm font-semibold text-gray-700 flex-1">{fieldDef.label}</span>
+
+                    {!isVisible && (
+                      <span className="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">مخفي</span>
+                    )}
 
                     {/* Visibility toggle */}
                     <button
                       type="button"
                       title={isVisible ? 'إخفاء الحقل' : 'إظهار الحقل'}
-                      onClick={() => setCheckoutFields((f: any) => ({
-                        ...f,
-                        [fieldId]: { ...f[fieldId], visible: !isVisible }
-                      }))}
-                      className={`w-7 h-7 rounded-lg border flex items-center justify-center text-xs transition-colors flex-shrink-0 ${
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        autoSaveFieldVisible(fieldId, !isVisible)
+                      }}
+                      className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center text-sm transition-all flex-shrink-0 ${
                         isVisible
-                          ? 'border-blue-200 bg-blue-50 text-blue-500 hover:bg-blue-100'
+                          ? 'border-blue-200 bg-blue-50 text-blue-500 hover:bg-blue-100 hover:border-blue-300'
                           : 'border-gray-200 bg-gray-100 text-gray-400 hover:bg-gray-200'
                       }`}
                     >
-                      {isVisible ? '👁' : '🙅'}
+                      {isVisible ? '👁️' : '🙅'}
                     </button>
 
-                    {/* Delete button (only for deletable fields) */}
+                    {/* Delete button */}
                     {fieldDef.deletable && (
                       <button
                         type="button"
                         title="حذف الحقل"
-                        onClick={() => setCheckoutFieldOrder(prev => prev.filter(id => id !== fieldId))}
-                        className="w-7 h-7 rounded-lg border border-red-200 bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center text-xs flex-shrink-0 transition-colors"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          autoSaveFieldOrder(checkoutFieldOrder.filter(id => id !== fieldId))
+                        }}
+                        className="w-8 h-8 rounded-lg border-2 border-red-200 bg-red-50 text-red-400 hover:bg-red-100 hover:border-red-300 hover:text-red-600 flex items-center justify-center text-sm flex-shrink-0 transition-all"
                       >
                         ✕
                       </button>
