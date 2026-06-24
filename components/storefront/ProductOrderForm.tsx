@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { ChevronDown, Loader2 } from 'lucide-react'
+import StopdeskPicker from './StopdeskPicker'
 import { formatDZD } from '@/lib/utils/format'
 import { getBaladiasForWilaya } from '@/lib/algeria-baladias'
 import type { Product, Wilaya } from '@/types'
@@ -105,7 +106,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   const [submitted, setSubmitted] = useState(false)
   const [orderId, setOrderId] = useState('')
   const [selectedWilaya, setSelectedWilaya] = useState<Wilaya | null>(null)
-  const [offices, setOffices] = useState<{ code: string; name: string }[]>([])
+  const [offices, setOffices] = useState<{ code: string; name: string; commune: string }[]>([])
   const [loadingOffices, setLoadingOffices] = useState(false)
   const [hasProvider, setHasProvider] = useState(false)
 
@@ -190,7 +191,8 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       .then(data => {
         setOffices((data.offices || []).map((o: any) => ({
           code: o.code ?? o.id,
-          name: [o.name, o.commune, o.address].filter(Boolean).join(' — '),
+          name: o.name,
+          commune: o.commune || '',
         })))
         setHasProvider(!!data.hasProvider)
       })
@@ -224,7 +226,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       body: JSON.stringify({
         store_id: store.id,
         ...data,
-        baladia: isStopdesk ? undefined : data.baladia,
+        baladia: data.baladia, // commune name for both; stopdesk = office commune
         address: isStopdesk ? undefined : data.address,
         stopdesk_code: isStopdesk ? data.stopdesk_code : undefined,
         items: [{ product_id: product.id, quantity: data.quantity, variant_key: variantKey ?? 'default' }],
@@ -420,36 +422,25 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
             if (deliveryType === 'stopdesk' && wilayaId > 0 && hasProvider) {
               return (
                 <div key="field-baladia">
-                  <label className={textLabel}>
-                    مكتب التوصيل <span className="text-red-500">*</span>
-                  </label>
+                  <label className={textLabel}>البلدية (مكتب الاستلام) <span className="text-red-500">*</span></label>
                   {loadingOffices ? (
                     <div className="text-sm text-gray-500 py-2.5 px-3 border border-dashed rounded-xl bg-gray-50/50 flex items-center justify-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                      جاري تحميل مكاتب التوصيل...
+                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" /> جارٍ تحميل البلديات...
                     </div>
+                  ) : offices.length === 0 ? (
+                    <div className="text-sm text-gray-400 py-2.5 px-3 border rounded-xl">لا توجد بلديات بها مكتب لهذه الولاية</div>
                   ) : (
-                    <div className="relative">
-                      <select
-                        {...register('stopdesk_code', { required: 'يرجى اختيار مكتب التوصيل' })}
-                        className={`${inputClass} appearance-none`}
-                        disabled={offices.length === 0}
-                      >
-                        {offices.length > 0 ? (
-                          <>
-                            <option value="" style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>اختر مكتب التوصيل...</option>
-                            {offices.map(o => (
-                              <option key={o.code} value={o.code} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>{o.name}</option>
-                            ))}
-                          </>
-                        ) : (
-                          <option value="" style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>لا توجد مكاتب توصيل متاحة لهذه الولاية</option>
-                        )}
-                      </select>
-                      <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-450 pointer-events-none" />
-                    </div>
+                    <StopdeskPicker
+                      offices={offices}
+                      value={watch('stopdesk_code')}
+                      dark={theme === 'glassmorphism'}
+                      onSelect={(o) => {
+                        setValue('baladia', o.commune || o.name, { shouldValidate: true })
+                        setValue('stopdesk_code', o.code, { shouldValidate: true })
+                      }}
+                    />
                   )}
-                  {errors.stopdesk_code && <p className="text-red-500 text-xs mt-1">{errors.stopdesk_code.message}</p>}
+                  {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
                 </div>
               )
             }
