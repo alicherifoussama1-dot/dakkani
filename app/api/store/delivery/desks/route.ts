@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { decryptCredentials } from '@/lib/delivery'
+import { zrOfficesByWilaya } from '@/lib/delivery/zr-offices'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,12 +62,22 @@ export async function GET(req: Request) {
         .filter((c: any) => parseInt(c.wilaya_id, 10) === wilayaId)
         .map((c: any) => ({ id: String(c.id), name: c.name, address: c.address ?? '', wilaya: c.wilaya_name ?? '', commune: c.commune_name ?? '' }))
     } else {
-      // ZR Express + others: no carrier desks API → merchant-managed list.
+      // No carrier desks API. Merchant-managed list first…
       const { data: manual } = await supabase.from('store_delivery_offices')
         .select('id, name, address').eq('store_id', storeId).eq('wilaya_code', wilayaCode).eq('is_active', true)
         .or(`provider_id.eq.${provider.id},provider_id.is.null`).order('name')
-      offices = (manual ?? []).map((o: any) => ({ id: String(o.id), name: o.name, address: o.address ?? '', wilaya: wilayaCode, commune: '' }))
-      console.log(`[desks] ${provider.provider_type} wilaya=${wilayaCode} → ${offices.length} managed offices`)
+      const managed = (manual ?? []).map((o: any) => ({ id: String(o.id), name: o.name, address: o.address ?? '', wilaya: wilayaCode, commune: '' }))
+
+      // …plus the bundled official ZR Express office list (stored id = office
+      // name so the order keeps a readable stopdesk for fulfillment).
+      const bundled = /zr|procolis/i.test(provider.provider_type)
+        ? zrOfficesByWilaya(wilayaCode).map(o => ({ id: o.name, name: o.name, address: o.address, wilaya: wilayaCode, commune: o.commune }))
+        : []
+
+      // De-dup by name (a merchant override wins over the bundled entry).
+      const byName = new Set(managed.map(o => o.name))
+      offices = [...managed, ...bundled.filter(o => !byName.has(o.name))]
+      console.log(`[desks] ${provider.provider_type} wilaya=${wilayaCode} → ${managed.length} managed + ${bundled.length} bundled`)
     }
 
     cache.set(key, { at: Date.now(), offices })
