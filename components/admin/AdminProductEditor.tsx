@@ -641,7 +641,7 @@ export default function AdminProductEditor({
       meta_title:       product?.meta_title      ?? '',
       meta_description: product?.meta_description ?? '',
       variant_groups:   Array.isArray(product?.variants) ? product.variants : [],
-      track_inventory:  product?.track_inventory ?? true,
+      track_inventory:  product?.track_inventory ?? product?.attributes?.track_inventory ?? true,
       initial_stock:    0,
       warehouse_id:     warehouses[0]?.id ?? '',
       theme_key:          product?.theme_key ?? DEFAULT_THEME_KEY,
@@ -822,13 +822,17 @@ export default function AdminProductEditor({
         // Fallback 3: track_inventory column missing
         if (/track_inventory/i.test(res.error.message)) {
           delete nextPayload.track_inventory
+          nextPayload.attributes = {
+            ...(p.attributes ?? product?.attributes ?? {}),
+            track_inventory: p.track_inventory
+          }
           modified = true
         }
         
         if (modified) {
           res = await saveProduct(nextPayload)
           // Double check if it still fails due to the other unhandled fallback
-          if (res.error && (/description_image_url/i.test(res.error.message) || /order_routing|google_sheet_id/i.test(res.error.message))) {
+          if (res.error && (/description_image_url/i.test(res.error.message) || /order_routing|google_sheet_id/i.test(res.error.message) || /track_inventory/i.test(res.error.message))) {
             const cleanPayload = { ...nextPayload }
             if (/description_image_url/i.test(res.error.message)) {
               delete cleanPayload.description_image_url
@@ -840,6 +844,13 @@ export default function AdminProductEditor({
             if (/order_routing|google_sheet_id/i.test(res.error.message)) {
               delete cleanPayload.order_routing
               delete cleanPayload.google_sheet_id
+            }
+            if (/track_inventory/i.test(res.error.message)) {
+              delete cleanPayload.track_inventory
+              cleanPayload.attributes = {
+                ...(cleanPayload.attributes ?? nextPayload.attributes ?? product?.attributes ?? {}),
+                track_inventory: p.track_inventory
+              }
             }
             res = await saveProduct(cleanPayload)
           }

@@ -225,7 +225,7 @@ export default function ProductsPageClient({
                       </span>
                     </td>
                     <td>
-                      {p.track_inventory === false ? (
+                      {p.track_inventory === false || p.attributes?.track_inventory === false ? (
                         <span className="text-gray-400 text-xs">♾️ غير محدود</span>
                       ) : (
                         <span className={`font-semibold text-sm ${stock <= 0 ? 'text-red-500' : stock <= 5 ? 'text-yellow-600' : ''}`}

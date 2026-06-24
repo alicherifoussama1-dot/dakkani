@@ -58,7 +58,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
     : undefined
 
   const isOptionAvailable = (groupName: string, option: string) => {
-    if (product.track_inventory === false) return true
+    if (product.track_inventory === false || product.attributes?.track_inventory === false) return true
     if (!Object.keys(stockMap).length) return true
     const trial = { ...selected, [groupName]: option }
     const key = buildVariantKey(variantGroups, trial)
@@ -338,7 +338,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               wilayas={wilayas}
               variantKey={variantKey}
               variantLabel={variantLabel}
-              maxQty={product.track_inventory === false ? undefined : (currentStock > 0 ? currentStock : undefined)}
+              maxQty={(product.track_inventory === false || product.attributes?.track_inventory === false) ? undefined : (currentStock > 0 ? currentStock : undefined)}
             />
           </div>
         </div>
