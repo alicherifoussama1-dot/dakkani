@@ -48,10 +48,22 @@ export default async function ProductPage({ params }: Props) {
     .single()
   if (!product) notFound()
 
+  let relatedQuery = supabase
+    .from('products')
+    .select('id,name,name_ar,slug,price,compare_price,images')
+    .eq('store_id', store.id)
+    .eq('is_active', true)
+    .neq('id', product.id)
+    .limit(4)
+
+  if (product.category_id) {
+    relatedQuery = relatedQuery.eq('category_id', product.category_id)
+  }
+
   const [wilayasRes, reviewsRes, relatedRes, stockRes] = await Promise.all([
     supabase.from('wilayas').select('*').eq('is_active', true).order('id'),
     supabase.from('reviews').select('customer_name,rating,comment,created_at').eq('product_id', product.id).eq('is_approved', true).order('created_at', { ascending: false }).limit(6),
-    supabase.from('products').select('id,name,name_ar,slug,price,compare_price,images').eq('store_id', store.id).eq('category_id', product.category_id ?? '').eq('is_active', true).neq('id', product.id).limit(4),
+    relatedQuery,
     supabase.from('warehouse_stock').select('quantity,reserved,variant_key').eq('product_id', product.id).eq('store_id', store.id),
   ])
 
@@ -59,6 +71,21 @@ export default async function ProductPage({ params }: Props) {
   // via service role (storefront is anon; delivery_declared_prices is RLS),
   // so the customer sees the store's imported courier price per wilaya.
   const wilayas = await applyStoreDeliveryPrices(store.id, (wilayasRes.data ?? []) as any[])
+
+  let relatedData = relatedRes.data ?? []
+  if (relatedData.length < 4) {
+    const excludeIds = [product.id, ...relatedData.map(p => p.id)]
+    const { data: fallbackData } = await supabase
+      .from('products')
+      .select('id,name,name_ar,slug,price,compare_price,images')
+      .eq('store_id', store.id)
+      .eq('is_active', true)
+      .not('id', 'in', `(${excludeIds.join(',')})`)
+      .limit(4 - relatedData.length)
+    if (fallbackData) {
+      relatedData = [...relatedData, ...fallbackData]
+    }
+  }
 
   const totalStock = (stockRes.data ?? []).reduce((s, r) => s + r.quantity - r.reserved, 0)
 
@@ -167,13 +194,13 @@ export default async function ProductPage({ params }: Props) {
         </section>
 
         {/* Related */}
-        {(relatedRes.data?.length ?? 0) > 0 && (
+        {relatedData.length > 0 && (
           <section className="max-w-6xl mx-auto px-4 py-8 border-t border-gray-100">
             <div className="animate-fade-in">
               <h2 className="text-2xl font-black text-[#111827] mb-6">منتجات مشابهة</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {relatedRes.data?.map((p, i) => {
+              {relatedData.map((p, i) => {
                 const img = (p.images as any[])?.[0]?.url
                 return (
                   <Link key={p.id} href={`/store/${store.slug}/product/${p.slug}`}

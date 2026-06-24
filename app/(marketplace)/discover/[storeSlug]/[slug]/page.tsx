@@ -91,9 +91,24 @@ export default function DiscoverProductPage() {
         .eq('store_id', s.id)
         .eq('is_active', true)
         .neq('id', p.id)
-        .limit(10)
+        .limit(4)
       if (p.category_id) relQuery = relQuery.eq('category_id', p.category_id)
-      const { data: rel } = await relQuery
+      let { data: rel } = await relQuery
+
+      if (!cancelled && (!rel || rel.length < 4)) {
+        const currentRelIds = (rel ?? []).map((r: any) => r.id)
+        const excludeIds = [p.id, ...currentRelIds]
+        const { data: fallbackRel } = await sb.from('products')
+          .select('id, name, name_ar, slug, price, compare_price, images')
+          .eq('store_id', s.id)
+          .eq('is_active', true)
+          .not('id', 'in', `(${excludeIds.join(',')})`)
+          .limit(4 - (rel?.length ?? 0))
+        if (fallbackRel) {
+          rel = [...(rel ?? []), ...fallbackRel]
+        }
+      }
+
       if (!cancelled) {
         setRelated((rel ?? []).map((r: any) => ({
           id: r.id, name: r.name_ar ?? r.name, slug: r.slug,
