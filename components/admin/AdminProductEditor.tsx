@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback, memo } from 'react'
+import { useState, useCallback, memo, useEffect, useMemo } from 'react'
 import {
   useForm, useFieldArray, useWatch, type Control,
   type UseFormRegister, type FieldErrors, type UseFormSetValue, type UseFormGetValues,
@@ -642,7 +642,7 @@ export default function AdminProductEditor({
       meta_description: product?.meta_description ?? '',
       variant_groups:   Array.isArray(product?.variants) ? product.variants : [],
       track_inventory:  product?.track_inventory ?? product?.attributes?.track_inventory ?? true,
-      initial_stock:    0,
+      initial_stock:    product ? (stockData.find(r => r.variant_key === 'default' && r.warehouse_id === (warehouses[0]?.id ?? ''))?.quantity ?? 0) : 0,
       warehouse_id:     warehouses[0]?.id ?? '',
       theme_key:          product?.theme_key ?? DEFAULT_THEME_KEY,
       section_order:      Array.isArray(product?.section_order) && product.section_order.length
@@ -658,6 +658,72 @@ export default function AdminProductEditor({
 
   const descriptionImageUrl = useWatch({ control, name: 'description_image_url' })
   const trackInventory = useWatch({ control, name: 'track_inventory' }) ?? true
+  const variantGroups = useWatch({ control, name: 'variant_groups' }) ?? []
+  const selectedWarehouseId = useWatch({ control, name: 'warehouse_id' }) || (warehouses[0]?.id ?? '')
+
+  const [variantStocks, setVariantStocks] = useState<Record<string, Record<string, number>>>({})
+
+  // Helper to generate Cartesian product combinations
+  const combinations = useMemo(() => {
+    const validGroups = variantGroups.filter(g => g && g.name && Array.isArray(g.options) && g.options.filter((opt: string) => opt.trim() !== '').length > 0)
+    if (validGroups.length === 0) return []
+
+    let results: string[][] = [[]]
+    for (const group of validGroups) {
+      const nextResults: string[][] = []
+      const cleanOptions = group.options.filter((opt: string) => opt.trim() !== '')
+      for (const res of results) {
+        for (const opt of cleanOptions) {
+          nextResults.push([...res, opt])
+        }
+      }
+      results = nextResults
+    }
+
+    return results.map(combo => combo.join('|'))
+  }, [variantGroups])
+
+  // Initialize/sync variant stocks
+  useEffect(() => {
+    const initialStocks: Record<string, Record<string, number>> = {}
+    if (stockData && stockData.length > 0) {
+      for (const row of stockData) {
+        if (!initialStocks[row.warehouse_id]) {
+          initialStocks[row.warehouse_id] = {}
+        }
+        initialStocks[row.warehouse_id][row.variant_key] = row.quantity
+      }
+    }
+    
+    // Ensure all combinations have an entry for each warehouse (defaulting to 0)
+    for (const w of warehouses) {
+      if (!initialStocks[w.id]) {
+        initialStocks[w.id] = {}
+      }
+      for (const combo of combinations) {
+        if (initialStocks[w.id][combo] === undefined) {
+          initialStocks[w.id][combo] = 0
+        }
+      }
+      // Also default value for 'default' key if no variant
+      if (combinations.length === 0 && initialStocks[w.id]['default'] === undefined) {
+        initialStocks[w.id]['default'] = 0
+      }
+    }
+    
+    setVariantStocks(initialStocks)
+  }, [stockData, combinations, warehouses])
+
+  const handleStockChange = (comboKey: string, val: string) => {
+    const qty = parseInt(val) || 0
+    setVariantStocks(prev => ({
+      ...prev,
+      [selectedWarehouseId]: {
+        ...(prev[selectedWarehouseId] ?? {}),
+        [comboKey]: qty
+      }
+    }))
+  }
 
   // ── Stable callbacks (useCallback prevents recreation) ────
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -863,12 +929,34 @@ export default function AdminProductEditor({
     if (err || !np) { setError(err?.message ?? 'خطأ في الحفظ'); return }
     const productId = np.id
 
-    if (productId && initial_stock > 0 && warehouse_id && data.track_inventory !== false) {
-      await supabase.from('warehouse_stock').upsert({
-        store_id: storeId, product_id: productId,
-        warehouse_id, variant_key: 'default',
-        quantity: initial_stock, reserved: 0,
-      }, { onConflict: 'warehouse_id,product_id,variant_key' })
+    if (productId && data.track_inventory !== false) {
+      const activeWarehouseId = data.warehouse_id || warehouses[0]?.id
+      if (activeWarehouseId) {
+        if (combinations.length > 0) {
+          const stockUpserts = combinations.map(comboKey => {
+            const qty = variantStocks[activeWarehouseId]?.[comboKey] ?? 0
+            return {
+              store_id: storeId,
+              product_id: productId,
+              warehouse_id: activeWarehouseId,
+              variant_key: comboKey,
+              quantity: qty,
+              reserved: 0,
+            }
+          })
+          await supabase.from('warehouse_stock').upsert(stockUpserts, { onConflict: 'warehouse_id,product_id,variant_key' })
+        } else {
+          const qty = data.initial_stock || 0
+          await supabase.from('warehouse_stock').upsert({
+            store_id: storeId,
+            product_id: productId,
+            warehouse_id: activeWarehouseId,
+            variant_key: 'default',
+            quantity: qty,
+            reserved: 0,
+          }, { onConflict: 'warehouse_id,product_id,variant_key' })
+        }
+      }
     }
 
     setSaved(true)
@@ -1064,42 +1152,73 @@ export default function AdminProductEditor({
           </div>
 
           {trackInventory ? (
-            <>
-              {isEdit && stockData.length > 0 && (
-                <div className="border border-[#DEE2E6] rounded-xl overflow-hidden mb-4">
-                  <table className="w-full text-sm">
-                    <thead className="bg-[#F8F9FA]">
-                      <tr>
-                        {['المستودع', 'المتغير', 'الكمية', 'محجوز', 'متاح'].map(h => (
-                          <th key={h} className="px-3 py-2 text-right text-xs font-semibold">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {stockData.map((row, i) => (
-                        <tr key={i}>
-                          <td className="px-3 py-2 text-xs text-sm">{warehouses.find(w => w.id === row.warehouse_id)?.name ?? 'مستودع'}</td>
-                          <td className="px-3 py-2 text-xs font-mono text-xs">{row.variant_key === 'default' ? '—' : row.variant_key}</td>
-                          <td className="px-3 py-2 font-semibold">{row.quantity}</td>
-                          <td className="px-3 py-2 text-yellow-600">{row.reserved}</td>
-                          <td className="px-3 py-2 font-bold text-green-600">{row.quantity - row.reserved}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={LC}>المستودع</label>
+                  <label className={LC}>المستودع المحدد للتعديل</label>
                   <select {...register('warehouse_id')} className={IC}>
                     {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                   </select>
                 </div>
-                <Field label="الكمية الابتدائية" name="initial_stock" type="number" placeholder="100" register={register} errors={errors} />
+                {combinations.length === 0 && (
+                  <Field label="الكمية بالمخزن" name="initial_stock" type="number" placeholder="100" register={register} errors={errors} />
+                )}
               </div>
-            </>
+
+              {combinations.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  <label className="text-xs font-semibold text-gray-700 block">جدول كميات المتغيرات في المستودع المحدد:</label>
+                  <div className="border border-[#DEE2E6] rounded-xl overflow-hidden bg-white shadow-sm">
+                    <table className="w-full text-sm text-right">
+                      <thead className="bg-[#F8F9FA] border-b border-[#DEE2E6]">
+                        <tr>
+                          <th className="px-4 py-2.5 font-semibold text-gray-700">المتغير</th>
+                          <th className="px-4 py-2.5 font-semibold text-gray-700 w-36">الكمية بالمخزن</th>
+                          {isEdit && <th className="px-4 py-2.5 font-semibold text-gray-700 w-24">محجوز</th>}
+                          {isEdit && <th className="px-4 py-2.5 font-semibold text-gray-700 w-24">متاح</th>}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {combinations.map(comboKey => {
+                          const qty = variantStocks[selectedWarehouseId]?.[comboKey] ?? 0
+                          const stockRow = stockData.find(r => r.warehouse_id === selectedWarehouseId && r.variant_key === comboKey)
+                          const reserved = stockRow?.reserved ?? 0
+                          const available = qty - reserved
+
+                          return (
+                            <tr key={comboKey} className="hover:bg-gray-50/50 transition">
+                              <td className="px-4 py-3 font-medium text-gray-900">
+                                {comboKey.split('|').join(' / ')}
+                              </td>
+                              <td className="px-4 py-1.5">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={qty === 0 ? '' : qty}
+                                  onChange={e => handleStockChange(comboKey, e.target.value)}
+                                  placeholder="0"
+                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0D6EFD] focus:ring-1 focus:ring-[#0D6EFD] transition text-center text-sm"
+                                />
+                              </td>
+                              {isEdit && (
+                                <td className="px-4 py-3 text-yellow-600 font-medium">
+                                  {reserved}
+                                </td>
+                              )}
+                              {isEdit && (
+                                <td className="px-4 py-3 text-green-600 font-bold">
+                                  {available}
+                                </td>
+                              )}
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="p-6 border-2 border-dashed border-gray-200 rounded-2xl text-center text-gray-500">
               <span className="text-3xl block mb-2">📦</span>

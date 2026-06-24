@@ -233,11 +233,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
           {/* Info */}
           <div className="space-y-5" dir="rtl">
             {/* Stock badge — reflects the currently-selected variant's stock when the product has variants */}
-            {currentStock <= 0 ? (
-              <span className="pt-badge pt-badge-danger">
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--pt-danger)' }} />نفد المخزون{variantLabel ? ` — ${variantLabel}` : ''}
-              </span>
-            ) : currentStock <= 5 ? (
+            {currentStock <= 0 ? null : currentStock <= 5 ? (
               <span className="pt-badge dot-blink" style={{ background: 'color-mix(in srgb, var(--pt-danger) 12%, transparent)', color: 'var(--pt-danger)' }}>
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--pt-danger)' }} />
                 آخر {currentStock} قطع فقط!

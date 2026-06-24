@@ -75,6 +75,46 @@ function useOrderPixels(store: StoreData, product: ProductData | null) {
   return { pixelId, tiktokId, ...usePixels({ metaPixelId: pixelId, tiktokPixelId: tiktokId }) }
 }
 
+// Stopdesk البلدية picker: each option = commune (bold) + office name (smaller).
+// Only the commune is saved to the order; the office name is display-only.
+type DeskOpt = { code: string; name: string; commune: string }
+function StopdeskPicker({ offices, value, onSelect, dark }: {
+  offices: DeskOpt[]; value?: string; onSelect: (o: DeskOpt) => void; dark?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const sel = offices.find(o => o.code === value)
+  const box = dark
+    ? 'bg-slate-900 border-slate-700 text-slate-100'
+    : 'bg-white border-gray-200 text-gray-900'
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className={`w-full border rounded-xl px-4 py-2.5 text-sm flex items-center justify-between text-right ${box}`}>
+        <span className="truncate">
+          {sel
+            ? <>{sel.commune || sel.name}{sel.commune && <span className={`mr-2 text-[11px] ${dark ? 'text-slate-400' : 'text-gray-400'}`}>· {sel.name}</span>}</>
+            : <span className={dark ? 'text-slate-400' : 'text-gray-400'}>اختر البلدية...</span>}
+        </span>
+        <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className={`absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-xl border shadow-lg ${box}`}>
+            {offices.map(o => (
+              <button type="button" key={o.code} onClick={() => { onSelect(o); setOpen(false) }}
+                className={`w-full text-right px-3 py-2 flex flex-col ${dark ? 'hover:bg-slate-800' : 'hover:bg-gray-50'} ${o.code === value ? (dark ? 'bg-slate-800' : 'bg-gray-50') : ''}`}>
+                <span className="text-sm font-semibold leading-tight">{o.commune || o.name}</span>
+                {o.commune && <span className={`text-[11px] leading-tight ${dark ? 'text-slate-400' : 'text-gray-400'}`}>{o.name}</span>}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function CheckoutForm({ store, product, wilayas, initialQty, initialVariant }: Props) {
   const router = useRouter()
   const settings = Array.isArray(store.store_settings) ? store.store_settings[0] : store.store_settings
@@ -101,7 +141,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const [orderNumber, setOrderNumber] = useState('')
   const [fraudScore, setFraudScore] = useState<number | null>(null)
   const [orderId, setOrderId] = useState('')
-  const [offices, setOffices] = useState<{ code: string; name: string }[]>([])
+  const [offices, setOffices] = useState<{ code: string; name: string; commune: string }[]>([])
   const [loadingOffices, setLoadingOffices] = useState(false)
   const [hasProvider, setHasProvider] = useState(false)
 
@@ -149,6 +189,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const watchedQty          = useWatch({ control, name: 'quantity' }) ?? 1
   const watchedPayment      = useWatch({ control, name: 'payment_method' })
   const watchedCommuneId    = useWatch({ control, name: 'commune_id' })
+  const watchedStopdeskCode = useWatch({ control, name: 'stopdesk_code' })
 
   // Fetch stopdesk offices when wilaya_id changes to check if provider is active
   useEffect(() => {
@@ -162,10 +203,12 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
     fetch(`/api/store/delivery/desks?store_id=${store.id}&wilaya_id=${watchedWilayaId}`)
       .then(res => res.json())
       .then(data => {
-        // Normalize {id,name,address,commune} → the {code,name} the select uses.
+        // Keep commune separately: the stopdesk picker shows the commune
+        // (البلدية) with the office name beside it; only the commune is saved.
         setOffices((data.offices || []).map((o: any) => ({
           code: o.code ?? o.id,
-          name: [o.name, o.commune, o.address].filter(Boolean).join(' — '),
+          name: o.name,
+          commune: o.commune || '',
         })))
         setHasProvider(!!data.hasProvider)
       })
@@ -280,7 +323,9 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           delivery_type: data.delivery_type,
           wilaya_id: data.wilaya_id,
           commune_id: data.delivery_type === 'home' ? data.commune_id : undefined,
-          baladia: data.delivery_type === 'home' ? data.baladia : undefined,
+          // baladia (commune name) is saved for BOTH: home = chosen commune,
+          // stopdesk = the office's commune. The office name is display-only.
+          baladia: data.baladia,
           address: data.delivery_type === 'home' ? data.address : undefined,
           stopdesk_code: data.delivery_type === 'stopdesk' ? data.stopdesk_code : undefined,
           payment_method: data.payment_method,
@@ -638,40 +683,34 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                               </div>
                             )
                           }
-                          // Stopdesk: show office dropdown
+                          // Stopdesk: keep البلدية, list only communes that have
+                          // an office; show the office name beside it (smaller).
+                          // Only the commune is saved to `baladia` (sheet/carrier);
+                          // the office name is display-only (stored in stopdesk_code).
                           if (watchedDeliveryType === 'stopdesk' && watchedWilayaId > 0 && hasProvider) {
                             return (
                               <div key="field-baladia">
-                                <label className={textLabel}>
-                                  مكتب التوصيل <span className="text-red-500">*</span>
-                                </label>
+                                <label className={textLabel}>البلدية (مكتب الاستلام) <span className="text-red-500">*</span></label>
                                 {loadingOffices ? (
                                   <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    جاري تحميل مكاتب التوصيل...
+                                    <Loader2 className="w-4 h-4 animate-spin" /> جارٍ تحميل البلديات...
+                                  </div>
+                                ) : offices.length === 0 ? (
+                                  <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400">
+                                    لا توجد بلديات بها مكتب لهذه الولاية
                                   </div>
                                 ) : (
-                                  <div className="relative">
-                                    <select
-                                      {...register('stopdesk_code', { required: 'يرجى اختيار مكتب التوصيل' })}
-                                      className={`${inputClass} appearance-none`}
-                                      disabled={offices.length === 0}
-                                    >
-                                      {offices.length > 0 ? (
-                                        <>
-                                          <option value="">اختر مكتب التوصيل...</option>
-                                          {offices.map(o => (
-                                            <option key={o.code} value={o.code} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>{o.name}</option>
-                                          ))}
-                                        </>
-                                      ) : (
-                                        <option value="">لا توجد مكاتب توصيل متاحة لهذه الولاية</option>
-                                      )}
-                                    </select>
-                                    <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                                  </div>
+                                  <StopdeskPicker
+                                    offices={offices}
+                                    value={watchedStopdeskCode}
+                                    dark={theme === 'glassmorphism'}
+                                    onSelect={(o) => {
+                                      setValue('baladia', o.commune || o.name, { shouldValidate: true })
+                                      setValue('stopdesk_code', o.code, { shouldValidate: true })
+                                    }}
+                                  />
                                 )}
-                                {errors.stopdesk_code && <p className="text-red-500 text-xs mt-1">{errors.stopdesk_code.message}</p>}
+                                {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
                               </div>
                             )
                           }
