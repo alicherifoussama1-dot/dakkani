@@ -93,9 +93,8 @@ export default function TrackingPageClient({ storeId, pixels }: Props) {
 
       {/* Create/Edit form */}
       {showCreate && (
-        <>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setShowCreate(false)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-xl z-50 animate-scale-in" dir="rtl">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowCreate(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md animate-scale-in overflow-hidden" dir="rtl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--color-border)' }}>
               <h3 className="font-bold text-base" style={{ color: 'var(--color-text-primary)' }}>إضافة بكسل تتبع</h3>
               <button onClick={() => setShowCreate(false)} className="p-1.5 rounded hover:bg-[#F8F9FA]">✕</button>
@@ -127,7 +126,7 @@ export default function TrackingPageClient({ storeId, pixels }: Props) {
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   )
