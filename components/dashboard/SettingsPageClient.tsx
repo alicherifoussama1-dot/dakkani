@@ -568,28 +568,31 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
             </div>
 
             {/* Add field — show fields not in list */}
-            {(() => {
-              const available = ALL_CHECKOUT_FIELDS.filter(f => !checkoutFieldOrder.includes(f.id))
-              if (available.length === 0) return null
-              return (
-                <div className="pt-3 border-t border-dashed border-gray-200">
-                  <p className="text-xs text-gray-500 mb-2">➕ إضافة حقل جديد:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {available.map(f => (
+            {ALL_CHECKOUT_FIELDS.filter(f => !checkoutFieldOrder.includes(f.id)).length > 0 && (
+              <div className="pt-3 border-t border-dashed border-gray-200">
+                <p className="text-xs text-gray-500 mb-2">➕ إضافة حقل جديد:</p>
+                <div className="flex flex-wrap gap-2">
+                  {ALL_CHECKOUT_FIELDS
+                    .filter(f => !checkoutFieldOrder.includes(f.id))
+                    .map(f => (
                       <button
                         key={f.id}
                         type="button"
-                        onClick={() => setCheckoutFieldOrder(prev => [...prev, f.id])}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setCheckoutFieldOrder(prev => [...prev, f.id])
+                        }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-dashed border-blue-300 text-blue-600 text-xs rounded-xl hover:bg-blue-50 transition-colors font-medium"
                       >
                         <span>{f.icon}</span>
                         <span>+ {f.label}</span>
                       </button>
-                    ))}
-                  </div>
+                    ))
+                  }
                 </div>
-              )
-            })()}
+              </div>
+            )}
           </div>
 
           {/* Fields Required Settings */}
