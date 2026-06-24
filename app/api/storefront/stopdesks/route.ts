@@ -93,8 +93,22 @@ export async function GET(req: Request) {
       return NextResponse.json({ offices, hasProvider: true, providerType: 'yalidine' })
     }
 
-    // Fallback for other providers that don't support dynamic office list via API (but are connected)
-    return NextResponse.json({ offices: [], hasProvider: true, providerType: provider.provider_type })
+    // Other couriers (ZR Express, etc.) have no offices API → use the
+    // merchant-managed list (store_delivery_offices) for this wilaya.
+    const { data: manual } = await supabase
+      .from('store_delivery_offices')
+      .select('id, name, address')
+      .eq('store_id', storeId)
+      .eq('wilaya_code', wilayaCode)
+      .eq('is_active', true)
+      .or(`provider_id.eq.${provider.id},provider_id.is.null`)
+      .order('name')
+
+    const offices = (manual ?? []).map((o: any) => ({
+      code: String(o.id),
+      name: o.address ? `${o.name} — ${o.address}` : o.name,
+    }))
+    return NextResponse.json({ offices, hasProvider: true, providerType: provider.provider_type })
   } catch (e: any) {
     return NextResponse.json({ error: e.message, hasProvider: false }, { status: 500 })
   }

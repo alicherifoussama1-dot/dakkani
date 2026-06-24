@@ -9,9 +9,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { PROVIDERS, providerMeta, validateCreds, type ProviderType } from '@/lib/delivery/types'
-import { Trash2, Link2, RefreshCw, CheckCircle, X, Download, AlertTriangle, Loader2 } from 'lucide-react'
+import { Trash2, Link2, RefreshCw, CheckCircle, X, Download, AlertTriangle, Loader2, Plus } from 'lucide-react'
 
-const SUB_TABS = ['شركة التوصيل', 'أسعار التوصيل المعلنة', 'الولاية ⇄ شركة التوصيل', 'أسعار التوصيل الحقيقية']
+const SUB_TABS = ['شركة التوصيل', 'أسعار التوصيل المعلنة', 'الولاية ⇄ شركة التوصيل', 'أسعار التوصيل الحقيقية', 'مكاتب التوصيل']
 
 type Provider = { id: string; provider_type: ProviderType; display_name: string; is_active: boolean; is_automatic: boolean; from_wilaya_code: string; credentials: Record<string, string> }
 type Wilaya = { id: number; code: string; name_ar: string }
@@ -48,6 +48,7 @@ export default function StoreDelivery({ storeId, setToast }: { storeId: string; 
       {tab === 1 && <PricesTab target="declared" providers={providers} wilayas={wilayas} storeId={storeId} setToast={setToast} />}
       {tab === 2 && <RoutingTab providers={providers} wilayas={wilayas} storeId={storeId} setToast={setToast} />}
       {tab === 3 && <PricesTab target="real" providers={providers} wilayas={wilayas} storeId={storeId} setToast={setToast} />}
+      {tab === 4 && <OfficesTab providers={providers} wilayas={wilayas} storeId={storeId} setToast={setToast} />}
 
       {loading && <div className="flex justify-center py-10"><Loader2 className="animate-spin" style={{color:'var(--cf-turq)'}}/></div>}
     </div>
@@ -154,6 +155,95 @@ function ProvidersTab({ providers, reload, setToast }: { providers: Provider[]; 
       </div>
 
       {form && <ProviderModal form={form} setForm={setForm} onSaved={reload} setToast={setToast} />}
+    </div>
+  )
+}
+
+// ── Sub-tab 4: delivery offices (stopdesk pickup points) ─────
+function OfficesTab({ providers, wilayas, storeId, setToast }: { providers: Provider[]; wilayas: Wilaya[]; storeId: string; setToast: (m: string) => void }) {
+  const [offices, setOffices] = useState<any[]>([])
+  const [form, setForm] = useState({ provider_id: '', wilaya_code: '', name: '', address: '' })
+  const [saving, setSaving] = useState(false)
+  const LBL = 'block text-[11px] mb-1 font-medium'
+  const lblStyle = { color: 'var(--color-text-muted)' } as const
+
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/store/delivery/offices?storeId=${storeId}`)
+    if (res.ok) setOffices((await res.json()).offices ?? [])
+  }, [storeId])
+  useEffect(() => { load() }, [load])
+
+  const add = async () => {
+    if (!form.wilaya_code || !form.name.trim()) { setToast('اختر الولاية واكتب اسم المكتب'); return }
+    setSaving(true)
+    const res = await fetch('/api/store/delivery/offices', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeId, provider_id: form.provider_id || null, wilaya_code: form.wilaya_code, name: form.name.trim(), address: form.address.trim() || undefined }),
+    })
+    const d = await res.json().catch(() => ({}))
+    setSaving(false)
+    if (!res.ok) { setToast(d.error ?? 'تعذّر الحفظ'); return }
+    setForm(f => ({ ...f, name: '', address: '' })); setToast('تمت إضافة المكتب'); load()
+  }
+  const del = async (id: string) => {
+    await fetch('/api/store/delivery/offices', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ storeId, id }) })
+    load()
+  }
+  const wName = (code: string) => wilayas.find(w => w.code === code)?.name_ar ?? code
+  const pName = (id?: string) => id ? (providers.find(p => p.id === id)?.display_name ?? '—') : 'كل الشركات'
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+        أضِف مكاتب الاستلام لكل ولاية — تظهر للزبون في خانة «مكتب التوصيل» عند اختيار «التوصيل للمكتب». (شركة Yalidine تجلب مكاتبها تلقائياً، أمّا ZR وغيرها فتُدخل مكاتبها هنا.)
+      </p>
+
+      <div className="card p-4 grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+        <div className="sm:col-span-3">
+          <label className={LBL} style={lblStyle}>الشركة</label>
+          <select className="input text-sm w-full" value={form.provider_id} onChange={e => setForm(f => ({ ...f, provider_id: e.target.value }))}>
+            <option value="">كل الشركات</option>
+            {providers.map(p => <option key={p.id} value={p.id}>{p.display_name}</option>)}
+          </select>
+        </div>
+        <div className="sm:col-span-3">
+          <label className={LBL} style={lblStyle}>الولاية</label>
+          <select className="input text-sm w-full" value={form.wilaya_code} onChange={e => setForm(f => ({ ...f, wilaya_code: e.target.value }))}>
+            <option value="">اختر</option>
+            {wilayas.map(w => <option key={w.code} value={w.code}>{w.code} — {w.name_ar}</option>)}
+          </select>
+        </div>
+        <div className="sm:col-span-3">
+          <label className={LBL} style={lblStyle}>اسم المكتب</label>
+          <input className="input text-sm w-full" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="مكتب ZR وسط المدينة" />
+        </div>
+        <div className="sm:col-span-2">
+          <label className={LBL} style={lblStyle}>العنوان (اختياري)</label>
+          <input className="input text-sm w-full" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
+        </div>
+        <div className="sm:col-span-1">
+          <button onClick={add} disabled={saving} className="btn btn-primary btn-sm w-full h-9 gap-1"><Plus size={13} /></button>
+        </div>
+      </div>
+
+      <div className="card overflow-hidden">
+        <table className="data-table">
+          <thead><tr>{['', 'العنوان', 'المكتب', 'الولاية', 'الشركة'].map(h => <th key={h}>{h}</th>)}</tr></thead>
+          <tbody>
+            {offices.length === 0 ? (
+              <tr><td colSpan={5} className="text-center py-10 text-sm" style={{ color: 'var(--color-text-muted)' }}>لا توجد مكاتب — أضف مكاتب الشركة لكل ولاية</td></tr>
+            ) : offices.map(o => (
+              <tr key={o.id}>
+                <td><button onClick={() => del(o.id)} className="p-1.5 rounded hover:bg-red-50" title="حذف"><Trash2 size={12} style={{ color: '#DC3545' }} /></button></td>
+                <td className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{o.address ?? '—'}</td>
+                <td className="font-medium text-sm">{o.name}</td>
+                <td className="text-sm">{wName(o.wilaya_code)}</td>
+                <td className="text-xs">{pName(o.provider_id)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
