@@ -556,6 +556,10 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
 
                     {/* ── Fields in configurable order ──────────────────── */}
                     {fieldOrder.map((fieldId: string) => {
+                      // Skip hidden fields
+                      const isFieldVisible = (fieldsConfig as any)[fieldId]?.visible ?? true
+                      if (!isFieldVisible) return null
+
                       switch (fieldId) {
 
                         case 'name':
@@ -671,34 +675,34 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
 
                         case 'phone':
                           return (
-                            <div key="field-phone" className={fieldsConfig.phone2?.visible !== false ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-1 gap-3'}>
-                              <div>
-                                <label className={textLabel}>رقم الهاتف <span className="text-red-500">*</span></label>
-                                <input
-                                  {...register('phone')}
-                                  type="tel"
-                                  placeholder="0555 xx xx xx"
-                                  className={inputClass}
-                                />
-                                {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
-                              </div>
-                              {fieldsConfig.phone2?.visible !== false && (
-                                <div>
-                                  <label className={textLabel}>هاتف بديل</label>
-                                  <input
-                                    {...register('phone2')}
-                                    type="tel"
-                                    placeholder="اختياري"
-                                    className={inputClass}
-                                  />
-                                  {errors.phone2 && <p className="text-red-500 text-xs mt-1">{errors.phone2.message}</p>}
-                                </div>
-                              )}
+                            <div key="field-phone">
+                              <label className={textLabel}>رقم الهاتف <span className="text-red-500">*</span></label>
+                              <input
+                                {...register('phone')}
+                                type="tel"
+                                placeholder="0555 xx xx xx"
+                                className={inputClass}
+                              />
+                              {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
+                            </div>
+                          )
+
+                        case 'phone2':
+                          return (
+                            <div key="field-phone2">
+                              <label className={textLabel}>هاتف بديل</label>
+                              <input
+                                {...register('phone2')}
+                                type="tel"
+                                placeholder="اختياري"
+                                className={inputClass}
+                              />
+                              {errors.phone2 && <p className="text-red-500 text-xs mt-1">{errors.phone2.message}</p>}
                             </div>
                           )
 
                         case 'address':
-                          return watchedDeliveryType === 'home' && fieldsConfig.address?.visible !== false ? (
+                          return watchedDeliveryType === 'home' ? (
                             <div key="field-address">
                               <label className={textLabel}>العنوان التفصيلي {fieldsConfig.address?.required && <span className="text-red-500">*</span>}</label>
                               <textarea
@@ -711,23 +715,23 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                             </div>
                           ) : null
 
+                        case 'notes':
+                          return (
+                            <div key="field-notes">
+                              <label className={textLabel}>ملاحظات (اختياري)</label>
+                              <textarea
+                                {...register('notes')}
+                                rows={2}
+                                placeholder="أي تعليمات خاصة للتوصيل..."
+                                className={`${inputClass} resize-none`}
+                              />
+                            </div>
+                          )
+
                         default:
                           return null
                       }
                     })}
-
-                    {/* Notes — always last (optional) */}
-                    {fieldsConfig.notes?.visible !== false && (
-                      <div>
-                        <label className={textLabel}>ملاحظات (اختياري)</label>
-                        <textarea
-                          {...register('notes')}
-                          rows={2}
-                          placeholder="أي تعليمات خاصة للتوصيل..."
-                          className={`${inputClass} resize-none`}
-                        />
-                      </div>
-                    )}
                   </div>
                 )
 

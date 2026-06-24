@@ -16,6 +16,16 @@ const TABS = [
 
 const DAYS_AR = ['الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت','الأحد']
 
+const ALL_CHECKOUT_FIELDS = [
+  { id: 'name',    label: 'الاسم واللقب',      icon: '👤', deletable: false },
+  { id: 'wilaya',  label: 'الولاية',          icon: '🌏', deletable: false },
+  { id: 'baladia', label: 'البلدية / المكتب', icon: '📍', deletable: true },
+  { id: 'phone',   label: 'رقم الهاتف',       icon: '📞', deletable: false },
+  { id: 'phone2',  label: 'هاتف بديل',        icon: '📱', deletable: true },
+  { id: 'address', label: 'العنوان التفصيلي', icon: '🏠', deletable: true },
+  { id: 'notes',   label: 'ملاحظات الطلب',   icon: '📝', deletable: true },
+]
+
 interface Props { store: any; user: any; wilayas: { id: number; name_ar: string }[] }
 
 export default function SettingsPageClient({ store, user, wilayas }: Props) {
@@ -70,13 +80,19 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
   const [checkoutSectionOrder, setCheckoutSectionOrder] = useState<string[]>(
     storeSettings?.checkout_section_order ?? ['customer_info', 'delivery_info', 'payment_info', 'coupon']
   )
-  const [checkoutFields, setCheckoutFields] = useState<any>(
-    storeSettings?.checkout_fields ?? {
-      phone2: { visible: true, required: false },
-      address: { visible: true, required: false },
-      notes: { visible: true, required: false }
-    }
-  )
+  const defaultCheckoutFields = {
+    name:    { visible: true },
+    wilaya:  { visible: true },
+    baladia: { visible: true },
+    phone:   { visible: true },
+    phone2:  { visible: false, required: false },
+    address: { visible: true, required: false },
+    notes:   { visible: false, required: false },
+  }
+  const [checkoutFields, setCheckoutFields] = useState<any>({
+    ...defaultCheckoutFields,
+    ...(storeSettings?.checkout_fields ?? {}),
+  })
   const [checkoutFieldOrder, setCheckoutFieldOrder] = useState<string[]>(
     storeSettings?.checkout_field_order ?? ['name', 'wilaya', 'baladia', 'phone', 'address']
   )
@@ -483,21 +499,18 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
             </div>
           </div>
 
-          {/* Field Ordering */}
+          {/* Field Ordering + Visibility + Add/Delete */}
           <div className="card p-5 space-y-4">
-            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>ترتيب الحقول الأساسية 📋</h2>
-            <p className="text-xs -mt-2" style={{ color: 'var(--color-text-muted)' }}>اسحب الحقول وأعد ترتيبها بالترتيب الذي تريد أن يراها عميلك</p>
+            <div>
+              <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>تخصيص حقول الشاكوت 📋</h2>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>اسحب لترتيب • اضغط العين لإخفاء حقل • اضغط ✕ لحذف حقل</p>
+            </div>
 
             <div className="space-y-2 max-w-md">
               {checkoutFieldOrder.map((fieldId, idx) => {
-                const fieldMeta: Record<string, { label: string; icon: string }> = {
-                  name:    { label: 'الاسم واللقب',       icon: '👤' },
-                  wilaya:  { label: 'الولاية',           icon: '🌏' },
-                  baladia: { label: 'البلدية',           icon: '📍' },
-                  phone:   { label: 'رقم الهاتف',         icon: '📞' },
-                  address: { label: 'العنوان التفصيلي',   icon: '🏠' },
-                }
-                const meta = fieldMeta[fieldId] ?? { label: fieldId, icon: '▪️' }
+                const fieldDef = ALL_CHECKOUT_FIELDS.find(f => f.id === fieldId)
+                if (!fieldDef) return null
+                const isVisible = checkoutFields[fieldId]?.visible ?? true
 
                 return (
                   <div
@@ -507,102 +520,108 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
                     onDragEnter={() => { dragFieldOverItem.current = idx }}
                     onDragEnd={handleFieldDragEnd}
                     onDragOver={e => e.preventDefault()}
-                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-grab active:cursor-grabbing select-none transition-all hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm"
+                    className={`flex items-center gap-2 p-3 rounded-xl border cursor-grab active:cursor-grabbing select-none transition-all ${
+                      isVisible
+                        ? 'bg-gray-50 border-gray-100 hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm'
+                        : 'bg-gray-50/50 border-gray-100 opacity-50'
+                    }`}
                     style={{ userSelect: 'none' }}
                   >
-                    <span className="text-gray-300 text-lg leading-none" title="اسحب للترتيب">⠿</span>
-                    <span className="text-base">{meta.icon}</span>
-                    <span className="text-xs font-bold text-gray-700 flex-1">{meta.label}</span>
+                    {/* Drag handle */}
+                    <span className="text-gray-300 text-lg leading-none flex-shrink-0">⠿</span>
+
+                    {/* Icon + Label */}
+                    <span className="text-base flex-shrink-0">{fieldDef.icon}</span>
+                    <span className="text-xs font-bold text-gray-700 flex-1">{fieldDef.label}</span>
+
+                    {/* Visibility toggle */}
+                    <button
+                      type="button"
+                      title={isVisible ? 'إخفاء الحقل' : 'إظهار الحقل'}
+                      onClick={() => setCheckoutFields((f: any) => ({
+                        ...f,
+                        [fieldId]: { ...f[fieldId], visible: !isVisible }
+                      }))}
+                      className={`w-7 h-7 rounded-lg border flex items-center justify-center text-xs transition-colors flex-shrink-0 ${
+                        isVisible
+                          ? 'border-blue-200 bg-blue-50 text-blue-500 hover:bg-blue-100'
+                          : 'border-gray-200 bg-gray-100 text-gray-400 hover:bg-gray-200'
+                      }`}
+                    >
+                      {isVisible ? '👁' : '🙅'}
+                    </button>
+
+                    {/* Delete button (only for deletable fields) */}
+                    {fieldDef.deletable && (
+                      <button
+                        type="button"
+                        title="حذف الحقل"
+                        onClick={() => setCheckoutFieldOrder(prev => prev.filter(id => id !== fieldId))}
+                        className="w-7 h-7 rounded-lg border border-red-200 bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center text-xs flex-shrink-0 transition-colors"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                 )
               })}
             </div>
+
+            {/* Add field — show fields not in list */}
+            {(() => {
+              const available = ALL_CHECKOUT_FIELDS.filter(f => !checkoutFieldOrder.includes(f.id))
+              if (available.length === 0) return null
+              return (
+                <div className="pt-3 border-t border-dashed border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">➕ إضافة حقل جديد:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {available.map(f => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setCheckoutFieldOrder(prev => [...prev, f.id])}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-dashed border-blue-300 text-blue-600 text-xs rounded-xl hover:bg-blue-50 transition-colors font-medium"
+                      >
+                        <span>{f.icon}</span>
+                        <span>+ {f.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
 
-          {/* Fields Customization */}
-          <div className="card p-5 space-y-4">
-            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>تخصيص حقول المدخلات ⚙️</h2>
-            <p className="text-xs -mt-2" style={{ color: 'var(--color-text-muted)' }}>اختر الحقول الاختيارية أو المطلوبة لتبسيط عملية إتمام الطلب</p>
-
-            <div className="space-y-3 max-w-lg">
-              {/* Phone 2 */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <div>
-                  <p className="text-xs font-bold text-gray-800">حقل الهاتف البديل (هاتف 2)</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">حقل إضافي للعميل لكتابة رقم هاتف احتياطي</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checkoutFields.phone2?.visible ?? true}
-                      onChange={e => setCheckoutFields((f: any) => ({
-                        ...f,
-                        phone2: { ...f.phone2, visible: e.target.checked }
-                      }))}
-                      className="w-3.5 h-3.5 accent-[#0D6EFD]"
+          {/* Fields Required Settings */}
+          <div className="card p-5 space-y-3">
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>الحقول الإجبارية ⚠️</h2>
+            <p className="text-xs -mt-2" style={{ color: 'var(--color-text-muted)' }}>حدد الحقول التي يجب أن يملأها العميل إجباريًا (لا يمكنه تكميل الطلب بدونها)</p>
+            <div className="space-y-2 max-w-md">
+              {[
+                { id: 'address', label: 'العنوان التفصيلي إجباري', icon: '🏠' },
+                { id: 'phone2',  label: 'الهاتف البديل إجباري',    icon: '📱' },
+              ].map(({ id, label, icon }) => (
+                <div key={id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{icon}</span>
+                    <span className="text-xs font-medium text-gray-700">{label}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCheckoutFields((f: any) => ({
+                      ...f,
+                      [id]: { ...f[id], required: !(f[id]?.required ?? false) }
+                    }))}
+                    className="w-9 h-5 rounded-full relative transition-colors duration-200 flex-shrink-0"
+                    style={{ background: (checkoutFields[id]?.required ?? false) ? 'var(--color-accent)' : '#DEE2E6' }}
+                  >
+                    <span
+                      className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200"
+                      style={{ right: (checkoutFields[id]?.required ?? false) ? '2px' : 'calc(100% - 18px)' }}
                     />
-                    مفعّل ومظهر
-                  </label>
+                  </button>
                 </div>
-              </div>
-
-              {/* Address */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <div>
-                  <p className="text-xs font-bold text-gray-800">حقل العنوان التفصيلي</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">الحي، الشارع، ورقم البناية (لالتوصيل المنزلي)</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checkoutFields.address?.visible ?? true}
-                      onChange={e => setCheckoutFields((f: any) => ({
-                        ...f,
-                        address: { ...f.address, visible: e.target.checked }
-                      }))}
-                      className="w-3.5 h-3.5 accent-[#0D6EFD]"
-                    />
-                    مفعّل ومظهر
-                  </label>
-                  <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checkoutFields.address?.required ?? false}
-                      disabled={!(checkoutFields.address?.visible ?? true)}
-                      onChange={e => setCheckoutFields((f: any) => ({
-                        ...f,
-                        address: { ...f.address, required: e.target.checked }
-                      }))}
-                      className="w-3.5 h-3.5 accent-[#0D6EFD]"
-                    />
-                    مطلوب إجباري
-                  </label>
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <div>
-                  <p className="text-xs font-bold text-gray-800">حقل ملاحظات الطلب</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">أي تعليمات خاصة بالطلب أو التوصيل</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checkoutFields.notes?.visible ?? true}
-                      onChange={e => setCheckoutFields((f: any) => ({
-                        ...f,
-                        notes: { ...f.notes, visible: e.target.checked }
-                      }))}
-                      className="w-3.5 h-3.5 accent-[#0D6EFD]"
-                    />
-                    مفعّل ومظهر
-                  </label>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
