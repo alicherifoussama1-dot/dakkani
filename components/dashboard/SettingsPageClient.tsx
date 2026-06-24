@@ -82,6 +82,36 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
   )
   const [checkoutSaved, setCheckoutSaved] = useState(false)
 
+  // ── Drag state refs (section order) ──
+  const dragSectionItem    = useRef<number | null>(null)
+  const dragSectionOverItem = useRef<number | null>(null)
+
+  const handleSectionDragEnd = () => {
+    if (dragSectionItem.current === null || dragSectionOverItem.current === null) return
+    if (dragSectionItem.current === dragSectionOverItem.current) return
+    const arr = [...checkoutSectionOrder]
+    const dragged = arr.splice(dragSectionItem.current, 1)[0]
+    arr.splice(dragSectionOverItem.current, 0, dragged)
+    setCheckoutSectionOrder(arr)
+    dragSectionItem.current = null
+    dragSectionOverItem.current = null
+  }
+
+  // ── Drag state refs (field order) ──
+  const dragFieldItem    = useRef<number | null>(null)
+  const dragFieldOverItem = useRef<number | null>(null)
+
+  const handleFieldDragEnd = () => {
+    if (dragFieldItem.current === null || dragFieldOverItem.current === null) return
+    if (dragFieldItem.current === dragFieldOverItem.current) return
+    const arr = [...checkoutFieldOrder]
+    const dragged = arr.splice(dragFieldItem.current, 1)[0]
+    arr.splice(dragFieldOverItem.current, 0, dragged)
+    setCheckoutFieldOrder(arr)
+    dragFieldItem.current = null
+    dragFieldOverItem.current = null
+  }
+
   const saveCheckout = async () => {
     setLoading(true)
     const sb = createClient()
@@ -423,8 +453,8 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
 
           {/* Section Ordering */}
           <div className="card p-5 space-y-4">
-            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>ترتيب أقسام صفحة الدفع ↕️</h2>
-            <p className="text-xs -mt-2" style={{ color: 'var(--color-text-muted)' }}>رتب الأقسام الأساسية لصفحة الدفع بالطريقة التي تناسب عملائك</p>
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>ترتيب أقسام صفحة الدفع</h2>
+            <p className="text-xs -mt-2" style={{ color: 'var(--color-text-muted)' }}>اسحب الأقسام وأعد ترتيبها بالطريقة التي تناسب عملائك</p>
 
             <div className="space-y-2 max-w-md">
               {checkoutSectionOrder.map((sec, idx) => {
@@ -434,35 +464,19 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
                   sec === 'payment_info' ? 'طريقة الدفع 💳' :
                   sec === 'coupon' ? 'كوبون الخصم 🏷️' : sec
 
-                const move = (direction: -1 | 1) => {
-                  const newOrder = [...checkoutSectionOrder]
-                  const targetIdx = idx + direction
-                  if (targetIdx < 0 || targetIdx >= newOrder.length) return
-                  ;[newOrder[idx], newOrder[targetIdx]] = [newOrder[targetIdx], newOrder[idx]]
-                  setCheckoutSectionOrder(newOrder)
-                }
-
                 return (
-                  <div key={sec} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <span className="text-xs font-bold text-gray-700">{label}</span>
-                    <div className="flex gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => move(-1)}
-                        disabled={idx === 0}
-                        className="w-7 h-7 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-30 flex items-center justify-center text-xs font-bold"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => move(1)}
-                        disabled={idx === checkoutSectionOrder.length - 1}
-                        className="w-7 h-7 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-30 flex items-center justify-center text-xs font-bold"
-                      >
-                        ↓
-                      </button>
-                    </div>
+                  <div
+                    key={sec}
+                    draggable
+                    onDragStart={() => { dragSectionItem.current = idx }}
+                    onDragEnter={() => { dragSectionOverItem.current = idx }}
+                    onDragEnd={handleSectionDragEnd}
+                    onDragOver={e => e.preventDefault()}
+                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-grab active:cursor-grabbing select-none transition-all hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm"
+                    style={{ userSelect: 'none' }}
+                  >
+                    <span className="text-gray-300 text-lg leading-none" title="اسحب للترتيب">⠿</span>
+                    <span className="text-xs font-bold text-gray-700 flex-1">{label}</span>
                   </div>
                 )
               })}
@@ -472,7 +486,7 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
           {/* Field Ordering */}
           <div className="card p-5 space-y-4">
             <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>ترتيب الحقول الأساسية 📋</h2>
-            <p className="text-xs -mt-2" style={{ color: 'var(--color-text-muted)' }}>رتّب الحقول الأساسية للشاكوت بالترتيب الذي تريد أن يراها عميلك</p>
+            <p className="text-xs -mt-2" style={{ color: 'var(--color-text-muted)' }}>اسحب الحقول وأعد ترتيبها بالترتيب الذي تريد أن يراها عميلك</p>
 
             <div className="space-y-2 max-w-md">
               {checkoutFieldOrder.map((fieldId, idx) => {
@@ -485,34 +499,20 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
                 }
                 const meta = fieldMeta[fieldId] ?? { label: fieldId, icon: '▪️' }
 
-                const move = (direction: -1 | 1) => {
-                  const newOrder = [...checkoutFieldOrder]
-                  const targetIdx = idx + direction
-                  if (targetIdx < 0 || targetIdx >= newOrder.length) return
-                  ;[newOrder[idx], newOrder[targetIdx]] = [newOrder[targetIdx], newOrder[idx]]
-                  setCheckoutFieldOrder(newOrder)
-                }
-
                 return (
-                  <div key={fieldId} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">{meta.icon}</span>
-                      <span className="text-xs font-bold text-gray-700">{meta.label}</span>
-                    </div>
-                    <div className="flex gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => move(-1)}
-                        disabled={idx === 0}
-                        className="w-7 h-7 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-30 flex items-center justify-center text-xs font-bold"
-                      >↑</button>
-                      <button
-                        type="button"
-                        onClick={() => move(1)}
-                        disabled={idx === checkoutFieldOrder.length - 1}
-                        className="w-7 h-7 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-30 flex items-center justify-center text-xs font-bold"
-                      >↓</button>
-                    </div>
+                  <div
+                    key={fieldId}
+                    draggable
+                    onDragStart={() => { dragFieldItem.current = idx }}
+                    onDragEnter={() => { dragFieldOverItem.current = idx }}
+                    onDragEnd={handleFieldDragEnd}
+                    onDragOver={e => e.preventDefault()}
+                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-grab active:cursor-grabbing select-none transition-all hover:bg-blue-50 hover:border-blue-200 hover:shadow-sm"
+                    style={{ userSelect: 'none' }}
+                  >
+                    <span className="text-gray-300 text-lg leading-none" title="اسحب للترتيب">⠿</span>
+                    <span className="text-base">{meta.icon}</span>
+                    <span className="text-xs font-bold text-gray-700 flex-1">{meta.label}</span>
                   </div>
                 )
               })}
