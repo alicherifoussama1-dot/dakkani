@@ -71,7 +71,7 @@ export async function GET(req: Request) {
       // …plus the bundled official ZR Express office list (stored id = office
       // name so the order keeps a readable stopdesk for fulfillment).
       const bundled = /zr|procolis/i.test(provider.provider_type)
-        ? zrOfficesByWilaya(wilayaCode).map(o => ({ id: o.name, name: o.name, address: o.address, wilaya: wilayaCode, commune: o.commune }))
+        ? zrOfficesByWilaya(wilayaCode).map(o => ({ id: o.name, name: o.name, address: '', wilaya: wilayaCode, commune: o.commune }))
         : []
 
       // De-dup by name (a merchant override wins over the bundled entry).
