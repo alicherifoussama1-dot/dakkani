@@ -2014,29 +2014,25 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       if (pw.new_ !== pw.confirm) { setToast('كلمتا المرور غير متطابقتين'); return }
       if (pw.new_.length < 8)     { setToast('كلمة المرور يجب أن تكون 8 أحرف على الأقل'); return }
       setSavingPw(true)
-      const sb = createClient()
       
-      // Hydrate the client-side session from cookies
-      const { data: sess } = await sb.auth.getSession()
-      if (!sess.session) {
-        const { data: usr } = await sb.auth.getUser()
-        if (!usr.user) {
-          setToast('❌ جلسة العمل غير متوفرة أو منتهية. يرجى إعادة تسجيل الدخول.')
-          setSavingPw(false)
+      try {
+        const res = await fetch('/api/auth/update-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pw.new_ })
+        })
+        const data = await res.json()
+        setSavingPw(false)
+        if (!res.ok || data.error) {
+          setToast(`❌ ${data.error || 'فشلت عملية تغيير كلمة المرور.'}`)
           return
         }
+        setToast('✓ تم تغيير كلمة المرور')
+        setPw({old:'',new_:'',confirm:''})
+      } catch (err) {
+        setSavingPw(false)
+        setToast('❌ حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة لاحقاً.')
       }
-
-      const { error } = await sb.auth.updateUser({ password: pw.new_ })
-      setSavingPw(false)
-      if (error) {
-        let msg = error.message
-        if (msg.includes('Auth session missing')) {
-          msg = 'انتهت صلاحية جلسة العمل أو غير متوفرة. يرجى إعادة تسجيل الدخول.'
-        }
-        setToast(`❌ ${msg}`)
-      }
-      else { setToast('✓ تم تغيير كلمة المرور'); setPw({old:'',new_:'',confirm:''}) }
     }
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{fontFamily:'var(--font-arabic)'}}>

@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Lock, CheckCircle } from 'lucide-react'
+import { Loader2, Lock, CheckCircle, AlertCircle } from 'lucide-react'
 
 export default function ResetPasswordPage() {
   const router  = useRouter()
@@ -12,7 +12,8 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('')
   const [done,  setDone]  = useState(false)
   const [loading, setLoading] = useState(false)
-  const [ready,  setReady]  = useState(false)   // recovery session established?
+  const [ready,  setReady]  = useState(false)       // checking session finished?
+  const [hasSession, setHasSession] = useState(false) // valid session exists?
 
   // Establish the session from the recovery link BEFORE allowing updateUser.
   // The link returns either ?code=… (PKCE — must be exchanged) or a
@@ -21,22 +22,37 @@ export default function ResetPasswordPage() {
     ;(async () => {
       try {
         const url = new URL(window.location.href)
+        const tokenHash = url.searchParams.get('token_hash')
+        const type = url.searchParams.get('type')
         const code = url.searchParams.get('code')
-        if (code) {
-          await supabase.auth.exchangeCodeForSession(code)
+        // Preferred: deterministic recovery OTP from the emailed link.
+        if (tokenHash) {
+          try {
+            await supabase.auth.verifyOtp({ type: (type as any) || 'recovery', token_hash: tokenHash })
+          } catch (otpErr) {
+            console.error('verifyOtp failed:', otpErr)
+          }
+        } else if (code) {
+          try {
+            await supabase.auth.exchangeCodeForSession(code)
+          } catch (exchangeErr) {
+            console.error('Code exchange failed:', exchangeErr)
+          }
         }
         // give the client a tick to pick up a hash-based recovery session
         let { data } = await supabase.auth.getSession()
         if (!data.session) {
-          await new Promise(r => setTimeout(r, 500))
+          await new Promise(r => setTimeout(r, 1000))
           data = (await supabase.auth.getSession()).data
         }
-        if (!data.session) {
+        if (data.session) {
+          setHasSession(true)
+        } else {
           setError('انتهت صلاحية رابط الاسترجاع أو أنه غير صالح. اطلب رابطاً جديداً من «نسيت كلمة المرور».')
         }
       } catch (err) {
         console.error('Session establishment error:', err)
-        setError('انتهت صلاحية رابط الاسترجاع أو أنه غير صالح. اطلب رابطاً جديداً.')
+        setError('حدث خطأ أثناء التحقق من الرابط. يرجى المحاولة لاحقاً.')
       } finally {
         setReady(true)
       }
@@ -50,25 +66,35 @@ export default function ResetPasswordPage() {
     setError('')
     setLoading(true)
     
-    // Guard: ensure a recovery session exists, else updateUser throws "Auth session missing!"
-    const { data: sess } = await supabase.auth.getSession()
-    if (!sess.session) {
+    try {
+      const { error: err } = await supabase.auth.updateUser({ password: pwd })
       setLoading(false)
-      setError('انتهت صلاحية رابط الاسترجاع. افتح الرابط من بريدك من جديد أو اطلب رابطاً جديداً.')
-      return
-    }
-    const { error: err } = await supabase.auth.updateUser({ password: pwd })
-    setLoading(false)
-    if (err) {
-      let msg = err.message
-      if (msg.includes('Auth session missing')) {
-        msg = 'انتهت صلاحية رابط الاسترجاع. افتح الرابط من بريدك من جديد أو اطلب رابطاً جديداً.'
+      if (err) {
+        let msg = err.message
+        if (msg.includes('Auth session missing')) {
+          msg = 'انتهت صلاحية جلسة العمل أو الرابط غير صالح. يرجى طلب رابط جديد.'
+        }
+        setError(msg || 'فشلت عملية تغيير كلمة المرور.')
+        return
       }
-      setError(msg)
-      return
+      setDone(true)
+      setTimeout(() => router.push('/dashboard'), 2000)
+    } catch (err) {
+      setLoading(false)
+      setError('حدث خطأ غير متوقع. يرجى المحاولة لاحقاً.')
     }
-    setDone(true)
-    setTimeout(() => router.push('/dashboard'), 2000)
+  }
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F9F9F9]" dir="rtl">
+        <div className="bg-white rounded-3xl p-8 shadow-xl text-center max-w-sm w-full">
+          <Loader2 className="w-10 h-10 text-[#0D6EFD] animate-spin mx-auto mb-4" />
+          <h2 className="text-lg font-black text-gray-900">جارٍ التحقق...</h2>
+          <p className="text-gray-500 text-sm mt-1">يرجى الانتظار لحين التحقق من صلاحية رابط الاسترجاع.</p>
+        </div>
+      </div>
+    )
   }
 
   if (done) {
@@ -78,6 +104,26 @@ export default function ResetPasswordPage() {
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <h2 className="text-xl font-black text-gray-900">تم تغيير كلمة المرور!</h2>
           <p className="text-gray-500 text-sm mt-2">جارٍ توجيهك للوحة التحكم...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error && !hasSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F9F9F9] p-4" dir="rtl">
+        <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-md text-center">
+          <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+            <AlertCircle className="w-6 h-6 text-red-500" />
+          </div>
+          <h2 className="text-xl font-black text-gray-900 mb-2">رابط غير صالح أو منتهي</h2>
+          <p className="text-red-600 text-sm leading-relaxed mb-6">{error}</p>
+          <button
+            onClick={() => router.push('/forgot-password')}
+            className="w-full bg-[#0D6EFD] hover:bg-[#0B5ED7] text-white font-black py-3 rounded-xl transition"
+          >
+            طلب رابط جديد من «نسيت كلمة المرور»
+          </button>
         </div>
       </div>
     )
@@ -120,3 +166,4 @@ export default function ResetPasswordPage() {
     </div>
   )
 }
+

@@ -13,6 +13,7 @@ import { TikTokPixel } from '@/components/pixels/TikTokPixel'
 import { Truck, Store, CreditCard, Banknote, CheckCircle, AlertTriangle, Loader2, ChevronDown } from 'lucide-react'
 import StopdeskPicker from './StopdeskPicker'
 import type { Wilaya } from '@/types'
+import { translateStorefront, type Locale } from '@/lib/utils/translations'
 
 // ── Validation schema (Static fallback type) ─────────────────
 const schema = z.object({
@@ -93,7 +94,32 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
     }
   }, [theme])
 
-  const [communes, setCommunes] = useState<{ id: number; name_ar: string }[]>([])
+  const [lang, setLang] = useState<Locale>('ar')
+  const isRtl = lang === 'ar'
+
+  // Load language from cookie on mount
+  useEffect(() => {
+    const enabledLanguages: Locale[] = settings?.languages ?? ['ar']
+    const defaultLang: Locale = settings?.default_language ?? 'ar'
+    const cookieVal = document.cookie
+      .split('; ')
+      .find(row => row.startsWith(`dakkani_store_lang_${store.id}=`))
+      ?.split('=')[1] as Locale | undefined
+
+    if (cookieVal && enabledLanguages.includes(cookieVal)) {
+      setLang(cookieVal)
+    } else {
+      setLang(defaultLang)
+    }
+  }, [store.id, settings])
+
+  const handleLanguageChange = (newLang: Locale) => {
+    setLang(newLang)
+    document.cookie = `dakkani_store_lang_${store.id}=${newLang}; path=/; max-age=31536000`
+    router.refresh()
+  }
+
+  const [communes, setCommunes] = useState<{ id: number; name_ar: string; name_fr?: string }[]>([])
   const [loadingCommunes, setLoadingCommunes] = useState(false)
   const [selectedWilaya, setSelectedWilaya] = useState<Wilaya | null>(null)
   const [couponResult, setCouponResult] = useState<{ valid: boolean; discount: number; message: string } | null>(null)
@@ -109,16 +135,18 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const { pixelId, tiktokId, trackPurchase } = useOrderPixels(store, product)
 
    const dynamicSchema = useMemo(() => {
+    const isAr = lang === 'ar'
+    const isFr = lang === 'fr'
     return z.object({
-      customer_name:  z.string().min(2, 'الاسم يجب أن يكون حرفين على الأقل'),
-      phone:          z.string().regex(/^(05|06|07)[0-9]{8}$/, 'رقم الهاتف غير صالح — مثال: 0555123456'),
-      phone2:         z.string().regex(/^(05|06|07)[0-9]{8}$/, 'رقم الهاتف غير صالح').optional().or(z.literal('')),
-      wilaya_id:      z.number({ required_error: 'اختر الولاية' }).int().min(1).max(58),
+      customer_name:  z.string().min(2, isAr ? 'الاسم يجب أن يكون حرفين على الأقل' : isFr ? 'Le nom doit contenir au moins 2 caractères' : 'Name must be at least 2 characters'),
+      phone:          z.string().regex(/^(05|06|07)[0-9]{8}$/, isAr ? 'رقم الهاتف غير صالح' : isFr ? 'Numéro de téléphone invalide' : 'Invalid phone number'),
+      phone2:         z.string().regex(/^(05|06|07)[0-9]{8}$/, isAr ? 'رقم الهاتف غير صالح' : isFr ? 'Numéro alternatif invalide' : 'Invalid alternative phone number').optional().or(z.literal('')),
+      wilaya_id:      z.number({ required_error: isAr ? 'اختر الولاية' : isFr ? 'Sélectionnez la Wilaya' : 'Choose province' }).int().min(1).max(58),
       delivery_type:  z.enum(['home', 'stopdesk']),
       commune_id:     z.number().int().optional(),
       baladia:        z.string().optional(),
       address:        settings?.checkout_fields?.address?.required
-                        ? z.string().min(5, 'العنوان التفصيلي مطلوب ومهم للتوصيل للمنزل')
+                        ? z.string().min(5, isAr ? 'العنوان التفصيلي مطلوب ومهم للتوصيل للمنزل' : isFr ? 'L\'adresse est requise' : 'Address is required')
                         : z.string().optional(),
       stopdesk_code:  z.string().optional(),
       notes:          z.string().max(200).optional(),
@@ -130,11 +158,11 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['baladia'],
-          message: 'اختر البلدية التابعة لعنوانك',
+          message: isAr ? 'اختر البلدية التابعة لعنوانك' : isFr ? 'Choisissez la commune' : 'Choose commune',
         })
       }
     })
-  }, [store])
+  }, [store, settings, lang])
 
   const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(dynamicSchema),
@@ -218,12 +246,12 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
     setLoadingCommunes(true)
     const supabase = createClient()
     supabase.from('communes')
-      .select('id, name_ar')
+      .select('id, name_ar, name_fr')
       .eq('wilaya_id', watchedWilayaId)
       .eq('is_active', true)
       .order('name_ar')
       .then(({ data }) => {
-        setCommunes((data ?? []) as { id: number; name_ar: string }[])
+        setCommunes((data ?? []) as { id: number; name_ar: string; name_fr?: string }[])
         setLoadingCommunes(false)
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -233,9 +261,12 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   useEffect(() => {
     if (!watchedCommuneId) return
     const commune = communes.find(c => c.id === watchedCommuneId)
-    if (commune) setValue('baladia', commune.name_ar, { shouldValidate: true })
+    if (commune) {
+      const baladiaName = lang === 'ar' ? commune.name_ar : (commune.name_fr || commune.name_ar)
+      setValue('baladia', baladiaName, { shouldValidate: true })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedCommuneId, communes])
+  }, [watchedCommuneId, communes, lang])
 
   // ── Coupon check ─────────────────────────────────────────────
   const checkCoupon = async () => {
@@ -252,17 +283,33 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       .maybeSingle()
 
     if (!coupon) {
-      setCouponResult({ valid: false, discount: 0, message: 'الكوبون غير صالح أو منتهي الصلاحية' })
+      setCouponResult({
+        valid: false,
+        discount: 0,
+        message: lang === 'ar' ? 'الكوبون غير صالح أو منتهي الصلاحية' : lang === 'fr' ? 'Code promo invalide ou expiré' : 'Invalid or expired coupon'
+      })
     } else if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
-      setCouponResult({ valid: false, discount: 0, message: 'انتهت صلاحية هذا الكوبون' })
+      setCouponResult({
+        valid: false,
+        discount: 0,
+        message: lang === 'ar' ? 'انتهت صلاحية هذا الكوبون' : lang === 'fr' ? 'Ce code promo a expiré' : 'This coupon has expired'
+      })
     } else if (coupon.min_order_amount && subtotal < coupon.min_order_amount) {
-      setCouponResult({ valid: false, discount: 0, message: `الحد الأدنى للطلب ${formatDZD(coupon.min_order_amount)}` })
+      setCouponResult({
+        valid: false,
+        discount: 0,
+        message: lang === 'ar' ? `الحد الأدنى للطلب ${formatDZD(coupon.min_order_amount)}` : lang === 'fr' ? `Minimum d'achat de ${formatDZD(coupon.min_order_amount)}` : `Minimum order of ${formatDZD(coupon.min_order_amount)}`
+      })
     } else {
       let disc = 0
       if (coupon.type === 'percentage') disc = (subtotal * coupon.value) / 100
       else if (coupon.type === 'fixed') disc = coupon.value
       else if (coupon.type === 'free_shipping') disc = deliveryFee
-      setCouponResult({ valid: true, discount: disc, message: `✓ خصم ${formatDZD(disc)} مطبق` })
+      setCouponResult({
+        valid: true,
+        discount: disc,
+        message: lang === 'ar' ? `✓ خصم ${formatDZD(disc)} مطبق` : lang === 'fr' ? `✓ Réduction de ${formatDZD(disc)} appliquée` : `✓ Discount of ${formatDZD(disc)} applied`
+      })
     }
     setCheckingCoupon(false)
   }
@@ -397,38 +444,46 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   if (submitState === 'success') {
     const fraud = fraudScore ?? 0
     const badge = FRAUD_BADGE(fraud)
+    const isAr = lang === 'ar'
+    const isFr = lang === 'fr'
     return (
-      <div className="max-w-lg mx-auto text-center space-y-5 py-8">
+      <div className="max-w-lg mx-auto text-center space-y-5 py-8" dir={isAr ? 'rtl' : 'ltr'}>
         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
           <CheckCircle className="w-10 h-10 text-green-500" />
         </div>
         <div>
-          <h2 className="text-2xl font-black text-gray-900">تم تسجيل طلبك! 🎉</h2>
-          <p className="text-gray-500 mt-2">سنتصل بك قريباً لتأكيد الطلب</p>
+          <h2 className="text-2xl font-black text-gray-900">
+            {translateStorefront('order_success', lang)}
+          </h2>
+          <p className="text-gray-500 mt-2">
+            {translateStorefront('order_success_desc', lang)}
+          </p>
         </div>
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-3">
           <div className="flex justify-between">
-            <span className="text-gray-500">رقم الطلب</span>
+            <span className="text-gray-500">{isAr ? 'رقم الطلب' : isFr ? 'N° de commande' : 'Order Number'}</span>
             <span className="font-mono font-black text-[#0D6EFD] text-lg">{orderNumber}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">المبلغ الإجمالي</span>
+            <span className="text-gray-500">{isAr ? 'المبلغ الإجمالي' : isFr ? 'Montant Total' : 'Total Amount'}</span>
             <span className="font-bold text-gray-900">{formatDZD(total)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">طريقة الدفع</span>
-            <span className="font-medium">الدفع عند الاستلام</span>
+            <span className="text-gray-500">{isAr ? 'طريقة الدفع' : isFr ? 'Mode de paiement' : 'Payment Method'}</span>
+            <span className="font-medium">
+              {isAr ? 'الدفع عند الاستلام' : isFr ? 'Paiement à la livraison (COD)' : 'Cash on delivery (COD)'}
+            </span>
           </div>
           {deliveryDays && (
             <div className="flex justify-between">
-              <span className="text-gray-500">مدة التوصيل</span>
+              <span className="text-gray-500">{isAr ? 'مدة التوصيل' : isFr ? 'Délai de livraison' : 'Delivery time'}</span>
               <span className="font-medium text-[#0D6EFD]">{deliveryDays}</span>
             </div>
           )}
           {badge && (
             <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg ${badge.cls}`}>
               <AlertTriangle className="w-3.5 h-3.5" />
-              {badge.label} — قد يتم مراجعة طلبك
+              {badge.label} — {isAr ? 'قد يتم مراجعة طلبك' : 'votre commande pourrait être vérifiée'}
             </div>
           )}
         </div>
@@ -436,7 +491,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           href={`/store/${store.slug}`}
           className="block w-full bg-[#0D6EFD] hover:bg-[#0B5ED7] text-white font-bold py-3 rounded-xl transition"
         >
-          العودة للمتجر
+          {isAr ? 'العودة للمتجر' : isFr ? 'Retour à la boutique' : 'Back to Store'}
         </a>
       </div>
     )
@@ -594,21 +649,21 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                                   {...register('wilaya_id', { valueAsNumber: true })}
                                   className={`${inputClass} appearance-none`}
                                 >
-                                  <option value="">اختر الولاية...</option>
+                                  <option value="">{translateStorefront('select_wilaya', lang)}...</option>
                                   {wilayas.map(w => (
                                     <option key={w.id} value={w.id} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>
-                                      {w.code} — {w.name_ar}
+                                      {w.code} — {lang === 'ar' ? w.name_ar : (w.name_fr || w.name_ar)}
                                     </option>
                                   ))}
                                 </select>
-                                <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                <ChevronDown className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none`} />
                               </div>
                               {errors.wilaya_id && <p className="text-red-500 text-xs mt-1">{errors.wilaya_id.message}</p>}
                               {selectedWilaya && (
                                 <div className={`mt-2 flex items-center gap-3 text-xs px-3 py-2 rounded-lg ${theme === 'glassmorphism' ? 'text-indigo-300 bg-indigo-950/30' : 'text-[#0D6EFD] bg-[#EBF5FF]'}`}>
-                                  <span>🚚 التوصيل خلال {deliveryDays}</span>
+                                  <span>🚚 {lang === 'ar' ? 'التوصيل خلال ' : lang === 'fr' ? 'Livraison sous ' : 'Delivery within '}{deliveryDays}</span>
                                   <span>•</span>
-                                  <span>رسوم التوصيل: {formatDZD(deliveryFee)}</span>
+                                  <span>{lang === 'ar' ? 'رسوم التوصيل: ' : lang === 'fr' ? 'Frais de livraison: ' : 'Delivery fee: '}{formatDZD(deliveryFee)}</span>
                                 </div>
                               )}
                             </div>
@@ -620,25 +675,27 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                             if (!watchedWilayaId) return null
                             return (
                               <div key="field-baladia">
-                                <label className={textLabel}>البلدية <span className="text-red-500">*</span></label>
+                                <label className={textLabel}>{translateStorefront('baladia', lang)} <span className="text-red-500">*</span></label>
                                 <div className="relative">
                                   {loadingCommunes ? (
                                     <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
                                       <Loader2 className="w-4 h-4 animate-spin" />
-                                      جارٍ التحميل...
+                                      {lang === 'ar' ? 'جارٍ التحميل...' : 'Chargement...'}
                                     </div>
                                   ) : (
                                     <select
                                       {...register('commune_id', { valueAsNumber: true })}
                                       className={`${inputClass} appearance-none`}
                                     >
-                                      <option value="">اختر البلدية...</option>
+                                      <option value="">{translateStorefront('select_commune', lang)}...</option>
                                       {communes.map(c => (
-                                        <option key={c.id} value={c.id} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>{c.name_ar}</option>
+                                        <option key={c.id} value={c.id} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>
+                                          {lang === 'ar' ? c.name_ar : (c.name_fr || c.name_ar)}
+                                        </option>
                                       ))}
                                     </select>
                                   )}
-                                  <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                  <ChevronDown className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none`} />
                                 </div>
                                 {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
                               </div>
@@ -651,14 +708,14 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                           if (watchedDeliveryType === 'stopdesk' && watchedWilayaId > 0 && hasProvider) {
                             return (
                               <div key="field-baladia">
-                                <label className={textLabel}>البلدية (مكتب الاستلام) <span className="text-red-500">*</span></label>
+                                <label className={textLabel}>{translateStorefront('office', lang)} <span className="text-red-500">*</span></label>
                                 {loadingOffices ? (
                                   <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
-                                    <Loader2 className="w-4 h-4 animate-spin" /> جارٍ تحميل البلديات...
+                                    <Loader2 className="w-4 h-4 animate-spin" /> {lang === 'ar' ? 'جارٍ تحميل البلديات...' : 'Chargement...'}
                                   </div>
                                 ) : offices.length === 0 ? (
                                   <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400">
-                                    لا توجد بلديات بها مكتب لهذه الولاية
+                                    {lang === 'ar' ? 'لا توجد بلديات بها مكتب لهذه الولاية' : 'Aucun bureau disponible'}
                                   </div>
                                 ) : (
                                   <StopdeskPicker
@@ -680,7 +737,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                         case 'phone':
                           return (
                             <div key="field-phone">
-                              <label className={textLabel}>رقم الهاتف <span className="text-red-500">*</span></label>
+                              <label className={textLabel}>{translateStorefront('phone_number', lang)} <span className="text-red-500">*</span></label>
                               <input
                                 {...register('phone')}
                                 type="tel"
@@ -694,11 +751,11 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                         case 'phone2':
                           return (
                             <div key="field-phone2">
-                              <label className={textLabel}>هاتف بديل</label>
+                              <label className={textLabel}>{translateStorefront('alternative_phone', lang)} {fieldsConfig.phone2?.required && <span className="text-red-500">*</span>}</label>
                               <input
                                 {...register('phone2')}
                                 type="tel"
-                                placeholder="اختياري"
+                                placeholder={fieldsConfig.phone2?.required ? "0555 xx xx xx" : (lang === 'ar' ? 'اختياري' : 'Optionnel')}
                                 className={inputClass}
                               />
                               {errors.phone2 && <p className="text-red-500 text-xs mt-1">{errors.phone2.message}</p>}
@@ -708,11 +765,11 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                         case 'address':
                           return watchedDeliveryType === 'home' ? (
                             <div key="field-address">
-                              <label className={textLabel}>العنوان التفصيلي {fieldsConfig.address?.required && <span className="text-red-500">*</span>}</label>
+                              <label className={textLabel}>{translateStorefront('address', lang)} {fieldsConfig.address?.required && <span className="text-red-500">*</span>}</label>
                               <textarea
                                 {...register('address')}
                                 rows={2}
-                                placeholder="الحي، الشارع، رقم البناية..."
+                                placeholder={lang === 'ar' ? 'الحي، الشارع، رقم البناية...' : 'Quartier, rue, numéro...'}
                                 className={`${inputClass} resize-none`}
                               />
                               {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
@@ -722,11 +779,11 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                         case 'notes':
                           return (
                             <div key="field-notes">
-                              <label className={textLabel}>ملاحظات (اختياري)</label>
+                              <label className={textLabel}>{translateStorefront('notes', lang)} {fieldsConfig.notes?.required && <span className="text-red-500">*</span>}</label>
                               <textarea
                                 {...register('notes')}
                                 rows={2}
-                                placeholder="أي تعليمات خاصة للتوصيل..."
+                                placeholder={lang === 'ar' ? 'أي تعليمات خاصة للتوصيل...' : 'Instructions spéciales...'}
                                 className={`${inputClass} resize-none`}
                               />
                             </div>
@@ -744,13 +801,13 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                   <div key="payment_info" className={cardClass}>
                     <h2 className={titleClass}>
                       <span className={badgeClass}>{stepNum}</span>
-                      طريقة الدفع
+                      {lang === 'ar' ? 'طريقة الدفع' : lang === 'fr' ? 'Mode de paiement' : 'Payment Method'}
                     </h2>
 
                     {[
-                      { value: 'cod', label: 'الدفع عند الاستلام', desc: 'ادفع نقداً عند تسلم طلبك', icon: Banknote, badge: 'الأكثر استخداماً' },
-                      { value: 'chargily_edahabia', label: 'بطاقة داهبية', desc: 'ادفع ببطاقة البريد الجزائري', icon: CreditCard },
-                      { value: 'chargily_cib', label: 'بطاقة CIB', desc: 'ادفع ببطاقة بنكية CIB', icon: CreditCard },
+                      { value: 'cod', label: lang === 'ar' ? 'الدفع عند الاستلام' : lang === 'fr' ? 'Paiement à la livraison (COD)' : 'Cash on Delivery (COD)', desc: lang === 'ar' ? 'ادفع نقداً عند تسلم طلبك' : lang === 'fr' ? 'Payez en espèces à la livraison' : 'Pay cash upon delivery', icon: Banknote, badge: lang === 'ar' ? 'الأكثر استخداماً' : lang === 'fr' ? 'Populaire' : 'Popular' },
+                      { value: 'chargily_edahabia', label: lang === 'ar' ? 'بطاقة الذهبية' : 'Edahabia', desc: lang === 'ar' ? 'ادفع ببطاقة البريد الجزائري' : 'Paiement par carte Edahabia', icon: CreditCard },
+                      { value: 'chargily_cib', label: lang === 'ar' ? 'بطاقة CIB' : 'Carte CIB', desc: lang === 'ar' ? 'ادفع ببطاقة بنكية CIB' : 'Paiement par carte CIB', icon: CreditCard },
                     ].map(opt => (
                       <label
                         key={opt.value}
@@ -784,11 +841,13 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
               case 'coupon':
                 return (
                   <div key="coupon" className={cardClass}>
-                    <p className={`text-sm font-medium mb-3 ${textPrimary}`}>هل لديك كوبون خصم؟</p>
+                    <p className={`text-sm font-medium mb-3 ${textPrimary}`}>
+                      {lang === 'ar' ? 'هل لديك كوبون خصم؟' : lang === 'fr' ? 'Avez-vous un code promo ?' : 'Do you have a coupon?'}
+                    </p>
                     <div className="flex gap-2">
                       <input
                         {...register('coupon_code')}
-                        placeholder="أدخل الكود..."
+                        placeholder={lang === 'ar' ? 'أدخل الكود...' : 'Code...'}
                         className={`${inputClass} uppercase flex-1`}
                         onBlur={checkCoupon}
                       />
@@ -799,7 +858,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                         className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium transition"
                         style={{ background: theme === 'glassmorphism' ? 'rgba(255,255,255,0.08)' : undefined, color: theme === 'glassmorphism' ? '#fff' : undefined }}
                       >
-                        {checkingCoupon ? '...' : 'تطبيق'}
+                        {checkingCoupon ? '...' : (lang === 'ar' ? 'تطبيق' : lang === 'fr' ? 'Appliquer' : 'Apply')}
                       </button>
                     </div>
                     {couponResult && (
@@ -827,11 +886,15 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                     {product.images?.[0]?.url ? (
                       <Image src={product.images[0].url} alt={product.name} fill sizes="80px" className="object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-2xl text-gray-300">{product.name[0]}</div>
+                      <div className="w-full h-full flex items-center justify-center text-2xl text-gray-300">
+                        {lang === 'ar' ? (product?.name_ar || product?.name || '')[0] : (product?.name || product?.name_ar || '')[0]}
+                      </div>
                     )}
                   </div>
                   <div className="flex-1">
-                    <p className={`font-semibold text-sm ${textPrimary}`}>{product.name_ar ?? product.name}</p>
+                    <p className={`font-semibold text-sm ${textPrimary}`}>
+                      {lang === 'ar' ? (product.name_ar || product.name) : (product.name || product.name_ar)}
+                    </p>
                     <p className="text-[#0D6EFD] font-black text-lg mt-1">{formatDZD(unitPrice)}</p>
                     {product.compare_price && product.compare_price > unitPrice && (
                       <p className={`text-xs line-through ${textSecondary}`}>{formatDZD(product.compare_price)}</p>
@@ -841,7 +904,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
 
                 {/* Quantity */}
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100" style={{ borderColor: theme === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : undefined }}>
-                  <span className={`text-sm ${textSecondary}`}>الكمية</span>
+                  <span className={`text-sm ${textSecondary}`}>{translateStorefront('quantity', lang)}</span>
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => setValue('quantity', Math.max(1, watchedQty - 1))}
                       className={`w-7 h-7 rounded-full border flex items-center justify-center text-sm transition ${theme === 'glassmorphism' ? 'border-slate-700 hover:bg-slate-800 text-white' : 'border-gray-200 hover:bg-gray-50'}`}>−</button>
@@ -855,24 +918,24 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
 
             {/* Order totals */}
             <div className={`p-4 space-y-2.5 ${cardClass}`}>
-              <h3 className={`font-bold ${textPrimary}`}>ملخص الطلب</h3>
+              <h3 className={`font-bold ${textPrimary}`}>{lang === 'ar' ? 'ملخص الطلب' : lang === 'fr' ? 'Résumé du commande' : 'Order Summary'}</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between" style={{ color: theme === 'glassmorphism' ? 'var(--color-text-secondary)' : 'var(--color-text-muted)' }}>
-                  <span>المنتج × {watchedQty}</span>
+                  <span>{lang === 'ar' ? 'المنتج' : lang === 'fr' ? 'Produit' : 'Product'} × {watchedQty}</span>
                   <span>{formatDZD(subtotal)}</span>
                 </div>
                 <div className="flex justify-between" style={{ color: theme === 'glassmorphism' ? 'var(--color-text-secondary)' : 'var(--color-text-muted)' }}>
-                  <span>رسوم التوصيل</span>
+                  <span>{lang === 'ar' ? 'رسوم التوصيل' : lang === 'fr' ? 'Frais de livraison' : 'Delivery fee'}</span>
                   <span>{selectedWilaya ? formatDZD(deliveryFee) : '—'}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-green-600">
-                    <span>خصم الكوبون</span>
+                    <span>{lang === 'ar' ? 'خصم الكوبون' : lang === 'fr' ? 'Réduction code' : 'Coupon discount'}</span>
                     <span>−{formatDZD(discount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-black text-base border-t pt-2.5 mt-2" style={{ color: theme === 'glassmorphism' ? '#fff' : '#111827', borderColor: theme === 'glassmorphism' ? 'rgba(255,255,255,0.1)' : undefined }}>
-                  <span>المجموع</span>
+                  <span>{lang === 'ar' ? 'المجموع' : 'Total'}</span>
                   <span className="text-[#0D6EFD] text-xl">{formatDZD(total)}</span>
                 </div>
               </div>
@@ -885,20 +948,24 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
               className={btnClass}
             >
               {submitState === 'submitting' ? (
-                <><Loader2 className="w-5 h-5 animate-spin" />جارٍ تسجيل الطلب...</>
+                <><Loader2 className="w-5 h-5 animate-spin" />{translateStorefront('saving', lang)}</>
               ) : (
-                `🛒 تأكيد الطلب — ${formatDZD(total)}`
+                `${lang === 'ar' ? '🛒 تأكيد الطلب — ' : lang === 'fr' ? '🛒 Confirmer la commande — ' : '🛒 Confirm Order — '}${formatDZD(total)}`
               )}
             </button>
 
             {submitState === 'error' && (
               <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-3 text-sm text-center">
-                حدث خطأ، يرجى المحاولة مرة أخرى
+                {lang === 'ar' ? 'حدث خطأ، يرجى المحاولة مرة أخرى' : lang === 'fr' ? 'Une erreur est survenue, veuillez réessayer' : 'An error occurred, please try again'}
               </div>
             )}
 
             <p className={`text-xs text-center ${textSecondary}`}>
-              🔒 معلوماتك آمنة ومحمية · الدفع عند الاستلام متاح
+              {lang === 'ar'
+                ? '🔒 معلوماتك آمنة ومحمية · الدفع عند الاستلام متاح'
+                : lang === 'fr'
+                  ? '🔒 Vos informations sont sécurisées · Paiement à la livraison disponible'
+                  : '🔒 Your information is secure · Cash on delivery available'}
             </p>
           </div>
         </div>

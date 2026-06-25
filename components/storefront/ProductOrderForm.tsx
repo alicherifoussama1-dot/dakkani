@@ -8,6 +8,7 @@ import StopdeskPicker from './StopdeskPicker'
 import { formatDZD } from '@/lib/utils/format'
 import { getBaladiasForWilaya } from '@/lib/algeria-baladias'
 import type { Product, Wilaya } from '@/types'
+import { translateStorefront, type Locale } from '@/lib/utils/translations'
 
 type FormData = {
   customer_name: string
@@ -25,7 +26,7 @@ type FormData = {
 
 // Simple dependent البلدية dropdown — mirrors the cascade already used in
 // ProductBuyBox/CheckoutForm, sourced from the complete algeria-baladias dataset.
-function BaladiaField({ wilayaId, value, onChange, error, textLabel, inputClass, theme }: {
+function BaladiaField({ wilayaId, value, onChange, error, textLabel, inputClass, theme, lang }: {
   wilayaId: number | null
   value: string
   onChange: (v: string) => void
@@ -33,6 +34,7 @@ function BaladiaField({ wilayaId, value, onChange, error, textLabel, inputClass,
   textLabel: string
   inputClass: string
   theme: string
+  lang: Locale
 }) {
   const [open, setOpen] = useState(false)
   const options = getBaladiasForWilaya(wilayaId)
@@ -40,13 +42,13 @@ function BaladiaField({ wilayaId, value, onChange, error, textLabel, inputClass,
   if (!wilayaId) {
     return (
       <div>
-        <label className={textLabel}>البلدية *</label>
+        <label className={textLabel}>{translateStorefront('baladia', lang)} *</label>
         <button
           type="button"
           disabled
-          className={`${inputClass} opacity-50 cursor-not-allowed flex items-center justify-between text-right`}
+          className={`${inputClass} opacity-50 cursor-not-allowed flex items-center justify-between text-start rtl:text-right`}
         >
-          <span>اختر الولاية أولاً</span>
+          <span>{translateStorefront('select_wilaya', lang)}</span>
           <ChevronDown size={15} className="text-gray-400" />
         </button>
       </div>
@@ -55,17 +57,17 @@ function BaladiaField({ wilayaId, value, onChange, error, textLabel, inputClass,
 
   return (
     <div>
-      <label className={textLabel}>البلدية *</label>
+      <label className={textLabel}>{translateStorefront('baladia', lang)} *</label>
       <div className="relative">
         <button
           type="button"
           onClick={() => setOpen(o => !o)}
-          className={`${inputClass} flex items-center justify-between text-right`}
+          className={`${inputClass} flex items-center justify-between text-start rtl:text-right`}
           onFocus={e => { e.currentTarget.style.boxShadow = '0 0 0 2px var(--pt-accent-soft)' }}
           onBlur={e => { e.currentTarget.style.boxShadow = 'none' }}
         >
           <span className={value ? (theme === 'glassmorphism' ? 'text-white' : 'text-gray-900') : 'text-gray-450'}>
-            {value || 'اختر البلدية'}
+            {value || translateStorefront('select_commune', lang)}
           </span>
           <ChevronDown size={15} className="text-gray-400" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
         </button>
@@ -80,7 +82,7 @@ function BaladiaField({ wilayaId, value, onChange, error, textLabel, inputClass,
                   key={b}
                   type="button"
                   onClick={() => { onChange(b); setOpen(false) }}
-                  className={`block w-full text-right px-3 py-2 rounded-lg text-sm transition ${
+                  className={`block w-full text-start rtl:text-right px-3 py-2 rounded-lg text-sm transition ${
                     theme === 'glassmorphism' ? 'hover:bg-slate-800' : 'hover:bg-gray-50'
                   }`}
                   style={value === b ? { background: 'var(--pt-accent-soft, #EBF5FF)', color: 'var(--pt-accent, #0D6EFD)', fontWeight: 750 } : {}}
@@ -100,9 +102,10 @@ function BaladiaField({ wilayaId, value, onChange, error, textLabel, inputClass,
 interface Props {
   product: Product; store: any; wilayas: Wilaya[]
   variantKey?: string; variantLabel?: string; maxQty?: number
+  lang?: Locale
 }
 
-export default function ProductOrderForm({ product, store, wilayas, variantKey, variantLabel, maxQty }: Props) {
+export default function ProductOrderForm({ product, store, wilayas, variantKey, variantLabel, maxQty, lang = 'ar' }: Props) {
   const [submitted, setSubmitted] = useState(false)
   const [orderId, setOrderId] = useState('')
   const [selectedWilaya, setSelectedWilaya] = useState<Wilaya | null>(null)
@@ -135,34 +138,36 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   const fieldOrder: string[] = settings?.checkout_field_order ?? ['name', 'wilaya', 'baladia', 'phone', 'address']
 
   const dynamicSchema = useMemo(() => {
+    const isAr = lang === 'ar'
+    const isFr = lang === 'fr'
     return z.object({
-      customer_name: z.string().min(2, 'الاسم مطلوب'),
-      customer_phone: z.string().regex(/^(05|06|07)\d{8}$/, 'رقم الهاتف غير صالح'),
+      customer_name: z.string().min(2, isAr ? 'الاسم مطلوب' : isFr ? 'Le nom est requis' : 'Name is required'),
+      customer_phone: z.string().regex(/^(05|06|07)\d{8}$/, isAr ? 'رقم الهاتف غير صالح' : isFr ? 'Numéro de téléphone invalide' : 'Invalid phone number'),
       customer_phone2: fieldsConfig.phone2?.required
-        ? z.string().regex(/^(05|06|07)\d{8}$/, 'رقم الهاتف البديل غير صالح')
-        : z.string().regex(/^(05|06|07)\d{8}$/, 'رقم الهاتف البديل غير صالح').optional().or(z.literal('')),
+        ? z.string().regex(/^(05|06|07)\d{8}$/, isAr ? 'رقم الهاتف البديل غير صالح' : isFr ? 'Numéro alternatif invalide' : 'Invalid alternative phone number')
+        : z.string().regex(/^(05|06|07)\d{8}$/, isAr ? 'رقم الهاتف البديل غير صالح' : isFr ? 'Numéro alternatif invalide' : 'Invalid alternative phone number').optional().or(z.literal('')),
       delivery_type: z.enum(['home', 'stopdesk']),
-      wilaya_id: z.number({ required_error: 'اختر الولاية' }).int().min(1),
+      wilaya_id: z.number({ required_error: isAr ? 'اختر الولاية' : isFr ? 'Sélectionnez la Wilaya' : 'Choose province' }).int().min(1),
       baladia: z.string().optional(),
       address: fieldsConfig.address?.required
-        ? z.string().min(5, 'العنوان التفصيلي مطلوب ومهم للتوصيل للمنزل')
+        ? z.string().min(5, isAr ? 'العنوان التفصيلي مطلوب ومهم للتوصيل للمنزل' : isFr ? 'L\'adresse est requise' : 'Address is required')
         : z.string().optional(),
       stopdesk_code: z.string().optional(),
       quantity: z.number().int().min(1).max(99),
       coupon_code: z.string().optional(),
       notes: fieldsConfig.notes?.required
-        ? z.string().min(5, 'ملاحظات الطلب مطلوبة')
+        ? z.string().min(5, isAr ? 'ملاحظات الطلب مطلوبة' : isFr ? 'Notes requises' : 'Notes required')
         : z.string().optional(),
     }).superRefine((data, ctx) => {
       if (data.delivery_type === 'home' && (!data.baladia || data.baladia.trim() === '')) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['baladia'],
-          message: 'اختر البلدية التابعة لعنوانك',
+          message: isAr ? 'اختر البلدية التابعة لعنوانك' : isFr ? 'Choisissez la commune' : 'Choose commune',
         })
       }
     })
-  }, [fieldsConfig])
+  }, [fieldsConfig, lang])
 
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(dynamicSchema),
@@ -243,9 +248,15 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         theme === 'glassmorphism' ? 'bg-indigo-950/20 border-indigo-500/30 text-indigo-200' : 'bg-green-50 border-green-200'
       }`}>
         <div className="text-4xl">✅</div>
-        <h3 className={`text-xl font-black ${theme === 'glassmorphism' ? 'text-indigo-300' : 'text-green-800'}`}>تم تسجيل طلبك بنجاح!</h3>
-        <p className={theme === 'glassmorphism' ? 'text-indigo-200/80' : 'text-green-700'}>رقم الطلب: <strong>{orderId}</strong></p>
-        <p className={`text-sm ${theme === 'glassmorphism' ? 'text-indigo-200/60' : 'text-green-600'}`}>سيتصل بك فريقنا قريباً لتأكيد الطلب</p>
+        <h3 className={`text-xl font-black ${theme === 'glassmorphism' ? 'text-indigo-300' : 'text-green-800'}`}>
+          {translateStorefront('order_success', lang)}
+        </h3>
+        <p className={theme === 'glassmorphism' ? 'text-indigo-200/80' : 'text-green-700'}>
+          {lang === 'ar' ? 'رقم الطلب: ' : lang === 'fr' ? 'Numéro de commande: ' : 'Order Number: '} <strong>{orderId}</strong>
+        </p>
+        <p className={`text-sm ${theme === 'glassmorphism' ? 'text-indigo-200/60' : 'text-green-600'}`}>
+          {translateStorefront('order_success_desc', lang)}
+        </p>
       </div>
     )
   }
@@ -299,13 +310,15 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
     btnClass = "w-full bg-[#0D6EFD] hover:bg-[#0B5ED7] disabled:opacity-60 text-white font-black py-4 rounded-2xl text-base transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
   }
 
+  const isRtl = lang === 'ar'
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className={cardClass} style={cardStyle}>
-      <h3 className={`font-bold text-lg ${textPrimary}`}>اطلب الآن</h3>
+    <form onSubmit={handleSubmit(onSubmit)} className={cardClass} style={cardStyle} dir={isRtl ? 'rtl' : 'ltr'}>
+      <h3 className={`font-bold text-lg ${textPrimary}`}>{translateStorefront('buy_now', lang)}</h3>
 
       {/* Delivery Type */}
       <div className="grid grid-cols-2 gap-2">
-        {([['home', 'توصيل للمنزل'], ['stopdesk', 'التوصيل للمكتب']] as const).map(([val, label]) => {
+        {([[ 'home', translateStorefront('home_delivery', lang) ], [ 'stopdesk', translateStorefront('stopdesk_delivery', lang) ]] as const).map(([val, label]) => {
           const isActive = deliveryType === val
           let activeBtnStyle = {}
           let activeBtnClass = "py-2.5 text-sm font-semibold border transition"
@@ -359,10 +372,10 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           case 'name':
             return (
               <div key="field-name">
-                <label className={textLabel}>الاسم الكامل <span className="text-red-500">*</span></label>
+                <label className={textLabel}>{translateStorefront('full_name', lang)} <span className="text-red-500">*</span></label>
                 <input
                   {...register('customer_name')}
-                  placeholder="محمد بن علي"
+                  placeholder={lang === 'ar' ? 'محمد بن علي' : 'Mohamed Benali'}
                   className={inputClass}
                 />
                 {errors.customer_name && (
@@ -374,7 +387,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           case 'wilaya':
             return (
               <div key="field-wilaya">
-                <label className={textLabel}>الولاية <span className="text-red-500">*</span></label>
+                <label className={textLabel}>{translateStorefront('wilaya', lang)} <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <select
                     {...register('wilaya_id', { valueAsNumber: true })}
@@ -385,19 +398,19 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                     }}
                     className={`${inputClass} appearance-none`}
                   >
-                    <option value="" style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>اختر الولاية</option>
+                    <option value="" style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>{translateStorefront('select_wilaya', lang)}</option>
                     {wilayas.map(w => (
                       <option key={w.id} value={w.id} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>
-                        {w.id} - {w.name_ar}
+                        {w.id} - {lang === 'ar' ? w.name_ar : (w.name_fr || w.name_ar)}
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-450 pointer-events-none" />
+                  <ChevronDown className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-450 pointer-events-none`} />
                 </div>
                 {errors.wilaya_id && <p className="text-red-500 text-xs mt-1">{errors.wilaya_id.message}</p>}
                 {selectedWilaya && (
                   <p className="text-xs mt-1" style={{ color: theme === 'glassmorphism' ? '#818cf8' : 'var(--pt-accent)' }}>
-                    رسوم التوصيل: {formatDZD(deliveryFee)} · {deliveryType === 'home' ? selectedWilaya.delivery_days_home : selectedWilaya.delivery_days_stopdesk}
+                    {lang === 'ar' ? 'رسوم التوصيل: ' : lang === 'fr' ? 'Frais de livraison: ' : 'Delivery fee: '}{formatDZD(deliveryFee)} · {deliveryType === 'home' ? selectedWilaya.delivery_days_home : selectedWilaya.delivery_days_stopdesk}
                   </p>
                 )}
               </div>
@@ -415,6 +428,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                     textLabel={textLabel}
                     inputClass={inputClass}
                     theme={theme}
+                    lang={lang}
                   />
                 </div>
               )
@@ -422,13 +436,13 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
             if (deliveryType === 'stopdesk' && wilayaId > 0 && hasProvider) {
               return (
                 <div key="field-baladia">
-                  <label className={textLabel}>البلدية (مكتب الاستلام) <span className="text-red-500">*</span></label>
+                  <label className={textLabel}>{translateStorefront('office', lang)} <span className="text-red-500">*</span></label>
                   {loadingOffices ? (
                     <div className="text-sm text-gray-500 py-2.5 px-3 border border-dashed rounded-xl bg-gray-50/50 flex items-center justify-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" /> جارٍ تحميل البلديات...
+                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" /> {lang === 'ar' ? 'جارٍ تحميل البلديات...' : 'Chargement...'}
                     </div>
                   ) : offices.length === 0 ? (
-                    <div className="text-sm text-gray-400 py-2.5 px-3 border rounded-xl">لا توجد بلديات بها مكتب لهذه الولاية</div>
+                    <div className="text-sm text-gray-400 py-2.5 px-3 border rounded-xl">{lang === 'ar' ? 'لا توجد مكاتب متوفرة لهذه الولاية' : 'Aucun bureau disponible'}</div>
                   ) : (
                     <StopdeskPicker
                       offices={offices}
@@ -449,7 +463,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           case 'phone':
             return (
               <div key="field-phone">
-                <label className={textLabel}>رقم الهاتف <span className="text-red-500">*</span></label>
+                <label className={textLabel}>{translateStorefront('phone_number', lang)} <span className="text-red-500">*</span></label>
                 <input
                   {...register('customer_phone')}
                   type="tel"
@@ -465,11 +479,11 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           case 'phone2':
             return (
               <div key="field-phone2">
-                <label className={textLabel}>رقم هاتف بديل {fieldsConfig.phone2?.required && <span className="text-red-500">*</span>}</label>
+                <label className={textLabel}>{translateStorefront('alternative_phone', lang)} {fieldsConfig.phone2?.required && <span className="text-red-500">*</span>}</label>
                 <input
                   {...register('customer_phone2')}
                   type="tel"
-                  placeholder={fieldsConfig.phone2?.required ? "0555 xx xx xx" : "اختياري"}
+                  placeholder={fieldsConfig.phone2?.required ? "0555 xx xx xx" : (lang === 'ar' ? 'اختياري' : 'Optionnel')}
                   className={inputClass}
                 />
                 {errors.customer_phone2 && (
@@ -481,11 +495,11 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           case 'address':
             return deliveryType === 'home' ? (
               <div key="field-address">
-                <label className={textLabel}>العنوان التفصيلي {fieldsConfig.address?.required && <span className="text-red-500">*</span>}</label>
+                <label className={textLabel}>{translateStorefront('address', lang)} {fieldsConfig.address?.required && <span className="text-red-500">*</span>}</label>
                 <textarea
                   {...register('address')}
                   rows={2}
-                  placeholder="الحي، الشارع، رقم البناية..."
+                  placeholder={lang === 'ar' ? 'الحي، الشارع، رقم البناية...' : 'Quartier, rue, numéro...'}
                   className={`${inputClass} resize-none`}
                 />
                 {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
@@ -495,11 +509,11 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           case 'notes':
             return (
               <div key="field-notes">
-                <label className={textLabel}>ملاحظات الطلب {fieldsConfig.notes?.required && <span className="text-red-500">*</span>}</label>
+                <label className={textLabel}>{translateStorefront('notes', lang)} {fieldsConfig.notes?.required && <span className="text-red-500">*</span>}</label>
                 <textarea
                   {...register('notes')}
                   rows={2}
-                  placeholder="أي تعليمات خاصة للتوصيل..."
+                  placeholder={lang === 'ar' ? 'أي تعليمات خاصة للتوصيل...' : 'Instructions spéciales...'}
                   className={`${inputClass} resize-none`}
                 />
                 {errors.notes && <p className="text-red-500 text-xs mt-1">{errors.notes.message}</p>}
@@ -513,7 +527,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
 
       {/* Quantity */}
       <div>
-        <label className={textLabel}>الكمية</label>
+        <label className={textLabel}>{translateStorefront('quantity', lang)}</label>
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => setValue('quantity', Math.max(1, quantity - 1))}
             className="w-9 h-9 rounded-full border flex items-center justify-center text-lg font-bold transition"
@@ -531,7 +545,9 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           >+</button>
         </div>
         {!!maxQty && (
-          <p className="text-xs mt-1" style={{ color: theme === 'glassmorphism' ? '#94a3b8' : 'var(--pt-text-muted)' }}>الكمية المتوفرة: {maxQty}</p>
+          <p className="text-xs mt-1" style={{ color: theme === 'glassmorphism' ? '#94a3b8' : 'var(--pt-text-muted)' }}>
+            {lang === 'ar' ? 'الكمية المتوفرة: ' : lang === 'fr' ? 'Quantité disponible: ' : 'Available stock: '}{maxQty}
+          </p>
         )}
       </div>
 
@@ -540,15 +556,15 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         ? { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--pt-radius-md, 12px)' }
         : { background: 'var(--pt-surface-soft)', borderRadius: 'var(--pt-radius-md)' }}>
         <div className="flex justify-between" style={{ color: theme === 'glassmorphism' ? '#cbd5e1' : 'var(--pt-text-soft)' }}>
-          <span>المنتج{variantLabel ? ` (${variantLabel})` : ''} × {quantity}</span>
+          <span>{lang === 'ar' ? 'المنتج' : lang === 'fr' ? 'Produit' : 'Product'}{variantLabel ? ` (${variantLabel})` : ''} × {quantity}</span>
           <span>{formatDZD(product.price * quantity)}</span>
         </div>
         <div className="flex justify-between" style={{ color: theme === 'glassmorphism' ? '#cbd5e1' : 'var(--pt-text-soft)' }}>
-          <span>رسوم التوصيل</span>
+          <span>{lang === 'ar' ? 'رسوم التوصيل' : lang === 'fr' ? 'Frais de livraison' : 'Delivery fee'}</span>
           <span>{formatDZD(deliveryFee)}</span>
         </div>
         <div className="flex justify-between font-black text-base pt-1.5" style={{ color: theme === 'glassmorphism' ? '#fff' : 'var(--pt-text)', borderTop: theme === 'glassmorphism' ? '1px solid rgba(255,255,255,0.08)' : '1px solid var(--pt-border)' }}>
-          <span>المجموع</span>
+          <span>{lang === 'ar' ? 'المجموع' : 'Total'}</span>
           <span style={{ color: theme === 'glassmorphism' ? '#818cf8' : 'var(--pt-accent)' }}>{formatDZD(total)}</span>
         </div>
       </div>
@@ -559,10 +575,16 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         className={btnClass}
         style={btnStyle}
       >
-        {isSubmitting ? 'جارٍ تسجيل الطلب...' : `🛒 اطلب الآن — ${formatDZD(total)}`}
+        {isSubmitting ? translateStorefront('saving', lang) : `${translateStorefront('order_now', lang).replace(' 🛒', '')} — ${formatDZD(total)}`}
       </button>
 
-      <p className="text-xs text-center" style={{ color: theme === 'glassmorphism' ? '#cbd5e1/60' : 'var(--pt-text-muted)' }}>الدفع عند الاستلام · توصيل لكل ولايات الجزائر</p>
+      <p className="text-xs text-center" style={{ color: theme === 'glassmorphism' ? '#cbd5e1/60' : 'var(--pt-text-muted)' }}>
+        {lang === 'ar'
+          ? 'الدفع عند الاستلام · توصيل لكل ولايات الجزائر'
+          : lang === 'fr'
+            ? 'Paiement à la livraison · Livraison sur 58 wilayas'
+            : 'Cash on delivery · Shipping to 58 provinces'}
+      </p>
     </form>
   )
 }

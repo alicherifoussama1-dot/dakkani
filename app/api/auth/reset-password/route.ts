@@ -13,7 +13,9 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://dakkani.vercel.app'}/api/auth/callback?next=/reset-password`
+    const requestUrl = new URL(req.url)
+    const origin = req.headers.get('origin') || `${requestUrl.protocol}//${requestUrl.host}`
+    const redirectTo = `${origin}/reset-password`
 
     // Generate link ONCE only
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
@@ -27,7 +29,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: linkError.message }, { status: 400 })
     }
 
-    const resetLink = (linkData as any)?.properties?.action_link
+    // Use the token_hash (deterministic) → our page calls verifyOtp to set the
+    // session. The default action_link can return the token in a URL hash that
+    // the client doesn't reliably pick up ("Auth session missing!").
+    const hashedToken = (linkData as any)?.properties?.hashed_token
+    const base = process.env.NEXT_PUBLIC_APP_URL ?? origin
+    const resetLink = hashedToken
+      ? `${base}/reset-password?token_hash=${hashedToken}&type=recovery`
+      : (linkData as any)?.properties?.action_link
 
     if (!resetLink) {
       return NextResponse.json({ error: 'فشل في إنشاء رابط الاسترداد' }, { status: 500 })
@@ -35,10 +44,13 @@ export async function POST(req: Request) {
 
     // Send via Resend
     const resendKey = process.env.RESEND_API_KEY
+    const isLocalhost = requestUrl.hostname === 'localhost' || requestUrl.hostname === '127.0.0.1'
+
     if (!resendKey || resendKey === 'your_resend_api_key') {
       // No Resend configured — return the link directly for testing
       console.log('RESET LINK (no email provider):', resetLink)
-      return NextResponse.json({ success: true, debug_link: process.env.NODE_ENV === 'development' ? resetLink : undefined })
+      const showDebug = process.env.NODE_ENV === 'development' || isLocalhost
+      return NextResponse.json({ success: true, debug_link: showDebug ? resetLink : undefined })
     }
 
     const emailRes = await fetch('https://api.resend.com/emails', {

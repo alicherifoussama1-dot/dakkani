@@ -1,14 +1,21 @@
 'use client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function AuthLoginPage() {
+  return <Suspense fallback={null}><AuthLoginInner /></Suspense>
+}
+
+function AuthLoginInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const urlError = searchParams ? searchParams.get('error') : null
+
   const [email,setEmail]=useState(''), [password,setPassword]=useState('')
-  const [showPw,setShowPw]=useState(false), [loading,setLoading]=useState(false), [error,setError]=useState('')
+  const [showPw,setShowPw]=useState(false), [loading,setLoading]=useState(false), [error,setError]=useState(urlError || '')
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(''); setLoading(true)

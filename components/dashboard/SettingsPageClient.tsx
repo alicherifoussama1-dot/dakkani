@@ -2,11 +2,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Store, Shield, Truck, Bell, CreditCard, Loader2, Check, Eye, EyeOff, Camera, ShoppingCart } from 'lucide-react'
+import { Store, Shield, Truck, Bell, CreditCard, Loader2, Check, Eye, EyeOff, Camera, ShoppingCart, Globe } from 'lucide-react'
 import Link from 'next/link'
 
 const TABS = [
   { id:'store',   label:'معلومات المتجر', icon: Store },
+  { id:'languages',label:'اللغات والترجمة',icon: Globe },
   { id:'security',label:'الأمان',          icon: Shield },
   { id:'delivery',label:'التوصيل',         icon: Truck },
   { id:'notifs',  label:'الإشعارات',       icon: Bell },
@@ -65,6 +66,29 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
     low_stock_alert: storeSettings?.low_stock_alert ?? true,
   })
   const [notifSaved, setNotifSaved] = useState(false)
+
+  // Language settings state
+  const [storeLanguages, setStoreLanguages] = useState<string[]>(storeSettings?.languages ?? ['ar'])
+  const [defaultLanguage, setDefaultLanguage] = useState<string>(storeSettings?.default_language ?? 'ar')
+  const [langSaved, setLangSaved] = useState(false)
+
+  const saveLanguages = async () => {
+    setLoading(true)
+    const sb = createClient()
+    const { error } = await sb.from('store_settings').upsert({
+      store_id: store.id,
+      languages: storeLanguages,
+      default_language: defaultLanguage,
+    }, { onConflict: 'store_id' })
+    setLoading(false)
+    if (error) {
+      alert('خطأ في حفظ إعدادات اللغة: ' + error.message)
+      return
+    }
+    setLangSaved(true)
+    setTimeout(() => setLangSaved(false), 3000)
+    router.refresh()
+  }
 
   const saveNotifications = async () => {
     setLoading(true)
@@ -257,32 +281,26 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
     if (passwordForm.new.length < 8) { setPwError('كلمة المرور يجب أن تكون 8 أحرف على الأقل'); return }
     if (passwordForm.new !== passwordForm.confirm) { setPwError('كلمتا المرور غير متطابقتين'); return }
     setLoading(true)
-    const sb = createClient()
 
-    // Hydrate the client-side session from cookies
-    const { data: sess } = await sb.auth.getSession()
-    if (!sess.session) {
-      const { data: usr } = await sb.auth.getUser()
-      if (!usr.user) {
-        setPwError('جلسة العمل غير متوفرة أو منتهية. يرجى تسجيل الدخول مجدداً.')
-        setLoading(false)
+    try {
+      const res = await fetch('/api/auth/update-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: passwordForm.new })
+      })
+      const data = await res.json()
+      setLoading(false)
+      if (!res.ok || data.error) {
+        setPwError(data.error || 'فشلت عملية تغيير كلمة المرور.')
         return
       }
+      setPwSaved(true)
+      setPasswordForm({ current: '', new: '', confirm: '' })
+      setTimeout(() => setPwSaved(false), 3000)
+    } catch (err) {
+      setLoading(false)
+      setPwError('حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة لاحقاً.')
     }
-
-    const { error } = await sb.auth.updateUser({ password: passwordForm.new })
-    setLoading(false)
-    if (error) {
-      let msg = error.message
-      if (msg.includes('Auth session missing')) {
-        msg = 'انتهت صلاحية جلسة العمل أو غير متوفرة. يرجى تسجيل الدخول مجدداً.'
-      }
-      setPwError(msg)
-      return
-    }
-    setPwSaved(true)
-    setPasswordForm({ current: '', new: '', confirm: '' })
-    setTimeout(() => setPwSaved(false), 3000)
   }
 
   const Field = ({ label, name, type = 'text', placeholder = '', dir: d = 'rtl' }: any) => (
@@ -309,6 +327,77 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
           </button>
         ))}
       </div>
+
+      {/* ── LANGUAGES TAB ── */}
+      {tab === 'languages' && (
+        <div className="space-y-5">
+          <div className="card p-5 space-y-4">
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>إعدادات اللغات والترجمة للمتجر</h2>
+            
+            <div className="space-y-3">
+              <label className="block text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>ألسنة العرض المدعومة في متجرك (الزبائن):</label>
+              <div className="space-y-2">
+                {[
+                  { id: 'ar', label: 'العربية (RTL)' },
+                  { id: 'fr', label: 'الفرنسية (LTR)' },
+                  { id: 'en', label: 'الإنجليزية (LTR)' },
+                ].map(langOpt => {
+                  const checked = storeLanguages.includes(langOpt.id)
+                  return (
+                    <label key={langOpt.id} className="flex items-center gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={langOpt.id === 'ar'} // Arabic must be enabled by default/cannot be disabled
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setStoreLanguages(prev => [...prev, langOpt.id])
+                          } else {
+                            setStoreLanguages(prev => prev.filter(l => l !== langOpt.id))
+                            // If default language was this one, reset it to 'ar'
+                            if (defaultLanguage === langOpt.id) {
+                              setDefaultLanguage('ar')
+                            }
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-gray-300 text-[#0D6EFD] focus:ring-[#0D6EFD] accent-[#0D6EFD]"
+                      />
+                      <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>{langOpt.label}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="w-1/2">
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-secondary)' }}>اللغة الافتراضية للمتجر (اللغة الأساسية عند فتح الرابط):</label>
+              <select
+                value={defaultLanguage}
+                onChange={e => setDefaultLanguage(e.target.value)}
+                className="input text-sm"
+              >
+                {storeLanguages.map(l => (
+                  <option key={l} value={l}>
+                    {l === 'ar' ? 'العربية' : l === 'fr' ? 'الفرنسية' : 'الإنجليزية'}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                onClick={saveLanguages}
+                disabled={loading}
+                className="btn btn-primary btn-sm"
+                style={{ fontFamily: 'var(--font-arabic)' }}
+              >
+                {loading ? 'جارٍ الحفظ...' : 'حفظ إعدادات اللغات'}
+              </button>
+              {langSaved && <span className="text-green-600 font-bold text-sm">✓ تم الحفظ بنجاح!</span>}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── STORE INFO ── */}
       {tab === 'store' && (
