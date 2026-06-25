@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://dakkani.vercel.app'}/reset-password`
+    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://dakkani.vercel.app'}/api/auth/callback?next=/reset-password`
 
     // Generate link ONCE only
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({

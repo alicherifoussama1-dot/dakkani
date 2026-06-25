@@ -1,11 +1,12 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Lock, CheckCircle } from 'lucide-react'
 
 export default function ResetPasswordPage() {
   const router  = useRouter()
+  const supabase = useMemo(() => createClient(), [])
   const [pwd,   setPwd]   = useState('')
   const [pwd2,  setPwd2]  = useState('')
   const [error, setError] = useState('')
@@ -17,23 +18,30 @@ export default function ResetPasswordPage() {
   // The link returns either ?code=… (PKCE — must be exchanged) or a
   // #access_token…&type=recovery hash (auto-detected by the client).
   useEffect(() => {
-    const supabase = createClient()
     ;(async () => {
       try {
         const url = new URL(window.location.href)
         const code = url.searchParams.get('code')
-        if (code) await supabase.auth.exchangeCodeForSession(code)
+        if (code) {
+          await supabase.auth.exchangeCodeForSession(code)
+        }
         // give the client a tick to pick up a hash-based recovery session
         let { data } = await supabase.auth.getSession()
-        if (!data.session) { await new Promise(r => setTimeout(r, 400)); data = (await supabase.auth.getSession()).data }
-        if (!data.session) setError('انتهت صلاحية رابط الاسترجاع أو أنه غير صالح. اطلب رابطاً جديداً من «نسيت كلمة المرور».')
-      } catch {
+        if (!data.session) {
+          await new Promise(r => setTimeout(r, 500))
+          data = (await supabase.auth.getSession()).data
+        }
+        if (!data.session) {
+          setError('انتهت صلاحية رابط الاسترجاع أو أنه غير صالح. اطلب رابطاً جديداً من «نسيت كلمة المرور».')
+        }
+      } catch (err) {
+        console.error('Session establishment error:', err)
         setError('انتهت صلاحية رابط الاسترجاع أو أنه غير صالح. اطلب رابطاً جديداً.')
       } finally {
         setReady(true)
       }
     })()
-  }, [])
+  }, [supabase])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,7 +49,7 @@ export default function ResetPasswordPage() {
     if (pwd !== pwd2)       { setError('كلمتا المرور غير متطابقتين'); return }
     setError('')
     setLoading(true)
-    const supabase = createClient()
+    
     // Guard: ensure a recovery session exists, else updateUser throws "Auth session missing!"
     const { data: sess } = await supabase.auth.getSession()
     if (!sess.session) {
@@ -51,7 +59,14 @@ export default function ResetPasswordPage() {
     }
     const { error: err } = await supabase.auth.updateUser({ password: pwd })
     setLoading(false)
-    if (err) { setError(err.message); return }
+    if (err) {
+      let msg = err.message
+      if (msg.includes('Auth session missing')) {
+        msg = 'انتهت صلاحية رابط الاسترجاع. افتح الرابط من بريدك من جديد أو اطلب رابطاً جديداً.'
+      }
+      setError(msg)
+      return
+    }
     setDone(true)
     setTimeout(() => router.push('/dashboard'), 2000)
   }
