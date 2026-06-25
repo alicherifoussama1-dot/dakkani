@@ -258,9 +258,28 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
     if (passwordForm.new !== passwordForm.confirm) { setPwError('كلمتا المرور غير متطابقتين'); return }
     setLoading(true)
     const sb = createClient()
+
+    // Hydrate the client-side session from cookies
+    const { data: sess } = await sb.auth.getSession()
+    if (!sess.session) {
+      const { data: usr } = await sb.auth.getUser()
+      if (!usr.user) {
+        setPwError('جلسة العمل غير متوفرة أو منتهية. يرجى تسجيل الدخول مجدداً.')
+        setLoading(false)
+        return
+      }
+    }
+
     const { error } = await sb.auth.updateUser({ password: passwordForm.new })
     setLoading(false)
-    if (error) { setPwError(error.message); return }
+    if (error) {
+      let msg = error.message
+      if (msg.includes('Auth session missing')) {
+        msg = 'انتهت صلاحية جلسة العمل أو غير متوفرة. يرجى تسجيل الدخول مجدداً.'
+      }
+      setPwError(msg)
+      return
+    }
     setPwSaved(true)
     setPasswordForm({ current: '', new: '', confirm: '' })
     setTimeout(() => setPwSaved(false), 3000)

@@ -11,6 +11,29 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('')
   const [done,  setDone]  = useState(false)
   const [loading, setLoading] = useState(false)
+  const [ready,  setReady]  = useState(false)   // recovery session established?
+
+  // Establish the session from the recovery link BEFORE allowing updateUser.
+  // The link returns either ?code=… (PKCE — must be exchanged) or a
+  // #access_token…&type=recovery hash (auto-detected by the client).
+  useEffect(() => {
+    const supabase = createClient()
+    ;(async () => {
+      try {
+        const url = new URL(window.location.href)
+        const code = url.searchParams.get('code')
+        if (code) await supabase.auth.exchangeCodeForSession(code)
+        // give the client a tick to pick up a hash-based recovery session
+        let { data } = await supabase.auth.getSession()
+        if (!data.session) { await new Promise(r => setTimeout(r, 400)); data = (await supabase.auth.getSession()).data }
+        if (!data.session) setError('انتهت صلاحية رابط الاسترجاع أو أنه غير صالح. اطلب رابطاً جديداً من «نسيت كلمة المرور».')
+      } catch {
+        setError('انتهت صلاحية رابط الاسترجاع أو أنه غير صالح. اطلب رابطاً جديداً.')
+      } finally {
+        setReady(true)
+      }
+    })()
+  }, [])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,6 +42,13 @@ export default function ResetPasswordPage() {
     setError('')
     setLoading(true)
     const supabase = createClient()
+    // Guard: ensure a recovery session exists, else updateUser throws "Auth session missing!"
+    const { data: sess } = await supabase.auth.getSession()
+    if (!sess.session) {
+      setLoading(false)
+      setError('انتهت صلاحية رابط الاسترجاع. افتح الرابط من بريدك من جديد أو اطلب رابطاً جديداً.')
+      return
+    }
     const { error: err } = await supabase.auth.updateUser({ password: pwd })
     setLoading(false)
     if (err) { setError(err.message); return }

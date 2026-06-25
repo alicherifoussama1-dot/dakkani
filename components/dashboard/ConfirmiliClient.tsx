@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -2015,9 +2015,27 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       if (pw.new_.length < 8)     { setToast('كلمة المرور يجب أن تكون 8 أحرف على الأقل'); return }
       setSavingPw(true)
       const sb = createClient()
+      
+      // Hydrate the client-side session from cookies
+      const { data: sess } = await sb.auth.getSession()
+      if (!sess.session) {
+        const { data: usr } = await sb.auth.getUser()
+        if (!usr.user) {
+          setToast('❌ جلسة العمل غير متوفرة أو منتهية. يرجى إعادة تسجيل الدخول.')
+          setSavingPw(false)
+          return
+        }
+      }
+
       const { error } = await sb.auth.updateUser({ password: pw.new_ })
       setSavingPw(false)
-      if (error) setToast(`❌ ${error.message}`)
+      if (error) {
+        let msg = error.message
+        if (msg.includes('Auth session missing')) {
+          msg = 'انتهت صلاحية جلسة العمل أو غير متوفرة. يرجى إعادة تسجيل الدخول.'
+        }
+        setToast(`❌ ${msg}`)
+      }
       else { setToast('✓ تم تغيير كلمة المرور'); setPw({old:'',new_:'',confirm:''}) }
     }
     return (
