@@ -166,7 +166,7 @@ export default async function ProductPage({ params }: Props) {
         {(reviewsRes.data?.length ?? 0) > 0 && (
           <section className="max-w-4xl mx-auto px-4 py-12">
             <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
-              <h2 className="text-2xl" style={{ color: 'var(--pt-text)', fontFamily: 'var(--pt-font-heading)', fontWeight: 'var(--pt-heading-weight)' as any }}>آراء العملاء</h2>
+              <h2 className="pt-heading text-2xl">آراء العملاء</h2>
               {avgRating && (
                 <div className="flex items-center gap-2">
                   <div className="flex gap-0.5" aria-hidden="true">
@@ -207,7 +207,7 @@ export default async function ProductPage({ params }: Props) {
         {/* FAQ — objection handling (COD). Native <details>: zero JS, fast,
             mobile-friendly, accessible. */}
         <section className="max-w-3xl mx-auto px-4 py-12 border-t" style={{ borderColor: 'var(--pt-border)' }}>
-          <h2 className="text-2xl mb-6" style={{ color: 'var(--pt-text)', fontFamily: 'var(--pt-font-heading)', fontWeight: 'var(--pt-heading-weight)' as any }}>الأسئلة الشائعة</h2>
+          <h2 className="pt-heading text-2xl mb-6">الأسئلة الشائعة</h2>
           <div className="space-y-2.5">
             {[
               { q: 'كيف أدفع؟', a: 'الدفع عند الاستلام (COD): تدفع نقداً لموصّل التوصيل عند استلام طردك — بلا بطاقة ولا دفع مسبق.' },
@@ -237,7 +237,7 @@ export default async function ProductPage({ params }: Props) {
         {/* Related */}
         {relatedData.length > 0 && (
           <section className="max-w-6xl mx-auto px-4 py-12 border-t" style={{ borderColor: 'var(--pt-border)' }}>
-            <h2 className="text-2xl mb-6" style={{ color: 'var(--pt-text)', fontFamily: 'var(--pt-font-heading)', fontWeight: 'var(--pt-heading-weight)' as any }}>منتجات مشابهة</h2>
+            <h2 className="pt-heading text-2xl mb-6">منتجات مشابهة</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {relatedData.map((p) => {
                 const img = (p.images as any[])?.[0]?.url
@@ -263,13 +263,17 @@ export default async function ProductPage({ params }: Props) {
         )}
       </div>
 
+      {/* Desktop only: on mobile this fixed float overlaps the sticky buy bar
+          and duplicates its WhatsApp button. */}
       {storePhone && (
-        <WhatsAppFloat
-          phone={storePhone}
-          storeName={store.name_ar ?? store.name}
-          productName={product.name_ar ?? product.name}
-          price={product.price}
-        />
+        <div className="hidden md:block">
+          <WhatsAppFloat
+            phone={storePhone}
+            storeName={store.name_ar ?? store.name}
+            productName={product.name_ar ?? product.name}
+            price={product.price}
+          />
+        </div>
       )}
     </StorefrontLayout>
   )
