@@ -30,7 +30,7 @@ export default function StopdeskPicker({ offices, value, onSelect, dark }: {
           <div className={`absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-xl border shadow-lg ${box}`}>
             {offices.map(o => (
               <button type="button" key={o.code} onClick={() => { onSelect(o); setOpen(false) }}
-                className={`w-full text-right px-3 py-2 flex flex-col ${dark ? 'hover:bg-slate-800' : 'hover:bg-gray-50'} ${o.code === value ? (dark ? 'bg-slate-800' : 'bg-gray-50') : ''}`}>
+                className={`w-full text-right px-3 py-2.5 flex flex-col ${dark ? 'hover:bg-slate-800' : 'hover:bg-gray-50'} ${o.code === value ? (dark ? 'bg-slate-800' : 'bg-gray-50') : ''}`}>
                 <span className="text-sm font-semibold leading-tight">{o.commune || o.name}</span>
                 {o.commune && <span className={`text-[11px] leading-tight ${muted}`}>{o.name}</span>}
               </button>

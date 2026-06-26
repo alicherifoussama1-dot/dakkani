@@ -1,9 +1,9 @@
 'use client'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ChevronDown, Loader2 } from 'lucide-react'
+import { ChevronDown, Loader2, ShieldCheck, PhoneCall, Truck, AlertCircle } from 'lucide-react'
 import StopdeskPicker from './StopdeskPicker'
 import { formatDZD } from '@/lib/utils/format'
 import { getBaladiasForWilaya } from '@/lib/algeria-baladias'
@@ -82,7 +82,7 @@ function BaladiaField({ wilayaId, value, onChange, error, textLabel, inputClass,
                   key={b}
                   type="button"
                   onClick={() => { onChange(b); setOpen(false) }}
-                  className={`block w-full text-start rtl:text-right px-3 py-2 rounded-lg text-sm transition ${
+                  className={`block w-full text-start rtl:text-right px-3 py-2.5 rounded-lg text-sm transition ${
                     theme === 'glassmorphism' ? 'hover:bg-slate-800' : 'hover:bg-gray-50'
                   }`}
                   style={value === b ? { background: 'var(--pt-accent-soft, #EBF5FF)', color: 'var(--pt-accent, #0D6EFD)', fontWeight: 750 } : {}}
@@ -94,7 +94,7 @@ function BaladiaField({ wilayaId, value, onChange, error, textLabel, inputClass,
           </>
         )}
       </div>
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+      {error && <p data-error="true" className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
   )
 }
@@ -108,6 +108,9 @@ interface Props {
 export default function ProductOrderForm({ product, store, wilayas, variantKey, variantLabel, maxQty, lang = 'ar' }: Props) {
   const [submitted, setSubmitted] = useState(false)
   const [orderId, setOrderId] = useState('')
+  const [submitError, setSubmitError] = useState('')
+  const formRef = useRef<HTMLFormElement>(null)
+  const successRef = useRef<HTMLDivElement>(null)
   const [selectedWilaya, setSelectedWilaya] = useState<Wilaya | null>(null)
   const [offices, setOffices] = useState<{ code: string; name: string; commune: string }[]>([])
   const [loadingOffices, setLoadingOffices] = useState(false)
@@ -171,8 +174,18 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
 
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(dynamicSchema),
+    mode: 'onTouched', // validate on blur after first touch — gentler, fewer submit-time surprises
     defaultValues: { delivery_type: 'home', quantity: 1, baladia: '' },
   })
+
+  // On invalid submit, bring the first error into view (RHF focuses native inputs,
+  // but custom dropdowns aren't focusable — so we also scroll to the first message).
+  const onInvalid = () => {
+    requestAnimationFrame(() => {
+      const el = formRef.current?.querySelector<HTMLElement>('[data-error="true"]')
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+  }
 
   const deliveryType = watch('delivery_type')
   const quantity = watch('quantity') || 1
@@ -218,33 +231,63 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
     }
   }, [deliveryType, setValue])
 
+  // Move focus to the confirmation so customers (and screen readers) know it worked.
+  useEffect(() => {
+    if (submitted) successRef.current?.focus()
+  }, [submitted])
+
   const deliveryFee = selectedWilaya
     ? (deliveryType === 'stopdesk' ? selectedWilaya.delivery_fee_stopdesk : selectedWilaya.delivery_fee_home)
     : 0
   const total = product.price * quantity + deliveryFee
 
   const onSubmit = async (data: FormData) => {
+    if (isSubmitting) return // extra guard against a double submit
+    setSubmitError('')
     const isStopdesk = data.delivery_type === 'stopdesk'
-    const res = await fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        store_id: store.id,
-        ...data,
-        baladia: data.baladia, // commune name for both; stopdesk = office commune
-        address: isStopdesk ? undefined : data.address,
-        stopdesk_code: isStopdesk ? data.stopdesk_code : undefined,
-        items: [{ product_id: product.id, quantity: data.quantity, variant_key: variantKey ?? 'default' }],
-        source: 'storefront',
-      }),
-    })
-    const json = await res.json()
-    if (json.success) { setOrderId(json.order_number); setSubmitted(true) }
+    const genericErr = lang === 'ar'
+      ? 'تعذّر إرسال الطلب. تحقّق من اتصالك وحاول مرة أخرى، أو تواصل معنا.'
+      : lang === 'fr'
+        ? 'Échec de l\'envoi de la commande. Vérifiez votre connexion et réessayez.'
+        : 'Could not submit your order. Check your connection and try again.'
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_id: store.id,
+          ...data,
+          baladia: data.baladia, // commune name for both; stopdesk = office commune
+          address: isStopdesk ? undefined : data.address,
+          stopdesk_code: isStopdesk ? data.stopdesk_code : undefined,
+          items: [{ product_id: product.id, quantity: data.quantity, variant_key: variantKey ?? 'default' }],
+          source: 'storefront',
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (res.ok && json.success) {
+        setOrderId(json.order_number)
+        setSubmitted(true)
+      } else {
+        setSubmitError(json.error || genericErr)
+        formRef.current?.querySelector<HTMLElement>('[data-submit-error="true"]')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    } catch {
+      setSubmitError(genericErr)
+      formRef.current?.querySelector<HTMLElement>('[data-submit-error="true"]')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
   }
 
   if (submitted) {
     return (
-      <div className={`border rounded-2xl p-6 text-center space-y-3 ${
+      <div
+        ref={successRef}
+        tabIndex={-1}
+        role="status"
+        aria-live="polite"
+        className={`border rounded-2xl p-6 text-center space-y-3 outline-none ${
         theme === 'glassmorphism' ? 'bg-indigo-950/20 border-indigo-500/30 text-indigo-200' : 'bg-green-50 border-green-200'
       }`}>
         <div className="text-4xl">✅</div>
@@ -264,7 +307,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   // Style classes based on theme
   let cardClass = "space-y-4 p-4"
   let cardStyle = { background: 'var(--pt-surface)', border: '1px solid var(--pt-border)', borderRadius: 'var(--pt-radius-lg)' } as any
-  let inputClass = "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none bg-white text-gray-900"
+  let inputClass = "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none bg-white text-gray-900"
   let textPrimary = "text-gray-900"
   let textSecondary = "text-gray-500"
   let textLabel = "block text-sm font-medium text-gray-700 mb-1"
@@ -275,7 +318,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   if (theme === 'modern') {
     cardClass = "bg-[#FFFDFB] rounded-3xl border-2 border-dashed border-amber-350 shadow-[0_8px_30px_rgb(0,0,0,0.015)] p-6 space-y-4 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.035)]"
     cardStyle = {} as any
-    inputClass = "w-full border-2 border-slate-100 rounded-xl px-4 py-2.5 text-sm bg-white focus:border-amber-500 focus:ring-0 outline-none transition-all text-slate-805 shadow-sm focus:shadow-md"
+    inputClass = "w-full border-2 border-slate-100 rounded-xl px-4 py-3 text-sm bg-white focus:border-amber-500 focus:ring-0 outline-none transition-all text-slate-805 shadow-sm focus:shadow-md"
     textPrimary = "text-slate-850"
     textSecondary = "text-slate-500"
     textLabel = "block text-sm font-semibold text-slate-700 mb-1"
@@ -284,7 +327,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   } else if (theme === 'glassmorphism') {
     cardClass = "bg-slate-900/60 backdrop-blur-2xl border-2 border-indigo-500/20 shadow-2xl rounded-3xl p-6 space-y-4 text-slate-200"
     cardStyle = {} as any
-    inputClass = "w-full bg-slate-950/80 border border-slate-700/80 rounded-xl px-4 py-2.5 text-sm text-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all placeholder-slate-500"
+    inputClass = "w-full bg-slate-950/80 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all placeholder-slate-500"
     textPrimary = "text-white"
     textSecondary = "text-slate-400"
     textLabel = "block text-sm font-medium text-slate-300 mb-1"
@@ -303,7 +346,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
     // Default / classic: clean card outline with a solid border and subtle shadows
     cardClass = "bg-white rounded-3xl border-2 border-gray-200/80 shadow-[0_10px_30px_rgba(0,0,0,0.03)] p-6 space-y-4"
     cardStyle = {} as any
-    inputClass = "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-[#0D6EFD] focus:ring-2 focus:ring-[#0D6EFD]/10 outline-none bg-white text-gray-900 transition-all"
+    inputClass = "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-[#0D6EFD] focus:ring-2 focus:ring-[#0D6EFD]/10 outline-none bg-white text-gray-900 transition-all"
     textPrimary = "text-gray-900"
     textSecondary = "text-gray-500"
     textLabel = "block text-sm font-medium text-gray-700 mb-1"
@@ -313,7 +356,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   const isRtl = lang === 'ar'
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className={cardClass} style={cardStyle} dir={isRtl ? 'rtl' : 'ltr'}>
+    <form ref={formRef} onSubmit={handleSubmit(onSubmit, onInvalid)} className={cardClass} style={cardStyle} dir={isRtl ? 'rtl' : 'ltr'}>
       <h3 className={`font-bold text-lg ${textPrimary}`}>{translateStorefront('buy_now', lang)}</h3>
 
       {/* Delivery Type */}
@@ -321,7 +364,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         {([[ 'home', translateStorefront('home_delivery', lang) ], [ 'stopdesk', translateStorefront('stopdesk_delivery', lang) ]] as const).map(([val, label]) => {
           const isActive = deliveryType === val
           let activeBtnStyle = {}
-          let activeBtnClass = "py-2.5 text-sm font-semibold border transition"
+          let activeBtnClass = "py-3 text-sm font-semibold border transition"
 
           if (theme === 'glassmorphism') {
             activeBtnClass += ` rounded-xl ${
@@ -375,11 +418,12 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                 <label className={textLabel}>{translateStorefront('full_name', lang)} <span className="text-red-500">*</span></label>
                 <input
                   {...register('customer_name')}
+                  autoComplete="name"
                   placeholder={lang === 'ar' ? 'محمد بن علي' : 'Mohamed Benali'}
                   className={inputClass}
                 />
                 {errors.customer_name && (
-                  <p className="text-red-500 text-xs mt-1">{errors.customer_name.message}</p>
+                  <p data-error="true" className="text-red-500 text-xs mt-1">{errors.customer_name.message}</p>
                 )}
               </div>
             )
@@ -407,7 +451,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                   </select>
                   <ChevronDown className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-450 pointer-events-none`} />
                 </div>
-                {errors.wilaya_id && <p className="text-red-500 text-xs mt-1">{errors.wilaya_id.message}</p>}
+                {errors.wilaya_id && <p data-error="true" className="text-red-500 text-xs mt-1">{errors.wilaya_id.message}</p>}
                 {selectedWilaya && (
                   <p className="text-xs mt-1" style={{ color: theme === 'glassmorphism' ? '#818cf8' : 'var(--pt-accent)' }}>
                     {lang === 'ar' ? 'رسوم التوصيل: ' : lang === 'fr' ? 'Frais de livraison: ' : 'Delivery fee: '}{formatDZD(deliveryFee)} · {deliveryType === 'home' ? selectedWilaya.delivery_days_home : selectedWilaya.delivery_days_stopdesk}
@@ -454,7 +498,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                       }}
                     />
                   )}
-                  {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
+                  {errors.baladia && <p data-error="true" className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
                 </div>
               )
             }
@@ -467,11 +511,13 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                 <input
                   {...register('customer_phone')}
                   type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
                   placeholder="0555 xx xx xx"
                   className={inputClass}
                 />
                 {errors.customer_phone && (
-                  <p className="text-red-500 text-xs mt-1">{errors.customer_phone.message}</p>
+                  <p data-error="true" className="text-red-500 text-xs mt-1">{errors.customer_phone.message}</p>
                 )}
               </div>
             )
@@ -483,11 +529,13 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                 <input
                   {...register('customer_phone2')}
                   type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
                   placeholder={fieldsConfig.phone2?.required ? "0555 xx xx xx" : (lang === 'ar' ? 'اختياري' : 'Optionnel')}
                   className={inputClass}
                 />
                 {errors.customer_phone2 && (
-                  <p className="text-red-500 text-xs mt-1">{errors.customer_phone2.message}</p>
+                  <p data-error="true" className="text-red-500 text-xs mt-1">{errors.customer_phone2.message}</p>
                 )}
               </div>
             )
@@ -499,10 +547,11 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                 <textarea
                   {...register('address')}
                   rows={2}
+                  autoComplete="street-address"
                   placeholder={lang === 'ar' ? 'الحي، الشارع، رقم البناية...' : 'Quartier, rue, numéro...'}
                   className={`${inputClass} resize-none`}
                 />
-                {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
+                {errors.address && <p data-error="true" className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
               </div>
             ) : null
 
@@ -516,7 +565,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                   placeholder={lang === 'ar' ? 'أي تعليمات خاصة للتوصيل...' : 'Instructions spéciales...'}
                   className={`${inputClass} resize-none`}
                 />
-                {errors.notes && <p className="text-red-500 text-xs mt-1">{errors.notes.message}</p>}
+                {errors.notes && <p data-error="true" className="text-red-500 text-xs mt-1">{errors.notes.message}</p>}
               </div>
             )
 
@@ -530,7 +579,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         <label className={textLabel}>{translateStorefront('quantity', lang)}</label>
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => setValue('quantity', Math.max(1, quantity - 1))}
-            className="w-9 h-9 rounded-full border flex items-center justify-center text-lg font-bold transition"
+            className="w-11 h-11 rounded-full border flex items-center justify-center text-lg font-bold transition"
             style={theme === 'glassmorphism'
               ? { borderColor: 'rgba(255,255,255,0.15)', color: '#fff', background: 'rgba(255,255,255,0.05)' }
               : { borderColor: 'var(--pt-border)', color: 'var(--pt-text)', background: 'var(--pt-surface-soft)' }}
@@ -569,22 +618,40 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         </div>
       </div>
 
+      {submitError && (
+        <div data-submit-error="true" role="alert" className="flex items-start gap-2 text-sm p-3"
+          style={{ background: 'color-mix(in srgb, var(--pt-danger) 10%, transparent)', color: 'var(--pt-danger)', border: '1px solid color-mix(in srgb, var(--pt-danger) 30%, transparent)', borderRadius: 'var(--pt-radius-md)' }}>
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>{submitError}</span>
+        </div>
+      )}
+
       <button
         type="submit"
         disabled={isSubmitting}
         className={btnClass}
         style={btnStyle}
       >
-        {isSubmitting ? translateStorefront('saving', lang) : `${translateStorefront('order_now', lang).replace(' 🛒', '')} — ${formatDZD(total)}`}
+        {isSubmitting
+          ? <><Loader2 className="w-4 h-4 animate-spin" /> {translateStorefront('saving', lang)}</>
+          : `${translateStorefront('order_now', lang).replace(' 🛒', '')} — ${formatDZD(total)}`}
       </button>
 
-      <p className="text-xs text-center" style={{ color: theme === 'glassmorphism' ? '#cbd5e1/60' : 'var(--pt-text-muted)' }}>
-        {lang === 'ar'
-          ? 'الدفع عند الاستلام · توصيل لكل ولايات الجزائر'
-          : lang === 'fr'
-            ? 'Paiement à la livraison · Livraison sur 58 wilayas'
-            : 'Cash on delivery · Shipping to 58 provinces'}
-      </p>
+      {/* Trust indicators near the CTA — reduce COD hesitation at the decision point */}
+      <div className="flex items-center justify-center gap-x-4 gap-y-1.5 flex-wrap text-[11px]" style={{ color: 'var(--pt-text-muted)' }}>
+        <span className="inline-flex items-center gap-1">
+          <ShieldCheck className="w-3.5 h-3.5" style={{ color: 'var(--pt-success)' }} />
+          {lang === 'ar' ? 'الدفع عند الاستلام' : lang === 'fr' ? 'Paiement à la livraison' : 'Cash on delivery'}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <PhoneCall className="w-3.5 h-3.5" style={{ color: 'var(--pt-accent)' }} />
+          {lang === 'ar' ? 'نتصل بك لتأكيد الطلب' : lang === 'fr' ? 'Appel de confirmation' : 'We call to confirm'}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <Truck className="w-3.5 h-3.5" style={{ color: 'var(--pt-accent)' }} />
+          {lang === 'ar' ? 'توصيل 58 ولاية' : lang === 'fr' ? 'Livraison 58 wilayas' : 'Delivery to 58 wilayas'}
+        </span>
+      </div>
     </form>
   )
 }

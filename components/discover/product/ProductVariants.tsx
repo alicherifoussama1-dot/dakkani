@@ -22,6 +22,14 @@ function swatchFor(option: string): string | null {
   return COLOR_MAP[key] ?? COLOR_MAP[key.toLowerCase()] ?? null
 }
 
+// Pick a check-mark color that stays visible on the swatch.
+function isLightHex(hex: string): boolean {
+  const h = hex.replace('#', '')
+  if (h.length < 6) return false
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 160
+}
+
 export interface VariantGroup { name: string; options: string[] }
 
 interface Props {
@@ -35,18 +43,18 @@ export default function ProductVariants({ groups, selected, onSelect, isOptionAv
   if (!groups?.length) return null
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {groups.map(group => {
         const colorGroup = isColorGroup(group.name)
         return (
           <div key={group.name}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
-              <span className="pt-text" style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-tajawal)' }}>
-                {group.name}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+              <span className="pt-text-soft" style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-tajawal)' }}>
+                {group.name}{selected[group.name] ? ':' : ''}
               </span>
               {selected[group.name] && (
-                <span className="pt-text-soft" style={{ fontSize: 12, fontFamily: 'var(--font-tajawal)' }}>
-                  — {selected[group.name]}
+                <span style={{ fontSize: 13, fontWeight: 800, fontFamily: 'var(--font-tajawal)', color: 'var(--pt-accent)' }}>
+                  {selected[group.name]}
                 </span>
               )}
             </div>
@@ -65,18 +73,26 @@ export default function ProductVariants({ groups, selected, onSelect, isOptionAv
                       disabled={!available}
                       title={opt}
                       aria-label={opt}
+                      aria-pressed={active}
                       style={{
                         position: 'relative',
-                        width: 38, height: 38, borderRadius: '50%',
+                        width: 44, height: 44, borderRadius: '50%',
                         background: swatch,
                         border: active ? '3px solid var(--pt-accent)' : '2px solid var(--pt-border)',
                         cursor: available ? 'pointer' : 'not-allowed',
                         opacity: available ? 1 : 0.35,
-                        boxShadow: swatch === '#FFFFFF' ? 'inset 0 0 0 1px #E2E8F0' : 'none',
+                        boxShadow: active
+                          ? '0 0 0 2px var(--pt-surface), 0 2px 8px color-mix(in srgb, var(--pt-accent) 35%, transparent)'
+                          : (swatch === '#FFFFFF' ? 'inset 0 0 0 1px #E2E8F0' : 'none'),
                         outline: 'none',
-                        transition: 'transform 0.12s ease',
-                        transform: active ? 'scale(1.12)' : 'scale(1)',
+                        transition: 'transform 0.12s ease, box-shadow 0.12s ease',
+                        transform: active ? 'scale(1.08)' : 'scale(1)',
                       }}>
+                      {active && (
+                        <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isLightHex(swatch) ? '#171717' : '#fff'} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                        </span>
+                      )}
                       {!available && (
                         <span style={{
                           position: 'absolute', inset: '-2px',
@@ -93,13 +109,15 @@ export default function ProductVariants({ groups, selected, onSelect, isOptionAv
                     key={opt}
                     onClick={() => available && onSelect(group.name, opt)}
                     disabled={!available}
+                    aria-pressed={active}
                     style={{
-                      minWidth: 46, height: 40, padding: '0 16px',
+                      minWidth: 48, height: 44, padding: '0 18px',
                       borderRadius: 'var(--pt-radius-pill)',
                       fontFamily: 'var(--font-tajawal)', fontSize: 13, fontWeight: 600,
                       background: active ? 'var(--pt-btn-primary-bg)' : 'var(--pt-surface)',
                       color: active ? 'var(--pt-btn-primary-text)' : 'var(--pt-text)',
                       border: active ? 'none' : '1.5px solid var(--pt-border)',
+                      boxShadow: active ? '0 2px 8px color-mix(in srgb, var(--pt-accent) 30%, transparent)' : 'none',
                       cursor: available ? 'pointer' : 'not-allowed',
                       opacity: available ? 1 : 0.4,
                       textDecoration: available ? 'none' : 'line-through',
