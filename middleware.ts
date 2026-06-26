@@ -5,7 +5,33 @@ import type { NextRequest } from 'next/server'
 const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/onboarding',
   '/auth/login', '/auth/register', '/discover']
 
+// Routes that require auth (gate logged-out users to /login).
+const PROTECTED = ['/dashboard','/admin','/products','/orders','/settings','/categories',
+  '/warehouses','/coupons','/customers','/analytics','/landing-pages','/tracking',
+  '/apps','/billing','/confirmili','/justad','/learn','/reviews','/blacklist']
+// Auth pages that redirect already-logged-in users to /dashboard.
+const AUTH_PAGES = ['/login','/register','/auth/login','/auth/register']
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Always allow API, webhooks, and storefront — they never consult `user`,
+  // so skip the Supabase auth round-trip entirely.
+  if (pathname.startsWith('/api/') || pathname.startsWith('/store/')) {
+    return NextResponse.next({ request: { headers: request.headers } })
+  }
+
+  const isAuthPage = AUTH_PAGES.includes(pathname)
+  const isPublic   = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
+  const isProtected = !isPublic && PROTECTED.some(p => pathname.startsWith(p))
+
+  // Only auth pages (redirect-if-logged-in) and protected routes (gate-if-logged-out)
+  // actually need the user. For everything else — public pages, storefront slugs,
+  // marketing — return immediately and avoid a network call to Supabase Auth.
+  if (!isAuthPage && !isProtected) {
+    return NextResponse.next({ request: { headers: request.headers } })
+  }
+
   let response = NextResponse.next({ request: { headers: request.headers } })
 
   const supabase = createServerClient(
@@ -28,27 +54,16 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session
+  // Refresh session / read user (only reached for auth pages & protected routes)
   const { data: { user } } = await supabase.auth.getUser()
-  const { pathname } = request.nextUrl
 
-  // Always allow API, webhooks, static files
-  if (pathname.startsWith('/api/') || pathname.startsWith('/store/')) return response
-
-  const isPublic = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
-
-  if (isPublic) {
-    if (user && ['/login','/register','/auth/login','/auth/register'].includes(pathname)) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
+  if (isAuthPage) {
+    if (user) return NextResponse.redirect(new URL('/dashboard', request.url))
     return response
   }
 
-  // Require auth for dashboard & admin
-  const PROTECTED = ['/dashboard','/admin','/products','/orders','/settings','/categories',
-    '/warehouses','/coupons','/customers','/analytics','/landing-pages','/tracking',
-    '/apps','/billing','/confirmili','/justad','/learn','/reviews','/blacklist']
-  if (!user && PROTECTED.some(p => pathname.startsWith(p))) {
+  // isProtected
+  if (!user) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
