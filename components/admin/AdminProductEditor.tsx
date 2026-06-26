@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils/format'
 import { Upload, X, Plus, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, GripVertical, Eye, EyeOff } from 'lucide-react'
-import { PRODUCT_THEMES, DEFAULT_SECTION_ORDER, SECTION_LABELS, DEFAULT_THEME_KEY, type ProductSectionId } from '@/lib/product-themes'
+import { DEFAULT_SECTION_ORDER, SECTION_LABELS, DEFAULT_THEME_KEY, type ProductSectionId } from '@/lib/product-themes'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -66,19 +66,22 @@ interface Props {
   stockData?:  StockRow[]
   googleSheets?: { id: string; spreadsheet_name: string; worksheet_name: string; is_default: boolean }[]
 }
-type Tab = 'basic' | 'images' | 'variants' | 'design' | 'pixels' | 'seo' | 'stock'
+type Tab = 'general' | 'pricing' | 'media' | 'variants' | 'inventory' | 'productpage' | 'checkout' | 'pixels' | 'seo' | 'advanced'
 
 // ═══════════════════════════════════════════════════════════
 // STATIC CONSTANTS — outside component, never recreated
 // ═══════════════════════════════════════════════════════════
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'basic',    label: 'أساسي',     icon: '📝' },
-  { id: 'images',   label: 'الصور',     icon: '🖼️' },
-  { id: 'variants', label: 'المتغيرات', icon: '🎨' },
-  { id: 'design',   label: 'تصميم الصفحة', icon: '🖌️' },
-  { id: 'pixels',   label: 'البكسل',    icon: '📡' },
-  { id: 'seo',      label: 'SEO',       icon: '🔍' },
-  { id: 'stock',    label: 'المخزون',   icon: '📦' },
+  { id: 'general',     label: 'عام',          icon: '📝' },
+  { id: 'pricing',     label: 'الأسعار',      icon: '💰' },
+  { id: 'media',       label: 'الوسائط',      icon: '🖼️' },
+  { id: 'variants',    label: 'المتغيرات',    icon: '🎨' },
+  { id: 'inventory',   label: 'المخزون',      icon: '📦' },
+  { id: 'productpage', label: 'صفحة المنتج',  icon: '📄' },
+  { id: 'checkout',    label: 'الدفع',        icon: '🛒' },
+  { id: 'pixels',      label: 'البكسل',       icon: '📡' },
+  { id: 'seo',         label: 'SEO',          icon: '🔍' },
+  { id: 'advanced',    label: 'متقدّم',       icon: '⚙️' },
 ]
 const IC = 'input text-sm'
 const LC = 'block text-xs font-medium mb-1.5'
@@ -422,16 +425,13 @@ const SortableSectionRow = memo(function SortableSectionRow({
   )
 })
 
-// ── Design tab — theme picker + drag-and-drop section ordering ──
+// ── Product Page tab — drag-and-drop section order + visibility ──
 const DesignSection = memo(function DesignSection({
-  control, register, errors, setValue,
+  control, setValue,
 }: {
   control: Control<FormData>
-  register: UseFormRegister<FormData>
-  errors: FieldErrors<FormData>
   setValue: UseFormSetValue<FormData>
 }) {
-  const themeKey           = useWatch({ control, name: 'theme_key' })
   const sectionOrderRaw    = useWatch({ control, name: 'section_order' })
   const sectionVisibility  = (useWatch({ control, name: 'section_visibility' }) ?? {}) as Record<string, boolean>
 
@@ -459,44 +459,10 @@ const DesignSection = memo(function DesignSection({
 
   return (
     <div className="space-y-4">
-      {/* Theme picker */}
-      <div className={CC}>
-        <h3 className="font-semibold text-sm pb-2 border-b" style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>
-          اختر ثيم الصفحة 🎨
-        </h3>
-        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-          اختر التصميم الذي يناسب علامتك التجارية — يُطبَّق فوراً على صفحة المنتج التي يراها الزوار.
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {PRODUCT_THEMES.map(theme => {
-            const active = (themeKey || DEFAULT_THEME_KEY) === theme.key
-            return (
-              <button
-                key={theme.key}
-                type="button"
-                onClick={() => setValue('theme_key', theme.key, { shouldDirty: true })}
-                className={`text-right rounded-2xl border-2 p-3 transition ${
-                  active ? 'border-[#0D6EFD] ring-2 ring-[#EBF5FF]' : 'border-[#DEE2E6] hover:border-[#ADB5BD]'
-                }`}>
-                <div className="rounded-xl overflow-hidden mb-2.5 border border-black/5" style={{ background: theme.preview.bg }}>
-                  <div className="h-14 flex items-center gap-1.5 p-2.5">
-                    <span className="block w-7 h-7 rounded-lg shrink-0" style={{ background: theme.preview.surface }} />
-                    <span className="block flex-1 h-2.5 rounded-full" style={{ background: theme.preview.accent, opacity: 0.35 }} />
-                  </div>
-                  <div className="px-2.5 pb-2.5">
-                    <span className="inline-block px-3 h-6 leading-6 rounded-md text-[10px] font-bold text-white" style={{ background: theme.preview.accent }}>
-                      شراء
-                    </span>
-                  </div>
-                </div>
-                <p className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>{theme.name}</p>
-                <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--color-text-muted)' }}>{theme.description}</p>
-                {active && <span className="inline-block mt-1.5 text-xs font-bold text-[#0D6EFD]">✓ مُفعّل حالياً</span>}
-              </button>
-            )
-          })}
-        </div>
-      </div>
+      {/* Product Theme picker DEPRECATED (Phase 1): the storefront now uses ONE
+          global design system (--pt-* tokens). `theme_key` stays in the DB and
+          in form defaults for backward compatibility, but is no longer
+          merchant-configurable here. Do not re-introduce per-product themes. */}
 
       {/* Section order + visibility */}
       <div className={CC}>
@@ -520,21 +486,6 @@ const DesignSection = memo(function DesignSection({
             </div>
           </SortableContext>
         </DndContext>
-      </div>
-
-      {/* Product video */}
-      <div className={CC}>
-        <h3 className="font-semibold text-sm pb-2 border-b" style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>
-          فيديو المنتج 🎬
-        </h3>
-        <Field
-          label="رابط الفيديو (اختياري)"
-          name="video_url"
-          placeholder="https://example.com/video.mp4"
-          hint="يظهر الفيديو ضمن معرض صور المنتج إن تم إدخاله"
-          register={register}
-          errors={errors}
-        />
       </div>
     </div>
   )
@@ -601,7 +552,7 @@ export default function AdminProductEditor({
   const isEdit = !!product
 
   // Non-form state only (UI state, not field values)
-  const [tab,        setTab]        = useState<Tab>('basic')
+  const [tab,        setTab]        = useState<Tab>('general')
   const [images,     setImages]     = useState<ProductImage[]>(
     Array.isArray(product?.images)
       ? product.images.map((img: any) => ({ url: img.url ?? img, path: '' }))
@@ -995,8 +946,8 @@ export default function AdminProductEditor({
         </div>
       )}
 
-      {/* ── BASIC TAB ── */}
-      {tab === 'basic' && (
+      {/* ── GENERAL TAB ── */}
+      {tab === 'general' && (
         <div className="space-y-4">
           <div className={CC}>
             <div className="flex items-center justify-between mb-1">
@@ -1023,53 +974,6 @@ export default function AdminProductEditor({
             <TextArea label="الوصف بالعربية" name="description_ar" rows={3} placeholder="اكتب وصفاً مقنعاً للمنتج..." register={register} />
             <TextArea label="Description en français" name="description" rows={3} placeholder="Description persuasive du produit..." register={register} />
 
-            {/* Description Image Upload */}
-            <div className="space-y-1.5">
-              <label className={LC}>صورة الوصف ديسكريبسيون (Description Banner)</label>
-              <p className="text-[10px] text-gray-400 -mt-1">صورة إعلانية أو بنر توضيحي يظهر تحت الوصف مباشرة في صفحة المنتج</p>
-              
-              <div className="flex gap-4 items-start">
-                <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-4 cursor-pointer transition w-48 shrink-0 ${descUploading ? 'border-[#0D6EFD] bg-[#EBF5FF]' : 'border-[#DEE2E6] hover:border-[#0D6EFD]'}`}>
-                  <input type="file" accept="image/*" onChange={handleDescriptionImageChange} className="sr-only" disabled={descUploading} />
-                  {descUploading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 text-[#0D6EFD] animate-spin mb-1" />
-                      <span className="text-[10px]" style={{color:'var(--color-text-muted)'}}>جارٍ الرفع...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-5 h-5 mb-1" style={{color:'var(--color-text-muted)'}} />
-                      <span className="text-[10px] font-bold text-center" style={{color:'var(--color-text-muted)'}}>اختر أو اسحب صورة</span>
-                    </>
-                  )}
-                </label>
-
-                {descriptionImageUrl ? (
-                  <div className="relative group w-48 h-16 bg-[#F8F9FA] rounded-2xl overflow-hidden border border-[#DEE2E6] flex items-center justify-center">
-                    <img src={descriptionImageUrl} alt="معاينة صورة الوصف" className="w-full h-full object-contain" />
-                    <button
-                      type="button"
-                      onClick={() => setValue('description_image_url', '', { shouldDirty: true })}
-                      className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded-lg text-white"
-                      title="حذف الصورة"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex-1 self-center text-[11px] text-gray-400 border border-dashed border-gray-200 rounded-2xl py-5 text-center">
-                    لم يتم رفع صورة وصف لهذا المنتج بعد
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="سعر البيع (دج) *" name="price" type="number" placeholder="2500" required register={register} errors={errors} />
-              <Field label="السعر المقارن (دج)" name="compare_price" type="number" placeholder="3200" register={register} errors={errors} />
-              <Field label="سعر التكلفة (دج)" name="cost_price" type="number" placeholder="1100" register={register} errors={errors} />
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={LC}>الفئة</label>
@@ -1088,23 +992,95 @@ export default function AdminProductEditor({
               <Toggle label="منتج مميز" name="is_featured" desc="يظهر في أعلى الصفحة الرئيسية" register={register} />
             </div>
           </div>
-
-          {/* وجهة الطلبات — per-product routing override */}
-          <OrderRoutingSection control={control} register={register} googleSheets={googleSheets} />
         </div>
       )}
 
-      {/* ── IMAGES TAB ── */}
-      {tab === 'images' && (
-        <ImageGallery
-          images={images}
-          uploading={uploading}
-          removingBg={removingBg}
-          onFileChange={handleFileChange}
-          onRemove={handleRemoveImage}
-          onMove={handleMoveImage}
-          onRemoveBg={handleRemoveBg}
-        />
+      {/* ── PRICING TAB ── */}
+      {tab === 'pricing' && (
+        <div className={CC}>
+          <h3 className="font-semibold text-sm pb-2 border-b" style={{color:"var(--color-text-primary)",borderColor:"var(--color-border)"}}>الأسعار 💰</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <Field label="سعر البيع (دج) *" name="price" type="number" placeholder="2500" required register={register} errors={errors} />
+            <Field label="السعر المقارن (دج)" name="compare_price" type="number" placeholder="3200" register={register} errors={errors} />
+            <Field label="سعر التكلفة (دج)" name="cost_price" type="number" placeholder="1100" register={register} errors={errors} />
+          </div>
+          <p className="text-[11px]" style={{color:'var(--color-text-muted)'}}>
+            «السعر المقارن» يظهر مشطوباً بجانب سعر البيع. «سعر التكلفة» داخلي فقط (لحساب الربح) ولا يظهر للزبون.
+          </p>
+        </div>
+      )}
+
+      {/* ── MEDIA TAB ── */}
+      {tab === 'media' && (
+        <div className="space-y-4">
+          <ImageGallery
+            images={images}
+            uploading={uploading}
+            removingBg={removingBg}
+            onFileChange={handleFileChange}
+            onRemove={handleRemoveImage}
+            onMove={handleMoveImage}
+            onRemoveBg={handleRemoveBg}
+          />
+
+          {/* Product video */}
+          <div className={CC}>
+            <h3 className="font-semibold text-sm pb-2 border-b" style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>
+              فيديو المنتج 🎬
+            </h3>
+            <Field
+              label="رابط الفيديو (اختياري)"
+              name="video_url"
+              placeholder="https://example.com/video.mp4"
+              hint="يظهر الفيديو ضمن معرض صور المنتج إن تم إدخاله"
+              register={register}
+              errors={errors}
+            />
+          </div>
+
+          {/* Description banner image */}
+          <div className={CC}>
+            <h3 className="font-semibold text-sm pb-2 border-b" style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>
+              صورة الوصف (بنر) 🖼️
+            </h3>
+            <p className="text-[10px] text-gray-400 -mt-1">صورة إعلانية أو بنر توضيحي يظهر ضمن «تفاصيل المنتج» في صفحة المنتج</p>
+
+            <div className="flex gap-4 items-start">
+              <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-4 cursor-pointer transition w-48 shrink-0 ${descUploading ? 'border-[#0D6EFD] bg-[#EBF5FF]' : 'border-[#DEE2E6] hover:border-[#0D6EFD]'}`}>
+                <input type="file" accept="image/*" onChange={handleDescriptionImageChange} className="sr-only" disabled={descUploading} />
+                {descUploading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 text-[#0D6EFD] animate-spin mb-1" />
+                    <span className="text-[10px]" style={{color:'var(--color-text-muted)'}}>جارٍ الرفع...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5 mb-1" style={{color:'var(--color-text-muted)'}} />
+                    <span className="text-[10px] font-bold text-center" style={{color:'var(--color-text-muted)'}}>اختر أو اسحب صورة</span>
+                  </>
+                )}
+              </label>
+
+              {descriptionImageUrl ? (
+                <div className="relative group w-48 h-16 bg-[#F8F9FA] rounded-2xl overflow-hidden border border-[#DEE2E6] flex items-center justify-center">
+                  <img src={descriptionImageUrl} alt="معاينة صورة الوصف" className="w-full h-full object-contain" />
+                  <button
+                    type="button"
+                    onClick={() => setValue('description_image_url', '', { shouldDirty: true })}
+                    className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded-lg text-white"
+                    title="حذف الصورة"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex-1 self-center text-[11px] text-gray-400 border border-dashed border-gray-200 rounded-2xl py-5 text-center">
+                  لم يتم رفع صورة وصف لهذا المنتج بعد
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── VARIANTS TAB ── */}
@@ -1112,9 +1088,36 @@ export default function AdminProductEditor({
         <VariantsSection control={control} register={register} setValue={setValue} />
       )}
 
-      {/* ── DESIGN TAB ── */}
-      {tab === 'design' && (
-        <DesignSection control={control} register={register} errors={errors} setValue={setValue} />
+      {/* ── PRODUCT PAGE TAB ── (section order + visibility — first-class feature) */}
+      {tab === 'productpage' && (
+        <DesignSection control={control} setValue={setValue} />
+      )}
+
+      {/* ── CHECKOUT TAB ── (store settings = default & source of truth;
+           architected for future per-product overrides, not implemented) */}
+      {tab === 'checkout' && (
+        <div className="space-y-4">
+          <div className={CC}>
+            <h3 className="font-semibold text-sm pb-2 border-b" style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>
+              إعدادات الدفع 🛒
+            </h3>
+            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              تُدار إعدادات الدفع على مستوى المتجر وتنطبق على كل منتجاتك افتراضياً: الحقول الظاهرة والمطلوبة، ترتيب الحقول، التوصيل للمنزل والمكتب، والشحن المجاني.
+            </p>
+            <ul className="text-xs space-y-1.5 pr-4 list-disc" style={{ color: 'var(--color-text-soft, #4b5563)' }}>
+              <li>الحقول الظاهرة / المطلوبة وترتيبها</li>
+              <li>التوصيل للمنزل والتوصيل للمكتب (Stopdesk)</li>
+              <li>الشحن المجاني فوق مبلغ معيّن</li>
+            </ul>
+            <a href="/settings?tab=checkout"
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0D6EFD] hover:underline">
+              فتح إعدادات الدفع للمتجر →
+            </a>
+            <div className="mt-2 flex items-center gap-2 text-[11px] rounded-xl border border-dashed px-3 py-2.5" style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}>
+              ⌁ تجاوزات الدفع الخاصة بهذا المنتج — قريباً (البنية جاهزة، غير مُفعّلة بعد).
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── PIXELS TAB ── */}
@@ -1127,8 +1130,8 @@ export default function AdminProductEditor({
         <SeoPreview control={control} register={register} />
       )}
 
-      {/* ── STOCK TAB ── */}
-      {tab === 'stock' && (
+      {/* ── INVENTORY TAB ── */}
+      {tab === 'inventory' && (
         <div className={CC}>
           <h3 className="font-semibold text-sm pb-2 border-b" style={{color:"var(--color-text-primary)",borderColor:"var(--color-border)"}}>المخزون 📦</h3>
 
@@ -1226,6 +1229,11 @@ export default function AdminProductEditor({
             </div>
           )}
         </div>
+      )}
+
+      {/* ── ADVANCED TAB ── (order routing + Google Sheet) */}
+      {tab === 'advanced' && (
+        <OrderRoutingSection control={control} register={register} googleSheets={googleSheets} />
       )}
 
       {/* Error */}
