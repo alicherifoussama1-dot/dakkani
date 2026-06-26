@@ -194,16 +194,16 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
 
   return (
     <div data-pt-root style={{ ...cssVars }}>
-      <div className="max-w-6xl mx-auto px-4 py-8" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="max-w-6xl mx-auto px-4 py-4 md:py-8" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         {/* Language Switcher */}
         {enabledLanguages.length > 1 && (
-          <div className={`flex justify-end mb-6 ${lang === 'ar' ? 'pl-2' : 'pr-2'}`}>
+          <div className={`flex justify-end mb-3 ${lang === 'ar' ? 'pl-2' : 'pr-2'}`}>
             <div className="inline-flex items-center gap-1 bg-white/85 dark:bg-slate-900/80 backdrop-blur-md p-1 border border-gray-200/60 dark:border-slate-800 rounded-2xl shadow-sm">
               {enabledLanguages.map((l) => (
                 <button
                   key={l}
                   onClick={() => handleLanguageChange(l)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wide transition-all ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wide transition-all ${
                     lang === l
                       ? 'bg-[var(--pt-accent,#0D6EFD)] text-white shadow-md'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-800/50'
@@ -216,7 +216,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
           {/* Gallery */}
           <div className="space-y-3">
             <div
@@ -272,7 +272,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               )}
 
               <button onClick={() => setLightbox(true)} aria-label={lang === 'ar' ? 'تكبير الصورة' : lang === 'fr' ? 'Agrandir' : 'Zoom image'}
-                className="absolute top-3 left-3 w-9 h-9 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md">
+                className="absolute top-3 left-3 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md">
                 <ZoomIn className="w-4 h-4 text-gray-600" />
               </button>
 
@@ -281,10 +281,21 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
                   -{discPct}%
                 </span>
               )}
+
+              {/* Mobile position indicator — clean dots; swipe stays primary */}
+              {images.length > 1 && (
+                <div className="md:hidden absolute bottom-3 inset-x-0 flex justify-center gap-1.5 pointer-events-none">
+                  {images.map((_: any, i: number) => (
+                    <span key={i} className="h-1.5 rounded-full transition-all"
+                      style={{ width: i === activeImg ? 18 : 6, background: i === activeImg ? 'var(--pt-accent)' : 'rgba(255,255,255,0.75)', boxShadow: '0 1px 2px rgba(0,0,0,0.25)' }} />
+                  ))}
+                </div>
+              )}
             </div>
 
+            {/* Thumbnails: desktop only — on mobile the dots above are cleaner/lighter */}
             {images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+              <div className="hidden md:flex gap-2 overflow-x-auto scrollbar-hide pb-1">
                 {images.map((img: any, i: number) => (
                   <button key={i} onClick={() => { setActiveImg(i); scrollToIdx(i); }}
                     aria-label={(lang === 'ar' ? 'صورة ' : lang === 'fr' ? 'Image ' : 'Image ') + (i + 1)}
@@ -305,7 +316,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
           </div>
 
           {/* Info */}
-          <div className="space-y-5">
+          <div className="space-y-4 md:space-y-5">
             {/* Stock badge — reflects the currently-selected variant's stock when the product has variants */}
             {currentStock <= 0 ? null : currentStock <= 5 ? (
               <span className="pt-badge dot-blink" style={{ background: 'color-mix(in srgb, var(--pt-danger) 12%, transparent)', color: 'var(--pt-danger)' }}>
@@ -337,7 +348,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
 
             {/* Price */}
             <div className="flex items-end gap-4">
-              <span className="text-4xl font-black" style={{ color: 'var(--pt-accent)' }}>{formatDZD(product.price)}</span>
+              <span className="text-4xl font-black tabular-nums" style={{ color: 'var(--pt-accent)' }}>{formatDZD(product.price)}</span>
               {hasDisc && (
                 <>
                   <span className="text-xl line-through" style={{ color: 'var(--pt-text-muted)' }}>{formatDZD(product.compare_price)}</span>
@@ -374,20 +385,6 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               </p>
             )}
 
-            {(product.description_image_url || product.attributes?.description_image_url) && (
-              <div className="pt-4 w-full" style={{ borderTop: displayDescription ? 'none' : '1px solid var(--pt-border)' }}>
-                <Image
-                  src={product.description_image_url ?? product.attributes?.description_image_url}
-                  alt={lang === 'ar' ? 'وصف المنتج' : 'Description du produit'}
-                  width={1200}
-                  height={1200}
-                  sizes="(max-width: 768px) 100vw, 800px"
-                  className="w-full h-auto rounded-2xl object-contain shadow-sm border border-gray-100"
-                  loading="lazy"
-                />
-              </div>
-            )}
-
             {/* Variants (color/size/etc.) — selecting updates the live stock badge,
                 the order-form summary & submission, and the WhatsApp message */}
             {variantGroups.length > 0 && (
@@ -420,6 +417,25 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
                 maxQty={(product.track_inventory === false || product.attributes?.track_inventory === false) ? undefined : (currentStock > 0 ? currentStock : undefined)}
               />
             </div>
+
+            {/* Long description image — below the buy block so it never pushes
+                variants/CTA down the page; interested buyers scroll for details. */}
+            {(product.description_image_url || product.attributes?.description_image_url) && (
+              <div className="pt-4 w-full" style={{ borderTop: '1px solid var(--pt-border)' }}>
+                <h2 className="pt-heading text-lg mb-3" style={{ color: 'var(--pt-text)' }}>
+                  {lang === 'ar' ? 'تفاصيل المنتج' : lang === 'fr' ? 'Détails du produit' : 'Product details'}
+                </h2>
+                <Image
+                  src={product.description_image_url ?? product.attributes?.description_image_url}
+                  alt={lang === 'ar' ? 'وصف المنتج' : 'Description du produit'}
+                  width={1200}
+                  height={1200}
+                  sizes="(max-width: 768px) 100vw, 800px"
+                  className="w-full h-auto rounded-2xl object-contain shadow-sm border border-gray-100"
+                  loading="lazy"
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
