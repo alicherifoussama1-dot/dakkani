@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState, useRef } from 'react'
 import { formatDZD } from '@/lib/utils/format'
 import ProductOrderForm from './ProductOrderForm'
 import { Star, Shield, Truck, Package, ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { getProductTheme, themeToCSSVars } from '@/lib/product-themes'
@@ -263,16 +262,16 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
 
               {images.length > 1 && (
                 <>
-                  <button onClick={prev} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={prev} aria-label={lang === 'ar' ? 'الصورة السابقة' : lang === 'fr' ? 'Image précédente' : 'Previous image'} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <ChevronRight className="w-5 h-5" style={{ color: 'var(--pt-accent)' }} />
                   </button>
-                  <button onClick={next} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={next} aria-label={lang === 'ar' ? 'الصورة التالية' : lang === 'fr' ? 'Image suivante' : 'Next image'} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <ChevronLeft className="w-5 h-5" style={{ color: 'var(--pt-accent)' }} />
                   </button>
                 </>
               )}
 
-              <button onClick={() => setLightbox(true)}
+              <button onClick={() => setLightbox(true)} aria-label={lang === 'ar' ? 'تكبير الصورة' : lang === 'fr' ? 'Agrandir' : 'Zoom image'}
                 className="absolute top-3 left-3 w-9 h-9 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md">
                 <ZoomIn className="w-4 h-4 text-gray-600" />
               </button>
@@ -288,6 +287,8 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
                 {images.map((img: any, i: number) => (
                   <button key={i} onClick={() => { setActiveImg(i); scrollToIdx(i); }}
+                    aria-label={(lang === 'ar' ? 'صورة ' : lang === 'fr' ? 'Image ' : 'Image ') + (i + 1)}
+                    aria-current={i === activeImg}
                     className="w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all hover:opacity-90 relative"
                     style={{ borderColor: i === activeImg ? 'var(--pt-accent)' : 'transparent' }}>
                     <Image
@@ -323,8 +324,8 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
             </h1>
 
             {avgRating && (
-              <div className="flex items-center gap-2">
-                <div className="flex gap-0.5">
+              <div className="flex items-center gap-2" aria-label={`${avgRating} / 5 — ${reviewCount} ${lang === 'ar' ? 'تقييم' : lang === 'fr' ? 'avis' : 'reviews'}`}>
+                <div className="flex gap-0.5" aria-hidden="true">
                   {[...Array(5)].map((_, i) => (
                     <span key={i} className="text-base" style={{ color: i < Math.round(parseFloat(avgRating)) ? 'var(--pt-star)' : 'var(--pt-border)' }}>★</span>
                   ))}
@@ -345,6 +346,26 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
                   </span>
                 </>
               )}
+            </div>
+
+            {/* Delivery transparency — sets price expectation, reduces checkout surprise */}
+            <p className="text-xs -mt-2" style={{ color: 'var(--pt-text-muted)' }}>
+              {lang === 'ar' ? '+ سعر التوصيل حسب ولايتك' : lang === 'fr' ? '+ Frais de livraison selon la wilaya' : '+ Delivery fee depends on your wilaya'}
+            </p>
+
+            {/* Trust — the #1 Algerian COD conversion lever, kept above the fold
+                right under the price (moved up from below the description). */}
+            <div className="grid grid-cols-3 gap-2 py-3" style={{ borderTop: '1px solid var(--pt-border)', borderBottom: '1px solid var(--pt-border)' }}>
+              {[
+                { icon: <Truck className="w-4 h-4" />, text: translateStorefront('delivery_dz', lang) },
+                { icon: <Package className="w-4 h-4" />, text: translateStorefront('open_before_pay', lang) },
+                { icon: <Shield className="w-4 h-4" />, text: translateStorefront('quality_guarantee', lang) },
+              ].map(b => (
+                <div key={b.text} className="flex flex-col items-center gap-1.5 text-center">
+                  <div className="w-8 h-8 flex items-center justify-center" style={{ background: 'var(--pt-accent-soft)', color: 'var(--pt-accent)', borderRadius: 'var(--pt-radius-md)' }}>{b.icon}</div>
+                  <p className="text-[11px] font-semibold leading-tight" style={{ color: 'var(--pt-text-soft)' }}>{b.text}</p>
+                </div>
+              ))}
             </div>
 
             {displayDescription && (
@@ -380,20 +401,6 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               </div>
             )}
 
-            {/* Mini trust */}
-            <div className="grid grid-cols-3 gap-3 py-3" style={{ borderTop: '1px solid var(--pt-border)', borderBottom: '1px solid var(--pt-border)' }}>
-              {[
-                { icon: <Truck className="w-4 h-4" />, text: translateStorefront('delivery_dz', lang) },
-                { icon: <Package className="w-4 h-4" />, text: translateStorefront('open_before_pay', lang) },
-                { icon: <Shield className="w-4 h-4" />, text: translateStorefront('quality_guarantee', lang) },
-              ].map(b => (
-                <div key={b.text} className="flex flex-col items-center gap-1.5 text-center">
-                  <div className="w-8 h-8 flex items-center justify-center" style={{ background: 'var(--pt-accent-soft)', color: 'var(--pt-accent)', borderRadius: 'var(--pt-radius-md)' }}>{b.icon}</div>
-                  <p className="text-xs font-medium leading-tight" style={{ color: 'var(--pt-text-soft)' }}>{b.text}</p>
-                </div>
-              ))}
-            </div>
-
             {waUrl && (
               <a href={waUrl} target="_blank" rel="noopener noreferrer"
                 className="hidden md:flex items-center justify-center gap-2.5 w-full py-3.5 bg-[#25D366] hover:bg-[#20BD5C] text-white font-black rounded-2xl text-base transition-colors shadow-md active:scale-95">
@@ -402,15 +409,17 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               </a>
             )}
 
-            <ProductOrderForm
-              product={product}
-              store={store}
-              wilayas={wilayas}
-              variantKey={variantKey}
-              variantLabel={variantLabel}
-              lang={lang}
-              maxQty={(product.track_inventory === false || product.attributes?.track_inventory === false) ? undefined : (currentStock > 0 ? currentStock : undefined)}
-            />
+            <div id="order-form" style={{ scrollMarginTop: '80px' }}>
+              <ProductOrderForm
+                product={product}
+                store={store}
+                wilayas={wilayas}
+                variantKey={variantKey}
+                variantLabel={variantLabel}
+                lang={lang}
+                maxQty={(product.track_inventory === false || product.attributes?.track_inventory === false) ? undefined : (currentStock > 0 ? currentStock : undefined)}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -429,7 +438,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
             decoding="async"
             onClick={e => e.stopPropagation()}
           />
-          <button onClick={() => setLightbox(false)}
+          <button onClick={() => setLightbox(false)} aria-label={lang === 'ar' ? 'إغلاق' : lang === 'fr' ? 'Fermer' : 'Close'}
             className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -444,13 +453,15 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
             📱 {translateStorefront('whatsapp_order', lang).replace(' 💬', '')}
           </a>
         )}
-        <Link
-          href={`/store/${store.slug}/checkout?product_id=${product.id}`}
-          className="flex-1 flex items-center justify-center py-3 font-black text-white text-sm"
+        <button
+          type="button"
+          onClick={() => document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          className="flex-1 flex items-center justify-center py-3 font-black text-sm active:scale-95 transition-transform"
           style={{ background: 'var(--pt-btn-primary-bg)', color: 'var(--pt-btn-primary-text)', borderRadius: 'var(--pt-btn-radius)' }}
+          aria-label={translateStorefront('order_now', lang)}
         >
           🛒 {translateStorefront('order_now', lang).replace(' 🛒', '').replace(' اضغط هنا للطلب', 'اطلب')} — {formatDZD(product.price)}
-        </Link>
+        </button>
       </div>
     </div>
   )
