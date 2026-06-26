@@ -14,6 +14,8 @@ interface Props {
   product: any; store: any; wilayas: any[]
   totalStock: number; reviewCount: number; avgRating: string | null
   stockMap?: Record<string, number>
+  // Merchant section_visibility flags (default true → backward compatible).
+  showTrust?: boolean; showDescription?: boolean
 }
 
 // Builds the warehouse_stock variant_key from the user's current selections —
@@ -25,7 +27,7 @@ function buildVariantKey(groups: VariantGroup[], selected: Record<string, string
   return parts.length === groups.length ? parts.join('|') : 'default'
 }
 
-export default function ProductPageClient({ product, store, wilayas, totalStock, reviewCount, avgRating, stockMap = {} }: Props) {
+export default function ProductPageClient({ product, store, wilayas, totalStock, reviewCount, avgRating, stockMap = {}, showTrust = true, showDescription = true }: Props) {
   const router = useRouter()
   const [activeImg, setActiveImg] = useState(0)
   const [lightbox,  setLightbox]  = useState(false)
@@ -365,21 +367,23 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
             </p>
 
             {/* Trust — the #1 Algerian COD conversion lever, kept above the fold
-                right under the price (moved up from below the description). */}
-            <div className="grid grid-cols-3 gap-2 py-3" style={{ borderTop: '1px solid var(--pt-border)', borderBottom: '1px solid var(--pt-border)' }}>
-              {[
-                { icon: <Truck className="w-4 h-4" />, text: translateStorefront('delivery_dz', lang) },
-                { icon: <Package className="w-4 h-4" />, text: translateStorefront('open_before_pay', lang) },
-                { icon: <Shield className="w-4 h-4" />, text: translateStorefront('quality_guarantee', lang) },
-              ].map(b => (
-                <div key={b.text} className="flex flex-col items-center gap-1.5 text-center">
-                  <div className="w-8 h-8 flex items-center justify-center" style={{ background: 'var(--pt-accent-soft)', color: 'var(--pt-accent)', borderRadius: 'var(--pt-radius-md)' }}>{b.icon}</div>
-                  <p className="text-[11px] font-semibold leading-tight" style={{ color: 'var(--pt-text-soft)' }}>{b.text}</p>
-                </div>
-              ))}
-            </div>
+                right under the price. Honors merchant section_visibility('trust'). */}
+            {showTrust && (
+              <div className="grid grid-cols-3 gap-2 py-3" style={{ borderTop: '1px solid var(--pt-border)', borderBottom: '1px solid var(--pt-border)' }}>
+                {[
+                  { icon: <Truck className="w-4 h-4" />, text: translateStorefront('delivery_dz', lang) },
+                  { icon: <Package className="w-4 h-4" />, text: translateStorefront('open_before_pay', lang) },
+                  { icon: <Shield className="w-4 h-4" />, text: translateStorefront('quality_guarantee', lang) },
+                ].map(b => (
+                  <div key={b.text} className="flex flex-col items-center gap-1.5 text-center">
+                    <div className="w-8 h-8 flex items-center justify-center" style={{ background: 'var(--pt-accent-soft)', color: 'var(--pt-accent)', borderRadius: 'var(--pt-radius-md)' }}>{b.icon}</div>
+                    <p className="text-[11px] font-semibold leading-tight" style={{ color: 'var(--pt-text-soft)' }}>{b.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
-            {displayDescription && (
+            {showDescription && displayDescription && (
               <p className="text-base leading-relaxed pt-4" style={{ color: 'var(--pt-text-soft)', borderTop: '1px solid var(--pt-border)' }}>
                 {displayDescription}
               </p>
@@ -419,8 +423,8 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
             </div>
 
             {/* Long description image — below the buy block so it never pushes
-                variants/CTA down the page; interested buyers scroll for details. */}
-            {(product.description_image_url || product.attributes?.description_image_url) && (
+                variants/CTA down the page. Honors section_visibility('description'). */}
+            {showDescription && (product.description_image_url || product.attributes?.description_image_url) && (
               <div className="pt-4 w-full" style={{ borderTop: '1px solid var(--pt-border)' }}>
                 <h2 className="pt-heading text-lg mb-3" style={{ color: 'var(--pt-text)' }}>
                   {lang === 'ar' ? 'تفاصيل المنتج' : lang === 'fr' ? 'Détails du produit' : 'Product details'}

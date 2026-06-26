@@ -128,6 +128,13 @@ export default async function ProductPage({ params }: Props) {
   // related share one design language (tokens), not hardcoded colors.
   const productTheme = getProductTheme((product as any).theme_key)
 
+  // Merchant section visibility (Product Editor → Product Page). Applies to the
+  // modular, presentational sections only; default = visible (backward compatible).
+  // section_order is honored on /discover; the storefront's conversion-optimized
+  // layout fixes the above-the-fold order by design.
+  const sectionVisibility: Record<string, boolean> = (product as any).section_visibility ?? {}
+  const isSectionVisible = (id: string) => sectionVisibility[id] !== false
+
   return (
     <StorefrontLayout store={store as any}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
@@ -160,10 +167,12 @@ export default async function ProductPage({ params }: Props) {
           stockMap={stockMap}
           reviewCount={reviewsRes.data?.length ?? 0}
           avgRating={avgRating}
+          showTrust={isSectionVisible('trust')}
+          showDescription={isSectionVisible('description')}
         />
 
         {/* Reviews */}
-        {(reviewsRes.data?.length ?? 0) > 0 && (
+        {isSectionVisible('reviews') && (reviewsRes.data?.length ?? 0) > 0 && (
           <section className="max-w-4xl mx-auto px-4 py-12">
             <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
               <h2 className="pt-heading text-2xl">آراء العملاء</h2>
@@ -235,7 +244,7 @@ export default async function ProductPage({ params }: Props) {
         </section>
 
         {/* Related */}
-        {relatedData.length > 0 && (
+        {isSectionVisible('related') && relatedData.length > 0 && (
           <section className="max-w-6xl mx-auto px-4 py-12 border-t" style={{ borderColor: 'var(--pt-border)' }}>
             <h2 className="pt-heading text-2xl mb-6">منتجات مشابهة</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
