@@ -470,3 +470,8 @@
 .confirmili-theme input:focus, .confirmili-theme select:focus, .confirmili-theme textarea:focus {
   border-color: var(--cf-turq); box-shadow: 0 0 0 3px rgba(60,198,185,0.18);
 }
+
+/* Product-page FAQ accordion — native <details>, zero JS */
+.faq-item > summary { list-style: none; }
+.faq-item > summary::-webkit-details-marker { display: none; }
+.faq-item[open] > summary .faq-chev { transform: rotate(180deg); }
