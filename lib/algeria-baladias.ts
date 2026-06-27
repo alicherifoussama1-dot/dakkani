@@ -1710,3 +1710,12 @@ export function formatCommuneBilingual(wilayaId: number | string | null | undefi
   const c = getCommunesByWilaya(wilayaId).find(x => norm(x.name_ar) === norm(commune) || norm(x.name_fr) === norm(commune))
   return c ? `${c.name_fr} - ${c.name_ar}` : commune
 }
+
+// Resolve a stored commune (name_ar) to its FRENCH name for the Google Sheets
+// export. Falls back to the original string if it can't be matched.
+export function formatCommuneFrench(wilayaId: number | string | null | undefined, commune: string | null | undefined): string {
+  if (!commune) return commune ?? ''
+  const norm = (s: string) => s.trim().toLowerCase()
+  const c = getCommunesByWilaya(wilayaId).find(x => norm(x.name_ar) === norm(commune) || norm(x.name_fr) === norm(commune))
+  return c ? c.name_fr : commune
+}
