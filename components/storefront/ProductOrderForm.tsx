@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { ChevronDown, Loader2, ShieldCheck, PhoneCall, Truck, AlertCircle, User, Phone, Home, Store, CheckCircle2 } from 'lucide-react'
+import OfficeDeliveryPicker from './OfficeDeliveryPicker'
 import { formatDZD } from '@/lib/utils/format'
 import { getBaladiasBilingualForWilaya } from '@/lib/algeria-baladias'
 import type { Product, Wilaya } from '@/types'
@@ -93,6 +94,11 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   const formRef = useRef<HTMLFormElement>(null)
   const successRef = useRef<HTMLDivElement>(null)
   const [selectedWilaya, setSelectedWilaya] = useState<Wilaya | null>(null)
+  // Offices for the routed provider of the selected wilaya (provider-agnostic;
+  // served by /api/store/delivery/desks which abstracts every provider).
+  const [offices, setOffices] = useState<{ id: string; name: string; commune: string }[]>([])
+  const [loadingOffices, setLoadingOffices] = useState(false)
+  const [hasProvider, setHasProvider] = useState(false)
 
   // Load checkout settings
   const settings = Array.isArray(store.store_settings) ? store.store_settings[0] : store.store_settings
@@ -159,6 +165,25 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
 
   // Reset البلدية whenever الولاية changes (cascading + required)
   useEffect(() => { setValue('baladia', '', { shouldValidate: false }) }, [wilayaId, setValue])
+
+  // Load offices for the selected wilaya from the provider abstraction.
+  useEffect(() => {
+    if (!wilayaId) {
+      setOffices([])
+      setHasProvider(false)
+      setValue('stopdesk_code', undefined)
+      return
+    }
+    setLoadingOffices(true)
+    fetch(`/api/store/delivery/desks?store_id=${store.id}&wilaya_id=${wilayaId}`)
+      .then(res => res.json())
+      .then(data => {
+        setOffices((data.offices || []).map((o: any) => ({ id: String(o.id), name: o.name, commune: o.commune || '' })))
+        setHasProvider(!!data.hasProvider)
+      })
+      .catch(() => { setOffices([]); setHasProvider(false) })
+      .finally(() => setLoadingOffices(false))
+  }, [wilayaId, store.id, setValue])
 
   useEffect(() => {
     if (deliveryType !== 'stopdesk') {
@@ -304,15 +329,55 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
             )
 
           case 'baladia':
-            // Municipality selector for BOTH home and office delivery (restored to
-            // the original behavior). Office routing is handled by the backend
-            // delivery-provider integration; the customer always picks the
-            // municipality here. Submission unchanged (baladia = commune name_ar).
-            return (
-              <div key="field-baladia">
-                <BaladiaField wilayaId={wilayaId ?? null} value={baladia ?? ''} onChange={v => setValue('baladia', v, { shouldValidate: true })} error={errors.baladia?.message} lang={lang} />
-              </div>
-            )
+            // Home delivery → municipality from the full list.
+            if (deliveryType === 'home') {
+              return (
+                <div key="field-baladia">
+                  <BaladiaField wilayaId={wilayaId ?? null} value={baladia ?? ''} onChange={v => setValue('baladia', v, { shouldValidate: true })} error={errors.baladia?.message} lang={lang} />
+                </div>
+              )
+            }
+            // Office delivery → provider-agnostic two-step flow: municipalities that
+            // have offices → office selector. Submission unchanged (baladia = commune,
+            // stopdesk_code = office id). Falls back to the normal municipality field
+            // when the wilaya has no offices, so the field never disappears.
+            if (deliveryType === 'stopdesk' && (wilayaId ?? 0) > 0) {
+              if (loadingOffices) {
+                return (
+                  <div key="field-baladia">
+                    <label className="dk-label">{translateStorefront('baladia', lang)} <span style={{ color: '#D85A30' }}>*</span></label>
+                    <div className="dk-field flex items-center justify-center gap-2" style={{ color: DK.muted }}>
+                      <Loader2 className="w-4 h-4 animate-spin" /> {lang === 'ar' ? 'جارٍ التحميل...' : 'Chargement...'}
+                    </div>
+                  </div>
+                )
+              }
+              if (hasProvider && offices.length > 0) {
+                return (
+                  <div key="field-baladia">
+                    <OfficeDeliveryPicker
+                      offices={offices}
+                      wilayaId={wilayaId ?? null}
+                      lang={lang}
+                      baladia={baladia ?? ''}
+                      stopdeskCode={watch('stopdesk_code')}
+                      onChange={(commune, officeId) => {
+                        setValue('baladia', commune, { shouldValidate: true })
+                        setValue('stopdesk_code', officeId, { shouldValidate: true })
+                      }}
+                    />
+                    {errors.baladia && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.baladia.message}</p>}
+                  </div>
+                )
+              }
+              return (
+                <div key="field-baladia">
+                  <BaladiaField wilayaId={wilayaId ?? null} value={baladia ?? ''} onChange={v => setValue('baladia', v, { shouldValidate: true })} error={errors.baladia?.message} lang={lang} />
+                  <p className="text-xs mt-1.5" style={{ color: DK.muted }}>{lang === 'ar' ? 'لا يوجد مكتب متاح لهذه الولاية — اختر البلدية للتوصيل.' : lang === 'fr' ? 'Aucun bureau pour cette wilaya — choisissez la commune.' : 'No office for this wilaya — choose your municipality.'}</p>
+                </div>
+              )
+            }
+            return null
 
           case 'phone':
             return (
