@@ -124,9 +124,20 @@ export default async function ProductPage({ params }: Props) {
     } : {}),
   }
 
-  // Apply the SAME theme as the Hero across the whole page so reviews / FAQ /
-  // related share one design language (tokens), not hardcoded colors.
+  // ONE Dakkani design system for every store — keep only the per-store accent
+  // (and fonts) from the theme; pin every other --pt-* token to fixed values so
+  // the whole page (Hero, reviews, FAQ, related) shares one design language.
   const productTheme = getProductTheme((product as any).theme_key)
+  const dkVars = {
+    ...themeToCSSVars(productTheme),
+    '--pt-accent-soft': 'color-mix(in srgb, var(--pt-accent) 12%, transparent)',
+    '--pt-surface': '#FFFFFF', '--pt-surface-soft': '#FAF8F5', '--pt-bg': '#FAF8F5',
+    '--pt-border': '#EBE8E1', '--pt-text': '#1B1B1F', '--pt-text-soft': '#3A3A38', '--pt-text-muted': '#71716E',
+    '--pt-star': '#EF9F27', '--pt-success': '#1D9E75', '--pt-danger': '#A32D2D',
+    '--pt-btn-primary-bg': 'var(--pt-accent)', '--pt-btn-primary-text': '#FFFFFF',
+    '--pt-radius-sm': '10px', '--pt-radius-md': '14px', '--pt-radius-lg': '20px', '--pt-radius-pill': '999px',
+    '--pt-shadow-sm': 'none', '--pt-shadow-md': '0 1px 3px rgba(20,18,15,0.05)', '--pt-shadow-lg': '0 12px 32px rgba(20,18,15,0.12)',
+  } as any
 
   // Merchant section visibility (Product Editor → Product Page). Applies to the
   // modular, presentational sections only; default = visible (backward compatible).
@@ -146,7 +157,7 @@ export default async function ProductPage({ params }: Props) {
 
       <div className="pt-16 min-h-screen" dir="rtl"
         data-theme={productTheme.key}
-        style={{ ...themeToCSSVars(productTheme), background: 'var(--pt-bg)', color: 'var(--pt-text)' }}>
+        style={{ ...dkVars, background: '#FAF8F5', color: '#1B1B1F' }}>
         {/* Breadcrumb */}
         <div className="max-w-6xl mx-auto px-4 pt-6 pb-2">
           <nav className="flex text-sm gap-2 items-center" style={{ color: 'var(--pt-text-muted)' }}>

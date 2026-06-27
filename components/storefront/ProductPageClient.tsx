@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { formatDZD } from '@/lib/utils/format'
 import ProductOrderForm from './ProductOrderForm'
-import { Star, Shield, Truck, Package, ChevronLeft, ChevronRight, ZoomIn, X, ShoppingBag } from 'lucide-react'
+import { Shield, Truck, Package, ChevronLeft, ChevronRight, ZoomIn, X, ShoppingBag } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { getProductTheme, themeToCSSVars } from '@/lib/product-themes'
@@ -194,23 +194,48 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
     scrollToIdx(nextIdx)
   }
 
+  // ── Dakkani design system — ONE premium system for every store. Only the
+  // accent (var(--pt-accent)) varies per store; everything else is fixed.
+  const A = 'var(--pt-accent)'
+  const ASOFT = 'color-mix(in srgb, var(--pt-accent) 12%, transparent)'
+  const PAPER = '#FAF8F5', SURFACE = '#FFFFFF', INK = '#1B1B1F', MUTED = '#71716E', LINE = '#EBE8E1', IMG = '#EFEBE4', OK = '#1D9E75'
+  const isRtl = lang === 'ar'
+
+  // Collapse the 7-theme palette to ONE system: keep ONLY the per-store accent
+  // (and fonts) from the theme; pin every other --pt-* token to fixed Dakkani
+  // values so ProductVariants and any --pt-* consumer share one design language.
+  const dkVars = {
+    ...cssVars,
+    '--pt-accent-soft': ASOFT,
+    '--pt-surface': SURFACE, '--pt-surface-soft': PAPER, '--pt-bg': PAPER,
+    '--pt-border': LINE, '--pt-text': INK, '--pt-text-soft': '#3A3A38', '--pt-text-muted': MUTED,
+    '--pt-star': '#EF9F27', '--pt-success': OK, '--pt-danger': '#A32D2D',
+    '--pt-btn-primary-bg': A, '--pt-btn-primary-text': '#FFFFFF',
+    '--pt-radius-sm': '10px', '--pt-radius-md': '14px', '--pt-radius-lg': '20px', '--pt-radius-pill': '999px',
+    '--pt-shadow-sm': 'none', '--pt-shadow-md': '0 1px 3px rgba(20,18,15,0.05)', '--pt-shadow-lg': '0 12px 32px rgba(20,18,15,0.12)',
+  } as any
+
+  const scrollToForm = () =>
+    document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+  const reviewsWord = lang === 'ar' ? 'تقييم' : lang === 'fr' ? 'avis' : 'reviews'
+
+  const WhatsAppIcon = ({ size = 24 }: { size?: number }) => (
+    <svg width={size} height={size} className="fill-white" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  )
+
   return (
-    <div data-pt-root style={{ ...cssVars }}>
-      <div className="max-w-6xl mx-auto px-4 py-4 md:py-8" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-        {/* Language Switcher */}
+    <div data-pt-root dir={isRtl ? 'rtl' : 'ltr'} style={{ ...dkVars, background: PAPER, color: INK }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 lg:py-8">
+
+        {/* Language switcher */}
         {enabledLanguages.length > 1 && (
-          <div className={`flex justify-end mb-3 ${lang === 'ar' ? 'pl-2' : 'pr-2'}`}>
-            <div className="inline-flex items-center gap-1 bg-white/85 dark:bg-slate-900/80 backdrop-blur-md p-1 border border-gray-200/60 dark:border-slate-800 rounded-2xl shadow-sm">
+          <div className={`flex ${isRtl ? 'justify-start' : 'justify-end'} mb-4`}>
+            <div className="inline-flex items-center gap-1 p-1 rounded-full" style={{ background: SURFACE, border: `0.5px solid ${LINE}` }}>
               {enabledLanguages.map((l) => (
-                <button
-                  key={l}
-                  onClick={() => handleLanguageChange(l)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wide transition-all ${
-                    lang === l
-                      ? 'bg-[var(--pt-accent,#0D6EFD)] text-white shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-800/50'
-                  }`}
-                >
+                <button key={l} onClick={() => handleLanguageChange(l)}
+                  className="px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-colors"
+                  style={lang === l ? { background: A, color: '#fff' } : { color: MUTED, background: 'transparent' }}>
                   {l === 'ar' ? 'العربية' : l === 'fr' ? 'Français' : 'English'}
                 </button>
               ))}
@@ -218,276 +243,227 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+        {/* ── HERO ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-6 lg:gap-10 items-start">
+
           {/* Gallery */}
-          <div className="space-y-3">
-            <div
-              className="relative group aspect-square overflow-hidden"
-              style={{ background: 'var(--pt-surface)', borderRadius: 'var(--pt-radius-lg)', boxShadow: 'var(--pt-shadow-md)', border: '1px solid var(--pt-border)' }}
-            >
-              <div
-                ref={galleryRef}
-                onScroll={handleScroll}
-                className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-                style={{ scrollBehavior: 'smooth' }}
-              >
-                {images.length > 0 ? (
-                  images.map((img: any, idx: number) => (
-                     <div
-                      key={idx}
-                      data-gallery-item
-                      className="w-full h-full flex-shrink-0 snap-center relative"
-                    >
-                      {img?.url ? (
-                        <Image
-                          src={img.url}
-                          alt={`${displayName} - ${idx + 1}`}
-                          fill
-                          priority={idx === 0}
-                          sizes="(max-width: 768px) 100vw, 50vw"
-                          className="object-cover select-none"
-                          draggable="false"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-7xl text-gray-100 bg-gray-50 select-none">
-                          {displayName[0] || ''}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center text-7xl text-gray-100 bg-gray-50 select-none">
-                    {displayName[0] || ''}
+          <div className="flex gap-3">
+            {/* Desktop thumbnail rail */}
+            {images.length > 1 && (
+              <div className="hidden lg:flex flex-col gap-2.5 shrink-0">
+                {images.map((img: any, i: number) => (
+                  <button key={i} onClick={() => { setActiveImg(i); scrollToIdx(i) }}
+                    aria-label={`${lang === 'ar' ? 'صورة' : 'Image'} ${i + 1}`} aria-current={i === activeImg}
+                    className="w-16 h-16 rounded-2xl overflow-hidden relative transition-all"
+                    style={{ background: IMG, boxShadow: i === activeImg ? `0 0 0 2px ${A}` : `0 0 0 0.5px ${LINE}` }}>
+                    {img?.url && <Image src={img.url} alt="" fill sizes="64px" className="object-cover" />}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Main image */}
+            <div className="relative group flex-1 aspect-square overflow-hidden rounded-3xl" style={{ background: IMG, border: `0.5px solid ${LINE}` }}>
+              <div ref={galleryRef} onScroll={handleScroll}
+                className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide" style={{ scrollBehavior: 'smooth' }}>
+                {images.length > 0 ? images.map((img: any, idx: number) => (
+                  <div key={idx} data-gallery-item className="w-full h-full flex-shrink-0 snap-center relative">
+                    {img?.url ? (
+                      <Image src={img.url} alt={`${displayName} - ${idx + 1}`} fill priority={idx === 0}
+                        sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover select-none" draggable="false" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-7xl select-none" style={{ color: LINE }}>{displayName[0] || ''}</div>
+                    )}
                   </div>
+                )) : (
+                  <div className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center text-7xl select-none" style={{ color: LINE }}>{displayName[0] || ''}</div>
                 )}
               </div>
 
               {images.length > 1 && (
                 <>
-                  <button onClick={prev} aria-label={lang === 'ar' ? 'الصورة السابقة' : lang === 'fr' ? 'Image précédente' : 'Previous image'} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ChevronRight className="w-5 h-5" style={{ color: 'var(--pt-accent)' }} />
+                  <button onClick={prev} aria-label={lang === 'ar' ? 'السابق' : 'Previous'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hidden lg:flex" style={{ background: SURFACE, border: `0.5px solid ${LINE}` }}>
+                    <ChevronRight className="w-5 h-5" style={{ color: INK }} />
                   </button>
-                  <button onClick={next} aria-label={lang === 'ar' ? 'الصورة التالية' : lang === 'fr' ? 'Image suivante' : 'Next image'} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ChevronLeft className="w-5 h-5" style={{ color: 'var(--pt-accent)' }} />
+                  <button onClick={next} aria-label={lang === 'ar' ? 'التالي' : 'Next'}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hidden lg:flex" style={{ background: SURFACE, border: `0.5px solid ${LINE}` }}>
+                    <ChevronLeft className="w-5 h-5" style={{ color: INK }} />
                   </button>
                 </>
               )}
 
-              <button onClick={() => setLightbox(true)} aria-label={lang === 'ar' ? 'تكبير الصورة' : lang === 'fr' ? 'Agrandir' : 'Zoom image'}
-                className="absolute top-3 left-3 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md">
-                <ZoomIn className="w-4 h-4 text-gray-600" />
+              <button onClick={() => setLightbox(true)} aria-label={lang === 'ar' ? 'تكبير' : 'Zoom'}
+                className="absolute bottom-3 left-3 w-10 h-10 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: SURFACE, border: `0.5px solid ${LINE}` }}>
+                <ZoomIn className="w-4.5 h-4.5" style={{ color: INK }} />
               </button>
 
               {hasDisc && (
-                <span className="absolute top-3 right-3 text-white text-sm font-black px-3 py-1.5 shadow-md" style={{ background: 'var(--pt-danger)', borderRadius: 'var(--pt-radius-md)' }}>
-                  -{discPct}%
+                <span className="absolute top-4 right-4 text-white text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: INK }}>‏{discPct}%‏-</span>
+              )}
+
+              {/* Mobile dots */}
+              {images.length > 1 && (
+                <div className="lg:hidden absolute bottom-4 inset-x-0 flex justify-center gap-1.5 pointer-events-none">
+                  {images.map((_: any, i: number) => (
+                    <span key={i} className="h-1.5 rounded-full transition-all" style={{ width: i === activeImg ? 24 : 6, background: i === activeImg ? A : 'rgba(255,255,255,0.8)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Buy box — sticky on desktop */}
+          <div className="lg:sticky lg:top-6 lg:self-start">
+            <div className="rounded-3xl p-5 sm:p-6" style={{ background: SURFACE, border: `0.5px solid ${LINE}`, borderTop: `3px solid ${A}` }}>
+
+              {currentStock <= 0 ? null : currentStock <= 5 ? (
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: '#FAECE7', color: '#993C1D' }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#D85A30' }} />
+                  {translateStorefront('only_left', lang, currentStock)}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: '#E1F5EE', color: '#0F6E56' }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: OK }} />
+                  {translateStorefront('available', lang)}
                 </span>
               )}
 
-              {/* Mobile position indicator — clean dots; swipe stays primary */}
-              {images.length > 1 && (
-                <div className="md:hidden absolute bottom-3 inset-x-0 flex justify-center gap-1.5 pointer-events-none">
-                  {images.map((_: any, i: number) => (
-                    <span key={i} className="h-1.5 rounded-full transition-all"
-                      style={{ width: i === activeImg ? 18 : 6, background: i === activeImg ? 'var(--pt-accent)' : 'rgba(255,255,255,0.75)', boxShadow: '0 1px 2px rgba(0,0,0,0.25)' }} />
-                  ))}
+              <h1 className="text-2xl lg:text-[26px] font-bold leading-snug mt-3 mb-2" style={{ color: INK, letterSpacing: '-0.3px' }}>{displayName}</h1>
+
+              {avgRating && (
+                <div className="flex items-center gap-2 mb-4" aria-label={`${avgRating} / 5 — ${reviewCount} ${reviewsWord}`}>
+                  <span aria-hidden="true" style={{ color: '#EF9F27', fontSize: 16, letterSpacing: 2 }}>★★★★★</span>
+                  <span className="text-sm font-bold" style={{ color: INK }}>{avgRating}</span>
+                  <span className="text-sm" style={{ color: MUTED }}>· {reviewCount} {reviewsWord}</span>
                 </div>
               )}
-            </div>
 
-            {/* Thumbnails: desktop only — on mobile the dots above are cleaner/lighter */}
-            {images.length > 1 && (
-              <div className="hidden md:flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-                {images.map((img: any, i: number) => (
-                  <button key={i} onClick={() => { setActiveImg(i); scrollToIdx(i); }}
-                    aria-label={(lang === 'ar' ? 'صورة ' : lang === 'fr' ? 'Image ' : 'Image ') + (i + 1)}
-                    aria-current={i === activeImg}
-                    className="w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all hover:opacity-90 relative"
-                    style={{ borderColor: i === activeImg ? 'var(--pt-accent)' : 'transparent' }}>
-                    <Image
-                      src={img.url}
-                      alt=""
-                      fill
-                      sizes="64px"
-                      className="object-cover"
-                    />
-                  </button>
-                ))}
+              {/* Price */}
+              <div className="flex items-end gap-3 flex-wrap">
+                <span className="font-bold tabular-nums leading-none" style={{ color: A, fontSize: 38, letterSpacing: '-1px' }}>{formatDZD(product.price)}</span>
+                {hasDisc && (
+                  <>
+                    <span className="text-base line-through pb-1.5" style={{ color: MUTED }}>{formatDZD(product.compare_price)}</span>
+                    <span className="text-xs font-bold text-white px-2.5 py-1 rounded-lg mb-1.5" style={{ background: INK }}>
+                      {lang === 'ar' ? 'وفّر ' : lang === 'fr' ? 'Économisez ' : 'Save '}{formatDZD(product.compare_price - product.price)}
+                    </span>
+                  </>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Info */}
-          <div className="space-y-4 md:space-y-5">
-            {/* Stock badge — reflects the currently-selected variant's stock when the product has variants */}
-            {currentStock <= 0 ? null : currentStock <= 5 ? (
-              <span className="pt-badge dot-blink" style={{ background: 'color-mix(in srgb, var(--pt-danger) 12%, transparent)', color: 'var(--pt-danger)' }}>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--pt-danger)' }} />
-                {translateStorefront('only_left', lang, currentStock)}
-              </span>
-            ) : (
-              <span className="pt-badge pt-badge-success">
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--pt-success)' }} />
-                {translateStorefront('available', lang)}
-              </span>
-            )}
-
-            <h1 className="pt-heading text-3xl md:text-4xl leading-tight">
-              {displayName}
-            </h1>
-
-            {avgRating && (
-              <div className="flex items-center gap-2" aria-label={`${avgRating} / 5 — ${reviewCount} ${lang === 'ar' ? 'تقييم' : lang === 'fr' ? 'avis' : 'reviews'}`}>
-                <div className="flex gap-0.5" aria-hidden="true">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} className="text-base" style={{ color: i < Math.round(parseFloat(avgRating)) ? 'var(--pt-star)' : 'var(--pt-border)' }}>★</span>
-                  ))}
-                </div>
-                <span className="text-sm font-bold" style={{ color: 'var(--pt-text)' }}>{avgRating}</span>
-                <span className="text-sm" style={{ color: 'var(--pt-text-muted)' }}>({reviewCount} {lang === 'ar' ? 'تقييم' : lang === 'fr' ? 'avis' : 'reviews'})</span>
-              </div>
-            )}
-
-            {/* Price */}
-            <div className="flex items-end gap-4">
-              <span className="text-4xl font-black tabular-nums" style={{ color: 'var(--pt-accent)' }}>{formatDZD(product.price)}</span>
-              {hasDisc && (
-                <>
-                  <span className="text-xl line-through" style={{ color: 'var(--pt-text-muted)' }}>{formatDZD(product.compare_price)}</span>
-                  <span className="text-white text-sm font-black px-2.5 py-1" style={{ background: 'var(--pt-danger)', borderRadius: 'var(--pt-radius-md)' }}>
-                    {lang === 'ar' ? 'وفر ' : lang === 'fr' ? 'Économisez ' : 'Save '}{formatDZD(product.compare_price - product.price)}
-                  </span>
-                </>
-              )}
-            </div>
-
-            {/* Delivery transparency — sets price expectation, reduces checkout surprise */}
-            <p className="text-xs -mt-2" style={{ color: 'var(--pt-text-muted)' }}>
-              {lang === 'ar' ? '+ سعر التوصيل حسب ولايتك' : lang === 'fr' ? '+ Frais de livraison selon la wilaya' : '+ Delivery fee depends on your wilaya'}
-            </p>
-
-            {/* Trust — the #1 Algerian COD conversion lever, kept above the fold
-                right under the price. Honors merchant section_visibility('trust'). */}
-            {showTrust && (
-              <div className="grid grid-cols-3 gap-2 py-3" style={{ borderTop: '1px solid var(--pt-border)', borderBottom: '1px solid var(--pt-border)' }}>
-                {[
-                  { icon: <Truck className="w-4 h-4" />, text: translateStorefront('delivery_dz', lang) },
-                  { icon: <Package className="w-4 h-4" />, text: translateStorefront('open_before_pay', lang) },
-                  { icon: <Shield className="w-4 h-4" />, text: translateStorefront('quality_guarantee', lang) },
-                ].map(b => (
-                  <div key={b.text} className="flex flex-col items-center gap-1.5 text-center">
-                    <div className="w-8 h-8 flex items-center justify-center" style={{ background: 'var(--pt-accent-soft)', color: 'var(--pt-accent)', borderRadius: 'var(--pt-radius-md)' }}>{b.icon}</div>
-                    <p className="text-[11px] font-semibold leading-tight" style={{ color: 'var(--pt-text-soft)' }}>{b.text}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {showDescription && displayDescription && (
-              <p className="text-base leading-relaxed pt-4" style={{ color: 'var(--pt-text-soft)', borderTop: '1px solid var(--pt-border)' }}>
-                {displayDescription}
+              <p className="text-xs mt-2 mb-5" style={{ color: MUTED }}>
+                {lang === 'ar' ? '+ سعر التوصيل حسب ولايتك' : lang === 'fr' ? '+ Frais de livraison selon la wilaya' : '+ Delivery fee depends on your wilaya'}
               </p>
-            )}
 
-            {/* Variants (color/size/etc.) — selecting updates the live stock badge,
-                the order-form summary & submission, and the WhatsApp message */}
-            {variantGroups.length > 0 && (
-              <div className="pt-4" style={{ borderTop: '1px solid var(--pt-border)' }}>
-                <ProductVariants
-                  groups={variantGroups}
-                  selected={selected}
-                  onSelect={(g, o) => setSelected(prev => ({ ...prev, [g]: o }))}
-                  isOptionAvailable={isOptionAvailable}
-                />
+              {/* Trust */}
+              {showTrust && (
+                <div className="grid grid-cols-3 gap-2 py-4" style={{ borderTop: `0.5px solid ${LINE}`, borderBottom: `0.5px solid ${LINE}` }}>
+                  {[
+                    { icon: <Truck className="w-5 h-5" />, text: translateStorefront('delivery_dz', lang) },
+                    { icon: <Package className="w-5 h-5" />, text: translateStorefront('open_before_pay', lang) },
+                    { icon: <Shield className="w-5 h-5" />, text: translateStorefront('quality_guarantee', lang) },
+                  ].map((b, i) => (
+                    <div key={b.text} className="flex flex-col items-center gap-2 text-center px-1" style={i === 1 ? { borderRight: `0.5px solid ${LINE}`, borderLeft: `0.5px solid ${LINE}` } : undefined}>
+                      <span style={{ color: A }}>{b.icon}</span>
+                      <p className="text-[11px] font-semibold leading-tight" style={{ color: INK }}>{b.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {showDescription && displayDescription && (
+                <p className="text-sm leading-relaxed mt-5" style={{ color: MUTED }}>{displayDescription}</p>
+              )}
+
+              {/* Variants */}
+              {variantGroups.length > 0 && (
+                <div className="mt-5">
+                  <ProductVariants
+                    groups={variantGroups}
+                    selected={selected}
+                    onSelect={(g, o) => setSelected(prev => ({ ...prev, [g]: o }))}
+                    isOptionAvailable={isOptionAvailable}
+                  />
+                </div>
+              )}
+
+              {/* Desktop CTA (mobile uses the sticky bar) */}
+              <div className="hidden lg:flex gap-3 mt-6">
+                <button type="button" onClick={scrollToForm}
+                  className="flex-1 flex items-center justify-center gap-2.5 h-14 rounded-2xl text-white font-bold text-[15px] transition-transform active:scale-95"
+                  style={{ background: A }}>
+                  <ShoppingBag className="w-5 h-5" />{translateStorefront('order_now', lang).replace(' 🛒', '').replace(' اضغط هنا للطلب', 'اطلب')}
+                </button>
+                {waUrl && (
+                  <a href={waUrl} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
+                    className="w-14 h-14 flex items-center justify-center rounded-2xl shrink-0" style={{ background: '#1FAE54' }}>
+                    <WhatsAppIcon size={26} />
+                  </a>
+                )}
               </div>
-            )}
-
-            {waUrl && (
-              <a href={waUrl} target="_blank" rel="noopener noreferrer"
-                className="hidden md:flex items-center justify-center gap-2.5 w-full py-3.5 bg-[#25D366] hover:bg-[#20BD5C] text-white font-black rounded-2xl text-base transition-colors shadow-md active:scale-95">
-                <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                {translateStorefront('whatsapp_order', lang)}
-              </a>
-            )}
-
-            <div id="order-form" style={{ scrollMarginTop: '80px' }}>
-              <ProductOrderForm
-                product={product}
-                store={store}
-                wilayas={wilayas}
-                variantKey={variantKey}
-                variantLabel={variantLabel}
-                lang={lang}
-                maxQty={(product.track_inventory === false || product.attributes?.track_inventory === false) ? undefined : (currentStock > 0 ? currentStock : undefined)}
-              />
+              <p className="hidden lg:block text-[11px] text-center mt-3" style={{ color: MUTED }}>
+                {lang === 'ar' ? 'الدفع عند الاستلام · نتصل بك لتأكيد الطلب' : lang === 'fr' ? 'Paiement à la livraison · Appel de confirmation' : 'Cash on delivery · We call to confirm'}
+              </p>
             </div>
-
-            {/* Long description image — below the buy block so it never pushes
-                variants/CTA down the page. Honors section_visibility('description'). */}
-            {showDescription && (product.description_image_url || product.attributes?.description_image_url) && (
-              <div className="pt-4 w-full" style={{ borderTop: '1px solid var(--pt-border)' }}>
-                <h2 className="pt-heading text-lg mb-3" style={{ color: 'var(--pt-text)' }}>
-                  {lang === 'ar' ? 'تفاصيل المنتج' : lang === 'fr' ? 'Détails du produit' : 'Product details'}
-                </h2>
-                <Image
-                  src={product.description_image_url ?? product.attributes?.description_image_url}
-                  alt={lang === 'ar' ? 'وصف المنتج' : 'Description du produit'}
-                  width={1200}
-                  height={1200}
-                  sizes="(max-width: 768px) 100vw, 800px"
-                  className="w-full h-auto rounded-2xl object-contain shadow-sm border border-gray-100"
-                  loading="lazy"
-                />
-              </div>
-            )}
           </div>
         </div>
+
+        {/* ── Order form (one-page inline) ── */}
+        <div id="order-form" className="max-w-2xl mx-auto mt-8 lg:mt-12" style={{ scrollMarginTop: 24 }}>
+          <ProductOrderForm
+            product={product}
+            store={store}
+            wilayas={wilayas}
+            variantKey={variantKey}
+            variantLabel={variantLabel}
+            lang={lang}
+            maxQty={(product.track_inventory === false || product.attributes?.track_inventory === false) ? undefined : (currentStock > 0 ? currentStock : undefined)}
+          />
+        </div>
+
+        {/* ── Product details image ── */}
+        {showDescription && (product.description_image_url || product.attributes?.description_image_url) && (
+          <div className="max-w-3xl mx-auto mt-10">
+            <h2 className="text-lg font-bold mb-4" style={{ color: INK }}>
+              {lang === 'ar' ? 'تفاصيل المنتج' : lang === 'fr' ? 'Détails du produit' : 'Product details'}
+            </h2>
+            <Image
+              src={product.description_image_url ?? product.attributes?.description_image_url}
+              alt={lang === 'ar' ? 'وصف المنتج' : 'Description du produit'}
+              width={1200} height={1200} sizes="(max-width: 768px) 100vw, 800px"
+              className="w-full h-auto rounded-3xl object-contain" style={{ border: `0.5px solid ${LINE}` }} loading="lazy" />
+          </div>
+        )}
       </div>
 
       {/* Lightbox */}
       {lightbox && images[activeImg]?.url && (
-        <div
-          className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4"
-          onClick={() => setLightbox(false)}
-        >
-          <img
-            src={images[activeImg].url}
-            alt={displayName}
-            className="max-w-full max-h-full object-contain rounded-2xl"
-            loading="lazy"
-            decoding="async"
-            onClick={e => e.stopPropagation()}
-          />
-          <button onClick={() => setLightbox(false)} aria-label={lang === 'ar' ? 'إغلاق' : lang === 'fr' ? 'Fermer' : 'Close'}
-            className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: 'rgba(20,18,15,0.92)' }} onClick={() => setLightbox(false)}>
+          <img src={images[activeImg].url} alt={displayName} className="max-w-full max-h-full object-contain rounded-2xl" loading="lazy" decoding="async" onClick={e => e.stopPropagation()} />
+          <button onClick={() => setLightbox(false)} aria-label={lang === 'ar' ? 'إغلاق' : 'Close'}
+            className="absolute top-4 right-4 w-11 h-11 rounded-full flex items-center justify-center text-white" style={{ background: 'rgba(255,255,255,0.14)' }}>
             <X className="w-5 h-5" />
           </button>
         </div>
       )}
 
-      {/* Mobile sticky bar — theme-aware surface, unified radius/iconography */}
-      <div className="fixed bottom-0 inset-x-0 backdrop-blur-md border-t p-3 flex gap-3 md:hidden z-40 shadow-float"
-        style={{ background: 'color-mix(in srgb, var(--pt-surface) 92%, transparent)', borderColor: 'var(--pt-border)' }}
-        dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      {/* Mobile sticky buy bar */}
+      <div className="fixed bottom-0 inset-x-0 lg:hidden z-40 flex gap-2.5 p-3.5" style={{ background: 'rgba(250,248,245,0.97)', borderTop: `0.5px solid ${LINE}`, backdropFilter: 'blur(8px)' }} dir={isRtl ? 'rtl' : 'ltr'}>
         {waUrl && (
-          <a href={waUrl} target="_blank" rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#25D366] text-white font-bold text-sm active:scale-95 transition-transform"
-            style={{ borderRadius: 'var(--pt-btn-radius)' }}>
-            <svg className="w-4 h-4 fill-white shrink-0" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            {translateStorefront('whatsapp_order', lang).replace(' 💬', '')}
+          <a href={waUrl} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
+            className="w-14 flex items-center justify-center rounded-2xl shrink-0" style={{ background: '#1FAE54' }}>
+            <WhatsAppIcon size={26} />
           </a>
         )}
-        <button
-          type="button"
-          onClick={() => document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-          className="flex-1 flex items-center justify-center gap-2 py-3 font-black text-sm active:scale-95 transition-transform"
-          style={{ background: 'var(--pt-btn-primary-bg)', color: 'var(--pt-btn-primary-text)', borderRadius: 'var(--pt-btn-radius)' }}
-          aria-label={translateStorefront('order_now', lang)}
-        >
-          <ShoppingBag className="w-4 h-4 shrink-0" />
+        <button type="button" onClick={scrollToForm} aria-label={translateStorefront('order_now', lang)}
+          className="flex-1 flex items-center justify-center gap-2 h-14 rounded-2xl text-white font-bold text-[15px] transition-transform active:scale-95" style={{ background: A }}>
+          <ShoppingBag className="w-5 h-5" />
           <span className="tabular-nums">{translateStorefront('order_now', lang).replace(' 🛒', '').replace(' اضغط هنا للطلب', 'اطلب')} — {formatDZD(product.price)}</span>
         </button>
       </div>
+
+      {/* Spacer so the sticky bar never covers the last content on mobile */}
+      <div className="h-20 lg:hidden" />
     </div>
   )
 }
