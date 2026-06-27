@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { checkFraud } from '@/lib/fraud/score'
 import { resolveRouting, pushOrderToSheet, markOrderRouting } from '@/lib/orders/route-order'
+import { formatCommuneBilingual } from '@/lib/algeria-baladias'
 import { resolveDeclaredFee } from '@/lib/delivery/pricing'
 
 const orderSchema = z.object({
@@ -346,8 +347,9 @@ export async function POST(req: Request) {
             created_at: order.created_at,
             customer_name: data.customer_name,
             customer_phone: data.customer_phone,
-            wilaya_name: (wilaya as any)?.name_fr ?? (wilaya as any)?.name_ar ?? String(data.wilaya_id),
-            baladia: data.baladia,
+            // Exported labels are bilingual (presentation only); IDs/calc untouched.
+            wilaya_name: [data.wilaya_id, (wilaya as any)?.name_fr, (wilaya as any)?.name_ar].filter(Boolean).join(' - '),
+            baladia: formatCommuneBilingual(data.wilaya_id, data.baladia),
             address: data.address,
             delivery_type: data.delivery_type,
             delivery_fee: deliveryFee,

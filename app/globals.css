@@ -483,3 +483,8 @@
 textarea.dk-field { height:auto; min-height:52px; padding:13px 16px; resize:none; }
 .dk-field-icon { padding-inline-start:44px; }
 .dk-label { display:block; font-size:13px; font-weight:600; color:#3A3A38; margin-bottom:7px; }
+
+/* Stronger Wilaya / Municipality selectors — darker border + dark text */
+.dk-field-strong { border-width:1px; border-color:#BFBBB1; color:#111111; }
+.dk-field-strong::placeholder { color:#6B6A64; }
+.dk-field-strong:focus { border-color: var(--pt-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pt-accent) 14%, transparent); }

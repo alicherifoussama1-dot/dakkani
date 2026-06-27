@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { ChevronDown, Loader2, ShieldCheck, PhoneCall, Truck, AlertCircle, User, Phone, Home, Store, CheckCircle2 } from 'lucide-react'
 import StopdeskPicker from './StopdeskPicker'
 import { formatDZD } from '@/lib/utils/format'
-import { getBaladiasForWilaya } from '@/lib/algeria-baladias'
+import { getBaladiasBilingualForWilaya } from '@/lib/algeria-baladias'
 import type { Product, Wilaya } from '@/types'
 import { translateStorefront, type Locale } from '@/lib/utils/translations'
 
@@ -37,15 +37,17 @@ function BaladiaField({ wilayaId, value, onChange, error, lang }: {
   lang: Locale
 }) {
   const [open, setOpen] = useState(false)
-  const options = getBaladiasForWilaya(wilayaId)
+  // Bilingual options: value = stored commune (name_ar, unchanged), label = "French - Arabic".
+  const options = getBaladiasBilingualForWilaya(wilayaId)
+  const selectedLabel = options.find(o => o.value === value)?.label
 
   if (!wilayaId) {
     return (
       <div>
         <label className="dk-label">{translateStorefront('baladia', lang)} *</label>
-        <button type="button" disabled className="dk-field opacity-50 cursor-not-allowed flex items-center justify-between text-start rtl:text-right">
-          <span style={{ color: DK.muted }}>{translateStorefront('select_wilaya', lang)}</span>
-          <ChevronDown size={16} style={{ color: DK.muted }} />
+        <button type="button" disabled className="dk-field dk-field-strong opacity-50 cursor-not-allowed flex items-center justify-between text-start rtl:text-right">
+          <span style={{ color: '#6B6A64' }}>{translateStorefront('select_wilaya', lang)}</span>
+          <ChevronDown size={16} style={{ color: '#6B6A64' }} />
         </button>
       </div>
     )
@@ -55,19 +57,19 @@ function BaladiaField({ wilayaId, value, onChange, error, lang }: {
     <div>
       <label className="dk-label">{translateStorefront('baladia', lang)} *</label>
       <div className="relative">
-        <button type="button" onClick={() => setOpen(o => !o)} className="dk-field flex items-center justify-between text-start rtl:text-right">
-          <span style={{ color: value ? DK.ink : DK.muted }}>{value || translateStorefront('select_commune', lang)}</span>
-          <ChevronDown size={16} style={{ color: DK.muted, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
+        <button type="button" onClick={() => setOpen(o => !o)} className="dk-field dk-field-strong flex items-center justify-between text-start rtl:text-right">
+          <span style={{ color: value ? '#111111' : '#6B6A64' }}>{selectedLabel || value || translateStorefront('select_commune', lang)}</span>
+          <ChevronDown size={16} style={{ color: '#57564F', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
         </button>
         {open && (
           <>
             <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 49 }} />
-            <div className="absolute z-50 mt-1.5 w-full max-h-60 overflow-y-auto p-1.5 rounded-2xl" style={{ background: DK.surface, border: `0.5px solid ${DK.line}`, boxShadow: '0 12px 32px rgba(20,18,15,0.12)' }}>
-              {options.map(b => (
-                <button key={b} type="button" onClick={() => { onChange(b); setOpen(false) }}
+            <div className="absolute z-50 mt-1.5 w-full max-h-60 overflow-y-auto p-1.5 rounded-2xl" style={{ background: DK.surface, border: `1px solid #BFBBB1`, boxShadow: '0 12px 32px rgba(20,18,15,0.12)' }}>
+              {options.map(o => (
+                <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false) }}
                   className="block w-full text-start rtl:text-right px-3 py-2.5 rounded-xl text-sm transition"
-                  style={value === b ? { background: 'color-mix(in srgb, var(--pt-accent) 12%, transparent)', color: DK.accent, fontWeight: 700 } : { color: DK.ink }}>
-                  {b}
+                  style={value === o.value ? { background: 'color-mix(in srgb, var(--pt-accent) 12%, transparent)', color: DK.accent, fontWeight: 700 } : { color: '#111111' }}>
+                  {o.label}
                 </button>
               ))}
             </div>
@@ -316,13 +318,13 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                 <div className="relative">
                   <select {...register('wilaya_id', { valueAsNumber: true })}
                     onChange={e => { const id = parseInt(e.target.value); setValue('wilaya_id', id); setSelectedWilaya(wilayas.find(w => w.id === id) ?? null) }}
-                    className="dk-field appearance-none">
+                    className="dk-field dk-field-strong appearance-none">
                     <option value="">{translateStorefront('select_wilaya', lang)}</option>
                     {wilayas.map(w => (
-                      <option key={w.id} value={w.id}>{w.id} - {lang === 'ar' ? w.name_ar : (w.name_fr || w.name_ar)}</option>
+                      <option key={w.id} value={w.id}>{[w.id, w.name_fr, w.name_ar].filter(Boolean).join(' - ')}</option>
                     ))}
                   </select>
-                  <ChevronDown className={`absolute ${isRtl ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none`} style={{ color: DK.muted }} />
+                  <ChevronDown className={`absolute ${isRtl ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none`} style={{ color: '#57564F' }} />
                 </div>
                 {errors.wilaya_id && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.wilaya_id.message}</p>}
                 {selectedWilaya && (

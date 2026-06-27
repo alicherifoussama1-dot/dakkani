@@ -1693,3 +1693,20 @@ export function getCommunesByWilaya(wilayaCode: string | number | null | undefin
 export function getBaladiasForWilaya(wilayaId: number | string | null | undefined): string[] {
   return getCommunesByWilaya(wilayaId).map(c => c.name_ar)
 }
+
+// Bilingual commune options for the municipality selector. `value` is the stored
+// commune (name_ar — unchanged, so delivery imports & order data are untouched);
+// `label` is the customer-facing "French - Arabic" string.
+export function getBaladiasBilingualForWilaya(wilayaId: number | string | null | undefined): { value: string; label: string }[] {
+  return getCommunesByWilaya(wilayaId).map(c => ({ value: c.name_ar, label: `${c.name_fr} - ${c.name_ar}` }))
+}
+
+// Render a stored commune name as the bilingual "French - Arabic" label (for the
+// Sheets export + the selected-value display). Falls back to the original string
+// if it can't be matched, so nothing ever breaks.
+export function formatCommuneBilingual(wilayaId: number | string | null | undefined, commune: string | null | undefined): string {
+  if (!commune) return commune ?? ''
+  const norm = (s: string) => s.trim().toLowerCase()
+  const c = getCommunesByWilaya(wilayaId).find(x => norm(x.name_ar) === norm(commune) || norm(x.name_fr) === norm(commune))
+  return c ? `${c.name_fr} - ${c.name_ar}` : commune
+}
