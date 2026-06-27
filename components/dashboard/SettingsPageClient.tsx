@@ -100,7 +100,8 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
   }
 
   // ── Checkout Customization States ──
-  const [checkoutTheme, setCheckoutTheme] = useState<string>(storeSettings?.checkout_theme ?? 'default')
+  // theme picker deprecated (Phase 1); value preserved for backward-compatible saves
+  const [checkoutTheme] = useState<string>(storeSettings?.checkout_theme ?? 'default')
   const [checkoutSectionOrder, setCheckoutSectionOrder] = useState<string[]>(
     storeSettings?.checkout_section_order ?? ['customer_info', 'delivery_info', 'payment_info', 'coupon']
   )
@@ -210,15 +211,8 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
     }, { onConflict: 'store_id' })
   }
 
-  // ── Auto-save theme immediately ──
-  const autoSaveTheme = async (theme: string) => {
-    setCheckoutTheme(theme)
-    const sb = createClient()
-    await sb.from('store_settings').upsert({
-      store_id: store.id,
-      checkout_theme: theme,
-    }, { onConflict: 'store_id' })
-  }
+  // Checkout theme auto-save removed (Phase 1 deprecation). `checkout_theme`
+  // remains in the saved payload as its existing/'default' value for compatibility.
 
   // ── Auto-save section order immediately ──
   const autoSaveSectionOrder = async (newOrder: string[]) => {
@@ -598,38 +592,10 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
       {/* ── CHECKOUT CUSTOMIZATION ── */}
       {tab === 'checkout' && (
         <div className="space-y-6">
-          {/* Themes */}
-          <div className="card p-5 space-y-4">
-            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>ثيم صفحة الدفع 🎨</h2>
-            <p className="text-xs -mt-2" style={{ color: 'var(--color-text-muted)' }}>اختر المظهر البصري المناسب لصفحة الدفع لزيادة المبيعات</p>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { id: 'default', label: 'الكلاسيكي', desc: 'بسيط وهادئ ومناسب لكل المنتجات', icon: '📝', colors: 'from-gray-100 to-gray-200 text-gray-700' },
-                { id: 'modern', label: 'العصري', desc: 'تصميم جذاب بظلال ناعمة وزوايا مستديرة', icon: '✨', colors: 'from-amber-100 to-orange-200 text-orange-700' },
-                { id: 'glassmorphism', label: 'الزجاجي الفاخر', desc: 'ثيم داكن شفاف وتأثيرات مضيئة', icon: '🔮', colors: 'from-indigo-900 to-slate-800 text-indigo-300' },
-                { id: 'compact', label: 'المدمج السريع', desc: 'تصميم مكثف لتقليل التمرير وزيادة التحويل', icon: '⚡', colors: 'from-blue-100 to-teal-200 text-teal-700' },
-              ].map(t => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => autoSaveTheme(t.id)}
-                  className={`flex flex-col text-right p-4 rounded-2xl border-2 transition relative overflow-hidden h-full ${
-                    checkoutTheme === t.id ? 'border-[#0D6EFD] bg-[#EBF5FF]' : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-3 bg-gradient-to-br ${t.colors}`}>
-                    {t.icon}
-                  </div>
-                  <p className="text-xs font-bold text-gray-900">{t.label}</p>
-                  <p className="text-[10px] text-gray-500 mt-1 line-clamp-3 leading-relaxed">{t.desc}</p>
-                  {checkoutTheme === t.id && (
-                    <span className="absolute top-2 left-2 text-[#0D6EFD] font-black text-xs">✓</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Checkout Theme picker DEPRECATED (Phase 1): the checkout now follows
+              the ONE global design system (--pt-* tokens). `checkout_theme` is
+              kept in store_settings for backward compatibility, but is no longer
+              merchant-configurable and will be ignored by the forms in Phase 2. */}
 
           {/* Section Ordering */}
           <div className="card p-5 space-y-4">

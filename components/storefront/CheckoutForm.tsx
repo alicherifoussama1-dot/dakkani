@@ -11,7 +11,7 @@ import { usePixels } from '@/components/pixels/PixelProvider'
 import { MetaPixel } from '@/components/pixels/MetaPixel'
 import { TikTokPixel } from '@/components/pixels/TikTokPixel'
 import { Truck, Store, CreditCard, Banknote, CheckCircle, AlertTriangle, Loader2, ChevronDown } from 'lucide-react'
-import StopdeskPicker from './StopdeskPicker'
+import OfficeDeliveryPicker from './OfficeDeliveryPicker'
 import type { Wilaya } from '@/types'
 import { translateStorefront, type Locale } from '@/lib/utils/translations'
 
@@ -128,7 +128,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const [orderNumber, setOrderNumber] = useState('')
   const [fraudScore, setFraudScore] = useState<number | null>(null)
   const [orderId, setOrderId] = useState('')
-  const [offices, setOffices] = useState<{ code: string; name: string; commune: string }[]>([])
+  const [offices, setOffices] = useState<{ id: string; name: string; commune: string }[]>([])
   const [loadingOffices, setLoadingOffices] = useState(false)
   const [hasProvider, setHasProvider] = useState(false)
 
@@ -195,7 +195,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
         // Keep commune separately: the stopdesk picker shows the commune
         // (البلدية) with the office name beside it; only the commune is saved.
         setOffices((data.offices || []).map((o: any) => ({
-          code: o.code ?? o.id,
+          id: o.code ?? o.id,
           name: o.name,
           commune: o.commune || '',
         })))
@@ -701,33 +701,67 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                               </div>
                             )
                           }
-                          // Stopdesk: keep البلدية, list only communes that have
-                          // an office; show the office name beside it (smaller).
-                          // Only the commune is saved to `baladia` (sheet/carrier);
-                          // the office name is display-only (stored in stopdesk_code).
-                          if (watchedDeliveryType === 'stopdesk' && watchedWilayaId > 0 && hasProvider) {
+                          // Stopdesk: two-step selector (commune → office) matching expected UX.
+                          // Fallback to normal municipality select when no offices are configured.
+                          if (watchedDeliveryType === 'stopdesk') {
+                            if (!watchedWilayaId) return null
+                            if (loadingOffices) {
+                              return (
+                                <div key="field-baladia">
+                                  <label className={textLabel}>{translateStorefront('baladia', lang)} <span className="text-red-500">*</span></label>
+                                  <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" /> {lang === 'ar' ? 'جارٍ التحميل...' : 'Chargement...'}
+                                  </div>
+                                </div>
+                              )
+                            }
+                            if (hasProvider && offices.length > 0) {
+                              return (
+                                <div key="field-baladia">
+                                  <OfficeDeliveryPicker
+                                    offices={offices}
+                                    wilayaId={watchedWilayaId}
+                                    lang={lang}
+                                    baladia={watch('baladia')}
+                                    stopdeskCode={watchedStopdeskCode}
+                                    onChange={(commune, officeId) => {
+                                      setValue('baladia', commune, { shouldValidate: true })
+                                      setValue('stopdesk_code', officeId, { shouldValidate: true })
+                                    }}
+                                    theme={theme}
+                                  />
+                                  {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
+                                </div>
+                              )
+                            }
+                            // Fallback
                             return (
                               <div key="field-baladia">
-                                <label className={textLabel}>{translateStorefront('office', lang)} <span className="text-red-500">*</span></label>
-                                {loadingOffices ? (
-                                  <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
-                                    <Loader2 className="w-4 h-4 animate-spin" /> {lang === 'ar' ? 'جارٍ تحميل البلديات...' : 'Chargement...'}
-                                  </div>
-                                ) : offices.length === 0 ? (
-                                  <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400">
-                                    {lang === 'ar' ? 'لا توجد بلديات بها مكتب لهذه الولاية' : 'Aucun bureau disponible'}
-                                  </div>
-                                ) : (
-                                  <StopdeskPicker
-                                    offices={offices}
-                                    value={watchedStopdeskCode}
-                                    dark={theme === 'glassmorphism'}
-                                    onSelect={(o) => {
-                                      setValue('baladia', o.commune || o.name, { shouldValidate: true })
-                                      setValue('stopdesk_code', o.code, { shouldValidate: true })
-                                    }}
-                                  />
-                                )}
+                                <label className={textLabel}>{translateStorefront('baladia', lang)} <span className="text-red-500">*</span></label>
+                                <div className="relative">
+                                  {loadingCommunes ? (
+                                    <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                      {lang === 'ar' ? 'جارٍ التحميل...' : 'Chargement...'}
+                                    </div>
+                                  ) : (
+                                    <select
+                                      {...register('commune_id', { valueAsNumber: true })}
+                                      className={`${inputClass} appearance-none`}
+                                    >
+                                      <option value="">{translateStorefront('select_commune', lang)}...</option>
+                                      {communes.map(c => (
+                                        <option key={c.id} value={c.id} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>
+                                          {lang === 'ar' ? c.name_ar : (c.name_fr || c.name_ar)}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  )}
+                                  <ChevronDown className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none`} />
+                                </div>
+                                <p className="text-xs mt-1.5 text-gray-500">
+                                  {lang === 'ar' ? 'لا يوجد مكتب متاح لهذه الولاية — اختر البلدية للتوصيل.' : lang === 'fr' ? 'Aucun bureau pour cette wilaya — choisissez la commune.' : 'No office for this wilaya — choose your municipality.'}
+                                </p>
                                 {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
                               </div>
                             )
