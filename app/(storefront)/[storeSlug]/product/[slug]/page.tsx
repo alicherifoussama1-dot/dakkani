@@ -257,23 +257,23 @@ export default async function ProductPage({ params }: Props) {
         {/* Related */}
         {isSectionVisible('related') && relatedData.length > 0 && (
           <section className="max-w-6xl mx-auto px-4 py-12 border-t" style={{ borderColor: 'var(--pt-border)' }}>
-            <h2 className="pt-heading text-2xl mb-6">منتجات مشابهة</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <h2 className="pt-heading text-2xl mb-7">منتجات مشابهة</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
               {relatedData.map((p) => {
                 const img = (p.images as any[])?.[0]?.url
                 return (
                   <Link key={p.id} href={`/store/${store.slug}/product/${p.slug}`}
                     className="group block overflow-hidden transition-transform hover:-translate-y-1"
                     style={{ background: 'var(--pt-surface)', borderRadius: 'var(--pt-radius-lg)', border: '1px solid var(--pt-border)', boxShadow: 'var(--pt-shadow-sm)' }}>
-                    <div className="relative aspect-square" style={{ background: 'var(--pt-surface-soft)' }}>
+                    <div className="relative aspect-[4/5]" style={{ background: 'var(--pt-surface-soft)' }}>
                       {img
-                        ? <Image src={img} alt={p.name_ar ?? p.name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" loading="lazy" />
-                        : <div className="w-full h-full flex items-center justify-center text-3xl" style={{ color: 'var(--pt-text-muted)' }}>{(p.name_ar ?? p.name)[0]}</div>
+                        ? <Image src={img} alt={p.name_ar ?? p.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover" loading="lazy" />
+                        : <div className="w-full h-full flex items-center justify-center text-4xl" style={{ color: 'var(--pt-text-muted)' }}>{(p.name_ar ?? p.name)[0]}</div>
                       }
                     </div>
-                    <div className="p-3">
-                      <p className="font-bold text-sm line-clamp-2" style={{ color: 'var(--pt-text)' }}>{p.name_ar ?? p.name}</p>
-                      <p className="font-black mt-1 tabular-nums" style={{ color: 'var(--pt-accent)' }}>{formatDZD(p.price)}</p>
+                    <div className="p-4">
+                      <p className="font-bold text-[15px] line-clamp-2" style={{ color: 'var(--pt-text)' }}>{p.name_ar ?? p.name}</p>
+                      <p className="font-bold text-base mt-1.5 tabular-nums" style={{ color: 'var(--pt-accent)' }}>{formatDZD(p.price)}</p>
                     </div>
                   </Link>
                 )

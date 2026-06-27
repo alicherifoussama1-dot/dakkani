@@ -271,8 +271,8 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
 
   return (
     <form ref={formRef} onSubmit={handleSubmit(onSubmit, onInvalid)} dir={isRtl ? 'rtl' : 'ltr'}
-      className="space-y-4 p-5 sm:p-6 rounded-3xl" style={{ background: DK.surface, border: `0.5px solid ${DK.line}`, borderTop: `3px solid ${DK.accent}` }}>
-      <h3 className="font-bold text-base" style={{ color: DK.ink }}>{completeLabel}</h3>
+      className="space-y-5 p-6 sm:p-7 rounded-3xl" style={{ background: DK.surface, border: `0.5px solid ${DK.line}`, borderTop: `3px solid ${DK.accent}` }}>
+      <h3 className="font-bold text-lg mb-1" style={{ color: DK.ink }}>{completeLabel}</h3>
 
       {/* Delivery type */}
       <div className="grid grid-cols-2 gap-2.5">
@@ -341,21 +341,43 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                 </div>
               )
             }
-            if (deliveryType === 'stopdesk' && wilayaId > 0 && hasProvider) {
-              return (
-                <div key="field-baladia">
-                  <label className="dk-label">{translateStorefront('office', lang)} <span style={{ color: '#D85A30' }}>*</span></label>
-                  {loadingOffices ? (
+            // Office delivery — the municipality field STAYS. With a live provider we
+            // show only municipalities that have offices and reveal the chosen office
+            // below in an info card; otherwise we gracefully fall back to the normal
+            // municipality field. Submission logic (baladia = commune, stopdesk_code)
+            // is unchanged.
+            if (deliveryType === 'stopdesk' && (wilayaId ?? 0) > 0) {
+              if (loadingOffices) {
+                return (
+                  <div key="field-baladia">
+                    <label className="dk-label">{translateStorefront('baladia', lang)} <span style={{ color: '#D85A30' }}>*</span></label>
                     <div className="dk-field flex items-center justify-center gap-2" style={{ color: DK.muted }}>
-                      <Loader2 className="w-4 h-4 animate-spin" /> {lang === 'ar' ? 'جارٍ تحميل البلديات...' : 'Chargement...'}
+                      <Loader2 className="w-4 h-4 animate-spin" /> {lang === 'ar' ? 'جارٍ التحميل...' : 'Chargement...'}
                     </div>
-                  ) : offices.length === 0 ? (
-                    <div className="dk-field flex items-center" style={{ color: DK.muted }}>{lang === 'ar' ? 'لا توجد مكاتب متوفرة لهذه الولاية' : 'Aucun bureau disponible'}</div>
-                  ) : (
+                  </div>
+                )
+              }
+              if (hasProvider && offices.length > 0) {
+                const selectedOffice = offices.find(o => o.code === watch('stopdesk_code'))
+                return (
+                  <div key="field-baladia">
+                    <label className="dk-label">{translateStorefront('baladia', lang)} <span style={{ color: '#D85A30' }}>*</span></label>
                     <StopdeskPicker offices={offices} value={watch('stopdesk_code')} dark={false}
                       onSelect={(o) => { setValue('baladia', o.commune || o.name, { shouldValidate: true }); setValue('stopdesk_code', o.code, { shouldValidate: true }) }} />
-                  )}
-                  {errors.baladia && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.baladia.message}</p>}
+                    {selectedOffice && (
+                      <div className="flex items-center gap-2.5 mt-2.5 px-3.5 py-3 rounded-2xl text-sm" style={{ background: 'color-mix(in srgb, var(--pt-accent) 8%, transparent)', border: `0.5px solid ${DK.line}` }}>
+                        <Store className="w-4 h-4 shrink-0" style={{ color: DK.accent }} />
+                        <span style={{ color: DK.ink }}>{lang === 'ar' ? 'مكتب الاستلام: ' : lang === 'fr' ? 'Bureau de retrait: ' : 'Pickup office: '}<strong>{selectedOffice.name}</strong></span>
+                      </div>
+                    )}
+                    {errors.baladia && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.baladia.message}</p>}
+                  </div>
+                )
+              }
+              return (
+                <div key="field-baladia">
+                  <BaladiaField wilayaId={wilayaId ?? null} value={baladia ?? ''} onChange={v => setValue('baladia', v, { shouldValidate: true })} error={errors.baladia?.message} lang={lang} />
+                  <p className="text-xs mt-1.5" style={{ color: DK.muted }}>{lang === 'ar' ? 'لا يوجد مكتب متاح لهذه الولاية — اختر البلدية للتوصيل.' : lang === 'fr' ? 'Aucun bureau pour cette wilaya — choisissez la commune.' : 'No office for this wilaya — choose your municipality.'}</p>
                 </div>
               )
             }
@@ -427,7 +449,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       </div>
 
       {/* Order summary */}
-      <div className="p-4 space-y-2 text-sm rounded-2xl" style={{ background: DK.paper }}>
+      <div className="p-5 space-y-2.5 text-sm rounded-2xl" style={{ background: DK.paper }}>
         <div className="flex justify-between" style={{ color: DK.muted }}>
           <span>{lang === 'ar' ? 'المنتج' : lang === 'fr' ? 'Produit' : 'Product'}{variantLabel ? ` (${variantLabel})` : ''} × {quantity}</span>
           <span className="tabular-nums">{formatDZD(product.price * quantity)}</span>

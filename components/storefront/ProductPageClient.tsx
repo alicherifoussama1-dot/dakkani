@@ -244,26 +244,12 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
         )}
 
         {/* ── HERO ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-6 lg:gap-10 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-6 lg:gap-10 items-start">
 
           {/* Gallery */}
-          <div className="flex gap-3">
-            {/* Desktop thumbnail rail */}
-            {images.length > 1 && (
-              <div className="hidden lg:flex flex-col gap-2.5 shrink-0">
-                {images.map((img: any, i: number) => (
-                  <button key={i} onClick={() => { setActiveImg(i); scrollToIdx(i) }}
-                    aria-label={`${lang === 'ar' ? 'صورة' : 'Image'} ${i + 1}`} aria-current={i === activeImg}
-                    className="w-16 h-16 rounded-2xl overflow-hidden relative transition-all"
-                    style={{ background: IMG, boxShadow: i === activeImg ? `0 0 0 2px ${A}` : `0 0 0 0.5px ${LINE}` }}>
-                    {img?.url && <Image src={img.url} alt="" fill sizes="64px" className="object-cover" />}
-                  </button>
-                ))}
-              </div>
-            )}
-
+          <div>
             {/* Main image */}
-            <div className="relative group flex-1 aspect-square overflow-hidden rounded-3xl" style={{ background: IMG, border: `0.5px solid ${LINE}` }}>
+            <div className="relative group w-full aspect-[4/5] overflow-hidden rounded-3xl" style={{ background: IMG, border: `0.5px solid ${LINE}` }}>
               <div ref={galleryRef} onScroll={handleScroll}
                 className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide" style={{ scrollBehavior: 'smooth' }}>
                 {images.length > 0 ? images.map((img: any, idx: number) => (
@@ -311,11 +297,25 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
                 </div>
               )}
             </div>
+
+            {/* Thumbnail strip below the main image */}
+            {images.length > 1 && (
+              <div className="flex gap-2.5 overflow-x-auto scrollbar-hide mt-3 pb-1">
+                {images.map((img: any, i: number) => (
+                  <button key={i} onClick={() => { setActiveImg(i); scrollToIdx(i) }}
+                    aria-label={`${lang === 'ar' ? 'صورة' : 'Image'} ${i + 1}`} aria-current={i === activeImg}
+                    className="w-[68px] h-[68px] shrink-0 rounded-2xl overflow-hidden relative transition-all"
+                    style={{ background: IMG, boxShadow: i === activeImg ? `0 0 0 2px ${A}` : `0 0 0 0.5px ${LINE}` }}>
+                    {img?.url && <Image src={img.url} alt="" fill sizes="68px" className="object-cover" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Buy box — sticky on desktop */}
           <div className="lg:sticky lg:top-6 lg:self-start">
-            <div className="rounded-3xl p-5 sm:p-6" style={{ background: SURFACE, border: `0.5px solid ${LINE}`, borderTop: `3px solid ${A}` }}>
+            <div className="rounded-3xl p-6 sm:p-7" style={{ background: SURFACE, border: `0.5px solid ${LINE}`, borderTop: `3px solid ${A}` }}>
 
               {currentStock <= 0 ? null : currentStock <= 5 ? (
                 <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: '#FAECE7', color: '#993C1D' }}>
@@ -332,7 +332,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               <h1 className="text-2xl lg:text-[26px] font-bold leading-snug mt-3 mb-2" style={{ color: INK, letterSpacing: '-0.3px' }}>{displayName}</h1>
 
               {avgRating && (
-                <div className="flex items-center gap-2 mb-4" aria-label={`${avgRating} / 5 — ${reviewCount} ${reviewsWord}`}>
+                <div className="flex items-center gap-2 mb-5" aria-label={`${avgRating} / 5 — ${reviewCount} ${reviewsWord}`}>
                   <span aria-hidden="true" style={{ color: '#EF9F27', fontSize: 16, letterSpacing: 2 }}>★★★★★</span>
                   <span className="text-sm font-bold" style={{ color: INK }}>{avgRating}</span>
                   <span className="text-sm" style={{ color: MUTED }}>· {reviewCount} {reviewsWord}</span>
@@ -340,8 +340,8 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               )}
 
               {/* Price */}
-              <div className="flex items-end gap-3 flex-wrap">
-                <span className="font-bold tabular-nums leading-none" style={{ color: A, fontSize: 38, letterSpacing: '-1px' }}>{formatDZD(product.price)}</span>
+              <div className="flex items-end gap-3 flex-wrap mt-1">
+                <span className="font-bold tabular-nums leading-none" style={{ color: A, fontSize: 46, letterSpacing: '-1.5px' }}>{formatDZD(product.price)}</span>
                 {hasDisc && (
                   <>
                     <span className="text-base line-through pb-1.5" style={{ color: MUTED }}>{formatDZD(product.compare_price)}</span>
@@ -351,7 +351,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
                   </>
                 )}
               </div>
-              <p className="text-xs mt-2 mb-5" style={{ color: MUTED }}>
+              <p className="text-sm mt-3 mb-6" style={{ color: MUTED }}>
                 {lang === 'ar' ? '+ سعر التوصيل حسب ولايتك' : lang === 'fr' ? '+ Frais de livraison selon la wilaya' : '+ Delivery fee depends on your wilaya'}
               </p>
 
