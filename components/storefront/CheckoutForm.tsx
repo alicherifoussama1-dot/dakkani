@@ -702,7 +702,6 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                             )
                           }
                           // Stopdesk: two-step selector (commune → office) matching expected UX.
-                          // Fallback to normal municipality select when no offices are configured.
                           if (watchedDeliveryType === 'stopdesk') {
                             if (!watchedWilayaId) return null
                             if (loadingOffices) {
@@ -715,53 +714,20 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                                 </div>
                               )
                             }
-                            if (hasProvider && offices.length > 0) {
-                              return (
-                                <div key="field-baladia">
-                                  <OfficeDeliveryPicker
-                                    offices={offices}
-                                    wilayaId={watchedWilayaId}
-                                    lang={lang}
-                                    baladia={watch('baladia')}
-                                    stopdeskCode={watchedStopdeskCode}
-                                    onChange={(commune, officeId) => {
-                                      setValue('baladia', commune, { shouldValidate: true })
-                                      setValue('stopdesk_code', officeId, { shouldValidate: true })
-                                    }}
-                                    theme={theme}
-                                  />
-                                  {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
-                                </div>
-                              )
-                            }
-                            // Fallback
                             return (
                               <div key="field-baladia">
-                                <label className={textLabel}>{translateStorefront('baladia', lang)} <span className="text-red-500">*</span></label>
-                                <div className="relative">
-                                  {loadingCommunes ? (
-                                    <div className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 flex items-center gap-2">
-                                      <Loader2 className="w-4 h-4 animate-spin" />
-                                      {lang === 'ar' ? 'جارٍ التحميل...' : 'Chargement...'}
-                                    </div>
-                                  ) : (
-                                    <select
-                                      {...register('commune_id', { valueAsNumber: true })}
-                                      className={`${inputClass} appearance-none`}
-                                    >
-                                      <option value="">{translateStorefront('select_commune', lang)}...</option>
-                                      {communes.map(c => (
-                                        <option key={c.id} value={c.id} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>
-                                          {lang === 'ar' ? c.name_ar : (c.name_fr || c.name_ar)}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  )}
-                                  <ChevronDown className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none`} />
-                                </div>
-                                <p className="text-xs mt-1.5 text-gray-500">
-                                  {lang === 'ar' ? 'لا يوجد مكتب متاح لهذه الولاية — اختر البلدية للتوصيل.' : lang === 'fr' ? 'Aucun bureau pour cette wilaya — choisissez la commune.' : 'No office for this wilaya — choose your municipality.'}
-                                </p>
+                                <OfficeDeliveryPicker
+                                  offices={offices}
+                                  wilayaId={watchedWilayaId}
+                                  lang={lang}
+                                  baladia={watch('baladia')}
+                                  stopdeskCode={watchedStopdeskCode}
+                                  onChange={(commune, officeId) => {
+                                    setValue('baladia', commune, { shouldValidate: true })
+                                    setValue('stopdesk_code', officeId, { shouldValidate: true })
+                                  }}
+                                  theme={theme}
+                                />
                                 {errors.baladia && <p className="text-red-500 text-xs mt-1">{errors.baladia.message}</p>}
                               </div>
                             )

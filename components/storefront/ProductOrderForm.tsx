@@ -339,8 +339,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
             }
             // Office delivery → provider-agnostic two-step flow: municipalities that
             // have offices → office selector. Submission unchanged (baladia = commune,
-            // stopdesk_code = office id). Falls back to the normal municipality field
-            // when the wilaya has no offices, so the field never disappears.
+            // stopdesk_code = office id).
             if (deliveryType === 'stopdesk' && (wilayaId ?? 0) > 0) {
               if (loadingOffices) {
                 return (
@@ -352,28 +351,20 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                   </div>
                 )
               }
-              if (hasProvider && offices.length > 0) {
-                return (
-                  <div key="field-baladia">
-                    <OfficeDeliveryPicker
-                      offices={offices}
-                      wilayaId={wilayaId ?? null}
-                      lang={lang}
-                      baladia={baladia ?? ''}
-                      stopdeskCode={watch('stopdesk_code')}
-                      onChange={(commune, officeId) => {
-                        setValue('baladia', commune, { shouldValidate: true })
-                        setValue('stopdesk_code', officeId, { shouldValidate: true })
-                      }}
-                    />
-                    {errors.baladia && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.baladia.message}</p>}
-                  </div>
-                )
-              }
               return (
                 <div key="field-baladia">
-                  <BaladiaField wilayaId={wilayaId ?? null} value={baladia ?? ''} onChange={v => setValue('baladia', v, { shouldValidate: true })} error={errors.baladia?.message} lang={lang} />
-                  <p className="text-xs mt-1.5" style={{ color: DK.muted }}>{lang === 'ar' ? 'لا يوجد مكتب متاح لهذه الولاية — اختر البلدية للتوصيل.' : lang === 'fr' ? 'Aucun bureau pour cette wilaya — choisissez la commune.' : 'No office for this wilaya — choose your municipality.'}</p>
+                  <OfficeDeliveryPicker
+                    offices={offices}
+                    wilayaId={wilayaId ?? null}
+                    lang={lang}
+                    baladia={baladia ?? ''}
+                    stopdeskCode={watch('stopdesk_code')}
+                    onChange={(commune, officeId) => {
+                      setValue('baladia', commune, { shouldValidate: true })
+                      setValue('stopdesk_code', officeId, { shouldValidate: true })
+                    }}
+                  />
+                  {errors.baladia && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.baladia.message}</p>}
                 </div>
               )
             }

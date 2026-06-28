@@ -160,6 +160,33 @@ export default function OfficeDeliveryPicker({ offices, wilayaId, lang, baladia,
 
   const confirmTextColor = theme ? '' : '#1B1B1F'
 
+  if (offices.length === 0) {
+    const noOfficesMsg = lang === 'ar'
+      ? 'لا تتوفر خدمة التوصيل للمكتب في هذه الولاية. يرجى اختيار التوصيل للمنزل أو تحديد ولاية أخرى.'
+      : lang === 'fr'
+      ? "La livraison au bureau n'est pas disponible pour cette wilaya. Veuillez choisir la livraison à domicile ou une autre wilaya."
+      : 'No office delivery is available in this Wilaya. Please choose Home Delivery or another Wilaya.'
+
+    return (
+      <div className="space-y-3">
+        <div>
+          <label className={labelCls}>
+            {translateStorefront('baladia', lang)} <span style={{ color: starColor }}>*</span>
+          </label>
+          <div className="relative">
+            <button type="button" disabled className={`${fieldCls} opacity-60 cursor-not-allowed`}>
+              <span>&nbsp;</span>
+              <ChevronDown size={16} style={{ color: theme === 'glassmorphism' ? '#94a3b8' : '#57564F' }} />
+            </button>
+          </div>
+          <p className="text-xs mt-1.5 leading-relaxed text-red-500 font-medium">
+            {noOfficesMsg}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
       {/* 1. Municipality — only those with offices */}
