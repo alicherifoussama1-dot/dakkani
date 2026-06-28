@@ -85,7 +85,11 @@ function ProvidersTab({ providers, reload, setToast }: { providers: Provider[]; 
     try {
       const res = await fetch(`/api/delivery/import-rates/${p.id}`, { method: 'POST' })
       const d = await res.json().catch(() => ({}))
-      setToast(res.ok ? `✓ تمت مزامنة ${d.count ?? ''} سعر توصيل` : (d.error ?? 'تعذّرت المزامنة'))
+      let msg = `✓ تمت مزامنة ${d.imported ?? d.count ?? ''} سعر توصيل`
+      if (d.officesImported) {
+        msg += ` و ${d.officesImported} مكتب`
+      }
+      setToast(res.ok ? msg : (d.error ?? 'تعذّرت المزامنة'))
     } catch { setToast('تعذّرت المزامنة') }
     finally { setSyncing(null) }
   }

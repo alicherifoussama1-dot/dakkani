@@ -45,40 +45,31 @@ export async function GET(req: Request) {
 
     let offices: { id: string; name: string; address: string; wilaya: string; commune: string }[] = []
 
-    if (provider.provider_type === 'yalidine') {
-      const creds = decryptCredentials<any>(provider.credentials)
-      const apiId = creds.apiId || creds.id || ''
-      const apiToken = creds.apiToken || creds.token || ''
-      console.log(`[desks] yalidine wilaya=${wilayaCode} id=${mask(apiId)} token=${mask(apiToken)}`)
-      const res = await fetch('https://api.yalidine.app/v1/centers/?page_size=1000', {
-        headers: { 'X-API-ID': apiId, 'X-API-TOKEN': apiToken }, next: { revalidate: 3600 },
-      })
-      if (!res.ok) {
-        console.warn(`[desks] yalidine HTTP ${res.status}`)
-        return NextResponse.json({ offices: [], hasProvider: true, providerType: 'yalidine', error: 'تعذّر جلب مكاتب Yalidine — تحقّق من المفاتيح.' })
+    // Fetch from local store_delivery_offices table
+    const { data: manual } = await supabase.from('store_delivery_offices')
+      .select('id, name, address').eq('store_id', storeId).eq('wilaya_code', wilayaCode).eq('is_active', true)
+      .or(`provider_id.eq.${provider.id},provider_id.is.null`).order('name')
+
+    const managed = (manual ?? []).map((o: any) => {
+      let commune = ''
+      let name = o.name
+      if (o.name.includes('|')) {
+        const parts = o.name.split('|')
+        commune = parts[0].trim()
+        name = parts[1].trim()
       }
-      const json = await res.json()
-      offices = (json.data ?? [])
-        .filter((c: any) => parseInt(c.wilaya_id, 10) === wilayaId)
-        .map((c: any) => ({ id: String(c.id), name: c.name, address: c.address ?? '', wilaya: c.wilaya_name ?? '', commune: c.commune_name ?? '' }))
-    } else {
-      // No carrier desks API. Merchant-managed list first…
-      const { data: manual } = await supabase.from('store_delivery_offices')
-        .select('id, name, address').eq('store_id', storeId).eq('wilaya_code', wilayaCode).eq('is_active', true)
-        .or(`provider_id.eq.${provider.id},provider_id.is.null`).order('name')
-      const managed = (manual ?? []).map((o: any) => ({ id: String(o.id), name: o.name, address: o.address ?? '', wilaya: wilayaCode, commune: '' }))
+      return { id: String(o.id), name, address: o.address ?? '', wilaya: wilayaCode, commune }
+    })
 
-      // …plus the bundled official ZR Express office list (stored id = office
-      // name so the order keeps a readable stopdesk for fulfillment).
-      const bundled = /zr|procolis/i.test(provider.provider_type)
-        ? zrOfficesByWilaya(wilayaCode).map(o => ({ id: o.name, name: o.name, address: '', wilaya: wilayaCode, commune: o.commune }))
-        : []
+    // Plus the bundled official ZR Express office list
+    const bundled = /zr|procolis/i.test(provider.provider_type)
+      ? zrOfficesByWilaya(wilayaCode).map(o => ({ id: o.name, name: o.name, address: '', wilaya: wilayaCode, commune: o.commune }))
+      : []
 
-      // De-dup by name (a merchant override wins over the bundled entry).
-      const byName = new Set(managed.map(o => o.name))
-      offices = [...managed, ...bundled.filter(o => !byName.has(o.name))]
-      console.log(`[desks] ${provider.provider_type} wilaya=${wilayaCode} → ${managed.length} managed + ${bundled.length} bundled`)
-    }
+    // De-dup by name (a merchant override wins over the bundled entry).
+    const byName = new Set(managed.map(o => o.name))
+    offices = [...managed, ...bundled.filter(o => !byName.has(o.name))]
+    console.log(`[desks] ${provider.provider_type} wilaya=${wilayaCode} → ${managed.length} managed + ${bundled.length} bundled`)
 
     cache.set(key, { at: Date.now(), offices })
     return NextResponse.json({ offices, hasProvider: true, providerType: provider.provider_type })

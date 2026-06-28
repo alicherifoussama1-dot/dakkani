@@ -3,7 +3,7 @@
 // Manual edits are preserved (only rows still 'imported' are overwritten).
 import { NextResponse } from 'next/server'
 import { storeCtx, getProvider, adapterFor } from '@/lib/delivery/route-helpers'
-import { providerMeta } from '@/lib/delivery'
+import { providerMeta, decryptCredentials } from '@/lib/delivery'
 
 export async function POST(req: Request, { params }: { params: { providerId: string } }) {
   const ctx = await storeCtx(); if ('error' in ctx) return ctx.error
@@ -45,5 +45,53 @@ export async function POST(req: Request, { params }: { params: { providerId: str
     const { error } = await ctx.supabase.from(table).upsert(payload, { onConflict: 'provider_id,wilaya_code' })
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   }
-  return NextResponse.json({ ok: true, imported: payload.length, skippedManual: manual.size })
+
+  let officesImported = 0
+  if (provider.provider_type === 'yalidine') {
+    try {
+      const creds = decryptCredentials<any>(provider.credentials)
+      const apiId = creds.apiId || creds.id || ''
+      const apiToken = creds.apiToken || creds.token || ''
+
+      const res = await fetch('https://api.yalidine.app/v1/centers/?page_size=1000', {
+        headers: { 'X-API-ID': apiId, 'X-API-TOKEN': apiToken }
+      })
+      if (res.ok) {
+        const json = await res.json()
+        const centers = json.data || []
+        const officesPayload = centers.map((c: any) => {
+          const wCode = String(c.wilaya_id).padStart(2, '0')
+          const formattedName = `${c.commune_name || ''} | ${c.name}`
+          return {
+            store_id: ctx.store.id,
+            provider_id: provider.id,
+            wilaya_code: wCode,
+            name: formattedName,
+            address: c.address || null,
+            is_active: true
+          }
+        })
+
+        if (officesPayload.length > 0) {
+          // Delete existing imported offices for this provider to prevent duplicates
+          await ctx.supabase.from('store_delivery_offices')
+            .delete()
+            .eq('store_id', ctx.store.id)
+            .eq('provider_id', provider.id)
+
+          // Insert new ones
+          const { error: officeErr } = await ctx.supabase.from('store_delivery_offices').insert(officesPayload)
+          if (officeErr) {
+            console.error('Error inserting Yalidine offices:', officeErr.message)
+          } else {
+            officesImported = officesPayload.length
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error syncing Yalidine offices:', err)
+    }
+  }
+
+  return NextResponse.json({ ok: true, imported: payload.length, skippedManual: manual.size, officesImported })
 }

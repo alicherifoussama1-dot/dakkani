@@ -64,37 +64,9 @@ export async function GET(req: Request) {
 
     const creds = decryptCredentials<any>(provider.credentials)
 
-    if (provider.provider_type === 'yalidine') {
-      const apiId = creds.apiId || ''
-      const apiToken = creds.apiToken || ''
+    let offices: { code: string; name: string }[] = []
 
-      // Fetch centers from Yalidine API (filtered by wilaya_id to save bandwidth/processing)
-      const res = await fetch(`https://api.yalidine.app/v1/centers/?page_size=1000`, {
-        headers: {
-          'X-API-ID': apiId,
-          'X-API-TOKEN': apiToken,
-        },
-        next: { revalidate: 3600 } // Cache for 1 hour
-      })
-
-      if (!res.ok) {
-        return NextResponse.json({ offices: [], hasProvider: true, providerType: 'yalidine' })
-      }
-
-      const json = await res.json()
-      const centers = json.data || []
-      const offices = centers
-        .filter((c: any) => parseInt(c.wilaya_id, 10) === wilayaId)
-        .map((c: any) => ({
-          code: String(c.id),
-          name: `${c.name} - ${c.address || ''} (${c.commune_name || ''})`,
-        }))
-
-      return NextResponse.json({ offices, hasProvider: true, providerType: 'yalidine' })
-    }
-
-    // Other couriers (ZR Express, etc.) have no offices API → use the
-    // merchant-managed list (store_delivery_offices) for this wilaya.
+    // Fetch from local store_delivery_offices table
     const { data: manual } = await supabase
       .from('store_delivery_offices')
       .select('id, name, address')
@@ -104,10 +76,21 @@ export async function GET(req: Request) {
       .or(`provider_id.eq.${provider.id},provider_id.is.null`)
       .order('name')
 
-    const offices = (manual ?? []).map((o: any) => ({
-      code: String(o.id),
-      name: o.address ? `${o.name} — ${o.address}` : o.name,
-    }))
+    offices = (manual ?? []).map((o: any) => {
+      let commune = ''
+      let name = o.name
+      if (o.name.includes('|')) {
+        const parts = o.name.split('|')
+        commune = parts[0].trim()
+        name = parts[1].trim()
+      }
+      const displayName = commune ? `${name} - ${o.address || ''} (${commune})` : (o.address ? `${name} — ${o.address}` : name)
+      return {
+        code: String(o.id),
+        name: displayName
+      }
+    })
+
     return NextResponse.json({ offices, hasProvider: true, providerType: provider.provider_type })
   } catch (e: any) {
     return NextResponse.json({ error: e.message, hasProvider: false }, { status: 500 })
