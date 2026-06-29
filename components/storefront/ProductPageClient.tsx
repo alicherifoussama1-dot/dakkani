@@ -32,6 +32,51 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
   const [activeImg, setActiveImg] = useState(0)
   const [lightbox,  setLightbox]  = useState(false)
   const [selected,  setSelected]  = useState<Record<string, string>>({})
+  const [showSticky, setShowSticky] = useState(true)
+
+  useEffect(() => {
+    let observer: IntersectionObserver | null = null
+    
+    const initObserver = () => {
+      const target = document.getElementById('original-submit-btn')
+      if (target) {
+        observer = new IntersectionObserver(([entry]) => {
+          setShowSticky(!entry.isIntersecting)
+        }, {
+          root: null,
+          threshold: 0,
+        })
+        observer.observe(target)
+        return true
+      }
+      return false
+    }
+
+    if (!initObserver()) {
+      const timer = setTimeout(() => {
+        if (!initObserver()) {
+          const formEl = document.getElementById('order-form')
+          if (formEl) {
+            observer = new IntersectionObserver(([entry]) => {
+              setShowSticky(!entry.isIntersecting)
+            }, {
+              root: null,
+              threshold: 0,
+            })
+            observer.observe(formEl)
+          }
+        }
+      }, 100)
+      return () => {
+        clearTimeout(timer)
+        if (observer) observer.disconnect()
+      }
+    }
+
+    return () => {
+      if (observer) observer.disconnect()
+    }
+  }, [])
 
   // Load checkout settings and language defaults
   const settings = Array.isArray(store.store_settings) ? store.store_settings[0] : store.store_settings
@@ -447,18 +492,23 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
         </div>
       )}
 
-      {/* Mobile sticky buy bar */}
-      <div className="fixed bottom-0 inset-x-0 lg:hidden z-40 flex gap-2.5 p-3.5" style={{ background: 'rgba(250,248,245,0.97)', borderTop: `0.5px solid ${LINE}`, backdropFilter: 'blur(8px)' }} dir={isRtl ? 'rtl' : 'ltr'}>
-        {waUrl && (
-          <a href={waUrl} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
-            className="w-14 flex items-center justify-center rounded-2xl shrink-0" style={{ background: '#1FAE54' }}>
-            <WhatsAppIcon size={26} />
-          </a>
-        )}
-        <button type="button" onClick={scrollToForm} aria-label={translateStorefront('order_now', lang)}
-          className="flex-1 flex items-center justify-center gap-2 h-14 rounded-2xl text-white font-bold text-[15px] transition-transform active:scale-95" style={{ background: A }}>
-          <ShoppingBag className="w-5 h-5" />
-          <span className="tabular-nums">{translateStorefront('order_now', lang).replace(' 🛒', '').replace(' اضغط هنا للطلب', 'اطلب')} — {formatDZD(product.price)}</span>
+      {/* Universal premium sticky buy bar */}
+      <div 
+        className={`fixed bottom-0 inset-x-0 z-40 flex justify-center p-3.5 transition-all duration-300 ease-in-out ${showSticky ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`} 
+        style={{ 
+          background: 'rgba(250,248,245,0.97)', 
+          borderTop: `0.5px solid ${LINE}`, 
+          backdropFilter: 'blur(8px)' 
+        }} 
+        dir={isRtl ? 'rtl' : 'ltr'}
+      >
+        <button 
+          type="button" 
+          onClick={scrollToForm} 
+          className="w-full max-w-lg flex items-center justify-center h-14 rounded-2xl text-white font-bold text-[16px] transition-transform active:scale-95 shadow-lg cursor-pointer hover:opacity-90" 
+          style={{ background: A }}
+        >
+          اطلب الآن
         </button>
       </div>
 

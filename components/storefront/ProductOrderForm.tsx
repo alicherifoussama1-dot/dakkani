@@ -459,7 +459,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         </div>
       )}
 
-      <button type="submit" disabled={isSubmitting}
+      <button type="submit" id="original-submit-btn" disabled={isSubmitting}
         className="w-full h-14 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-60"
         style={{ background: DK.accent }}>
         {isSubmitting
