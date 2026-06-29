@@ -125,19 +125,19 @@ function ProvidersTab({ providers, reload, setToast }: { providers: Provider[]; 
 
               <div className="flex items-center justify-between pt-2 mt-auto border-t" style={{ borderColor: 'var(--color-border)' }}>
                 {connected ? (
-                  <button onClick={() => setForm({ id: p!.id, provider_type: p!.provider_type, display_name: p!.display_name, json: '', is_automatic: p!.is_automatic, from_wilaya_code: p!.from_wilaya_code })}
+                  <button onClick={() => setForm({ id: p!.id, provider_type: p!.provider_type, display_name: p!.display_name, credentials: p!.credentials, is_automatic: p!.is_automatic, from_wilaya_code: p!.from_wilaya_code })}
                     className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg"
                     style={{ background: p!.is_active ? '#DCFCE7' : '#F1F3F5', color: p!.is_active ? '#16A34A' : '#6C757D' }}>
                     <CheckCircle size={12} /> {p!.is_active ? 'متصل — إدارة' : 'موقوف — إدارة'}
                   </button>
                 ) : (
-                  <button onClick={() => setForm({ provider_type: meta.type, json: '', is_automatic: false, from_wilaya_code: '16' })}
+                  <button onClick={() => setForm({ provider_type: meta.type, credentials: {}, is_automatic: false, from_wilaya_code: '16' })}
                     className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg" style={{ background: '#E7F0FF', color: '#0D6EFD' }}>
                     <Link2 size={12} /> ربط
                   </button>
                 )}
                 <button
-                  onClick={() => connected ? toggleActive(p!) : setForm({ provider_type: meta.type, json: '', is_automatic: false, from_wilaya_code: '16' })}
+                  onClick={() => connected ? toggleActive(p!) : setForm({ provider_type: meta.type, credentials: {}, is_automatic: false, from_wilaya_code: '16' })}
                   className="w-10 h-5 rounded-full relative transition-colors shrink-0"
                   style={{ background: connected && p!.is_active ? '#0D6EFD' : '#DEE2E6' }} title={connected ? (p!.is_active ? 'مفعّل' : 'موقوف') : 'غير مربوط'}>
                   <span className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all"
@@ -259,53 +259,84 @@ function ProviderModal({ form, setForm, onSaved, setToast }: { form: any; setFor
   const [testMsg, setTestMsg] = useState<{ ok: boolean; msg: string; raw?: string } | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
-  const template = JSON.stringify(meta.credTemplate, null, 2)
+  // Maintain individual fields in state
+  const [fields, setFields] = useState<Record<string, string>>(() => {
+    const creds = form.credentials ?? {}
+    const initial: Record<string, string> = {}
+    
+    // Normalize and map credentials including legacy keys for backward-compatibility
+    meta.fields.forEach(f => {
+      let val = creds[f.key]
+      if (val === undefined) {
+        if (f.key === 'apiId') val = creds.id ?? creds.apiId
+        if (f.key === 'apiToken') val = creds.token ?? creds.apiToken
+        if (f.key === 'secretKey') val = creds.secretKey ?? creds.token
+        if (f.key === 'tenantId') val = creds.tenantId ?? creds.id
+      }
+      initial[f.key] = val ?? ''
+    })
+    return initial
+  })
 
-  // Has the merchant typed real, fresh JSON? (Empty or masked = "keep existing".)
-  const freshJson = (): string | null => {
-    const txt = String(form.json ?? '').trim()
-    if (!txt || txt.includes('•')) return null   // U+2022 = masked placeholder
-    return txt
-  }
-
-  // Parse + validate fresh JSON → credentials object (Arabic errors).
-  const parseCreds = (txt: string): Record<string, string> | null => {
-    let creds: any
-    try { creds = JSON.parse(txt) } catch { setErr('JSON غير صحيح'); return null }
-    if (typeof creds !== 'object' || creds === null || Array.isArray(creds)) { setErr('JSON غير صحيح'); return null }
-    const v = validateCreds(form.provider_type, creds)
-    if (!v.ok) { setErr(`ينقص المفتاح: ${v.missing}`); return null }
-    setErr(null)
-    return creds
+  // Has the merchant typed real, fresh values? (Empty or masked = "keep existing".)
+  const getPayload = (): Record<string, string> => {
+    const payload: Record<string, string> = {}
+    meta.fields.forEach(f => {
+      const val = String(fields[f.key] ?? '').trim()
+      if (val) payload[f.key] = val
+    })
+    return payload
   }
 
   const test = async () => {
-    const txt = freshJson()
-    // Edit + no fresh paste → test the STORED (decrypted server-side) credentials.
+    const payload = getPayload()
+    const values = Object.values(payload)
+    const anyMasked = values.some(v => v.includes('•'))
+    
     let body: any
-    if (!txt) {
-      if (!form.id) { setErr('أدخل بيانات الدخول (JSON)'); return }
+    if (anyMasked && form.id) {
       body = { provider_id: form.id }
     } else {
-      const creds = parseCreds(txt); if (!creds) return
-      body = { provider_type: form.provider_type, credentials: creds }
+      const v = validateCreds(form.provider_type, payload)
+      if (!v.ok) { setErr(`ينقص الحقل: ${v.missing}`); return }
+      setErr(null)
+      body = { provider_type: form.provider_type, credentials: payload }
     }
+    
     setTesting(true); setTestMsg(null)
     const res = await fetch('/api/delivery/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     const d = await res.json(); setTestMsg({ ok: !!d.ok, msg: d.message, raw: d.debug?.response }); setTesting(false)
   }
+
   const save = async () => {
-    const txt = freshJson()
-    let creds: Record<string, string> = {}
-    if (txt) {
-      const parsed = parseCreds(txt); if (!parsed) return
-      creds = parsed
-    } else if (!form.id) {
-      setErr('أدخل بيانات الدخول (JSON)'); return   // creating requires creds
+    const payload = getPayload()
+    const values = Object.values(payload)
+    const anyMasked = values.some(v => v.includes('•'))
+    const hasValues = values.length > 0
+
+    if (!form.id && (!hasValues || anyMasked)) {
+      setErr('يرجى ملء جميع الحقول المطلوبة'); return
     }
-    // Edit with empty/masked json → creds {} → server keeps existing creds.
+
+    if (hasValues && !anyMasked) {
+      const v = validateCreds(form.provider_type, payload)
+      if (!v.ok) { setErr(`ينقص الحقل: ${v.missing}`); return }
+    }
+    setErr(null)
+
     setSaving(true)
-    const res = await fetch('/api/delivery/providers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: form.id, provider_type: form.provider_type, display_name: form.display_name || meta.label, credentials: creds, is_automatic: !!form.is_automatic, from_wilaya_code: form.from_wilaya_code }) })
+    const res = await fetch('/api/delivery/providers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: form.id,
+        provider_type: form.provider_type,
+        display_name: form.display_name || meta.label,
+        credentials: payload,
+        is_automatic: !!form.is_automatic,
+        from_wilaya_code: form.from_wilaya_code
+      })
+    })
     setSaving(false)
     if (res.ok) { setToast('تم حفظ الشركة'); setForm(null); await onSaved() }
     else { const d = await res.json().catch(() => ({})); setErr(d.error ?? 'تعذّر الحفظ') }
@@ -313,38 +344,48 @@ function ProviderModal({ form, setForm, onSaved, setToast }: { form: any; setFor
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/60 z-50" onClick={() => setForm(null)} />
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[440px] max-h-[88vh] overflow-y-auto bg-white rounded-2xl shadow-2xl" dir="rtl">
-        <div className="flex items-center justify-between px-5 py-3 border-b sticky top-0 bg-white" style={{ borderColor: 'var(--color-border)' }}>
-          <h3 className="font-bold text-sm">{form.id ? 'تعديل شركة التوصيل' : 'إضافة شركة توصيل'}</h3>
-          <button onClick={() => setForm(null)} className="p-1.5 rounded hover:bg-[#F8F9FA]"><X size={16} /></button>
-        </div>
-        <div className="p-5 space-y-3">
-          {/* Provider dropdown */}
-          <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>الشركة</label>
-            <select className="input text-sm w-full" value={form.provider_type}
-              onChange={e => setForm((f: any) => ({ ...f, provider_type: e.target.value, json: f.id ? f.json : '' }))}>
-              {PROVIDERS.map(p => <option key={p.type} value={p.type}>{p.logo} {p.label}</option>)}
-            </select>
+      <div className="fixed inset-0 bg-black/60 z-50 animate-fade-in" onClick={() => setForm(null)} />
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[440px] max-w-[92vw] max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl border" style={{ borderColor: 'var(--color-border)' }} dir="rtl">
+        <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white z-10" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{meta.logo}</span>
+            <h3 className="font-bold text-base" style={{ color: 'var(--color-text-primary)' }}>
+              {form.id ? `تعديل إعدادات ${meta.label}` : `ربط ${meta.label}`}
+            </h3>
           </div>
-
+          <button onClick={() => setForm(null)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X size={16} /></button>
+        </div>
+        <div className="p-6 space-y-4">
           {/* Display name */}
           <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>الاسم</label>
-            <input className="input text-sm w-full" placeholder="اسم الشركة المعروض" value={form.display_name ?? ''} onChange={e => setForm((f: any) => ({ ...f, display_name: e.target.value }))} />
+            <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-text-secondary)' }}>الاسم المعروض</label>
+            <input className="input text-sm w-full" placeholder="مثال: ZR Express للتوصيل" value={form.display_name ?? ''} onChange={e => setForm((f: any) => ({ ...f, display_name: e.target.value }))} />
           </div>
 
-          {/* JSON credentials */}
-          <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>API Credentials (JSON)</label>
-            <textarea dir="ltr" rows={5} spellCheck={false}
-              className="input text-xs w-full font-mono" style={{ height: 'auto', lineHeight: 1.6, resize: 'vertical' }}
-              placeholder={template}
-              value={form.json ?? ''} onChange={e => { setForm((f: any) => ({ ...f, json: e.target.value })); setErr(null) }} />
+          {/* Dedicated input fields */}
+          <div className="space-y-3 bg-[#F8F9FA] p-4 rounded-xl border" style={{ borderColor: 'var(--color-border)' }}>
+            <h4 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--color-text-muted)' }}>بيانات الاتصال بالحساب</h4>
+            {meta.fields.map(f => (
+              <div key={f.key}>
+                <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  {f.label}
+                </label>
+                <input
+                  type={f.type ?? 'text'}
+                  dir="ltr"
+                  className="input text-sm w-full font-mono focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                  placeholder={f.placeholder}
+                  value={fields[f.key]}
+                  onChange={e => {
+                    setFields(prev => ({ ...prev, [f.key]: e.target.value }))
+                    setErr(null)
+                  }}
+                />
+              </div>
+            ))}
             {form.id && (
-              <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-muted)' }}>
-                🔒 البيانات محفوظة ومشفّرة — اتركها فارغة للإبقاء عليها، أو الصق JSON جديداً لتغييرها.
+              <p className="text-[10px] mt-2 leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                🔒 البيانات مشفّرة ومحفوظة بأمان. الحقول التي تحتوي على (••••) اتركها كما هي للإبقاء عليها دون تعديل.
               </p>
             )}
           </div>
@@ -352,31 +393,42 @@ function ProviderModal({ form, setForm, onSaved, setToast }: { form: any; setFor
           {/* Origin wilaya — only Yalidine uses it (from_wilaya_id for fees + parcel) */}
           {form.provider_type === 'yalidine' && (
             <div>
-              <label className="block text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>ولاية الإرسال (المصدر)</label>
-              <input className="input text-sm w-full" dir="ltr" placeholder="رمز الولاية، مثل 16" value={form.from_wilaya_code ?? '16'} onChange={e => setForm((f: any) => ({ ...f, from_wilaya_code: e.target.value }))} />
-              <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-muted)' }}>الولاية التي تُرسل منها الطرود — تستخدمها Yalidine لحساب السعر وإنشاء الشحنة.</p>
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-text-secondary)' }}>ولاية الإرسال (المصدر)</label>
+              <input className="input text-sm w-full" dir="ltr" placeholder="رمز ولايتك، مثل 16 الجزائر" value={form.from_wilaya_code ?? '16'} onChange={e => setForm((f: any) => ({ ...f, from_wilaya_code: e.target.value }))} />
+              <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-muted)' }}>الولاية التي تقوم بالشحن منها. تستخدم لتسعير التوصيل وتوجيه الشحنات.</p>
             </div>
           )}
 
           {/* Automatic */}
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input type="checkbox" checked={!!form.is_automatic} onChange={e => setForm((f: any) => ({ ...f, is_automatic: e.target.checked }))} className="w-4 h-4 accent-[#3CC6B9]" />
-            التلقائية؟ <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>(إرسال الطلبات المؤكدة لهذه الشركة تلقائياً)</span>
-          </label>
+          <div className="flex items-center gap-2 p-3 rounded-xl border bg-gray-50/50" style={{ borderColor: 'var(--color-border)' }}>
+            <input type="checkbox" id="is_automatic" checked={!!form.is_automatic} onChange={e => setForm((f: any) => ({ ...f, is_automatic: e.target.checked }))} className="w-4 h-4 accent-[#3CC6B9] cursor-pointer" />
+            <label htmlFor="is_automatic" className="text-sm font-semibold cursor-pointer select-none" style={{ color: 'var(--color-text-primary)' }}>
+              إرسال تلقائي للشحنات؟
+              <span className="block text-[10px] font-normal leading-normal mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+                سيقوم النظام بإنشاء الشحنة تلقائياً لدى الشركة بمجرد تأكيد الطلب.
+              </span>
+            </label>
+          </div>
 
-          {!meta.hasRatesApi && <p className="text-[11px]" style={{ color: '#C76B00' }}>⚠️ هذه الشركة لا توفّر استيراد الأسعار تلقائياً — أدخل الأسعار يدوياً.</p>}
-          {err && <p className="text-xs flex items-center gap-1" style={{ color: '#DC3545' }}><AlertTriangle size={12} />{err}</p>}
+          {!meta.hasRatesApi && <p className="text-[11px] flex items-start gap-1 p-2 rounded bg-amber-50 text-amber-700 border border-amber-100">⚠️ هذه الشركة لا توفّر استيراد الأسعار تلقائياً — أدخل الأسعار يدوياً.</p>}
+          {err && <p className="text-xs flex items-center gap-1 font-semibold text-red-600"><AlertTriangle size={12} />{err}</p>}
           {testMsg && (
-            <div>
-              <p className="text-xs flex items-center gap-1" style={{ color: testMsg.ok ? '#198754' : '#DC3545' }}>{testMsg.ok ? <CheckCircle size={12} /> : <AlertTriangle size={12} />}{testMsg.msg}</p>
-              {testMsg.raw && <pre dir="ltr" className="mt-1 p-2 rounded text-[10px] overflow-x-auto" style={{ background: '#F8F9FA', color: '#495057', maxHeight: 80 }}>{testMsg.raw}</pre>}
+            <div className="p-3 rounded-xl border" style={{ borderColor: testMsg.ok ? '#D1E7DD' : '#F8D7DA', background: testMsg.ok ? '#F8F9FA' : '#FFF3CD' }}>
+              <p className="text-xs flex items-center gap-1 font-bold" style={{ color: testMsg.ok ? '#0F5132' : '#842029' }}>
+                {testMsg.ok ? <CheckCircle size={12} /> : <AlertTriangle size={12} />}{testMsg.msg}
+              </p>
+              {testMsg.raw && <pre dir="ltr" className="mt-2 p-2 rounded text-[10px] overflow-x-auto font-mono bg-white border" style={{ color: '#495057', maxHeight: 90 }}>{testMsg.raw}</pre>}
             </div>
           )}
 
-          <div className="flex gap-2 pt-1">
-            <button onClick={test} disabled={testing} className="btn btn-sm" style={{ border: '1px solid var(--cf-turq)', color: '#0A6E66' }}>{testing ? <Loader2 size={13} className="animate-spin" /> : 'اختبار الاتصال'}</button>
-            <button onClick={save} disabled={saving} className="btn btn-sm flex-1" style={{ background: '#22C55E', color: '#fff' }}>{saving ? <Loader2 size={13} className="animate-spin" /> : 'حفظ'}</button>
-            <button onClick={() => setForm(null)} className="btn btn-sm flex-1" style={{ background: '#FDECEA', color: '#E23024' }}>إلغاء</button>
+          <div className="flex gap-2 pt-2 border-t" style={{ borderColor: 'var(--color-border)' }}>
+            <button onClick={test} disabled={testing} className="btn btn-sm px-4 font-bold border hover:bg-teal-50/50" style={{ borderColor: 'var(--cf-turq)', color: '#0A6E66' }}>
+              {testing ? <Loader2 size={13} className="animate-spin" /> : 'اختبار الاتصال'}
+            </button>
+            <button onClick={save} disabled={saving} className="btn btn-sm flex-1 font-bold" style={{ background: '#22C55E', color: '#fff' }}>
+              {saving ? <Loader2 size={13} className="animate-spin" /> : 'حفظ الإعدادات'}
+            </button>
+            <button onClick={() => setForm(null)} className="btn btn-sm font-bold" style={{ background: '#FDECEA', color: '#E23024' }}>إلغاء</button>
           </div>
         </div>
       </div>

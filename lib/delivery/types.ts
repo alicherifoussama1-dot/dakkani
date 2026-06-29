@@ -107,12 +107,12 @@ export interface ProviderCredentials {
   // yalidine
   apiId?: string
   apiToken?: string
-  // zrexpress (Procolis)
+  // zrexpress (Token API & Procolis)
+  secretKey?: string
+  tenantId?: string
   token?: string
   key?: string
   // ecotrack / maystro / noest
-  // (token reused above)
-  // optional origin wilaya
   fromWilayaCode?: string
 }
 
@@ -122,7 +122,7 @@ export interface ProviderMeta {
   label: string             // Arabic display name
   logo: string              // emoji / short tag for the UI chip
   hasRatesApi: boolean      // can auto-import prices?
-  fields: { key: keyof ProviderCredentials; label: string; placeholder?: string }[]
+  fields: { key: keyof ProviderCredentials; label: string; placeholder?: string; type?: 'text' | 'password' }[]
   // JSON credentials UX
   requiredKeys: string[]              // keys the merchant must provide (real dashboard names)
   credTemplate: Record<string, string> // placeholder shown in the JSON textarea
@@ -130,35 +130,35 @@ export interface ProviderMeta {
 
 export const PROVIDERS: ProviderMeta[] = [
   {
+    type: 'yalidine', label: 'Yalidine', logo: '🟡', hasRatesApi: true,
+    fields: [
+      { key: 'apiId',    label: 'API ID',    placeholder: 'X-API-ID', type: 'text' },
+      { key: 'apiToken', label: 'API Token', placeholder: 'X-API-TOKEN', type: 'password' },
+    ],
+    requiredKeys: ['apiId', 'apiToken'], credTemplate: { apiId: '', apiToken: '' },
+  },
+  {
+    type: 'zrexpress', label: 'ZR Express', logo: '🔴', hasRatesApi: true,
+    fields: [
+      { key: 'secretKey', label: 'Secret Key', placeholder: 'Secret Key', type: 'password' },
+      { key: 'tenantId',  label: 'Tenant ID',  placeholder: 'Tenant ID', type: 'text' },
+      { key: 'key',       label: 'Procolis API Key (Optional)', placeholder: 'Procolis Key', type: 'password' },
+    ],
+    requiredKeys: ['secretKey', 'tenantId'], credTemplate: { secretKey: '', tenantId: '' },
+  },
+  {
     type: 'ecotrack', label: 'Ecotrack', logo: '🟢', hasRatesApi: true,
-    fields: [{ key: 'token', label: 'API Token', placeholder: 'Bearer token' }],
+    fields: [{ key: 'token', label: 'API Token', placeholder: 'API Token', type: 'password' }],
     requiredKeys: ['token'], credTemplate: { token: '' },
   },
   {
-    type: 'zrexpress', label: 'ZR Express (Procolis)', logo: '🔴', hasRatesApi: true,
-    fields: [
-      { key: 'token', label: 'Token', placeholder: 'token' },
-    ],
-    // ZR Express "Token API" issues {secretKey, tenantId}; classic Procolis
-    // {token, key} is still accepted and auto-detected.
-    requiredKeys: ['token'], credTemplate: { secretKey: '', tenantId: '' },
-  },
-  {
-    type: 'yalidine', label: 'Yalidine', logo: '🟡', hasRatesApi: true,
-    fields: [
-      { key: 'apiId',    label: 'API ID',    placeholder: 'X-API-ID' },
-      { key: 'apiToken', label: 'API Token', placeholder: 'X-API-TOKEN' },
-    ],
-    requiredKeys: ['id', 'token'], credTemplate: { id: '', token: '' },
-  },
-  {
     type: 'noest', label: 'Noest (Ecotrack)', logo: '🟣', hasRatesApi: true,
-    fields: [{ key: 'token', label: 'API Token (Ecotrack)', placeholder: 'Bearer token' }],
+    fields: [{ key: 'token', label: 'API Token (Ecotrack)', placeholder: 'API Token', type: 'password' }],
     requiredKeys: ['token'], credTemplate: { token: '' },
   },
   {
     type: 'maystro', label: 'Maystro', logo: '🔵', hasRatesApi: false,
-    fields: [{ key: 'token', label: 'API Token', placeholder: 'Bearer token' }],
+    fields: [{ key: 'token', label: 'API Token', placeholder: 'API Token', type: 'password' }],
     requiredKeys: ['token'], credTemplate: { token: '' },
   },
 ]
@@ -185,7 +185,14 @@ const TOKEN_NAMES = ['token', 'apitoken', 'accesstoken', 'bearer', 'apptoken', '
 const KEY_NAMES   = ['key', 'apikey', 'cle', 'secret', 'secretkey', 'privatekey']
 const ID_NAMES    = ['id', 'apiid', 'clientid', 'identifiant', 'userid', 'tenantid']
 
-export interface ResolvedCreds { apiId?: string; apiToken?: string; token?: string; key?: string }
+export interface ResolvedCreds {
+  apiId?: string
+  apiToken?: string
+  token?: string
+  key?: string
+  tenantId?: string
+  secretKey?: string
+}
 
 export function resolveCreds(type: ProviderType, raw: Record<string, unknown>): ResolvedCreds {
   const m = flatten(raw)
@@ -194,37 +201,40 @@ export function resolveCreds(type: ProviderType, raw: Record<string, unknown>): 
   const token = pick(...TOKEN_NAMES)
   const key   = pick(...KEY_NAMES)
 
-  switch (type) {
-    case 'yalidine': {
-      // Yalidine needs API ID + API TOKEN (accept {id,token} or {token,key}).
-      const apiId = id ?? token
-      const apiToken = id ? (token ?? key) : (key ?? token)
-      return { apiId, apiToken }
-    }
-    case 'zrexpress': {
-      // ZR needs a single code (token). A separate key is optional — only used
-      // when the merchant explicitly provides both token + key.
-      if (token && key) return { token, key }
-      return { token: token ?? key ?? id, key: undefined }
-    }
-    default: // ecotrack, noest, maystro → a single token (accept token|key|apiKey|…)
-      return { token: token ?? key ?? id }
+  if (type === 'yalidine') {
+    const apiId = m.apiid ?? id
+    const apiToken = m.apitoken ?? (m.apiid ? token : (token ?? key))
+    return { apiId, apiToken }
   }
+
+  if (type === 'zrexpress') {
+    const secretKey = m.secretkey ?? token
+    const tenantId = m.tenantid ?? id
+    const classicKey = m.key ?? key
+    return { secretKey, tenantId, key: classicKey, token: secretKey }
+  }
+
+  return { token: token ?? key ?? id }
 }
 
 // Validate pasted credentials for a provider (Arabic "missing key" message).
 export function validateCreds(type: ProviderType, creds: Record<string, unknown>): { ok: boolean; missing?: string } {
   const r = resolveCreds(type, creds)
   if (type === 'yalidine') {
-    if (!r.apiId)    return { ok: false, missing: 'id' }
-    if (!r.apiToken || r.apiToken === r.apiId) return { ok: false, missing: 'token' }
+    if (!r.apiId) return { ok: false, missing: 'API ID' }
+    if (!r.apiToken) return { ok: false, missing: 'API Token' }
     return { ok: true }
   }
   if (type === 'zrexpress') {
-    if (!r.token) return { ok: false, missing: 'token' }
-    return { ok: true } // key optional
+    if (r.key) {
+      if (!r.secretKey) return { ok: false, missing: 'Token' }
+    } else {
+      if (!r.secretKey) return { ok: false, missing: 'Secret Key' }
+      if (!r.tenantId) return { ok: false, missing: 'Tenant ID' }
+    }
+    return { ok: true }
   }
-  if (!r.token) return { ok: false, missing: 'token' }
+  if (!r.token) return { ok: false, missing: 'API Token' }
   return { ok: true }
 }
 
