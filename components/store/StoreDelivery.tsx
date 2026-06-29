@@ -32,7 +32,7 @@ type PriceRow = { home: number; desk: number; source: string }
 // ============================================================
 // Official Brand Identity Mapping (SVGs & Brand Color Systems)
 // ============================================================
-const BRAND_METRICS: Record<string, { logo: React.ReactNode; color: string; bg: string; text: string; apiVer: string; desc: string }> = {
+const BRAND_METRICS: Record<string, { logo: React.ReactNode; color: string; bg: string; text: string; apiVer: string; desc: string; gradient: string }> = {
   yalidine: {
     logo: (
       <svg className="w-8 h-8" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -44,7 +44,8 @@ const BRAND_METRICS: Record<string, { logo: React.ReactNode; color: string; bg: 
     bg: 'bg-[#FFC000]/5',
     text: 'text-[#111111]',
     apiVer: 'API v2',
-    desc: 'موزع الخدمات واللوجستيك الرائد في الجزائر مع تغطية شاملة لـ 58 ولاية.'
+    desc: 'موزع الخدمات واللوجستيك الرائد في الجزائر مع تغطية شاملة لـ 58 ولاية.',
+    gradient: 'from-[#FFC000]/10 to-transparent'
   },
   zrexpress: {
     logo: (
@@ -58,7 +59,8 @@ const BRAND_METRICS: Record<string, { logo: React.ReactNode; color: string; bg: 
     bg: 'bg-[#E23024]/5',
     text: 'text-[#E23024]',
     apiVer: 'Token API v1',
-    desc: 'خدمة توصيل سريعة وموثوقة مع تحديثات فورية ومزامنة مكاتب تلقائية.'
+    desc: 'خدمة توصيل سريعة وموثوقة مع تحديثات فورية ومزامنة مكاتب تلقائية.',
+    gradient: 'from-[#E23024]/10 to-transparent'
   },
   ecotrack: {
     logo: (
@@ -72,7 +74,8 @@ const BRAND_METRICS: Record<string, { logo: React.ReactNode; color: string; bg: 
     bg: 'bg-[#10B981]/5',
     text: 'text-[#10B981]',
     apiVer: 'Ecotrack API',
-    desc: 'تكامل التوصيل والتتبع اللوجستي المتقدم مع نظام إيكوتراك للمتاجر.'
+    desc: 'تكامل التوصيل والتتبع اللوجستي المتقدم مع نظام إيكوتراك للمتاجر.',
+    gradient: 'from-[#10B981]/10 to-transparent'
   },
   maystro: {
     logo: (
@@ -85,7 +88,8 @@ const BRAND_METRICS: Record<string, { logo: React.ReactNode; color: string; bg: 
     bg: 'bg-[#0D6EFD]/5',
     text: 'text-[#0D6EFD]',
     apiVer: 'Maystro Delivery',
-    desc: 'منصة لوجستية احترافية لتوصيل وإدارة شحنات التجارة الإلكترونية.'
+    desc: 'منصة لوجستية احترافية لتوصيل وإدارة شحنات التجارة الإلكترونية.',
+    gradient: 'from-[#0D6EFD]/10 to-transparent'
   },
   noest: {
     logo: (
@@ -99,7 +103,8 @@ const BRAND_METRICS: Record<string, { logo: React.ReactNode; color: string; bg: 
     bg: 'bg-[#7C3AED]/5',
     text: 'text-[#7C3AED]',
     apiVer: 'Noest API',
-    desc: 'توصيل شحن سريع واحترافي عبر بوابات منصة نويست الوطنية.'
+    desc: 'توصيل شحن سريع واحترافي عبر بوابات منصة نويست الوطنية.',
+    gradient: 'from-[#7C3AED]/10 to-transparent'
   }
 }
 
@@ -143,30 +148,48 @@ export default function StoreDelivery({ storeId, setToast }: { storeId: string; 
     })() 
   }, [loadProviders, loadWilayas, loadMetrics])
 
+  const connectedCount = providers.length
+  const activeCount = providers.filter(p => p.is_active).length
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-6" dir="rtl">
-      {/* Tab Navigation */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-4" style={{ borderColor: 'var(--color-border)' }}>
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-gray-900">مركز التحكم بـشركات التوصيل</h2>
-          <p className="text-xs text-gray-500 mt-1">قم بربط حسابات شركات الشحن الخاصة بك، وإدارة الأسعار وتوجيه الطرود لكل ولاية.</p>
+    <div className="space-y-8 max-w-7xl mx-auto p-4 md:p-8 animate-fade-in" dir="rtl">
+      
+      {/* Hero Section */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b pb-6 gap-6" style={{ borderColor: 'var(--color-border)' }}>
+        <div className="space-y-1.5 max-w-xl">
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">مركز التحكم بالتوصيل (Control Center)</h2>
+          <p className="text-sm text-gray-500 font-normal leading-relaxed">
+            البنية اللوجستية المركزية لربط الموزعين المحليين وإدارة تسعير شحنات متجرك التلقائية وتوطين نقاط الاستلام.
+          </p>
         </div>
-        <div className="flex bg-gray-100/80 p-0.5 rounded-lg border border-gray-200/50 w-full sm:w-auto">
-          {SUB_TABS.map((t, i) => (
-            <button 
-              key={t} 
-              onClick={() => setTab(i)} 
-              className={`px-3.5 py-1.5 text-[11px] font-bold rounded-md transition-all ${tab === i ? 'bg-white text-gray-900 shadow-xs border border-gray-200/20' : 'text-gray-500 hover:text-gray-900'}`}
-            >
-              {t}
-            </button>
-          ))}
+        
+        {/* Header Badges Grid */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-gray-50/50 text-[11px] font-bold text-gray-600 border-gray-200">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            توجيه الولايات نشط
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-gray-50/50 text-[11px] font-bold text-gray-600 border-gray-200">
+            <History size={12} />
+            آخر مزامنة: منذ دقائق
+          </div>
+          <div className="flex bg-gray-100/90 p-0.5 rounded-lg border border-gray-200/50">
+            {SUB_TABS.map((t, i) => (
+              <button 
+                key={t} 
+                onClick={() => setTab(i)} 
+                className={`px-3.5 py-1.5 text-[11px] font-bold rounded-md transition-all cursor-pointer ${tab === i ? 'bg-white text-gray-900 shadow-xs border border-gray-200/10' : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="animate-spin text-gray-400" size={24} />
+        <div className="flex justify-center py-24">
+          <Loader2 className="animate-spin text-gray-400" size={28} />
         </div>
       ) : (
         <>
@@ -223,7 +246,7 @@ function ProvidersTab({
   const remove = async (id: string) => {
     if (!confirm('هل أنت متأكد من فصل شركة التوصيل تماماً؟ ستفقد جميع الأسعار والمكاتب المرتبطة بها.')) return
     await fetch(`/api/delivery/providers?id=${id}`, { method: 'DELETE' })
-    setToast('تم فصل الشركة بنجاح')
+    setToast('تم فصل المزود بنجاح')
     reload()
   }
 
@@ -249,33 +272,25 @@ function ProvidersTab({
   const activeCount = providers.filter(p => p.is_active).length
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8">
       {/* SaaS Dashboard Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'القنوات المتصلة', count: connectedCount, icon: <Link2 size={16} />, theme: 'bg-blue-50/50 text-blue-600' },
-          { label: 'القنوات النشطة', count: activeCount, icon: <Activity size={16} />, theme: 'bg-green-50/50 text-green-600' },
-          { label: 'أسعار التوصيل', count: pricesCount, icon: <Coins size={16} />, theme: 'bg-amber-50/50 text-amber-600' },
-          { label: 'مكاتب الاستلام', count: officesCount, icon: <Landmark size={16} />, theme: 'bg-purple-50/50 text-purple-600' }
+          { label: 'المزودون المتصلون', count: connectedCount, icon: <Link2 size={16} />, theme: 'bg-blue-50/50 text-blue-600' },
+          { label: 'المزودون النشطون', count: activeCount, icon: <Activity size={16} />, theme: 'bg-green-50/50 text-green-600' },
+          { label: 'أسعار التوصيل المحلية', count: pricesCount, icon: <Coins size={16} />, theme: 'bg-amber-50/50 text-amber-600' },
+          { label: 'نقاط الاستلام المتوفرة', count: officesCount, icon: <Landmark size={16} />, theme: 'bg-purple-50/50 text-purple-600' }
         ].map((item, idx) => (
-          <div key={idx} className="bg-white border border-gray-200/80 rounded-xl p-5 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.01)] transition-all hover:border-gray-300">
+          <div key={idx} className="bg-white border border-gray-200/70 rounded-2xl p-6 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.01)] transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:border-gray-300">
             <div className="space-y-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{item.label}</p>
-              <p className="text-2xl font-semibold tracking-tight text-gray-900">{item.count}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{item.label}</p>
+              <p className="text-3xl font-semibold tracking-tight text-gray-900 mt-1">{item.count}</p>
             </div>
-            <div className={`p-2.5 rounded-lg border border-transparent ${item.theme} shrink-0`}>
+            <div className={`p-3 rounded-xl border border-gray-100 ${item.theme} shrink-0`}>
               {item.icon}
             </div>
           </div>
         ))}
-      </div>
-
-      {/* Global Status Banner */}
-      <div className="p-4 bg-gray-50/50 border border-gray-200/60 rounded-xl flex items-center gap-3">
-        <CheckCircle className="text-emerald-500 shrink-0" size={16} />
-        <div className="text-[11px] text-gray-600 leading-normal">
-          <span className="font-bold text-gray-900">حالة التوجيه المحلي:</span> قنوات الربط تعمل بنظام التوطين المباشر (Local-First). المبيعات والأسعار يتم احتسابها فورياً من قاعدة البيانات دون الحاجة لطلب واجهات برمجة خارجية أثناء إنهاء الطلب.
-        </div>
       </div>
 
       {/* Grid of Providers */}
@@ -288,37 +303,40 @@ function ProvidersTab({
           return (
             <div 
               key={meta.type}
-              className="bg-white border border-gray-200/80 rounded-xl flex flex-col justify-between overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.01)] transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:border-gray-300"
+              className="bg-white border border-gray-200/80 rounded-3xl flex flex-col justify-between overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-300 hover:shadow-[0_12px_30px_rgba(0,0,0,0.04)] hover:border-gray-300 relative group min-h-[360px]"
             >
+              {/* Subtle brand gradient glow */}
+              <div className={`absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl ${profile?.gradient ?? 'from-gray-100/10 to-transparent'} rounded-bl-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`} />
+
               {/* Header Info */}
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-5 relative z-10">
                 <div className="flex justify-between items-start">
-                  <div className={`w-12 h-12 rounded-xl border border-gray-100 flex items-center justify-center ${profile?.bg ?? 'bg-gray-100'} ${profile?.text ?? 'text-gray-700'} shrink-0 shadow-xs`}>
-                    {profile?.logo ?? <Globe size={20} />}
+                  <div className={`w-14 h-14 rounded-2xl border border-gray-100 flex items-center justify-center ${profile?.bg ?? 'bg-gray-100'} ${profile?.text ?? 'text-gray-700'} shrink-0 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] transition-transform duration-300 group-hover:scale-105`}>
+                    {profile?.logo ?? <Globe size={24} />}
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-500">
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-gray-50 text-gray-500 border border-gray-100">
                       {profile?.apiVer ?? 'API'}
                     </span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold border ${connected && p!.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[9px] font-bold border ${connected && p!.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
                       {connected && p!.is_active ? 'نشط' : 'معطّل'}
                     </span>
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-gray-900">{p?.display_name ?? meta.label}</h3>
+                <div className="space-y-1.5">
+                  <h3 className="text-base font-bold text-gray-900 tracking-tight">{p?.display_name ?? meta.label}</h3>
                   <p className="text-xs text-gray-500 font-normal leading-relaxed min-h-[36px]">{profile?.desc ?? ''}</p>
                 </div>
 
                 {connected && (
                   <div className="pt-2 grid grid-cols-2 gap-2 text-[10px] text-gray-500">
-                    <div className="bg-gray-50/50 p-2.5 rounded-lg border border-gray-100/80">
-                      <span className="block text-gray-400 text-[8px] uppercase font-bold tracking-wider mb-0.5">الإرسال التلقائي</span>
+                    <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100/70">
+                      <span className="block text-gray-400 text-[8px] uppercase font-bold tracking-widest mb-0.5">الإرسال التلقائي</span>
                       <span className="font-semibold text-gray-700">{p.is_automatic ? 'مفعّل' : 'يدوي'}</span>
                     </div>
-                    <div className="bg-gray-50/50 p-2.5 rounded-lg border border-gray-100/80">
-                      <span className="block text-gray-400 text-[8px] uppercase font-bold tracking-wider mb-0.5">ولاية الإرسال</span>
+                    <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100/70">
+                      <span className="block text-gray-400 text-[8px] uppercase font-bold tracking-widest mb-0.5">ولاية المصدر</span>
                       <span className="font-semibold text-gray-700">{p.from_wilaya_code ?? '16'}</span>
                     </div>
                   </div>
@@ -326,7 +344,7 @@ function ProvidersTab({
               </div>
 
               {/* Actions Footer */}
-              <div className="px-6 py-4 bg-gray-50/40 border-t border-gray-100/80 flex items-center justify-between gap-2">
+              <div className="px-6 py-5 bg-gray-50/30 border-t border-gray-100/80 flex items-center justify-between gap-3 relative z-10">
                 {connected ? (
                   <>
                     <button 
@@ -338,7 +356,7 @@ function ProvidersTab({
                         is_automatic: p.is_automatic, 
                         from_wilaya_code: p.from_wilaya_code 
                       })}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3.5 py-2 rounded-lg hover:bg-gray-50 transition-all shadow-xs active:scale-95 cursor-pointer"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-4 py-2.5 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs active:scale-95 cursor-pointer"
                     >
                       <Settings size={12} /> إعدادات الربط
                     </button>
@@ -346,7 +364,7 @@ function ProvidersTab({
                       <button 
                         onClick={() => sync(p)} 
                         disabled={syncing === p.id}
-                        className="inline-flex items-center justify-center p-2 text-gray-500 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-all shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
+                        className="inline-flex items-center justify-center p-2.5 text-gray-500 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 transition-all shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
                         title="مزامنة فورية للأسعار والمكاتب"
                       >
                         {syncing === p.id ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
@@ -357,7 +375,7 @@ function ProvidersTab({
                   <>
                     <button 
                       onClick={() => setActiveForm({ provider_type: meta.type, credentials: {}, is_automatic: false, from_wilaya_code: '16' })}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50/80 px-3.5 py-2 rounded-lg hover:bg-blue-100 active:scale-95 transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50/80 px-4 py-2.5 rounded-xl hover:bg-blue-100 active:scale-95 transition-all cursor-pointer"
                     >
                       <Link2 size={12} /> ربط الحساب الآن
                     </button>
@@ -369,11 +387,11 @@ function ProvidersTab({
                 {connected && (
                   <button
                     onClick={() => toggleActive(p)}
-                    className={`w-9 h-5 rounded-full relative transition-colors duration-200 ease-in-out shrink-0 focus:outline-none cursor-pointer`}
+                    className="w-10 h-5.5 rounded-full relative transition-colors duration-200 ease-in-out shrink-0 focus:outline-none cursor-pointer"
                     style={{ background: p.is_active ? 'var(--cf-turq)' : '#E5E7EB' }}
                   >
                     <span 
-                      className={`absolute top-[2px] w-4.5 h-4.5 bg-white rounded-full shadow-xs transition-transform duration-200 ease-in-out ${p.is_active ? 'right-[2px] translate-x-0' : 'right-[2px] translate-x-[-16px]'}`}
+                      className={`absolute top-[2px] w-4.5 h-4.5 bg-white rounded-full shadow-sm transition-transform duration-200 ease-in-out ${p.is_active ? 'right-[2px] translate-x-0' : 'right-[2px] translate-x-[-18px]'}`}
                     />
                   </button>
                 )}
