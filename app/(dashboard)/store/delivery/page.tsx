@@ -13,8 +13,7 @@ export default async function StoreDeliveryPage() {
   if (!store) return null
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto" dir="rtl" style={{ fontFamily: 'var(--font-arabic)' }}>
-      <h1 className="page-title mb-5">شركات التوصيل والأسعار</h1>
+    <div className="w-full max-w-7xl mx-auto" dir="rtl" style={{ fontFamily: 'var(--font-arabic)' }}>
       <StoreDeliveryShell storeId={store.id} />
     </div>
   )

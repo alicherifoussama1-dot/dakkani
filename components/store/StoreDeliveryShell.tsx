@@ -12,9 +12,9 @@ export default function StoreDeliveryShell({ storeId }: { storeId: string }) {
     <div dir="rtl" style={{ fontFamily: 'var(--font-arabic)' }}>
       <StoreDelivery storeId={storeId} setToast={flash} />
       {toast && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-lg max-w-[92vw] text-center"
-          style={{ background: toast.startsWith('✓') || toast.includes('تم') ? '#0D6EFD' : '#DC3545' }}>
-          {toast}
+        <div className="fixed bottom-6 left-6 z-50 px-4.5 py-3 rounded-xl text-[11px] font-bold text-white shadow-xl max-w-[90vw] flex items-center gap-2.5 border border-gray-800 bg-gray-900 animate-slide-in select-none">
+          <span className={`w-2 h-2 rounded-full ${toast.startsWith('✓') || toast.includes('تم') ? 'bg-green-400' : 'bg-red-400'} shrink-0 animate-pulse`} />
+          <span>{toast}</span>
         </div>
       )}
     </div>
