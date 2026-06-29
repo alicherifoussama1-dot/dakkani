@@ -187,13 +187,35 @@ export class ZRExpressAdapter implements DeliveryAdapter {
 
   async importRates(): Promise<RateData[]> {
     if (this.mode === 'zrx') {
-      // CONFIRMED: the new ZR "Token API" (secretKey/tenantId, api.zrexpress.app)
-      // is a parcels-only API — every /parcels/<x> path resolves to
-      // /parcels/{trackingNumber}, and no fees/tarification controller exists.
-      // So a bulk price list cannot be imported from it. Octomatic-style auto
-      // import uses the CLASSIC Procolis API (token + key), which has
-      // `tarification` — that path is supported below in 'procolis' mode.
-      throw new Error('واجهة ZR الجديدة (secretKey/tenantId) لا تتيح استيراد الأسعار — هي للطرود فقط. للاستيراد التلقائي: استعمل مفاتيح Procolis الكلاسيكية {"token":"...","key":"..."} من حساب ZR. أو أدخل الأسعار يدوياً في «أسعار التوصيل المعلنة» (تظهر للزبون وتُحتسب تلقائياً).')
+      const h = await this.auth()
+      if (!h) throw new Error('تعذّر المصادقة مع ZR Express')
+      
+      // X-Tenant header is required for pricing endpoint
+      const headers = {
+        ...h,
+        'X-Tenant': this.tenantId
+      }
+
+      try {
+        const url = `${ZRX}/delivery-pricing/rates`
+        const res = await httpJson<any>(url, { method: 'GET', headers })
+        const rates = res?.rates || []
+        
+        const wilayaRates = rates.filter((r: any) => r.toTerritoryLevel === 'wilaya')
+        return wilayaRates.map((w: any) => {
+          const homePriceObj = w.deliveryPrices?.find((dp: any) => dp.deliveryType === 'home')
+          const stopdeskPriceObj = w.deliveryPrices?.find((dp: any) => dp.deliveryType === 'pickup-point' || dp.deliveryType === 'stopdesk')
+          
+          return {
+            wilayaCode: String(w.toTerritoryCode).padStart(2, '0'),
+            wilayaName: w.toTerritoryNameArabic || w.toTerritoryName || '',
+            homePrice: homePriceObj ? Number(homePriceObj.price) : 0,
+            stopdeskPrice: stopdeskPriceObj ? Number(stopdeskPriceObj.price) : 0
+          }
+        }).filter((r: any) => r.wilayaCode && r.wilayaCode !== '00')
+      } catch (e) {
+        throw new Error(`فشل استيراد الأسعار من واجهة ZR الجديدة: ${(e as Error).message}`)
+      }
     }
     try {
       const data = await httpJson<any>(`${PROCOLIS}/tarification`, { method: 'POST', headers: this.procolisHeaders, body: '{}' })
