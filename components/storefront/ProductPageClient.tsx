@@ -44,6 +44,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
           setShowSticky(!entry.isIntersecting)
         }, {
           root: null,
+          rootMargin: '0px 0px -84px 0px',
           threshold: 0,
         })
         observer.observe(target)
@@ -61,6 +62,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               setShowSticky(!entry.isIntersecting)
             }, {
               root: null,
+              rootMargin: '0px 0px -84px 0px',
               threshold: 0,
             })
             observer.observe(formEl)
