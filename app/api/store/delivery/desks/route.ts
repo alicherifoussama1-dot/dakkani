@@ -8,7 +8,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { decryptCredentials } from '@/lib/delivery'
-import { zrOfficesByWilaya } from '@/lib/delivery/zr-offices'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,7 +49,7 @@ export async function GET(req: Request) {
       .select('id, name, address').eq('store_id', storeId).eq('wilaya_code', wilayaCode).eq('is_active', true)
       .or(`provider_id.eq.${provider.id},provider_id.is.null`).order('name')
 
-    const managed = (manual ?? []).map((o: any) => {
+    offices = (manual ?? []).map((o: any) => {
       let commune = ''
       let name = o.name
       if (o.name.includes('|')) {
@@ -60,16 +59,7 @@ export async function GET(req: Request) {
       }
       return { id: String(o.id), name, address: o.address ?? '', wilaya: wilayaCode, commune }
     })
-
-    // Plus the bundled official ZR Express office list
-    const bundled = /zr|procolis/i.test(provider.provider_type)
-      ? zrOfficesByWilaya(wilayaCode).map(o => ({ id: o.name, name: o.name, address: '', wilaya: wilayaCode, commune: o.commune }))
-      : []
-
-    // De-dup by name (a merchant override wins over the bundled entry).
-    const byName = new Set(managed.map(o => o.name))
-    offices = [...managed, ...bundled.filter(o => !byName.has(o.name))]
-    console.log(`[desks] ${provider.provider_type} wilaya=${wilayaCode} → ${managed.length} managed + ${bundled.length} bundled`)
+    console.log(`[desks] ${provider.provider_type} wilaya=${wilayaCode} → ${offices.length} offices from DB`)
 
     cache.set(key, { at: Date.now(), offices })
     return NextResponse.json({ offices, hasProvider: true, providerType: provider.provider_type })

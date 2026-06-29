@@ -16,6 +16,7 @@ import type {
 } from '../types'
 import { normalizeStatus } from '../types'
 import { httpJson, fetchRaw } from './base'
+import { createClient } from '@supabase/supabase-js'
 
 const PROCOLIS = 'https://procolis.com/api_v1'
 const ZRX = 'https://api.zrexpress.app/api/v1'
@@ -99,13 +100,30 @@ export class ZRExpressAdapter implements DeliveryAdapter {
   }
 
   async createShipment(o: CreateOrderData): Promise<OrderData> {
+    let stopdeskName = ''
+    if (o.deliveryType === 'stopdesk' && o.stopdeskId) {
+      try {
+        const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+        const { data: office } = await supabase.from('store_delivery_offices').select('name').eq('id', o.stopdeskId).maybeSingle()
+        if (office?.name) {
+          stopdeskName = office.name.includes('|') ? office.name.split('|')[1].trim() : office.name
+        }
+      } catch (err) {
+        console.error('Error resolving stopdesk name for ZR Express:', err)
+      }
+    }
+
+    const finalAddress = (o.deliveryType === 'stopdesk' && stopdeskName)
+      ? `[المكتب: ${stopdeskName}] ${o.address ?? o.communeName}`
+      : (o.address ?? o.communeName)
+
     if (this.mode === 'zrx') {
       // Best-effort body for the new Token API; refined from real responses.
       const body = {
         recipient_name: o.customerName,
         recipient_phone: o.phone,
         recipient_phone_2: o.phone2 ?? '',
-        recipient_address: o.address ?? o.communeName,
+        recipient_address: finalAddress,
         wilaya_code: o.wilayaCode,
         commune: o.communeName,
         product: o.productList,
@@ -128,7 +146,7 @@ export class ZRExpressAdapter implements DeliveryAdapter {
     const payload = { Colis: [{
       Tracking: o.orderNumber, TypeLivraison: o.deliveryType === 'stopdesk' ? '1' : '0',
       TypeColis: '0', Confrimee: '1', Client: o.customerName, MobileA: o.phone, MobileB: o.phone2 ?? '',
-      Adresse: o.address ?? o.communeName, IDWilaya: o.wilayaCode, Commune: o.communeName,
+      Adresse: finalAddress, IDWilaya: o.wilayaCode, Commune: o.communeName,
       Total: String(o.codAmount), Note: o.notes ?? '', TProduit: o.productList, id_Externe: o.orderId, Source: '',
     }] }
     try {
