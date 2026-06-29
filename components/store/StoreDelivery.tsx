@@ -41,7 +41,7 @@ const BRAND_METRICS: Record<string, { logo: React.ReactNode; color: string; bg: 
       </svg>
     ),
     color: '#FFC000',
-    bg: 'bg-[#FFFDF0]',
+    bg: 'bg-[#FFC000]/5',
     text: 'text-[#111111]',
     apiVer: 'API v2',
     desc: 'موزع الخدمات واللوجستيك الرائد في الجزائر مع تغطية شاملة لـ 58 ولاية.'
@@ -55,7 +55,7 @@ const BRAND_METRICS: Record<string, { logo: React.ReactNode; color: string; bg: 
       </svg>
     ),
     color: '#E23024',
-    bg: 'bg-[#FFF5F5]',
+    bg: 'bg-[#E23024]/5',
     text: 'text-[#E23024]',
     apiVer: 'Token API v1',
     desc: 'خدمة توصيل سريعة وموثوقة مع تحديثات فورية ومزامنة مكاتب تلقائية.'
@@ -69,7 +69,7 @@ const BRAND_METRICS: Record<string, { logo: React.ReactNode; color: string; bg: 
       </svg>
     ),
     color: '#10B981',
-    bg: 'bg-[#F0FDF4]',
+    bg: 'bg-[#10B981]/5',
     text: 'text-[#10B981]',
     apiVer: 'Ecotrack API',
     desc: 'تكامل التوصيل والتتبع اللوجستي المتقدم مع نظام إيكوتراك للمتاجر.'
@@ -82,7 +82,7 @@ const BRAND_METRICS: Record<string, { logo: React.ReactNode; color: string; bg: 
       </svg>
     ),
     color: '#0D6EFD',
-    bg: 'bg-[#F0F6FF]',
+    bg: 'bg-[#0D6EFD]/5',
     text: 'text-[#0D6EFD]',
     apiVer: 'Maystro Delivery',
     desc: 'منصة لوجستية احترافية لتوصيل وإدارة شحنات التجارة الإلكترونية.'
@@ -96,7 +96,7 @@ const BRAND_METRICS: Record<string, { logo: React.ReactNode; color: string; bg: 
       </svg>
     ),
     color: '#7C3AED',
-    bg: 'bg-[#F9F5FF]',
+    bg: 'bg-[#7C3AED]/5',
     text: 'text-[#7C3AED]',
     apiVer: 'Noest API',
     desc: 'توصيل شحن سريع واحترافي عبر بوابات منصة نويست الوطنية.'
@@ -148,15 +148,15 @@ export default function StoreDelivery({ storeId, setToast }: { storeId: string; 
       {/* Tab Navigation */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-4" style={{ borderColor: 'var(--color-border)' }}>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">مركز التحكم بـشركات التوصيل</h2>
+          <h2 className="text-xl font-bold tracking-tight text-gray-900">مركز التحكم بـشركات التوصيل</h2>
           <p className="text-xs text-gray-500 mt-1">قم بربط حسابات شركات الشحن الخاصة بك، وإدارة الأسعار وتوجيه الطرود لكل ولاية.</p>
         </div>
-        <div className="flex flex-wrap gap-1 bg-gray-100/85 p-1 rounded-xl w-full sm:w-auto">
+        <div className="flex bg-gray-100/80 p-0.5 rounded-lg border border-gray-200/50 w-full sm:w-auto">
           {SUB_TABS.map((t, i) => (
             <button 
               key={t} 
               onClick={() => setTab(i)} 
-              className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${tab === i ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+              className={`px-3.5 py-1.5 text-[11px] font-bold rounded-md transition-all ${tab === i ? 'bg-white text-gray-900 shadow-xs border border-gray-200/20' : 'text-gray-500 hover:text-gray-900'}`}
             >
               {t}
             </button>
@@ -166,7 +166,7 @@ export default function StoreDelivery({ storeId, setToast }: { storeId: string; 
 
       {loading ? (
         <div className="flex justify-center py-20">
-          <Loader2 className="animate-spin" size={32} style={{ color: 'var(--cf-turq)' }} />
+          <Loader2 className="animate-spin text-gray-400" size={24} />
         </div>
       ) : (
         <>
@@ -249,55 +249,32 @@ function ProvidersTab({
   const activeCount = providers.filter(p => p.is_active).length
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       {/* SaaS Dashboard Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border rounded-2xl p-5 flex items-center justify-between shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
-          <div className="space-y-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">القنوات المتصلة</p>
-            <p className="text-2xl font-bold text-gray-900">{connectedCount}</p>
+        {[
+          { label: 'القنوات المتصلة', count: connectedCount, icon: <Link2 size={16} />, theme: 'bg-blue-50/50 text-blue-600' },
+          { label: 'القنوات النشطة', count: activeCount, icon: <Activity size={16} />, theme: 'bg-green-50/50 text-green-600' },
+          { label: 'أسعار التوصيل', count: pricesCount, icon: <Coins size={16} />, theme: 'bg-amber-50/50 text-amber-600' },
+          { label: 'مكاتب الاستلام', count: officesCount, icon: <Landmark size={16} />, theme: 'bg-purple-50/50 text-purple-600' }
+        ].map((item, idx) => (
+          <div key={idx} className="bg-white border border-gray-200/80 rounded-xl p-5 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.01)] transition-all hover:border-gray-300">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{item.label}</p>
+              <p className="text-2xl font-semibold tracking-tight text-gray-900">{item.count}</p>
+            </div>
+            <div className={`p-2.5 rounded-lg border border-transparent ${item.theme} shrink-0`}>
+              {item.icon}
+            </div>
           </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-            <Link2 size={20} />
-          </div>
-        </div>
-
-        <div className="bg-white border rounded-2xl p-5 flex items-center justify-between shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
-          <div className="space-y-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">القنوات النشطة</p>
-            <p className="text-2xl font-bold text-gray-900">{activeCount}</p>
-          </div>
-          <div className="p-3 bg-green-50 text-green-600 rounded-xl">
-            <Activity size={20} />
-          </div>
-        </div>
-
-        <div className="bg-white border rounded-2xl p-5 flex items-center justify-between shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
-          <div className="space-y-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">أسعار التوصيل</p>
-            <p className="text-2xl font-bold text-gray-900">{pricesCount}</p>
-          </div>
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-            <Coins size={20} />
-          </div>
-        </div>
-
-        <div className="bg-white border rounded-2xl p-5 flex items-center justify-between shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
-          <div className="space-y-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">مكاتب الاستلام</p>
-            <p className="text-2xl font-bold text-gray-900">{officesCount}</p>
-          </div>
-          <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-            <Landmark size={20} />
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Global Status Banner */}
-      <div className="p-4 bg-gray-50/70 border rounded-2xl flex items-center gap-3" style={{ borderColor: 'var(--color-border)' }}>
-        <CheckCircle className="text-teal-500 shrink-0" size={18} />
-        <div className="text-xs text-gray-600 leading-relaxed">
-          <span className="font-bold text-gray-900">نظام توجيه الشحنات نشط:</span> يتم قراءة بيانات المكاتب والأسعار محلياً بشكل كامل (Local-First) دون إبطاء العميل أثناء الشراء.
+      <div className="p-4 bg-gray-50/50 border border-gray-200/60 rounded-xl flex items-center gap-3">
+        <CheckCircle className="text-emerald-500 shrink-0" size={16} />
+        <div className="text-[11px] text-gray-600 leading-normal">
+          <span className="font-bold text-gray-900">حالة التوجيه المحلي:</span> قنوات الربط تعمل بنظام التوطين المباشر (Local-First). المبيعات والأسعار يتم احتسابها فورياً من قاعدة البيانات دون الحاجة لطلب واجهات برمجة خارجية أثناء إنهاء الطلب.
         </div>
       </div>
 
@@ -311,44 +288,37 @@ function ProvidersTab({
           return (
             <div 
               key={meta.type}
-              className="bg-white border rounded-2xl flex flex-col justify-between overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md hover:border-gray-300"
-              style={{ borderColor: 'var(--color-border)' }}
+              className="bg-white border border-gray-200/80 rounded-xl flex flex-col justify-between overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.01)] transition-all duration-300 hover:shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:border-gray-300"
             >
               {/* Header Info */}
               <div className="p-6 space-y-4">
                 <div className="flex justify-between items-start">
-                  <div className={`p-3 rounded-2xl ${profile?.bg ?? 'bg-gray-100'} ${profile?.text ?? 'text-gray-700'} shrink-0`}>
-                    {profile?.logo ?? <Globe size={24} />}
+                  <div className={`w-12 h-12 rounded-xl border border-gray-100 flex items-center justify-center ${profile?.bg ?? 'bg-gray-100'} ${profile?.text ?? 'text-gray-700'} shrink-0 shadow-xs`}>
+                    {profile?.logo ?? <Globe size={20} />}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-500">
                       {profile?.apiVer ?? 'API'}
                     </span>
-                    {connected ? (
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p!.is_active ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-500'}`}>
-                        {p!.is_active ? 'نشط' : 'موقوف'}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-50 text-gray-400 border border-dashed">
-                        غير متصل
-                      </span>
-                    )}
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold border ${connected && p!.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                      {connected && p!.is_active ? 'نشط' : 'معطّل'}
+                    </span>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <h3 className="text-base font-bold text-gray-900">{p?.display_name ?? meta.label}</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed min-h-[36px]">{profile?.desc ?? ''}</p>
+                  <h3 className="text-sm font-bold text-gray-900">{p?.display_name ?? meta.label}</h3>
+                  <p className="text-xs text-gray-500 font-normal leading-relaxed min-h-[36px]">{profile?.desc ?? ''}</p>
                 </div>
 
                 {connected && (
-                  <div className="pt-2 grid grid-cols-2 gap-2 text-[11px] text-gray-500">
-                    <div className="bg-gray-50 p-2 rounded-xl border border-gray-100">
-                      <span className="block text-gray-400 text-[9px] uppercase font-bold">الإرسال التلقائي</span>
+                  <div className="pt-2 grid grid-cols-2 gap-2 text-[10px] text-gray-500">
+                    <div className="bg-gray-50/50 p-2.5 rounded-lg border border-gray-100/80">
+                      <span className="block text-gray-400 text-[8px] uppercase font-bold tracking-wider mb-0.5">الإرسال التلقائي</span>
                       <span className="font-semibold text-gray-700">{p.is_automatic ? 'مفعّل' : 'يدوي'}</span>
                     </div>
-                    <div className="bg-gray-50 p-2 rounded-xl border border-gray-100">
-                      <span className="block text-gray-400 text-[9px] uppercase font-bold">ولاية الإرسال</span>
+                    <div className="bg-gray-50/50 p-2.5 rounded-lg border border-gray-100/80">
+                      <span className="block text-gray-400 text-[8px] uppercase font-bold tracking-wider mb-0.5">ولاية الإرسال</span>
                       <span className="font-semibold text-gray-700">{p.from_wilaya_code ?? '16'}</span>
                     </div>
                   </div>
@@ -356,7 +326,7 @@ function ProvidersTab({
               </div>
 
               {/* Actions Footer */}
-              <div className="px-6 py-4 bg-gray-50/50 border-t flex items-center justify-between gap-2" style={{ borderColor: 'var(--color-border)' }}>
+              <div className="px-6 py-4 bg-gray-50/40 border-t border-gray-100/80 flex items-center justify-between gap-2">
                 {connected ? (
                   <>
                     <button 
@@ -368,20 +338,18 @@ function ProvidersTab({
                         is_automatic: p.is_automatic, 
                         from_wilaya_code: p.from_wilaya_code 
                       })}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-white border px-3.5 py-2 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
-                      style={{ borderColor: 'var(--color-border)' }}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3.5 py-2 rounded-lg hover:bg-gray-50 transition-all shadow-xs active:scale-95 cursor-pointer"
                     >
-                      <Settings size={13} /> إعدادات الربط
+                      <Settings size={12} /> إعدادات الربط
                     </button>
                     {meta.hasRatesApi && (
                       <button 
                         onClick={() => sync(p)} 
                         disabled={syncing === p.id}
-                        className="inline-flex items-center justify-center p-2 text-gray-500 bg-white border rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm disabled:opacity-50"
-                        style={{ borderColor: 'var(--color-border)' }}
+                        className="inline-flex items-center justify-center p-2 text-gray-500 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-all shadow-xs active:scale-95 cursor-pointer disabled:opacity-50"
                         title="مزامنة فورية للأسعار والمكاتب"
                       >
-                        {syncing === p.id ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                        {syncing === p.id ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
                       </button>
                     )}
                   </>
@@ -389,9 +357,9 @@ function ProvidersTab({
                   <>
                     <button 
                       onClick={() => setActiveForm({ provider_type: meta.type, credentials: {}, is_automatic: false, from_wilaya_code: '16' })}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 px-3.5 py-2 rounded-xl hover:bg-blue-100 transition-colors"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50/80 px-3.5 py-2 rounded-lg hover:bg-blue-100 active:scale-95 transition-all cursor-pointer"
                     >
-                      <Link2 size={13} /> ربط الحساب الآن
+                      <Link2 size={12} /> ربط الحساب الآن
                     </button>
                     <span className="text-[10px] text-gray-400 font-medium">غير متصل</span>
                   </>
@@ -401,12 +369,11 @@ function ProvidersTab({
                 {connected && (
                   <button
                     onClick={() => toggleActive(p)}
-                    className="w-10 h-5.5 rounded-full relative transition-colors shrink-0 outline-none"
+                    className={`w-9 h-5 rounded-full relative transition-colors duration-200 ease-in-out shrink-0 focus:outline-none cursor-pointer`}
                     style={{ background: p.is_active ? 'var(--cf-turq)' : '#E5E7EB' }}
                   >
                     <span 
-                      className="absolute top-0.5 w-4.5 h-4.5 bg-white rounded-full shadow transition-all"
-                      style={{ [p.is_active ? 'right' : 'left']: '2px' } as any}
+                      className={`absolute top-[2px] w-4.5 h-4.5 bg-white rounded-full shadow-xs transition-transform duration-200 ease-in-out ${p.is_active ? 'right-[2px] translate-x-0' : 'right-[2px] translate-x-[-16px]'}`}
                     />
                   </button>
                 )}
@@ -620,115 +587,122 @@ function ProviderDrawer({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/55 backdrop-blur-xs z-50 transition-opacity duration-300" onClick={() => setForm(null)} />
+      <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-xs z-50 transition-opacity duration-300" onClick={() => setForm(null)} />
       
       {/* Drawer */}
       <div 
-        className="fixed inset-y-0 left-0 w-full max-w-2xl bg-white shadow-2xl z-50 flex flex-col transition-all duration-300 ease-out animate-slide-in"
+        className="fixed inset-y-0 left-0 w-full max-w-xl bg-white shadow-2xl z-50 flex flex-col transition-all duration-300 ease-out animate-slide-in border-r"
+        style={{ borderColor: 'var(--color-border)' }}
         dir="rtl"
       >
         {/* Drawer Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white z-20" style={{ borderColor: 'var(--color-border)' }}>
+        <div className="flex items-center justify-between px-6 py-5 border-b sticky top-0 bg-white z-20" style={{ borderColor: 'var(--color-border)' }}>
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${BRAND_METRICS[form.provider_type]?.bg ?? 'bg-gray-100'} ${BRAND_METRICS[form.provider_type]?.text ?? 'text-gray-700'}`}>
+            <div className={`w-10 h-10 rounded-xl border border-gray-100 flex items-center justify-center ${BRAND_METRICS[form.provider_type]?.bg ?? 'bg-gray-100'} ${BRAND_METRICS[form.provider_type]?.text ?? 'text-gray-700'} shadow-xs`}>
               {BRAND_METRICS[form.provider_type]?.logo}
             </div>
             <div>
-              <h3 className="font-bold text-base text-gray-900">{form.id ? `إدارة قناة ${meta.label}` : `ربط قناة ${meta.label}`}</h3>
+              <h3 className="font-bold text-sm text-gray-900">{form.id ? `إدارة قناة ${meta.label}` : `ربط قناة ${meta.label}`}</h3>
               <p className="text-[11px] text-gray-500 mt-0.5">تهيئة بيانات الاتصال، مزامنة الأسعار وتوجيه المكاتب محلياً.</p>
             </div>
           </div>
-          <button onClick={() => setForm(null)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-900">
-            <X size={18} />
+          <button onClick={() => setForm(null)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-900 cursor-pointer">
+            <X size={16} />
           </button>
         </div>
 
         {/* Inner Tab Bar inside Drawer */}
         {form.id && (
-          <div className="px-6 border-b flex gap-4 bg-gray-50/50" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="px-6 border-b flex gap-5 bg-gray-50/50" style={{ borderColor: 'var(--color-border)' }}>
             {([
-              ['settings', 'إعدادات الاتصال', <KeyRound size={13} key="settings" />],
-              ['rates', 'الأسعار المستوردة', <Coins size={13} key="rates" />],
-              ['offices', 'مكاتب الاستلام', <Landmark size={13} key="offices" />],
-              ['logs', 'سجل العمليات', <History size={13} key="logs" />],
-            ] as const).map(([k, label, icon]) => (
+              ['settings', 'إعدادات الاتصال'],
+              ['rates', 'الأسعار المحلية'],
+              ['offices', 'مكاتب الاستلام'],
+              ['logs', 'السجلات والمراقبة'],
+            ] as const).map(([k, label]) => (
               <button
                 key={k}
                 onClick={() => setDrawerTab(k)}
-                className={`py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all ${drawerTab === k ? 'border-teal-500 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
+                className={`py-3 text-[11px] font-bold border-b-2 transition-all cursor-pointer ${drawerTab === k ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-900'}`}
               >
-                {icon}{label}
+                {label}
               </button>
             ))}
           </div>
         )}
 
         {/* Drawer Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/20">
           {drawerTab === 'settings' && (
             <>
               {/* Card Section: Connection details */}
-              <div className="bg-white border rounded-2xl p-5 space-y-4 shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">الإعدادات العامة للقناة</h4>
+              <div className="bg-white border border-gray-200/85 rounded-xl overflow-hidden shadow-xs">
+                <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
+                  <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">إعدادات القناة العامة</h4>
+                </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">الاسم المعروض</label>
-                    <input 
-                      className="input text-sm w-full" 
-                      placeholder="مثال: ياليدين للتوصيل" 
-                      value={form.display_name ?? ''} 
-                      onChange={e => setForm((f: any) => ({ ...f, display_name: e.target.value }))} 
-                    />
-                  </div>
-
-                  {form.provider_type === 'yalidine' && (
-                    <div>
-                      <label className="block text-xs font-bold text-gray-600 mb-1">ولاية الإرسال (المصدر)</label>
+                <div className="p-5 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-gray-600">الاسم المعروض</label>
                       <input 
-                        className="input text-sm w-full font-mono" 
-                        dir="ltr" 
-                        placeholder="16" 
-                        value={form.from_wilaya_code ?? '16'} 
-                        onChange={e => setForm((f: any) => ({ ...f, from_wilaya_code: e.target.value }))} 
+                        className="w-full px-3 py-2 text-sm bg-gray-50/30 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 placeholder-gray-400" 
+                        placeholder="مثال: ياليدين للتوصيل" 
+                        value={form.display_name ?? ''} 
+                        onChange={e => setForm((f: any) => ({ ...f, display_name: e.target.value }))} 
                       />
                     </div>
-                  )}
-                </div>
 
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <input 
-                    type="checkbox" 
-                    id="drawer_is_automatic" 
-                    checked={!!form.is_automatic} 
-                    onChange={e => setForm((f: any) => ({ ...f, is_automatic: e.target.checked }))} 
-                    className="w-4 h-4 accent-teal-600 cursor-pointer" 
-                  />
-                  <label htmlFor="drawer_is_automatic" className="text-xs font-bold text-gray-700 cursor-pointer select-none leading-relaxed">
-                    إرسال الطرود تلقائياً (Auto-Shipping)
-                    <span className="block text-[10px] font-normal text-gray-500 mt-0.5">
-                      بمجرد تأكيد الطلب من لوحة التحكم، سيتم إنشاء الشحنة تلقائياً لدى الشركة.
-                    </span>
-                  </label>
+                    {form.provider_type === 'yalidine' && (
+                      <div className="space-y-1">
+                        <label className="block text-[11px] font-bold text-gray-600">ولاية الإرسال (المصدر)</label>
+                        <input 
+                          className="w-full px-3 py-2 text-sm bg-gray-50/30 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 placeholder-gray-400 font-mono" 
+                          dir="ltr" 
+                          placeholder="16" 
+                          value={form.from_wilaya_code ?? '16'} 
+                          onChange={e => setForm((f: any) => ({ ...f, from_wilaya_code: e.target.value }))} 
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3.5 bg-gray-50/60 rounded-lg border border-gray-100">
+                    <input 
+                      type="checkbox" 
+                      id="drawer_is_automatic" 
+                      checked={!!form.is_automatic} 
+                      onChange={e => setForm((f: any) => ({ ...f, is_automatic: e.target.checked }))} 
+                      className="w-4 h-4 accent-gray-800 cursor-pointer mt-0.5" 
+                    />
+                    <label htmlFor="drawer_is_automatic" className="text-[11px] font-bold text-gray-700 cursor-pointer select-none leading-relaxed">
+                      تفعيل الإرسال التلقائي للطلبات
+                      <span className="block text-[10px] font-normal text-gray-400 mt-0.5">
+                        سيقوم النظام بتوليد وإنشاء الشحنة تلقائياً لدى الشركة بمجرد تأكيد الطلب من الإدارة.
+                      </span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
               {/* Card Section: Credentials */}
-              <div className="bg-white border rounded-2xl p-5 space-y-4 shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">بيانات الاتصال بالحساب</h4>
+              <div className="bg-white border border-gray-200/85 rounded-xl overflow-hidden shadow-xs">
+                <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
+                  <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">مفاتيح الاتصال الآمنة</h4>
+                </div>
                 
-                <div className="space-y-4">
+                <div className="p-5 space-y-4">
                   {meta.fields.map(f => {
                     const isPass = f.type === 'password'
                     const showTxt = showPasswords[f.key]
                     return (
                       <div key={f.key} className="space-y-1">
-                        <label className="block text-xs font-bold text-gray-600">{f.label}</label>
+                        <label className="block text-[11px] font-bold text-gray-600">{f.label}</label>
                         <div className="relative flex items-center">
                           <input
                             type={isPass && !showTxt ? 'password' : 'text'}
                             dir="ltr"
-                            className="input text-sm w-full font-mono pl-20 pr-3 focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                            className="w-full pl-20 pr-3 py-2 text-sm bg-gray-50/30 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 font-mono tracking-wider"
                             placeholder={f.placeholder}
                             value={fields[f.key]}
                             onChange={e => {
@@ -736,75 +710,73 @@ function ProviderDrawer({
                               setErr(null)
                             }}
                           />
-                          <div className="absolute left-2 flex items-center gap-1.5">
+                          <div className="absolute left-2 flex items-center gap-1">
                             {isPass && (
                               <button
                                 type="button"
                                 onClick={() => setShowPasswords(prev => ({ ...prev, [f.key]: !prev[f.key] }))}
-                                className="p-1 text-gray-400 hover:text-gray-900 rounded hover:bg-gray-100"
+                                className="p-1 text-gray-400 hover:text-gray-900 rounded hover:bg-gray-100 cursor-pointer"
                               >
-                                {showTxt ? <EyeOff size={14} /> : <Eye size={14} />}
+                                {showTxt ? <EyeOff size={13} /> : <Eye size={13} />}
                               </button>
                             )}
                             <button
                               type="button"
                               onClick={() => copyToClipboard(fields[f.key], f.key)}
-                              className="p-1 text-gray-400 hover:text-gray-900 rounded hover:bg-gray-100"
-                              title="نسخ للمحافظة"
+                              className="p-1 text-gray-400 hover:text-gray-900 rounded hover:bg-gray-100 cursor-pointer"
+                              title="نسخ المفتاح"
                             >
-                              {copiedField === f.key ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                              {copiedField === f.key ? <Check size={13} className="text-green-600" /> : <Copy size={13} />}
                             </button>
                           </div>
                         </div>
                       </div>
                     )
                   })}
-                </div>
 
-                {form.id && (
-                  <p className="text-[10px] text-gray-400 leading-relaxed">
-                    🔒 حماية متقدمة: يتم تخزين بيانات الاتصال مشفّرة تماماً (AES-256-GCM) على الخادم. الحقول التي تحتوي على النقاط اتركها كما هي للمحافظة عليها.
-                  </p>
-                )}
-                {err && <p className="text-xs text-red-600 font-bold flex items-center gap-1"><AlertTriangle size={12} />{err}</p>}
+                  {form.id && (
+                    <p className="text-[10px] text-gray-400 leading-normal border-t pt-3 mt-1">
+                      🔒 حماية وتشفير متكامل: يتم تأمين بيانات الاتصال باستخدام خوارزمية التشفير القياسية AES-256-GCM.
+                    </p>
+                  )}
+                  {err && <p className="text-xs text-red-600 font-bold flex items-center gap-1"><AlertTriangle size={12} />{err}</p>}
+                </div>
               </div>
 
-              {/* Sync stepper timeline (visual logic validation) */}
+              {/* Sync stepper timeline */}
               {form.id && (
-                <div className="bg-white border rounded-2xl p-5 space-y-4 shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">مخطط حالة المزامنة والربط</h4>
-                  <div className="relative pl-6 space-y-6 before:absolute before:right-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
-                    <div className="relative flex items-start gap-4">
-                      <span className="absolute right-0 w-4.5 h-4.5 rounded-full bg-green-50 border-2 border-green-500 flex items-center justify-center shrink-0 z-10">
-                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                      </span>
-                      <div className="mr-6 space-y-0.5">
-                        <p className="text-xs font-bold text-gray-900">ربط القناة بنجاح</p>
-                        <p className="text-[10px] text-gray-400">تم تسجيل القناة المحلية وتأمين المفاتيح في قاعدة البيانات.</p>
+                <div className="bg-white border border-gray-200/85 rounded-xl overflow-hidden shadow-xs">
+                  <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
+                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">تتبع مسار الاتصال والمزامنة</h4>
+                  </div>
+                  <div className="p-5">
+                    <div className="relative pl-6 space-y-6 before:absolute before:right-[8px] before:top-2 before:bottom-2 before:w-[1px] before:bg-gray-200">
+                      <div className="relative flex items-start gap-4">
+                        <span className="absolute right-0 w-4 h-4 rounded-full bg-emerald-500 border-4 border-white shadow-xs ring-1 ring-emerald-500 flex items-center justify-center shrink-0 z-10" />
+                        <div className="mr-6">
+                          <h5 className="text-xs font-semibold text-gray-900">الربط البرمجي السليم</h5>
+                          <p className="text-[10px] text-gray-400 mt-0.5">تم التحقق من تشفير المفاتيح والاتصال بقاعدة البيانات.</p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="relative flex items-start gap-4">
-                      <span className={`absolute right-0 w-4.5 h-4.5 rounded-full flex items-center justify-center shrink-0 z-10 ${drawerRates.length ? 'bg-green-50 border-2 border-green-500' : 'bg-gray-50 border-2 border-gray-200'}`}>
-                        {drawerRates.length && <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />}
-                      </span>
-                      <div className="mr-6 space-y-0.5">
-                        <p className="text-xs font-bold text-gray-900">توطين أسعار التوصيل</p>
-                        <p className="text-[10px] text-gray-500">
-                          {drawerRates.length ? `تمت مزامنة وحفظ ${drawerRates.length} سعر للولايات بنجاح.` : 'لم يتم استيراد أي أسعار بعد.'}
-                        </p>
+                      <div className="relative flex items-start gap-4">
+                        <span className={`absolute right-0 w-4 h-4 rounded-full border-4 border-white shadow-xs ring-1 flex items-center justify-center shrink-0 z-10 ${drawerRates.length ? 'bg-emerald-500 ring-emerald-500' : 'bg-gray-200 ring-gray-200'}`} />
+                        <div className="mr-6">
+                          <h5 className="text-xs font-semibold text-gray-900">توطين الأسعار للمتجر</h5>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            {drawerRates.length ? `تمت مزامنة وحفظ ${drawerRates.length} سعر للولايات بنجاح.` : 'لم يتم استيراد أي أسعار بعد.'}
+                          </p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="relative flex items-start gap-4">
-                      <span className={`absolute right-0 w-4.5 h-4.5 rounded-full flex items-center justify-center shrink-0 z-10 ${drawerOffices.length ? 'bg-green-50 border-2 border-green-500' : 'bg-gray-50 border-2 border-gray-200'}`}>
-                        {drawerOffices.length && <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />}
-                      </span>
-                      <div className="mr-6 space-y-0.5">
-                        <p className="text-xs font-bold text-gray-900">مكاتب الاستلام المهيأة</p>
-                        <p className="text-[10px] text-gray-500">
-                          {drawerOffices.length ? `تم تفعيل وتوطين ${drawerOffices.length} مكتب شحن للعملاء.` : 'لا توجد مكاتب استلام مسجلة للقناة.'}
-                        </p>
+                      <div className="relative flex items-start gap-4">
+                        <span className={`absolute right-0 w-4 h-4 rounded-full border-4 border-white shadow-xs ring-1 flex items-center justify-center shrink-0 z-10 ${drawerOffices.length ? 'bg-emerald-500 ring-emerald-500' : 'bg-gray-200 ring-gray-200'}`} />
+                        <div className="mr-6">
+                          <h5 className="text-xs font-semibold text-gray-900">مكاتب استلام الشحنات</h5>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            {drawerOffices.length ? `تم توطين وحفظ ${drawerOffices.length} مكتب استلام جاهز للعملاء.` : 'لا توجد مكاتب شحن مستوردة.'}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -813,18 +785,18 @@ function ProviderDrawer({
 
               {/* Danger Zone */}
               {form.id && (
-                <div className="border border-red-100 bg-red-50/20 rounded-2xl p-5 space-y-3">
-                  <h4 className="text-xs font-bold text-red-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <ShieldAlert size={14} /> منطقة الخطر (إلغاء الربط)
+                <div className="border border-red-200 bg-red-50/20 rounded-xl p-5 space-y-3">
+                  <h4 className="text-xs font-bold text-red-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <ShieldAlert size={14} className="text-red-600" /> منطقة الإجراءات الخطرة
                   </h4>
-                  <p className="text-[11px] text-red-600 leading-relaxed">
-                    عند إلغاء ربط شركة التوصيل، سيتم مسح جميع بيانات الاتصال وأسعار الشحن المرتبطة بها ولن يتم التوجيه إليها تلقائياً.
+                  <p className="text-[10px] text-red-600/90 leading-relaxed">
+                    عند فك ارتباط شركة التوصيل، سيتم مسح المفاتيح الأمنية وإلغاء تفعيل حساب الشحن وحذف أسعار الولايات ومكاتبها التابعة تماماً من قاعدة البيانات.
                   </p>
                   <button
                     onClick={() => { onDelete(form.id); setForm(null) }}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-4 py-2 rounded-xl transition-all shadow-sm"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:scale-95 px-3.5 py-2 rounded-lg transition-all shadow-xs cursor-pointer"
                   >
-                    <Trash2 size={13} /> فصل شركة التوصيل تماماً
+                    <Trash2 size={12} /> إلغاء الربط وفصل الشركة
                   </button>
                 </div>
               )}
@@ -833,26 +805,26 @@ function ProviderDrawer({
 
           {/* Rates Preview Tab (Searchable preview in Drawer) */}
           {drawerTab === 'rates' && (
-            <div className="bg-white border rounded-2xl p-4 space-y-4 shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
+            <div className="bg-white border border-gray-200/85 rounded-xl p-4 space-y-4 shadow-xs">
               <div className="flex items-center justify-between gap-4">
                 <div className="relative flex-1">
-                  <Search size={14} className="absolute right-3 top-3 text-gray-400" />
+                  <Search size={13} className="absolute right-3 top-2.5 text-gray-400" />
                   <input
-                    className="input text-xs w-full pr-8 h-9"
+                    className="w-full pr-8 pl-3 py-1.5 text-xs bg-gray-50/30 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900"
                     placeholder="البحث باسم الولاية أو الرمز..."
                     value={drawerRatesSearch}
                     onChange={e => setDrawerRatesSearch(e.target.value)}
                   />
                 </div>
-                <span className="text-[11px] text-gray-400 font-bold shrink-0">
-                  {filteredRates.length} ولاية مفعّلة
+                <span className="text-[10px] text-gray-400 font-bold shrink-0">
+                  {filteredRates.length} سجل متاح
                 </span>
               </div>
 
-              <div className="border rounded-xl overflow-hidden max-h-[360px] overflow-y-auto">
+              <div className="border border-gray-100 rounded-lg overflow-hidden max-h-[300px] overflow-y-auto shadow-2xs">
                 <table className="w-full text-right border-collapse">
                   <thead>
-                    <tr className="bg-gray-50 border-b text-[10px] uppercase font-bold text-gray-400" style={{ borderColor: 'var(--color-border)' }}>
+                    <tr className="bg-gray-50 border-b text-[9px] uppercase font-bold tracking-wider text-gray-400 sticky top-0 z-10" style={{ borderColor: 'var(--color-border)' }}>
                       <th className="p-2.5">الرمز والولاية</th>
                       <th className="p-2.5 text-left">المنزل (دج)</th>
                       <th className="p-2.5 text-left">المكتب (دج)</th>
@@ -861,17 +833,17 @@ function ProviderDrawer({
                   <tbody className="divide-y text-xs text-gray-700" style={{ borderColor: 'var(--color-border)' }}>
                     {filteredRates.length === 0 ? (
                       <tr>
-                        <td colSpan={3} className="text-center py-10 text-gray-400 font-medium">
+                        <td colSpan={3} className="text-center py-12 text-gray-400 font-medium">
                           لا توجد نتائج مطابقة لبحثك.
                         </td>
                       </tr>
                     ) : filteredRates.map(r => {
                       const wName = wilayas.find(w => w.code === r.wilaya_code)?.name_ar ?? ''
                       return (
-                        <tr key={r.id} className="hover:bg-gray-50/50">
-                          <td className="p-2.5 font-semibold">{r.wilaya_code} · {wName}</td>
-                          <td className="p-2.5 text-left font-mono text-gray-900">{r.home_price} دج</td>
-                          <td className="p-2.5 text-left font-mono text-gray-900">{r.stopdesk_price} DZD</td>
+                        <tr key={r.id} className="hover:bg-gray-50/30">
+                          <td className="p-2.5 font-semibold text-gray-900">{r.wilaya_code} · {wName}</td>
+                          <td className="p-2.5 text-left font-mono text-gray-700">{r.home_price} دج</td>
+                          <td className="p-2.5 text-left font-mono text-gray-700">{r.stopdesk_price} دج</td>
                         </tr>
                       )
                     })}
@@ -883,46 +855,46 @@ function ProviderDrawer({
 
           {/* Offices Preview Tab (Searchable desks in Drawer) */}
           {drawerTab === 'offices' && (
-            <div className="bg-white border rounded-2xl p-4 space-y-4 shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
+            <div className="bg-white border border-gray-200/85 rounded-xl p-4 space-y-4 shadow-xs">
               <div className="flex items-center justify-between gap-4">
                 <div className="relative flex-1">
-                  <Search size={14} className="absolute right-3 top-3 text-gray-400" />
+                  <Search size={13} className="absolute right-3 top-2.5 text-gray-400" />
                   <input
-                    className="input text-xs w-full pr-8 h-9"
+                    className="w-full pr-8 pl-3 py-1.5 text-xs bg-gray-50/30 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900"
                     placeholder="البحث بالمكتب، البلدية أو الولاية..."
                     value={drawerOfficesSearch}
                     onChange={e => setDrawerOfficesSearch(e.target.value)}
                   />
                 </div>
-                <span className="text-[11px] text-gray-400 font-bold shrink-0">
-                  {filteredOffices.length} مكتب شحن
+                <span className="text-[10px] text-gray-400 font-bold shrink-0">
+                  {filteredOffices.length} مكتب متوفر
                 </span>
               </div>
 
-              <div className="border rounded-xl overflow-hidden max-h-[360px] overflow-y-auto">
+              <div className="border border-gray-100 rounded-lg overflow-hidden max-h-[300px] overflow-y-auto shadow-2xs">
                 <table className="w-full text-right border-collapse">
                   <thead>
-                    <tr className="bg-gray-50 border-b text-[10px] uppercase font-bold text-gray-400" style={{ borderColor: 'var(--color-border)' }}>
+                    <tr className="bg-gray-50 border-b text-[9px] uppercase font-bold tracking-wider text-gray-400 sticky top-0 z-10" style={{ borderColor: 'var(--color-border)' }}>
                       <th className="p-2.5">الولاية والمكتب</th>
-                      <th className="p-2.5">العنوان بالتفصيل</th>
+                      <th className="p-2.5">العنوان المصرّح</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y text-xs text-gray-700" style={{ borderColor: 'var(--color-border)' }}>
                     {filteredOffices.length === 0 ? (
                       <tr>
-                        <td colSpan={2} className="text-center py-10 text-gray-400 font-medium">
+                        <td colSpan={2} className="text-center py-12 text-gray-400 font-medium">
                           لا توجد مكاتب استلام مطابقة.
                         </td>
                       </tr>
                     ) : filteredOffices.map(o => {
                       const wName = wilayas.find(w => w.code === o.wilaya_code)?.name_ar ?? ''
                       return (
-                        <tr key={o.id} className="hover:bg-gray-50/50">
+                        <tr key={o.id} className="hover:bg-gray-50/30">
                           <td className="p-2.5">
                             <span className="block font-semibold text-gray-900">{o.name}</span>
-                            <span className="block text-[10px] text-gray-400 mt-0.5">{wName} ({o.wilaya_code})</span>
+                            <span className="block text-[9px] text-gray-400 mt-0.5">{wName} ({o.wilaya_code})</span>
                           </td>
-                          <td className="p-2.5 text-gray-500 text-[11px] max-w-[200px] truncate" title={o.address ?? ''}>
+                          <td className="p-2.5 text-gray-500 text-[10px] max-w-[200px] truncate" title={o.address ?? ''}>
                             {o.address ?? '—'}
                           </td>
                         </tr>
@@ -936,7 +908,7 @@ function ProviderDrawer({
 
           {/* Sync Logs Tab (Terminal layout) */}
           {drawerTab === 'logs' && (
-            <div className="bg-gray-950 text-emerald-400 font-mono text-[11px] p-5 rounded-2xl border border-gray-800 shadow-inner h-[400px] overflow-y-auto space-y-2 leading-relaxed" dir="ltr">
+            <div className="bg-gray-950 text-gray-100 font-mono text-[10px] p-4 rounded-xl border border-gray-800 shadow-inner h-[320px] overflow-y-auto space-y-2 leading-relaxed" dir="ltr">
               <p className="text-gray-500 select-none border-b border-gray-800 pb-2 mb-3"># Dakkani Delivery Console Logs v1.0.0</p>
               {syncLogs.map((log, i) => (
                 <div key={i} className="flex gap-2">
@@ -950,24 +922,24 @@ function ProviderDrawer({
 
         {/* Test Connection Results Alert */}
         {testMsg && (
-          <div className="px-6 py-3 border-t bg-gray-50" style={{ borderColor: 'var(--color-border)' }}>
-            <div className={`p-4 rounded-xl border flex items-start gap-3 ${testMsg.ok ? 'bg-green-50/50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
-              {testMsg.ok ? <CheckCircle size={16} className="text-green-600 shrink-0 mt-0.5" /> : <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />}
+          <div className="px-6 py-3.5 border-t bg-gray-50" style={{ borderColor: 'var(--color-border)' }}>
+            <div className={`p-4 rounded-lg border flex items-start gap-3 ${testMsg.ok ? 'bg-green-50/40 border-green-200 text-green-800' : 'bg-amber-50/40 border-amber-200 text-amber-800'}`}>
+              {testMsg.ok ? <CheckCircle size={15} className="text-green-600 shrink-0 mt-0.5" /> : <AlertTriangle size={15} className="text-amber-600 shrink-0 mt-0.5" />}
               <div>
                 <p className="text-xs font-bold">{testMsg.msg}</p>
-                {testMsg.raw && <pre dir="ltr" className="mt-2 p-2 rounded text-[10px] overflow-x-auto font-mono bg-white border" style={{ color: '#495057', maxHeight: 80 }}>{testMsg.raw}</pre>}
+                {testMsg.raw && <pre dir="ltr" className="mt-2 p-2 rounded text-[9px] overflow-x-auto font-mono bg-white border border-gray-100" style={{ color: '#495057', maxHeight: 80 }}>{testMsg.raw}</pre>}
               </div>
             </div>
           </div>
         )}
 
         {/* Drawer Footer Actions */}
-        <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-between gap-3 sticky bottom-0" style={{ borderColor: 'var(--color-border)' }}>
+        <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-between gap-3 sticky bottom-0 z-20" style={{ borderColor: 'var(--color-border)' }}>
           <button 
             onClick={test} 
             disabled={testing} 
-            className="btn btn-sm px-4 font-bold bg-white border hover:bg-gray-100 shadow-sm"
-            style={{ color: '#0A6E66', borderColor: 'var(--cf-turq)' }}
+            className="inline-flex items-center gap-1 px-4 py-2 text-xs font-bold bg-white border rounded-lg hover:bg-gray-50 shadow-xs cursor-pointer active:scale-95 transition-all text-gray-700"
+            style={{ borderColor: 'var(--color-border)' }}
           >
             {testing ? <Loader2 size={13} className="animate-spin" /> : 'اختبار الاتصال'}
           </button>
@@ -975,13 +947,14 @@ function ProviderDrawer({
             <button 
               onClick={save} 
               disabled={saving} 
-              className="btn btn-sm font-bold bg-teal-600 text-white hover:bg-teal-700 shadow-sm px-6"
+              className="inline-flex items-center gap-1 px-5 py-2 text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white rounded-lg shadow-xs cursor-pointer active:scale-95 transition-all"
             >
               {saving ? <Loader2 size={13} className="animate-spin" /> : 'حفظ الإعدادات'}
             </button>
             <button 
               onClick={() => setForm(null)} 
-              className="btn btn-sm font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 px-4"
+              className="inline-flex items-center px-4 py-2 text-xs font-bold bg-white border rounded-lg hover:bg-gray-50 shadow-xs cursor-pointer active:scale-95 transition-all text-gray-500"
+              style={{ borderColor: 'var(--color-border)' }}
             >
               إلغاء
             </button>
@@ -1055,9 +1028,9 @@ function PricesTab({
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="p-4 rounded-2xl border flex items-start gap-3 bg-red-50/30 border-red-100">
-        <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={16} />
-        <div className="text-xs text-red-800 leading-relaxed">
+      <div className="p-4 rounded-xl border flex items-start gap-3 bg-red-50/20 border-red-100">
+        <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={15} />
+        <div className="text-xs text-red-800 leading-normal font-medium">
           {target === 'real'
             ? 'الأسعار الحقيقية (المقاصة مع شركة التوصيل) تُستخدم فقط لحساب أرباح المتجر في لوحة التحكم، ولا يتم إضافتها إلى الفاتورة النهائية للزبون.'
             : 'الأسعار المعلنة هي أسعار التوصيل التي تظهر للزبائن في صفحة إنهاء الشراء ويتم إضافتها إلى مجموع الفاتورة النهائي.'}
@@ -1065,10 +1038,10 @@ function PricesTab({
       </div>
 
       {/* Pricing Header Actions */}
-      <div className="bg-white border rounded-2xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
+      <div className="bg-white border border-gray-200/80 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-2xs">
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <select 
-            className="input text-sm h-10 w-full sm:w-56" 
+            className="px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 font-bold h-9 w-full sm:w-52"
             value={providerId} 
             onChange={e => setProviderId(e.target.value)}
           >
@@ -1077,19 +1050,19 @@ function PricesTab({
           <button 
             onClick={doImport} 
             disabled={!providerId || importing || (meta && !meta.hasRatesApi)} 
-            className="btn btn-primary h-10 px-4 gap-2 flex items-center justify-center w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-all shadow-xs active:scale-95 cursor-pointer h-9 w-full sm:w-auto"
           >
-            {importing ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} استيراد أسعار الشركة
+            {importing ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} استيراد أسعار القناة
           </button>
         </div>
 
         {/* View filters */}
-        <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto justify-end">
+        <div className="flex items-center gap-1 w-full md:w-auto overflow-x-auto justify-end">
           {([['all', 'عرض الكل'], ['desk', 'توصيل المكتب'], ['home', 'توصيل المنزل']] as const).map(([v, l]) => (
             <button 
               key={v} 
               onClick={() => setView(v)} 
-              className={`h-8 px-4 text-xs font-bold rounded-lg border transition-all ${view === v ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}
+              className={`h-8 px-4.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${view === v ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}
             >
               {l}
             </button>
@@ -1099,9 +1072,9 @@ function PricesTab({
 
       {/* Table search utility */}
       <div className="relative">
-        <Search size={14} className="absolute right-3.5 top-3.5 text-gray-400" />
+        <Search size={14} className="absolute right-3.5 top-3 text-gray-400" />
         <input 
-          className="input text-sm w-full pr-9 h-11"
+          className="w-full pr-9 pl-4 py-2 text-sm bg-gray-50/30 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 placeholder-gray-400 h-10"
           placeholder="البحث عن أسعار ولاية معينة..."
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -1109,18 +1082,18 @@ function PricesTab({
       </div>
 
       {/* Main Prices Table */}
-      <div className="bg-white border rounded-2xl overflow-hidden shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
+      <div className="bg-white border border-gray-200/80 rounded-xl overflow-hidden shadow-2xs">
         <div className="overflow-x-auto max-h-[500px]">
           <table className="w-full text-right border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b text-[10px] font-bold text-gray-400 uppercase tracking-wider" style={{ borderColor: 'var(--color-border)' }}>
+              <tr className="bg-gray-50 border-b text-[10px] font-bold text-gray-400 uppercase tracking-widest sticky top-0 z-10" style={{ borderColor: 'var(--color-border)' }}>
                 <th className="p-3">الرمز والولاية</th>
                 {view !== 'home' && <th className="p-3 text-left">توصيل للمكتب (دج)</th>}
                 {view !== 'desk' && <th className="p-3 text-left">توصيل للمنزل (دج)</th>}
                 <th className="p-3 text-center">مصدر التسعير</th>
               </tr>
             </thead>
-            <tbody className="divide-y text-sm text-gray-700" style={{ borderColor: 'var(--color-border)' }}>
+            <tbody className="divide-y text-xs text-gray-700" style={{ borderColor: 'var(--color-border)' }}>
               {filteredWilayas.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="text-center py-20 text-gray-400">
@@ -1134,7 +1107,7 @@ function PricesTab({
               ) : filteredWilayas.map(w => {
                 const row = prices[w.code]
                 return (
-                  <tr key={w.id} className="hover:bg-gray-50/50">
+                  <tr key={w.id} className="hover:bg-gray-50/30">
                     <td className="p-3 font-semibold text-gray-900">{w.code} · {w.name_ar}</td>
                     {view !== 'home' && (
                       <td className="p-3 text-left">
@@ -1148,7 +1121,7 @@ function PricesTab({
                     )}
                     <td className="p-3 text-center">
                       {row ? (
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${row.source === 'imported' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                        <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold border ${row.source === 'imported' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
                           {row.source === 'imported' ? 'مستورد تلقائي' : 'يدوي'}
                         </span>
                       ) : '—'}
@@ -1208,19 +1181,18 @@ function RoutingTab({
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="bg-white border rounded-2xl p-4 flex items-center justify-between shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
+      <div className="bg-white border border-gray-200/80 rounded-xl p-4 flex items-center justify-between shadow-2xs">
         <div className="space-y-1">
-          <h4 className="text-sm font-bold text-gray-900">نظام توجيه الولايات التلقائي (Auto-Routing)</h4>
+          <h4 className="text-sm font-bold text-gray-900">توجيه الولايات التلقائي (Auto-Routing)</h4>
           <p className="text-xs text-gray-500">اختر شركة شحن مخصصة لولايات معينة ليتم تحويل الطلبات وتوليد الأسعار لها بمجرد اختيار العميل للولاية.</p>
         </div>
         <button 
           onClick={() => setEnabled(v => !v)} 
-          className="w-11 h-6 rounded-full relative transition-colors outline-none shrink-0" 
-          style={{ background: enabled ? 'var(--cf-turq)' : '#DEE2E6' }}
+          className="w-9 h-5 rounded-full relative transition-colors duration-200 ease-in-out shrink-0 focus:outline-none cursor-pointer"
+          style={{ background: enabled ? 'var(--cf-turq)' : '#E5E7EB' }}
         >
           <span 
-            className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all" 
-            style={{ [enabled ? 'right' : 'left']: '2px' } as any} 
+            className={`absolute top-[2px] w-4 h-4 bg-white rounded-full shadow-xs transition-transform duration-200 ease-in-out ${enabled ? 'right-[2px] translate-x-0' : 'right-[2px] translate-x-[-16px]'}`}
           />
         </button>
       </div>
@@ -1228,31 +1200,31 @@ function RoutingTab({
       {enabled && (
         <div className="space-y-4">
           <div className="relative">
-            <Search size={14} className="absolute right-3.5 top-3.5 text-gray-400" />
+            <Search size={14} className="absolute right-3.5 top-3 text-gray-400" />
             <input 
-              className="input text-sm w-full pr-9 h-11"
+              className="w-full pr-9 pl-4 py-2 text-sm bg-gray-50/30 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 placeholder-gray-400 h-10"
               placeholder="البحث في الولايات..."
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
 
-          <div className="bg-white border rounded-2xl overflow-hidden shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="bg-white border border-gray-200/80 rounded-xl overflow-hidden shadow-2xs">
             <div className="overflow-x-auto max-h-[460px]">
               <table className="w-full text-right border-collapse">
                 <thead>
-                  <tr className="bg-gray-50 border-b text-[10px] font-bold text-gray-400 uppercase tracking-wider" style={{ borderColor: 'var(--color-border)' }}>
+                  <tr className="bg-gray-50 border-b text-[10px] font-bold text-gray-400 uppercase tracking-widest sticky top-0 z-10" style={{ borderColor: 'var(--color-border)' }}>
                     <th className="p-3">الولاية والمفتاح</th>
                     <th className="p-3 text-left">شركة التوصيل الموجهة</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y text-sm text-gray-700" style={{ borderColor: 'var(--color-border)' }}>
                   {filteredWilayas.map(w => (
-                    <tr key={w.id} className="hover:bg-gray-50/50">
+                    <tr key={w.id} className="hover:bg-gray-50/30">
                       <td className="p-3 font-semibold text-gray-900">{w.code} · {w.name_ar}</td>
                       <td className="p-3 text-left">
                         <select 
-                          className="input text-xs h-9 w-48 font-bold" 
+                          className="px-2.5 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 font-bold h-8 w-44" 
                           value={map[w.code] ?? ''} 
                           onChange={e => assign(w.code, e.target.value)}
                         >
@@ -1342,49 +1314,49 @@ function OfficesTab({
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="p-4 bg-gray-50 border rounded-2xl flex items-start gap-3" style={{ borderColor: 'var(--color-border)' }}>
-        <HelpCircle className="text-gray-500 shrink-0 mt-0.5" size={16} />
-        <p className="text-xs text-gray-500 leading-relaxed">
-          أضف مكاتب الاستلام المخصصة للولايات — تظهر للعملاء في خانة «مكتب التوصيل» عند اختيارهم خيار «التوصيل للمكتب». (مزودي Yalidine يزودون مكاتبهم تلقائياً، ويمكن إضافة مكاتب ZR Express وZR مكاتب مخصصة هنا.)
+      <div className="p-4 bg-gray-50 border border-gray-200/50 rounded-xl flex items-start gap-3">
+        <HelpCircle className="text-gray-400 shrink-0 mt-0.5" size={15} />
+        <p className="text-xs text-gray-500 leading-normal">
+          أضف مكاتب الاستلام المخصصة للولايات — تظهر للعملاء في خانة «مكتب التوصيل» عند اختيارهم خيار «التوصيل للمكتب». (مزودي Yalidine يزودون مكاتبهم تلقائياً، ويمكن إضافة مكاتب ZR Express ومكاتب مخصصة هنا.)
         </p>
       </div>
 
       {/* Office creation card */}
-      <div className="bg-white border rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
-        <div className="sm:col-span-3">
-          <label className="block text-xs font-bold text-gray-600 mb-1">الشركة</label>
-          <select className="input text-sm w-full h-10" value={form.provider_id} onChange={e => setForm(f => ({ ...f, provider_id: e.target.value }))}>
+      <div className="bg-white border border-gray-200/80 rounded-xl p-5 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end shadow-2xs">
+        <div className="sm:col-span-3 space-y-1">
+          <label className="block text-[11px] font-bold text-gray-600">الشركة المربوطة</label>
+          <select className="px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 font-bold h-9 w-full" value={form.provider_id} onChange={e => setForm(f => ({ ...f, provider_id: e.target.value }))}>
             <option value="">كل الشركات</option>
             {providers.map(p => <option key={p.id} value={p.id}>{p.display_name}</option>)}
           </select>
         </div>
-        <div className="sm:col-span-2">
-          <label className="block text-xs font-bold text-gray-600 mb-1">الولاية</label>
-          <select className="input text-sm w-full h-10" value={form.wilaya_code} onChange={e => setForm(f => ({ ...f, wilaya_code: e.target.value }))}>
+        <div className="sm:col-span-2 space-y-1">
+          <label className="block text-[11px] font-bold text-gray-600">الولاية</label>
+          <select className="px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 font-bold h-9 w-full" value={form.wilaya_code} onChange={e => setForm(f => ({ ...f, wilaya_code: e.target.value }))}>
             <option value="">اختر الولاية</option>
             {wilayas.map(w => <option key={w.code} value={w.code}>{w.code} — {w.name_ar}</option>)}
           </select>
         </div>
-        <div className="sm:col-span-3">
-          <label className="block text-xs font-bold text-gray-600 mb-1">اسم مكتب الشحن</label>
-          <input className="input text-sm w-full h-10" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: مكتب شاطئ الشراقة" />
+        <div className="sm:col-span-3 space-y-1">
+          <label className="block text-[11px] font-bold text-gray-600">اسم مكتب التوصيل</label>
+          <input className="w-full px-3 py-2 text-xs bg-gray-50/30 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 placeholder-gray-400 h-9" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: مكتب شاطئ الشراقة" />
         </div>
-        <div className="sm:col-span-3">
-          <label className="block text-xs font-bold text-gray-600 mb-1">العنوان بالتفصيل (اختياري)</label>
-          <input className="input text-sm w-full h-10" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="الشارع أو المبنى..." />
+        <div className="sm:col-span-3 space-y-1">
+          <label className="block text-[11px] font-bold text-gray-600">العنوان بالتفصيل (اختياري)</label>
+          <input className="w-full px-3 py-2 text-xs bg-gray-50/30 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 placeholder-gray-400 h-9" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="الشارع أو المبنى..." />
         </div>
         <div className="sm:col-span-1">
-          <button onClick={add} disabled={saving} className="btn btn-primary h-10 w-full flex items-center justify-center rounded-xl">
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+          <button onClick={add} disabled={saving} className="inline-flex items-center justify-center bg-teal-600 hover:bg-teal-700 text-white rounded-lg shadow-xs active:scale-95 transition-all cursor-pointer h-9 w-full font-bold">
+            {saving ? <Loader2 size={13} className="animate-spin" /> : <Plus size={14} />}
           </button>
         </div>
       </div>
 
       {/* Office Search Utility */}
       <div className="relative">
-        <Search size={14} className="absolute right-3.5 top-3.5 text-gray-400" />
+        <Search size={14} className="absolute right-3.5 top-3 text-gray-400" />
         <input 
-          className="input text-sm w-full pr-9 h-11"
+          className="w-full pr-9 pl-4 py-2 text-sm bg-gray-50/30 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 placeholder-gray-400 h-10"
           placeholder="البحث في قائمة مكاتب الشحن المسجلة..."
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -1392,10 +1364,10 @@ function OfficesTab({
       </div>
 
       {/* Offices Table */}
-      <div className="bg-white border rounded-2xl overflow-hidden shadow-sm" style={{ borderColor: 'var(--color-border)' }}>
+      <div className="bg-white border border-gray-200/80 rounded-xl overflow-hidden shadow-2xs">
         <table className="w-full text-right border-collapse">
           <thead>
-            <tr className="bg-gray-50 border-b text-[10px] font-bold text-gray-400 uppercase tracking-wider" style={{ borderColor: 'var(--color-border)' }}>
+            <tr className="bg-gray-50 border-b text-[10px] font-bold text-gray-400 uppercase tracking-widest" style={{ borderColor: 'var(--color-border)' }}>
               <th className="p-3 w-16">إجراء</th>
               <th className="p-3">الشركة المربوطة</th>
               <th className="p-3">الولاية والمفتاح</th>
@@ -1403,28 +1375,30 @@ function OfficesTab({
               <th className="p-3">العنوان بالتفصيل</th>
             </tr>
           </thead>
-          <tbody className="divide-y text-sm text-gray-700" style={{ borderColor: 'var(--color-border)' }}>
+          <tbody className="divide-y text-xs text-gray-700" style={{ borderColor: 'var(--color-border)' }}>
             {filteredOffices.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center py-20 text-gray-400">
-                  <div className="space-y-2">
-                    <Landmark className="mx-auto text-gray-300" size={32} />
-                    <p className="font-bold">لا توجد مكاتب شحن مضافة</p>
-                    <p className="text-xs text-gray-400">قم بإضافة مكتب شحن للولاية باستخدام النموذج أعلاه.</p>
+                <td colSpan={5} className="py-12">
+                  <div className="border border-dashed border-gray-200 rounded-xl py-12 px-6 text-center max-w-sm mx-auto flex flex-col items-center justify-center bg-gray-50/30">
+                    <div className="w-11 h-11 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 mb-4 shadow-2xs">
+                      <Landmark size={18} />
+                    </div>
+                    <h5 className="text-xs font-bold text-gray-900">لا توجد مكاتب شحن مضافة</h5>
+                    <p className="text-[10px] text-gray-400 mt-1 max-w-[240px] leading-relaxed">قم بتعبئة بيانات مكتب الشحن الجديد للولايات بالنموذج أعلاه لتظهر لزبائنك.</p>
                   </div>
                 </td>
               </tr>
             ) : filteredOffices.map(o => (
-              <tr key={o.id} className="hover:bg-gray-50/50">
+              <tr key={o.id} className="hover:bg-gray-50/30">
                 <td className="p-3">
-                  <button onClick={() => del(o.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors">
-                    <Trash2 size={14} />
+                  <button onClick={() => del(o.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer">
+                    <Trash2 size={13} />
                   </button>
                 </td>
                 <td className="p-3 font-semibold text-gray-800">{pName(o.provider_id)}</td>
                 <td className="p-3">{wName(o.wilaya_code)} ({o.wilaya_code})</td>
                 <td className="p-3 font-semibold text-gray-900">{o.name}</td>
-                <td className="p-3 text-xs text-gray-500">{o.address ?? '—'}</td>
+                <td className="p-3 text-[11px] text-gray-500">{o.address ?? '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -1443,7 +1417,7 @@ function PriceInput({ value, onSave }: { value: number; onSave: (v: number) => v
   return (
     <input 
       type="number" 
-      className="input text-xs w-24 h-9 font-mono text-left focus:border-teal-500 focus:ring-1 focus:ring-teal-500" 
+      className="w-24 px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 font-mono text-left" 
       dir="ltr" 
       value={v} 
       onChange={e => setV(e.target.value)} 
