@@ -189,33 +189,40 @@ export class ZRExpressAdapter implements DeliveryAdapter {
     if (this.mode === 'zrx') {
       const h = await this.auth()
       if (!h) throw new Error('تعذّر المصادقة مع ZR Express')
-      
-      // X-Tenant header is required for pricing endpoint
-      const headers = {
-        ...h,
-        'X-Tenant': this.tenantId
+      // Pricing requires the tenant header alongside the auth scheme.
+      const headers = { ...h, 'X-Tenant': this.tenantId }
+
+      // Normalize the ZR rates payload (kept exactly as before — no field guessing).
+      const parse = (res: any): RateData[] => {
+        const rates: any[] = res?.rates || []
+        return rates
+          .filter((r: any) => r.toTerritoryLevel === 'wilaya')
+          .map((w: any) => {
+            const home = w.deliveryPrices?.find((dp: any) => dp.deliveryType === 'home')
+            const desk = w.deliveryPrices?.find((dp: any) => dp.deliveryType === 'pickup-point' || dp.deliveryType === 'stopdesk')
+            return {
+              wilayaCode: String(w.toTerritoryCode).padStart(2, '0'),
+              wilayaName: w.toTerritoryNameArabic || w.toTerritoryName || '',
+              homePrice: home ? Number(home.price) : 0,
+              stopdeskPrice: desk ? Number(desk.price) : 0,
+            }
+          })
+          .filter((r: RateData) => r.wilayaCode && r.wilayaCode !== '00')
       }
 
-      try {
-        const url = `${ZRX}/delivery-pricing/rates`
-        const res = await httpJson<any>(url, { method: 'GET', headers })
-        const rates = res?.rates || []
-        
-        const wilayaRates = rates.filter((r: any) => r.toTerritoryLevel === 'wilaya')
-        return wilayaRates.map((w: any) => {
-          const homePriceObj = w.deliveryPrices?.find((dp: any) => dp.deliveryType === 'home')
-          const stopdeskPriceObj = w.deliveryPrices?.find((dp: any) => dp.deliveryType === 'pickup-point' || dp.deliveryType === 'stopdesk')
-          
-          return {
-            wilayaCode: String(w.toTerritoryCode).padStart(2, '0'),
-            wilayaName: w.toTerritoryNameArabic || w.toTerritoryName || '',
-            homePrice: homePriceObj ? Number(homePriceObj.price) : 0,
-            stopdeskPrice: stopdeskPriceObj ? Number(stopdeskPriceObj.price) : 0
-          }
-        }).filter((r: any) => r.wilayaCode && r.wilayaCode !== '00')
-      } catch (e) {
-        throw new Error(`فشل استيراد الأسعار من واجهة ZR الجديدة: ${(e as Error).message}`)
+      // Try the adapter's DOCUMENTED fees endpoint first, then the alternate path.
+      const endpoints = [`${ZRX}/parcels/fees`, `${ZRX}/delivery-pricing/rates`]
+      const attempts: string[] = []
+      for (const url of endpoints) {
+        const r = await fetchRaw(url, { method: 'GET', headers })
+        attempts.push(`${url} → HTTP ${r.status}: ${(r.text || '').slice(0, 180)}`)
+        if (r.status >= 200 && r.status < 300) {
+          const parsed = parse(r.json)
+          if (parsed.length) return parsed
+        }
       }
+      // No readable rates — surface the ACTUAL responses (proof, not a guess).
+      throw new Error(`واجهة ZR لم تُرجع أسعاراً قابلة للقراءة عبر المسارات المعروفة. الاستجابة الفعلية — ${attempts.join(' | ')}`)
     }
     try {
       const data = await httpJson<any>(`${PROCOLIS}/tarification`, { method: 'POST', headers: this.procolisHeaders, body: '{}' })

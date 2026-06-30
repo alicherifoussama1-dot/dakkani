@@ -96,7 +96,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   const [selectedWilaya, setSelectedWilaya] = useState<Wilaya | null>(null)
   // Offices for the routed provider of the selected wilaya (provider-agnostic;
   // served by /api/store/delivery/desks which abstracts every provider).
-  const [offices, setOffices] = useState<{ id: string; name: string; commune: string }[]>([])
+  const [offices, setOffices] = useState<{ id: string; name: string; commune: string; address: string }[]>([])
   const [loadingOffices, setLoadingOffices] = useState(false)
   const [hasProvider, setHasProvider] = useState(false)
 
@@ -178,7 +178,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
     fetch(`/api/store/delivery/desks?store_id=${store.id}&wilaya_id=${wilayaId}`)
       .then(res => res.json())
       .then(data => {
-        setOffices((data.offices || []).map((o: any) => ({ id: String(o.id), name: o.name, commune: o.commune || '' })))
+        setOffices((data.offices || []).map((o: any) => ({ id: String(o.id), name: o.name, commune: o.commune || '', address: o.address || '' })))
         setHasProvider(!!data.hasProvider)
       })
       .catch(() => { setOffices([]); setHasProvider(false) })
@@ -338,9 +338,11 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
               )
             }
             // Office delivery → provider-agnostic two-step flow: municipalities that
-            // have offices → office selector. Submission unchanged (baladia = commune,
-            // stopdesk_code = office id).
-            if (deliveryType === 'stopdesk' && (wilayaId ?? 0) > 0) {
+            // have offices → office selector. The municipality field is ALWAYS present
+            // for office delivery (never disappears) — it just shows nothing to pick
+            // until a wilaya with offices is chosen. Submission unchanged
+            // (baladia = commune, stopdesk_code = office id).
+            if (deliveryType === 'stopdesk') {
               if (loadingOffices) {
                 return (
                   <div key="field-baladia">

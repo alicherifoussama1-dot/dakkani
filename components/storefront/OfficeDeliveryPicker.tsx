@@ -12,7 +12,7 @@ import { ChevronDown, Building2 } from 'lucide-react'
 import { formatCommuneBilingual } from '@/lib/algeria-baladias'
 import { translateStorefront, type Locale } from '@/lib/utils/translations'
 
-export type Office = { id: string; name: string; commune: string }
+export type Office = { id: string; name: string; commune: string; address?: string }
 
 export default function OfficeDeliveryPicker({ offices, wilayaId, lang, baladia, stopdeskCode, onChange, theme }: {
   offices: Office[]
@@ -160,33 +160,6 @@ export default function OfficeDeliveryPicker({ offices, wilayaId, lang, baladia,
 
   const confirmTextColor = theme ? '' : '#1B1B1F'
 
-  if (offices.length === 0) {
-    const noOfficesMsg = lang === 'ar'
-      ? 'لا تتوفر خدمة التوصيل للمكتب في هذه الولاية. يرجى اختيار التوصيل للمنزل أو تحديد ولاية أخرى.'
-      : lang === 'fr'
-      ? "La livraison au bureau n'est pas disponible pour cette wilaya. Veuillez choisir la livraison à domicile ou une autre wilaya."
-      : 'No office delivery is available in this Wilaya. Please choose Home Delivery or another Wilaya.'
-
-    return (
-      <div className="space-y-3">
-        <div>
-          <label className={labelCls}>
-            {translateStorefront('baladia', lang)} <span style={{ color: starColor }}>*</span>
-          </label>
-          <div className="relative">
-            <button type="button" disabled className={`${fieldCls} opacity-60 cursor-not-allowed`}>
-              <span>&nbsp;</span>
-              <ChevronDown size={16} style={{ color: theme === 'glassmorphism' ? '#94a3b8' : '#57564F' }} />
-            </button>
-          </div>
-          <p className="text-xs mt-1.5 leading-relaxed text-red-500 font-medium">
-            {noOfficesMsg}
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-3">
       {/* 1. Municipality — only those with offices */}
@@ -239,7 +212,8 @@ export default function OfficeDeliveryPicker({ offices, wilayaId, lang, baladia,
                     <button key={o.id} type="button" onClick={() => { onChange(selectedCommune, o.id); setOpenO(false) }}
                       className={getItemCls(stopdeskCode === o.id)}
                       style={itemStyle(stopdeskCode === o.id)}>
-                      {o.name}
+                      <span style={{ display: 'block' }}>{o.name}</span>
+                      {o.address && <span style={{ display: 'block', fontSize: 11, opacity: 0.7, marginTop: 2 }}>{o.address}</span>}
                     </button>
                   ))}
                 </div>
@@ -253,7 +227,10 @@ export default function OfficeDeliveryPicker({ offices, wilayaId, lang, baladia,
       {selectedCommune && officesInCommune.length === 1 && (
         <div className={confirmCardCls} style={confirmCardStyle}>
           <Building2 className="w-4 h-4 shrink-0" style={{ color: confirmIconColor }} />
-          <span className={confirmTextColor}>{lang === 'ar' ? 'مكتب الاستلام: ' : lang === 'fr' ? 'Bureau de retrait: ' : 'Pickup office: '}<strong>{officesInCommune[0].name}</strong></span>
+          <span className={confirmTextColor}>
+            {lang === 'ar' ? 'مكتب الاستلام: ' : lang === 'fr' ? 'Bureau de retrait: ' : 'Pickup office: '}<strong>{officesInCommune[0].name}</strong>
+            {officesInCommune[0].address && <span style={{ display: 'block', fontSize: 11, opacity: 0.75, marginTop: 2 }}>{officesInCommune[0].address}</span>}
+          </span>
         </div>
       )}
     </div>
