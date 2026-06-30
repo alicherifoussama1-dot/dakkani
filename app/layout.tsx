@@ -41,6 +41,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: '#0D6EFD',
   width: 'device-width', initialScale: 1, maximumScale: 5,
+  // Required for env(safe-area-inset-*) to resolve to real values on notched
+  // devices (iPhone) — otherwise it's always 0 regardless of CSS usage.
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

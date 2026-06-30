@@ -98,17 +98,17 @@ export default function OfficeDeliveryPicker({ offices, wilayaId, lang, baladia,
     ? 'absolute z-50 mt-1.5 w-full max-h-60 overflow-y-auto p-1.5 rounded-2xl bg-slate-900 border border-slate-700 shadow-xl'
     : theme === 'default'
     ? 'absolute z-50 mt-1.5 w-full max-h-60 overflow-y-auto p-1.5 rounded-2xl bg-white border border-gray-200 shadow-md'
-    : 'absolute z-50 mt-1.5 w-full max-h-60 overflow-y-auto p-1.5 rounded-2xl'
+    : 'absolute z-50 mt-1.5 w-full max-h-72 overflow-y-auto p-1.5 rounded-2xl'
 
-  const dropdownStyle = theme ? {} : { background: '#fff', border: '1px solid #BFBBB1', boxShadow: '0 12px 32px rgba(20,18,15,0.12)' }
+  const dropdownStyle = theme ? {} : { background: '#fff', border: '1.5px solid #B0AA9C', boxShadow: '0 12px 32px rgba(20,18,15,0.12)' }
 
   const textStyle = (selected: boolean) => {
     if (theme) return {}
-    return { color: selected ? '#111111' : '#6B6A64' }
+    return { color: selected ? '#111111' : '#5C594F' }
   }
 
   const getItemCls = (active: boolean) => {
-    if (!theme) return 'block w-full text-start rtl:text-right px-3 py-2.5 rounded-xl text-sm transition'
+    if (!theme) return 'block w-full text-start rtl:text-right px-3.5 py-3 rounded-xl text-base transition'
     if (theme === 'compact') {
       return `block w-full text-start rtl:text-right px-2.5 py-2 rounded text-xs transition ${
         active ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-50'
@@ -144,7 +144,7 @@ export default function OfficeDeliveryPicker({ offices, wilayaId, lang, baladia,
     ? 'flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-sm border border-indigo-500/20 bg-indigo-950/20 text-indigo-200'
     : theme === 'default'
     ? 'flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-sm border border-blue-100 bg-blue-50/50 text-[#0B5ED7]'
-    : 'flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-sm'
+    : 'flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-base'
 
   const confirmCardStyle = theme ? {} : { background: 'color-mix(in srgb, var(--pt-accent) 8%, transparent)', border: '0.5px solid #EBE8E1' }
 
@@ -213,7 +213,7 @@ export default function OfficeDeliveryPicker({ offices, wilayaId, lang, baladia,
                       className={getItemCls(stopdeskCode === o.id)}
                       style={itemStyle(stopdeskCode === o.id)}>
                       <span style={{ display: 'block' }}>{o.name}</span>
-                      {o.address && <span style={{ display: 'block', fontSize: 11, opacity: 0.7, marginTop: 2 }}>{o.address}</span>}
+                      {o.address && <span style={{ display: 'block', fontSize: 13, opacity: 0.75, marginTop: 3 }}>{o.address}</span>}
                     </button>
                   ))}
                 </div>
@@ -229,7 +229,7 @@ export default function OfficeDeliveryPicker({ offices, wilayaId, lang, baladia,
           <Building2 className="w-4 h-4 shrink-0" style={{ color: confirmIconColor }} />
           <span className={confirmTextColor}>
             {lang === 'ar' ? 'مكتب الاستلام: ' : lang === 'fr' ? 'Bureau de retrait: ' : 'Pickup office: '}<strong>{officesInCommune[0].name}</strong>
-            {officesInCommune[0].address && <span style={{ display: 'block', fontSize: 11, opacity: 0.75, marginTop: 2 }}>{officesInCommune[0].address}</span>}
+            {officesInCommune[0].address && <span style={{ display: 'block', fontSize: 13, opacity: 0.8, marginTop: 3 }}>{officesInCommune[0].address}</span>}
           </span>
         </div>
       )}

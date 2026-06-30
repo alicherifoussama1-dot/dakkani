@@ -482,13 +482,16 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
       )}
 
       {/* Universal premium sticky buy bar */}
-      <div 
-        className={`fixed bottom-0 inset-x-0 z-40 flex justify-center p-3.5 transition-all duration-300 ease-in-out ${showSticky ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`} 
-        style={{ 
-          background: 'rgba(250,248,245,0.97)', 
-          borderTop: `0.5px solid ${LINE}`, 
-          backdropFilter: 'blur(8px)' 
-        }} 
+      <div
+        className={`fixed bottom-0 inset-x-0 z-40 flex justify-center px-3.5 pt-3.5 transition-all duration-300 ease-in-out ${showSticky ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}
+        style={{
+          background: 'rgba(250,248,245,0.97)',
+          borderTop: `0.5px solid ${LINE}`,
+          backdropFilter: 'blur(8px)',
+          // Comfortable breathing space above the home indicator / gesture bar
+          // on notched phones, on top of the existing 14px base padding.
+          paddingBottom: 'calc(0.875rem + env(safe-area-inset-bottom, 0px))',
+        }}
         dir={isRtl ? 'rtl' : 'ltr'}
       >
         <button 
@@ -501,8 +504,10 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
         </button>
       </div>
 
-      {/* Spacer so the sticky bar never covers the last content on mobile */}
-      <div className="h-20 lg:hidden" />
+      {/* Spacer so the sticky bar never covers the last content on mobile —
+          matches the bar's own safe-area-aware height so it never falls short
+          on notched devices. */}
+      <div className="lg:hidden" style={{ height: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }} />
     </div>
   )
 }

@@ -483,15 +483,18 @@
 .faq-item > summary::-webkit-details-marker { display: none; }
 .faq-item[open] > summary .faq-chev { transform: rotate(180deg); }
 
-/* Dakkani product-page order form — ONE design system (accent = var(--pt-accent)) */
-.dk-field { width:100%; height:48px; border:0.5px solid #EBE8E1; border-radius:14px; padding:0 16px; font-size:14px; background:#fff; color:#1B1B1F; outline:none; transition:border-color .15s, box-shadow .15s; }
-.dk-field::placeholder { color:#9B9B96; }
-.dk-field:focus { border-color: var(--pt-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pt-accent) 14%, transparent); }
-textarea.dk-field { height:auto; min-height:52px; padding:13px 16px; resize:none; }
-.dk-field-icon { padding-inline-start:44px; }
-.dk-label { display:block; font-size:13px; font-weight:600; color:#3A3A38; margin-bottom:7px; }
+/* Dakkani product-page order form — ONE design system (accent = var(--pt-accent))
+   font-size is deliberately >=16px: iOS Safari auto-zooms the viewport on focus
+   for any text input/select/textarea whose computed font-size is below 16px —
+   this was the root cause of the page appearing to "zoom" while using the form. */
+.dk-field { width:100%; height:52px; border:1.5px solid #D6D1C5; border-radius:14px; padding:0 18px; font-size:16px; background:#fff; color:#1B1B1F; outline:none; transition:border-color .15s, box-shadow .15s; }
+.dk-field::placeholder { color:#8A8780; }
+.dk-field:focus { border-color: var(--pt-accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--pt-accent) 14%, transparent); }
+textarea.dk-field { height:auto; min-height:56px; padding:15px 18px; resize:none; }
+.dk-field-icon { padding-inline-start:46px; }
+.dk-label { display:block; font-size:14px; font-weight:600; color:#3A3A38; margin-bottom:8px; }
 
-/* Stronger Wilaya / Municipality selectors — darker border + dark text */
-.dk-field-strong { border-width:1px; border-color:#BFBBB1; color:#111111; }
-.dk-field-strong::placeholder { color:#6B6A64; }
-.dk-field-strong:focus { border-color: var(--pt-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pt-accent) 14%, transparent); }
+/* Stronger Wilaya / Municipality / Office selectors — darker border + dark text */
+.dk-field-strong { border-width:1.5px; border-color:#B0AA9C; color:#111111; }
+.dk-field-strong::placeholder { color:#5C594F; }
+.dk-field-strong:focus { border-color: var(--pt-accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--pt-accent) 14%, transparent); }

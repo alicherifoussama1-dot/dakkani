@@ -1701,13 +1701,49 @@ export function getBaladiasBilingualForWilaya(wilayaId: number | string | null |
   return getCommunesByWilaya(wilayaId).map(c => ({ value: c.name_ar, label: `${c.name_fr} - ${c.name_ar}` }))
 }
 
+function normalizeCommuneName(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+// Resolve a raw commune string — which may come from a delivery provider (office
+// API / merchant-managed list) and be abbreviated or truncated, e.g. "Oum El"
+// instead of "Oum El Bouaghi" — to its official record in the SAME table used
+// for home delivery, scoped to the given wilaya. This fixes office-delivery
+// municipality names without touching what gets submitted/stored: callers keep
+// using the original raw string for that; only the DISPLAY label is corrected.
+//   1. exact match (ar or fr, accent/case-insensitive)
+//   2. raw is a (truncated) prefix of the official name — ONLY when unambiguous
+//      (exactly one official commune in this wilaya starts with it), so a short
+//      or ambiguous fragment never guesses the wrong commune
+//   3. official name is a prefix of raw (raw has extra trailing text)
+// Returns null when nothing reliably matches — callers fall back to the raw
+// string, so display is never worse than before.
+function resolveCommune(wilayaId: number | string | null | undefined, commune: string | null | undefined): AlgeriaCommune | null {
+  if (!commune) return null
+  const raw = normalizeCommuneName(commune)
+  if (raw.length < 2) return null
+  const communes = getCommunesByWilaya(wilayaId)
+
+  const exact = communes.find(c => normalizeCommuneName(c.name_ar) === raw || normalizeCommuneName(c.name_fr) === raw)
+  if (exact) return exact
+
+  if (raw.length >= 4) {
+    const prefixMatches = communes.filter(c => normalizeCommuneName(c.name_fr).startsWith(raw) || normalizeCommuneName(c.name_ar).startsWith(raw))
+    if (prefixMatches.length === 1) return prefixMatches[0]
+  }
+
+  const reverseMatches = communes.filter(c => raw.startsWith(normalizeCommuneName(c.name_fr)) || raw.startsWith(normalizeCommuneName(c.name_ar)))
+  if (reverseMatches.length === 1) return reverseMatches[0]
+
+  return null
+}
+
 // Render a stored commune name as the bilingual "French - Arabic" label (for the
 // Sheets export + the selected-value display). Falls back to the original string
 // if it can't be matched, so nothing ever breaks.
 export function formatCommuneBilingual(wilayaId: number | string | null | undefined, commune: string | null | undefined): string {
   if (!commune) return commune ?? ''
-  const norm = (s: string) => s.trim().toLowerCase()
-  const c = getCommunesByWilaya(wilayaId).find(x => norm(x.name_ar) === norm(commune) || norm(x.name_fr) === norm(commune))
+  const c = resolveCommune(wilayaId, commune)
   return c ? `${c.name_fr} - ${c.name_ar}` : commune
 }
 
@@ -1715,7 +1751,6 @@ export function formatCommuneBilingual(wilayaId: number | string | null | undefi
 // export. Falls back to the original string if it can't be matched.
 export function formatCommuneFrench(wilayaId: number | string | null | undefined, commune: string | null | undefined): string {
   if (!commune) return commune ?? ''
-  const norm = (s: string) => s.trim().toLowerCase()
-  const c = getCommunesByWilaya(wilayaId).find(x => norm(x.name_ar) === norm(commune) || norm(x.name_fr) === norm(commune))
+  const c = resolveCommune(wilayaId, commune)
   return c ? c.name_fr : commune
 }

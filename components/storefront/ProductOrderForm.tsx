@@ -46,8 +46,8 @@ function BaladiaField({ wilayaId, value, onChange, error, lang }: {
       <div>
         <label className="dk-label">{translateStorefront('baladia', lang)} *</label>
         <button type="button" disabled className="dk-field dk-field-strong opacity-50 cursor-not-allowed flex items-center justify-between text-start rtl:text-right">
-          <span style={{ color: '#6B6A64' }}>{translateStorefront('select_wilaya', lang)}</span>
-          <ChevronDown size={16} style={{ color: '#6B6A64' }} />
+          <span style={{ color: '#5C594F' }}>{translateStorefront('select_wilaya', lang)}</span>
+          <ChevronDown size={16} style={{ color: '#5C594F' }} />
         </button>
       </div>
     )
@@ -58,16 +58,16 @@ function BaladiaField({ wilayaId, value, onChange, error, lang }: {
       <label className="dk-label">{translateStorefront('baladia', lang)} *</label>
       <div className="relative">
         <button type="button" onClick={() => setOpen(o => !o)} className="dk-field dk-field-strong flex items-center justify-between text-start rtl:text-right">
-          <span style={{ color: value ? '#111111' : '#6B6A64' }}>{selectedLabel || value || translateStorefront('select_commune', lang)}</span>
+          <span style={{ color: value ? '#111111' : '#5C594F' }}>{selectedLabel || value || translateStorefront('select_commune', lang)}</span>
           <ChevronDown size={16} style={{ color: '#57564F', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
         </button>
         {open && (
           <>
             <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 49 }} />
-            <div className="absolute z-50 mt-1.5 w-full max-h-60 overflow-y-auto p-1.5 rounded-2xl" style={{ background: DK.surface, border: `1px solid #BFBBB1`, boxShadow: '0 12px 32px rgba(20,18,15,0.12)' }}>
+            <div className="absolute z-50 mt-1.5 w-full max-h-72 overflow-y-auto p-1.5 rounded-2xl" style={{ background: DK.surface, border: `1.5px solid #B0AA9C`, boxShadow: '0 12px 32px rgba(20,18,15,0.12)' }}>
               {options.map(o => (
                 <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false) }}
-                  className="block w-full text-start rtl:text-right px-3 py-2.5 rounded-xl text-sm transition"
+                  className="block w-full text-start rtl:text-right px-3.5 py-3 rounded-xl text-base transition"
                   style={value === o.value ? { background: 'color-mix(in srgb, var(--pt-accent) 12%, transparent)', color: DK.accent, fontWeight: 700 } : { color: '#111111' }}>
                   {o.label}
                 </button>
@@ -275,7 +275,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           const isActive = deliveryType === val
           return (
             <button key={val} type="button" onClick={() => setValue('delivery_type', val)}
-              className="flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition"
+              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-base font-semibold transition"
               style={isActive
                 ? { background: 'color-mix(in srgb, var(--pt-accent) 12%, transparent)', color: DK.accent, border: `1px solid var(--pt-accent)` }
                 : { background: DK.surface, color: DK.ink, border: `0.5px solid ${DK.line}` }}>
@@ -298,7 +298,9 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                 <label className="dk-label">{translateStorefront('full_name', lang)} <span style={{ color: '#D85A30' }}>*</span></label>
                 <div className="relative">
                   <User className="w-[18px] h-[18px] absolute top-1/2 -translate-y-1/2 pointer-events-none" style={{ insetInlineStart: 15, color: DK.muted }} aria-hidden="true" />
-                  <input {...register('customer_name')} autoComplete="name" placeholder={lang === 'ar' ? 'محمد بن علي' : 'Mohamed Benali'} className="dk-field dk-field-icon" />
+                  <input {...register('customer_name')} autoComplete="name"
+                    placeholder={lang === 'ar' ? 'يرجى إدخال الاسم الكامل' : lang === 'fr' ? 'Entrez votre nom complet' : 'Please enter your full name'}
+                    className="dk-field dk-field-icon" />
                 </div>
                 {errors.customer_name && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.customer_name.message}</p>}
               </div>
@@ -312,7 +314,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                   <select {...register('wilaya_id', { valueAsNumber: true })}
                     onChange={e => { const id = parseInt(e.target.value); setValue('wilaya_id', id); setSelectedWilaya(wilayas.find(w => w.id === id) ?? null) }}
                     className="dk-field dk-field-strong appearance-none">
-                    <option value="">{translateStorefront('select_wilaya', lang)}</option>
+                    <option value="">{lang === 'ar' ? 'اختر الولاية' : lang === 'fr' ? 'Choisissez la wilaya' : 'Choose wilaya'}</option>
                     {wilayas.map(w => (
                       <option key={w.id} value={w.id}>{[w.id, w.name_fr, w.name_ar].filter(Boolean).join(' - ')}</option>
                     ))}
@@ -321,7 +323,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                 </div>
                 {errors.wilaya_id && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.wilaya_id.message}</p>}
                 {selectedWilaya && (
-                  <p className="text-xs mt-1.5 font-medium" style={{ color: DK.accent }}>
+                  <p className="text-sm mt-1.5 font-medium" style={{ color: DK.accent }}>
                     {lang === 'ar' ? 'رسوم التوصيل: ' : lang === 'fr' ? 'Frais de livraison: ' : 'Delivery fee: '}{formatDZD(deliveryFee)} · {deliveryType === 'home' ? selectedWilaya.delivery_days_home : selectedWilaya.delivery_days_stopdesk}
                   </p>
                 )}
@@ -378,7 +380,9 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                 <label className="dk-label">{translateStorefront('phone_number', lang)} <span style={{ color: '#D85A30' }}>*</span></label>
                 <div className="relative">
                   <Phone className="w-[18px] h-[18px] absolute top-1/2 -translate-y-1/2 pointer-events-none" style={{ insetInlineStart: 15, color: DK.muted }} aria-hidden="true" />
-                  <input {...register('customer_phone')} type="tel" inputMode="numeric" autoComplete="tel" placeholder="0555 xx xx xx" className="dk-field dk-field-icon" dir="ltr" style={{ textAlign: isRtl ? 'right' : 'left' }} />
+                  <input {...register('customer_phone')} type="tel" inputMode="numeric" autoComplete="tel"
+                    placeholder={lang === 'ar' ? 'يرجى إدخال رقم الهاتف' : lang === 'fr' ? 'Entrez votre numéro de téléphone' : 'Please enter your phone number'}
+                    className="dk-field dk-field-icon" dir="ltr" style={{ textAlign: isRtl ? 'right' : 'left' }} />
                 </div>
                 {errors.customer_phone && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.customer_phone.message}</p>}
               </div>
@@ -438,7 +442,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       </div>
 
       {/* Order summary */}
-      <div className="p-5 space-y-2.5 text-sm rounded-2xl" style={{ background: DK.paper }}>
+      <div className="p-5 space-y-3 text-base rounded-2xl" style={{ background: DK.paper }}>
         <div className="flex justify-between" style={{ color: DK.muted }}>
           <span>{lang === 'ar' ? 'المنتج' : lang === 'fr' ? 'Produit' : 'Product'}{variantLabel ? ` (${variantLabel})` : ''} × {quantity}</span>
           <span className="tabular-nums">{formatDZD(product.price * quantity)}</span>
@@ -447,7 +451,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           <span>{lang === 'ar' ? 'رسوم التوصيل' : lang === 'fr' ? 'Frais de livraison' : 'Delivery fee'}</span>
           <span className="tabular-nums">{formatDZD(deliveryFee)}</span>
         </div>
-        <div className="flex justify-between font-bold text-base pt-2" style={{ color: DK.ink, borderTop: `0.5px solid ${DK.line}` }}>
+        <div className="flex justify-between font-bold text-lg pt-2.5" style={{ color: DK.ink, borderTop: `0.5px solid ${DK.line}` }}>
           <span>{lang === 'ar' ? 'المجموع' : 'Total'}</span>
           <span className="tabular-nums" style={{ color: DK.accent }}>{formatDZD(total)}</span>
         </div>
@@ -462,7 +466,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       )}
 
       <button type="submit" id="original-submit-btn" disabled={isSubmitting}
-        className="w-full h-14 rounded-2xl text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-60"
+        className="w-full h-14 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-60"
         style={{ background: DK.accent }}>
         {isSubmitting
           ? <><Loader2 className="w-4 h-4 animate-spin" /> {translateStorefront('saving', lang)}</>
