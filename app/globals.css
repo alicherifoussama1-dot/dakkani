@@ -183,7 +183,13 @@
     border-bottom: 1px solid rgba(0,0,0,0.05);
   }
   .shadow-float { box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
-  .page-enter { animation: fade-in 0.3s ease forwards; }
+  /* Opacity-only (no transform) — unlike .animate-fade-in, this wraps <main>,
+     the ancestor of every fixed-position element on the storefront (sticky
+     buy bar, WhatsAppFloat, lightbox). A transform-based animation here,
+     even with an identity end value, makes <main> a permanent containing
+     block for position:fixed descendants (CSS Position spec), trapping them
+     inside the page instead of pinning them to the viewport. */
+  .page-enter { animation: page-fade-in 0.3s ease forwards; }
 
   /* Storefront-specific utilities */
   .glass { background: rgba(255,255,255,0.12); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2); }
@@ -243,6 +249,7 @@
 }
 
 @keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
+@keyframes page-fade-in { from{opacity:0} to{opacity:1} }
 @keyframes fade-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
 @keyframes scale-in { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
 @keyframes slide-up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }

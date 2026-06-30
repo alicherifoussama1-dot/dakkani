@@ -36,46 +36,33 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
 
   useEffect(() => {
     let observer: IntersectionObserver | null = null
-    
-    const initObserver = () => {
-      const target = document.getElementById('original-submit-btn')
-      if (target) {
-        observer = new IntersectionObserver(([entry]) => {
-          setShowSticky(!entry.isIntersecting)
-        }, {
-          root: null,
-          rootMargin: '0px 0px -84px 0px',
-          threshold: 0,
-        })
-        observer.observe(target)
-        return true
-      }
-      return false
+    let rafId: number | null = null
+    let cancelled = false
+
+    const attach = (target: Element) => {
+      observer = new IntersectionObserver(([entry]) => {
+        setShowSticky(!entry.isIntersecting)
+      }, { root: null, rootMargin: '0px 0px -84px 0px', threshold: 0 })
+      observer.observe(target)
     }
 
-    if (!initObserver()) {
-      const timer = setTimeout(() => {
-        if (!initObserver()) {
-          const formEl = document.getElementById('order-form')
-          if (formEl) {
-            observer = new IntersectionObserver(([entry]) => {
-              setShowSticky(!entry.isIntersecting)
-            }, {
-              root: null,
-              rootMargin: '0px 0px -84px 0px',
-              threshold: 0,
-            })
-            observer.observe(formEl)
-          }
-        }
-      }, 100)
-      return () => {
-        clearTimeout(timer)
-        if (observer) observer.disconnect()
-      }
+    // rAF-based polling: retry every frame until the real submit button (or the
+    // order-form anchor) is found in the live DOM. This is robust against any
+    // hydration/SSR timing: we never assume a fixed delay; we simply wait for
+    // the actual DOM node to appear, then attach exactly once.
+    const poll = () => {
+      if (cancelled) return
+      const target =
+        document.getElementById('original-submit-btn') ??
+        document.getElementById('order-form')
+      if (target) { attach(target); return }
+      rafId = requestAnimationFrame(poll)
     }
+    poll()
 
     return () => {
+      cancelled = true
+      if (rafId !== null) cancelAnimationFrame(rafId)
       if (observer) observer.disconnect()
     }
   }, [])
