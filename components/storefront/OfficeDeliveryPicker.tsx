@@ -108,7 +108,7 @@ export default function OfficeDeliveryPicker({ offices, wilayaId, lang, baladia,
   }
 
   const getItemCls = (active: boolean) => {
-    if (!theme) return 'block w-full text-start rtl:text-right px-3.5 py-3 rounded-xl text-base transition'
+    if (!theme) return 'block w-full text-start rtl:text-right px-3.5 py-3 rounded-xl text-lg transition'
     if (theme === 'compact') {
       return `block w-full text-start rtl:text-right px-2.5 py-2 rounded text-xs transition ${
         active ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-50'
@@ -144,7 +144,7 @@ export default function OfficeDeliveryPicker({ offices, wilayaId, lang, baladia,
     ? 'flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-sm border border-indigo-500/20 bg-indigo-950/20 text-indigo-200'
     : theme === 'default'
     ? 'flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-sm border border-blue-100 bg-blue-50/50 text-[#0B5ED7]'
-    : 'flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-base'
+    : 'flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-lg'
 
   const confirmCardStyle = theme ? {} : { background: 'color-mix(in srgb, var(--pt-accent) 8%, transparent)', border: '0.5px solid #EBE8E1' }
 

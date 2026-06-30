@@ -67,7 +67,7 @@ function BaladiaField({ wilayaId, value, onChange, error, lang }: {
             <div className="absolute z-50 mt-1.5 w-full max-h-72 overflow-y-auto p-1.5 rounded-2xl" style={{ background: DK.surface, border: `1.5px solid #B0AA9C`, boxShadow: '0 12px 32px rgba(20,18,15,0.12)' }}>
               {options.map(o => (
                 <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false) }}
-                  className="block w-full text-start rtl:text-right px-3.5 py-3 rounded-xl text-base transition"
+                  className="block w-full text-start rtl:text-right px-3.5 py-3 rounded-xl text-lg transition"
                   style={value === o.value ? { background: 'color-mix(in srgb, var(--pt-accent) 12%, transparent)', color: DK.accent, fontWeight: 700 } : { color: '#111111' }}>
                   {o.label}
                 </button>
@@ -275,7 +275,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           const isActive = deliveryType === val
           return (
             <button key={val} type="button" onClick={() => setValue('delivery_type', val)}
-              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-base font-semibold transition"
+              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-lg font-semibold transition"
               style={isActive
                 ? { background: 'color-mix(in srgb, var(--pt-accent) 12%, transparent)', color: DK.accent, border: `1px solid var(--pt-accent)` }
                 : { background: DK.surface, color: DK.ink, border: `0.5px solid ${DK.line}` }}>
@@ -323,7 +323,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                 </div>
                 {errors.wilaya_id && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.wilaya_id.message}</p>}
                 {selectedWilaya && (
-                  <p className="text-sm mt-1.5 font-medium" style={{ color: DK.accent }}>
+                  <p className="text-base mt-1.5 font-medium" style={{ color: DK.accent }}>
                     {lang === 'ar' ? 'رسوم التوصيل: ' : lang === 'fr' ? 'Frais de livraison: ' : 'Delivery fee: '}{formatDZD(deliveryFee)} · {deliveryType === 'home' ? selectedWilaya.delivery_days_home : selectedWilaya.delivery_days_stopdesk}
                   </p>
                 )}
@@ -442,7 +442,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       </div>
 
       {/* Order summary */}
-      <div className="p-5 space-y-3 text-base rounded-2xl" style={{ background: DK.paper }}>
+      <div className="p-5 space-y-3 text-lg rounded-2xl" style={{ background: DK.paper }}>
         <div className="flex justify-between" style={{ color: DK.muted }}>
           <span>{lang === 'ar' ? 'المنتج' : lang === 'fr' ? 'Produit' : 'Product'}{variantLabel ? ` (${variantLabel})` : ''} × {quantity}</span>
           <span className="tabular-nums">{formatDZD(product.price * quantity)}</span>
@@ -451,7 +451,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           <span>{lang === 'ar' ? 'رسوم التوصيل' : lang === 'fr' ? 'Frais de livraison' : 'Delivery fee'}</span>
           <span className="tabular-nums">{formatDZD(deliveryFee)}</span>
         </div>
-        <div className="flex justify-between font-bold text-lg pt-2.5" style={{ color: DK.ink, borderTop: `0.5px solid ${DK.line}` }}>
+        <div className="flex justify-between font-bold text-xl pt-2.5" style={{ color: DK.ink, borderTop: `0.5px solid ${DK.line}` }}>
           <span>{lang === 'ar' ? 'المجموع' : 'Total'}</span>
           <span className="tabular-nums" style={{ color: DK.accent }}>{formatDZD(total)}</span>
         </div>
@@ -466,7 +466,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       )}
 
       <button type="submit" id="original-submit-btn" disabled={isSubmitting}
-        className="w-full h-14 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-60"
+        className="w-full h-14 rounded-2xl text-white font-bold text-lg flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-60"
         style={{ background: DK.accent }}>
         {isSubmitting
           ? <><Loader2 className="w-4 h-4 animate-spin" /> {translateStorefront('saving', lang)}</>
