@@ -1,0 +1,21 @@
+[35mapp/api/ai/generate-description/route.ts[m[36m:[m    description_ar: `اكتشف ${name} بجودة استثنائية تناسب السوق الجزائري. ما تفوتيش هذه الفرصة!\n\n✅ جودة ما فيها كلام\n✅ الدفع عند الاستلام\n✅ التوصيل لجميع الولايات\n✅ فتح قبل الدفع\n✅ ضمان الاسترجاع\n\n[1;31mاطلب الآن[m وسيصلك في أقرب وقت ممكن!`,
+[35mapp/api/ai/landing/generate/route.ts[m[36m:[m    "cta_text": "نص زر الطلب (قصير وحاسم مثل: 🛒 [1;31mاطلب الآن[m)",
+[35mapp/api/ai/landing/generate/route.ts[m[36m:[m      subheadline: '[1;31mاطلب الآن[m وادفع كي وصلك المنتج — تشوف بعينيك قبل ما تخلص',
+[35mapp/api/ai/landing/generate/route.ts[m[36m:[m      cta_text: '🛒 [1;31mاطلب الآن[m',
+[35mapp/api/ai/landing/generate/route.ts[m[36m:[m      cta_text: '🛒 [1;31mاطلب الآن[m وادفع عند الاستلام',
+[35mcomponents/admin/PageBuilder.tsx[m[36m:[m  { type: 'hero-banner',      label: 'بانر رئيسي',       icon: '🖼️', default: { title: 'عنوان رئيسي', subtitle: 'وصف قصير', ctaText: '[1;31mاطلب الآن[m', bgColor: '#0D6EFD', textColor: '#ffffff' } },
+[35mcomponents/admin/PageBuilder.tsx[m[36m:[m  { type: 'checkout-form',    label: 'نموذج الطلب السريع', icon: '🛒', default: { buttonText: '[1;31mاطلب الآن[m والدفع عند الاستلام ✓', buttonColor: '#0D6EFD' } },
+[35mcomponents/admin/PageBuilder.tsx[m[36m:[m  { type: 'sticky-buy-button',label: 'زر شراء ثابت',      icon: '📌', default: { text: '🛒 [1;31mاطلب الآن[m', color: '#0D6EFD' } },
+[35mcomponents/admin/PageBuilder.tsx[m[36m:[m        { id: crypto.randomUUID(), type: 'hero-banner',      label: 'بانر رئيسي',       data: { title: data.title_ar, subtitle: data.description_ar?.slice(0, 100), ctaText: '[1;31mاطلب الآن[m', bgColor: '#0D6EFD' } },
+[35mcomponents/admin/PageBuilder.tsx[m[36m:[m        { id: crypto.randomUUID(), type: 'checkout-form',    label: 'نموذج الطلب',       data: { buttonText: '[1;31mاطلب الآن[m والدفع عند الاستلام ✓' } },
+[35mcomponents/admin/PageBuilder.tsx[m[36m:[m            {d.ctaText || '[1;31mاطلب الآن[m'}
+[35mcomponents/admin/PageBuilder.tsx[m[36m:[m              {d.buttonText ?? '[1;31mاطلب الآن[m والدفع عند الاستلام ✓'}
+[35mcomponents/discover/product/ProductInfo.tsx[m[36m:[m              بقي {stock} فقط في المخزون — [1;31mاطلب الآن[m!
+[35mcomponents/storefront/AILandingPage.tsx[m[36m:[m  const ctaText   = heroVariant?.cta_text   ?? hero?.cta_text   ?? '🛒 [1;31mاطلب الآن[m'
+[35mcomponents/storefront/AILandingPage.tsx[m[36m:[m              {content.final_cta?.headline ?? '🛒 [1;31mاطلب الآن[m قبل نفاد الكمية'}
+[35mcomponents/storefront/FlashSaleSection.tsx[m[36m:[m                      [1;31mاطلب الآن[m
+[35mcomponents/storefront/ProductPageClient.tsx[m[36m:[m          [1;31mاطلب الآن[m
+[35mcomponents/storefront/ProductsGrid.tsx[m[36m:[m              <ShoppingCart className="w-4 h-4" /> [1;31mاطلب الآن[m
+[35mlib/ai/infographic-templates.ts[m[36m:[m  <div class="cta-bar">🛒 [1;31mاطلب الآن[m — ${price.toLocaleString('fr-DZ')} دج — الدفع عند الاستلام</div>
+[35mlib/ai/infographic-templates.ts[m[36m:[m  <div class="cta-bar" style="font-family:Cairo,sans-serif;">🛒 [1;31mاطلب الآن[m — ${price.toLocaleString('fr-DZ')} دج</div>
+[35mscripts/test-infographic.js[m[36m:[m    { headline: 'التوصيل متوفر لـ 58 ولاية والدفع عند الاستلام', subtext: '[1;31mاطلب الآن[m ولا تتردد' }

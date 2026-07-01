@@ -139,12 +139,45 @@ export default async function ProductPage({ params }: Props) {
     '--pt-shadow-sm': 'none', '--pt-shadow-md': '0 1px 3px rgba(20,18,15,0.05)', '--pt-shadow-lg': '0 12px 32px rgba(20,18,15,0.12)',
   } as any
 
-  // Merchant section visibility (Product Editor → Product Page). Applies to the
-  // modular, presentational sections only; default = visible (backward compatible).
-  // section_order is honored on /discover; the storefront's conversion-optimized
-  // layout fixes the above-the-fold order by design.
+  // Merchant Product-Page-Builder config (Product Editor → Product Page). Both
+  // the above-the-fold hero order/visibility (handled inside ProductPageClient)
+  // and the modular bottom sections (reviews / related, below) now honor it —
+  // default = the built-in order + all visible (backward compatible).
   const sectionVisibility: Record<string, boolean> = (product as any).section_visibility ?? {}
   const isSectionVisible = (id: string) => sectionVisibility[id] !== false
+  const DEFAULT_SECTION_ORDER = ['gallery', 'info', 'variants', 'buybox', 'trust', 'description', 'reviews', 'upsells', 'related']
+  const sectionOrder: string[] = Array.isArray((product as any).section_order) && (product as any).section_order.length
+    ? (product as any).section_order
+    : DEFAULT_SECTION_ORDER
+  // Relative order of the two modular bottom sections (the FAQ + review form are
+  // not builder sections and keep their fixed position).
+  const reviewsBeforeRelated = sectionOrder.indexOf('reviews') <= sectionOrder.indexOf('related')
+  const relatedSection = isSectionVisible('related') && relatedData.length > 0 ? (
+    <section className="max-w-6xl mx-auto px-4 py-12 border-t" style={{ borderColor: 'var(--pt-border)' }}>
+      <h2 className="pt-heading text-2xl mb-7">منتجات مشابهة</h2>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+        {relatedData.map((p) => {
+          const img = (p.images as any[])?.[0]?.url
+          return (
+            <Link key={p.id} href={`/store/${store.slug}/product/${p.slug}`}
+              className="group block overflow-hidden transition-transform hover:-translate-y-1"
+              style={{ background: 'var(--pt-surface)', borderRadius: 'var(--pt-radius-lg)', border: '1px solid var(--pt-border)', boxShadow: 'var(--pt-shadow-sm)' }}>
+              <div className="relative aspect-[4/5]" style={{ background: 'var(--pt-surface-soft)' }}>
+                {img
+                  ? <Image src={img} alt={p.name_ar ?? p.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover" loading="lazy" />
+                  : <div className="w-full h-full flex items-center justify-center text-4xl" style={{ color: 'var(--pt-text-muted)' }}>{(p.name_ar ?? p.name)[0]}</div>
+                }
+              </div>
+              <div className="p-4">
+                <p className="font-bold text-[15px] line-clamp-2" style={{ color: 'var(--pt-text)' }}>{p.name_ar ?? p.name}</p>
+                <p className="font-bold text-base mt-1.5 tabular-nums" style={{ color: 'var(--pt-accent)' }}>{formatDZD(p.price)}</p>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+    </section>
+  ) : null
 
   return (
     <StorefrontLayout store={store as any}>
@@ -178,9 +211,12 @@ export default async function ProductPage({ params }: Props) {
           stockMap={stockMap}
           reviewCount={reviewsRes.data?.length ?? 0}
           avgRating={avgRating}
-          showTrust={isSectionVisible('trust')}
-          showDescription={isSectionVisible('description')}
+          sectionOrder={sectionOrder}
+          sectionVisibility={sectionVisibility}
         />
+
+        {/* Related — rendered first when the builder orders it before reviews */}
+        {!reviewsBeforeRelated && relatedSection}
 
         {/* Reviews */}
         {isSectionVisible('reviews') && (reviewsRes.data?.length ?? 0) > 0 && (
@@ -254,33 +290,8 @@ export default async function ProductPage({ params }: Props) {
           </div>
         </section>
 
-        {/* Related */}
-        {isSectionVisible('related') && relatedData.length > 0 && (
-          <section className="max-w-6xl mx-auto px-4 py-12 border-t" style={{ borderColor: 'var(--pt-border)' }}>
-            <h2 className="pt-heading text-2xl mb-7">منتجات مشابهة</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-              {relatedData.map((p) => {
-                const img = (p.images as any[])?.[0]?.url
-                return (
-                  <Link key={p.id} href={`/store/${store.slug}/product/${p.slug}`}
-                    className="group block overflow-hidden transition-transform hover:-translate-y-1"
-                    style={{ background: 'var(--pt-surface)', borderRadius: 'var(--pt-radius-lg)', border: '1px solid var(--pt-border)', boxShadow: 'var(--pt-shadow-sm)' }}>
-                    <div className="relative aspect-[4/5]" style={{ background: 'var(--pt-surface-soft)' }}>
-                      {img
-                        ? <Image src={img} alt={p.name_ar ?? p.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover" loading="lazy" />
-                        : <div className="w-full h-full flex items-center justify-center text-4xl" style={{ color: 'var(--pt-text-muted)' }}>{(p.name_ar ?? p.name)[0]}</div>
-                      }
-                    </div>
-                    <div className="p-4">
-                      <p className="font-bold text-[15px] line-clamp-2" style={{ color: 'var(--pt-text)' }}>{p.name_ar ?? p.name}</p>
-                      <p className="font-bold text-base mt-1.5 tabular-nums" style={{ color: 'var(--pt-accent)' }}>{formatDZD(p.price)}</p>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          </section>
-        )}
+        {/* Related — default position (after reviews / FAQ / review form) */}
+        {reviewsBeforeRelated && relatedSection}
       </div>
 
       {/* Desktop only: on mobile this fixed float overlaps the sticky buy bar

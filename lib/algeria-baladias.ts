@@ -1718,7 +1718,7 @@ function normalizeCommuneName(s: string): string {
 //   3. official name is a prefix of raw (raw has extra trailing text)
 // Returns null when nothing reliably matches — callers fall back to the raw
 // string, so display is never worse than before.
-function resolveCommune(wilayaId: number | string | null | undefined, commune: string | null | undefined): AlgeriaCommune | null {
+export function resolveCommune(wilayaId: number | string | null | undefined, commune: string | null | undefined): AlgeriaCommune | null {
   if (!commune) return null
   const raw = normalizeCommuneName(commune)
   if (raw.length < 2) return null

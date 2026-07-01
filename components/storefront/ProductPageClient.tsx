@@ -14,9 +14,21 @@ interface Props {
   product: any; store: any; wilayas: any[]
   totalStock: number; reviewCount: number; avgRating: string | null
   stockMap?: Record<string, number>
-  // Merchant section_visibility flags (default true → backward compatible).
+  // Merchant Product-Page-Builder config. `sectionOrder` orders the hero blocks
+  // (image / title+price / variants / CTA / trust / description); `sectionVisibility`
+  // toggles each. Both default to the built-in order → backward compatible.
+  sectionOrder?: string[]
+  sectionVisibility?: Record<string, boolean>
+  // Legacy visibility props (still accepted; superseded by sectionVisibility).
   showTrust?: boolean; showDescription?: boolean
 }
+
+// Same default the DB column ships with (migration 013) — used when a product
+// has no explicit order yet, so the layout is identical to before.
+const DEFAULT_SECTION_ORDER = ['gallery', 'info', 'variants', 'buybox', 'trust', 'description', 'reviews', 'upsells', 'related']
+// Hero (above-the-fold) sections rendered by ProductPageClient. `gallery` is the
+// media column; the rest stack inside the buy card in the configured order.
+const HERO_RIGHT_IDS = ['info', 'variants', 'buybox', 'trust', 'description']
 
 // Builds the warehouse_stock variant_key from the user's current selections —
 // mirrors the exact helper already used (and proven) on the /discover product page,
@@ -27,7 +39,15 @@ function buildVariantKey(groups: VariantGroup[], selected: Record<string, string
   return parts.length === groups.length ? parts.join('|') : 'default'
 }
 
-export default function ProductPageClient({ product, store, wilayas, totalStock, reviewCount, avgRating, stockMap = {}, showTrust = true, showDescription = true }: Props) {
+export default function ProductPageClient({ product, store, wilayas, totalStock, reviewCount, avgRating, stockMap = {}, sectionOrder, sectionVisibility, showTrust = true, showDescription = true }: Props) {
+  // Builder config → ordering + visibility helpers (mirrors the /discover engine).
+  const order = Array.isArray(sectionOrder) && sectionOrder.length ? sectionOrder : DEFAULT_SECTION_ORDER
+  const vis = (id: string): boolean => {
+    if (sectionVisibility && id in sectionVisibility) return sectionVisibility[id] !== false
+    if (id === 'trust') return showTrust
+    if (id === 'description') return showDescription
+    return true
+  }
   const router = useRouter()
   const [activeImg, setActiveImg] = useState(0)
   const [lightbox,  setLightbox]  = useState(false)
@@ -258,6 +278,172 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
     <svg width={size} height={size} className="fill-white" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
   )
 
+  // ── Hero sections, keyed by builder section id. Rendered in `order` and gated
+  // by `vis(id)` so the Product-Page-Builder's ordering + hide/show apply live. ──
+  const heroNodes: Record<string, any> = {
+    gallery: (
+      <div>
+        {/* Main image */}
+        <div className="relative group w-full aspect-[4/5] overflow-hidden rounded-3xl" style={{ background: IMG, border: `0.5px solid ${LINE}` }}>
+          <div ref={galleryRef} onScroll={handleScroll}
+            className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide" style={{ scrollBehavior: 'smooth' }}>
+            {images.length > 0 ? images.map((img: any, idx: number) => (
+              <div key={idx} data-gallery-item className="w-full h-full flex-shrink-0 snap-center relative">
+                {img?.url ? (
+                  <Image src={img.url} alt={`${displayName} - ${idx + 1}`} fill priority={idx === 0}
+                    sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover select-none" draggable="false" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-7xl select-none" style={{ color: LINE }}>{displayName[0] || ''}</div>
+                )}
+              </div>
+            )) : (
+              <div className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center text-7xl select-none" style={{ color: LINE }}>{displayName[0] || ''}</div>
+            )}
+          </div>
+
+          {images.length > 1 && (
+            <>
+              <button onClick={prev} aria-label={lang === 'ar' ? 'السابق' : 'Previous'}
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hidden lg:flex" style={{ background: SURFACE, border: `0.5px solid ${LINE}` }}>
+                <ChevronRight className="w-5 h-5" style={{ color: INK }} />
+              </button>
+              <button onClick={next} aria-label={lang === 'ar' ? 'التالي' : 'Next'}
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hidden lg:flex" style={{ background: SURFACE, border: `0.5px solid ${LINE}` }}>
+                <ChevronLeft className="w-5 h-5" style={{ color: INK }} />
+              </button>
+            </>
+          )}
+
+          <button onClick={() => setLightbox(true)} aria-label={lang === 'ar' ? 'تكبير' : 'Zoom'}
+            className="absolute bottom-3 left-3 w-10 h-10 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: SURFACE, border: `0.5px solid ${LINE}` }}>
+            <ZoomIn className="w-4.5 h-4.5" style={{ color: INK }} />
+          </button>
+
+          {hasDisc && (
+            <span className="absolute top-4 right-4 text-white text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: INK }}>‏{discPct}%‏-</span>
+          )}
+
+          {/* Mobile dots */}
+          {images.length > 1 && (
+            <div className="lg:hidden absolute bottom-4 inset-x-0 flex justify-center gap-1.5 pointer-events-none">
+              {images.map((_: any, i: number) => (
+                <span key={i} className="h-1.5 rounded-full transition-all" style={{ width: i === activeImg ? 24 : 6, background: i === activeImg ? A : 'rgba(255,255,255,0.8)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Thumbnail strip below the main image */}
+        {images.length > 1 && (
+          <div className="flex gap-2.5 overflow-x-auto scrollbar-hide mt-3 pb-1">
+            {images.map((img: any, i: number) => (
+              <button key={i} onClick={() => { setActiveImg(i); scrollToIdx(i) }}
+                aria-label={`${lang === 'ar' ? 'صورة' : 'Image'} ${i + 1}`} aria-current={i === activeImg}
+                className="w-[68px] h-[68px] shrink-0 rounded-2xl overflow-hidden relative transition-all"
+                style={{ background: IMG, boxShadow: i === activeImg ? `0 0 0 2px ${A}` : `0 0 0 0.5px ${LINE}` }}>
+                {img?.url && <Image src={img.url} alt="" fill sizes="68px" className="object-cover" />}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    ),
+    info: (
+      <div>
+        {currentStock <= 0 ? null : currentStock <= 5 ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: '#FAECE7', color: '#993C1D' }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#D85A30' }} />
+            {translateStorefront('only_left', lang, currentStock)}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: '#E1F5EE', color: '#0F6E56' }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: OK }} />
+            {translateStorefront('available', lang)}
+          </span>
+        )}
+
+        <h1 className="text-2xl lg:text-[26px] font-bold leading-snug mt-3 mb-2" style={{ color: INK, letterSpacing: '-0.3px' }}>{displayName}</h1>
+
+        {avgRating && (
+          <div className="flex items-center gap-2 mb-5" aria-label={`${avgRating} / 5 — ${reviewCount} ${reviewsWord}`}>
+            <span aria-hidden="true" style={{ color: '#EF9F27', fontSize: 16, letterSpacing: 2 }}>★★★★★</span>
+            <span className="text-sm font-bold" style={{ color: INK }}>{avgRating}</span>
+            <span className="text-sm" style={{ color: MUTED }}>· {reviewCount} {reviewsWord}</span>
+          </div>
+        )}
+
+        {/* Price */}
+        <div className="flex items-end gap-3 flex-wrap mt-1">
+          <span className="font-bold tabular-nums leading-none" style={{ color: A, fontSize: 46, letterSpacing: '-1.5px' }}>{formatDZD(product.price)}</span>
+          {hasDisc && (
+            <>
+              <span className="text-base line-through pb-1.5" style={{ color: MUTED }}>{formatDZD(product.compare_price)}</span>
+              <span className="text-xs font-bold text-white px-2.5 py-1 rounded-lg mb-1.5" style={{ background: INK }}>
+                {lang === 'ar' ? 'وفّر ' : lang === 'fr' ? 'Économisez ' : 'Save '}{formatDZD(product.compare_price - product.price)}
+              </span>
+            </>
+          )}
+        </div>
+        <p className="text-sm mt-3" style={{ color: MUTED }}>
+          {lang === 'ar' ? '+ سعر التوصيل حسب ولايتك' : lang === 'fr' ? '+ Frais de livraison selon la wilaya' : '+ Delivery fee depends on your wilaya'}
+        </p>
+      </div>
+    ),
+    trust: (
+      <div className="grid grid-cols-3 gap-2 py-4 mt-5" style={{ borderTop: `0.5px solid ${LINE}`, borderBottom: `0.5px solid ${LINE}` }}>
+        {[
+          { icon: <Truck className="w-5 h-5" />, text: translateStorefront('delivery_dz', lang) },
+          { icon: <Package className="w-5 h-5" />, text: translateStorefront('open_before_pay', lang) },
+          { icon: <Shield className="w-5 h-5" />, text: translateStorefront('quality_guarantee', lang) },
+        ].map((b, i) => (
+          <div key={b.text} className="flex flex-col items-center gap-2 text-center px-1" style={i === 1 ? { borderRight: `0.5px solid ${LINE}`, borderLeft: `0.5px solid ${LINE}` } : undefined}>
+            <span style={{ color: A }}>{b.icon}</span>
+            <p className="text-[11px] font-semibold leading-tight" style={{ color: INK }}>{b.text}</p>
+          </div>
+        ))}
+      </div>
+    ),
+    description: displayDescription
+      ? <p className="text-sm leading-relaxed mt-5" style={{ color: MUTED }}>{displayDescription}</p>
+      : null,
+    variants: variantGroups.length > 0
+      ? (
+        <div className="mt-5">
+          <ProductVariants
+            groups={variantGroups}
+            selected={selected}
+            onSelect={(g, o) => setSelected(prev => ({ ...prev, [g]: o }))}
+            isOptionAvailable={isOptionAvailable}
+          />
+        </div>
+      )
+      : null,
+    buybox: (
+      <div>
+        {/* Desktop CTA (mobile uses the sticky bar) */}
+        <div className="hidden lg:flex gap-3 mt-6">
+          <button type="button" onClick={scrollToForm}
+            className="flex-1 flex items-center justify-center gap-2.5 h-14 rounded-2xl text-white font-bold text-[15px] transition-transform active:scale-95"
+            style={{ background: A }}>
+            <ShoppingBag className="w-5 h-5" />{translateStorefront('order_now', lang).replace(' 🛒', '').replace(' اضغط هنا للطلب', 'اطلب')}
+          </button>
+          {waUrl && (
+            <a href={waUrl} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
+              className="w-14 h-14 flex items-center justify-center rounded-2xl shrink-0" style={{ background: '#1FAE54' }}>
+              <WhatsAppIcon size={26} />
+            </a>
+          )}
+        </div>
+        <p className="hidden lg:block text-[11px] text-center mt-3" style={{ color: MUTED }}>
+          {lang === 'ar' ? 'الدفع عند الاستلام · نتصل بك لتأكيد الطلب' : lang === 'fr' ? 'Paiement à la livraison · Appel de confirmation' : 'Cash on delivery · We call to confirm'}
+        </p>
+      </div>
+    ),
+  }
+
+  const galleryVisible = vis('gallery') && heroNodes.gallery
+  const heroRightIds = order.filter(id => HERO_RIGHT_IDS.includes(id) && vis(id) && heroNodes[id])
+
   return (
     <div data-pt-root dir={isRtl ? 'rtl' : 'ltr'} style={{ ...dkVars, background: PAPER, color: INK }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 lg:py-8">
@@ -277,169 +463,19 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
           </div>
         )}
 
-        {/* ── HERO ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-6 lg:gap-10 items-start">
-
-          {/* Gallery */}
-          <div>
-            {/* Main image */}
-            <div className="relative group w-full aspect-[4/5] overflow-hidden rounded-3xl" style={{ background: IMG, border: `0.5px solid ${LINE}` }}>
-              <div ref={galleryRef} onScroll={handleScroll}
-                className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide" style={{ scrollBehavior: 'smooth' }}>
-                {images.length > 0 ? images.map((img: any, idx: number) => (
-                  <div key={idx} data-gallery-item className="w-full h-full flex-shrink-0 snap-center relative">
-                    {img?.url ? (
-                      <Image src={img.url} alt={`${displayName} - ${idx + 1}`} fill priority={idx === 0}
-                        sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover select-none" draggable="false" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-7xl select-none" style={{ color: LINE }}>{displayName[0] || ''}</div>
-                    )}
-                  </div>
-                )) : (
-                  <div className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center text-7xl select-none" style={{ color: LINE }}>{displayName[0] || ''}</div>
-                )}
+        {/* ── HERO — Product-Page-Builder driven (section order + visibility) ──
+            `gallery` is the media column; the info / price / variants / CTA /
+            trust / description blocks stack inside the buy card in the order the
+            merchant set. Each section's markup & styling are unchanged. */}
+        <div className={galleryVisible ? 'grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-6 lg:gap-10 items-start' : ''}>
+          {galleryVisible && <div>{heroNodes.gallery}</div>}
+          {heroRightIds.length > 0 && (
+            <div className="lg:sticky lg:top-6 lg:self-start">
+              <div className="rounded-3xl p-6 sm:p-7" style={{ background: SURFACE, border: `0.5px solid ${LINE}`, borderTop: `3px solid ${A}` }}>
+                {heroRightIds.map(id => <div key={id}>{heroNodes[id]}</div>)}
               </div>
-
-              {images.length > 1 && (
-                <>
-                  <button onClick={prev} aria-label={lang === 'ar' ? 'السابق' : 'Previous'}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hidden lg:flex" style={{ background: SURFACE, border: `0.5px solid ${LINE}` }}>
-                    <ChevronRight className="w-5 h-5" style={{ color: INK }} />
-                  </button>
-                  <button onClick={next} aria-label={lang === 'ar' ? 'التالي' : 'Next'}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hidden lg:flex" style={{ background: SURFACE, border: `0.5px solid ${LINE}` }}>
-                    <ChevronLeft className="w-5 h-5" style={{ color: INK }} />
-                  </button>
-                </>
-              )}
-
-              <button onClick={() => setLightbox(true)} aria-label={lang === 'ar' ? 'تكبير' : 'Zoom'}
-                className="absolute bottom-3 left-3 w-10 h-10 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: SURFACE, border: `0.5px solid ${LINE}` }}>
-                <ZoomIn className="w-4.5 h-4.5" style={{ color: INK }} />
-              </button>
-
-              {hasDisc && (
-                <span className="absolute top-4 right-4 text-white text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: INK }}>‏{discPct}%‏-</span>
-              )}
-
-              {/* Mobile dots */}
-              {images.length > 1 && (
-                <div className="lg:hidden absolute bottom-4 inset-x-0 flex justify-center gap-1.5 pointer-events-none">
-                  {images.map((_: any, i: number) => (
-                    <span key={i} className="h-1.5 rounded-full transition-all" style={{ width: i === activeImg ? 24 : 6, background: i === activeImg ? A : 'rgba(255,255,255,0.8)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
-                  ))}
-                </div>
-              )}
             </div>
-
-            {/* Thumbnail strip below the main image */}
-            {images.length > 1 && (
-              <div className="flex gap-2.5 overflow-x-auto scrollbar-hide mt-3 pb-1">
-                {images.map((img: any, i: number) => (
-                  <button key={i} onClick={() => { setActiveImg(i); scrollToIdx(i) }}
-                    aria-label={`${lang === 'ar' ? 'صورة' : 'Image'} ${i + 1}`} aria-current={i === activeImg}
-                    className="w-[68px] h-[68px] shrink-0 rounded-2xl overflow-hidden relative transition-all"
-                    style={{ background: IMG, boxShadow: i === activeImg ? `0 0 0 2px ${A}` : `0 0 0 0.5px ${LINE}` }}>
-                    {img?.url && <Image src={img.url} alt="" fill sizes="68px" className="object-cover" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Buy box — sticky on desktop */}
-          <div className="lg:sticky lg:top-6 lg:self-start">
-            <div className="rounded-3xl p-6 sm:p-7" style={{ background: SURFACE, border: `0.5px solid ${LINE}`, borderTop: `3px solid ${A}` }}>
-
-              {currentStock <= 0 ? null : currentStock <= 5 ? (
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: '#FAECE7', color: '#993C1D' }}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#D85A30' }} />
-                  {translateStorefront('only_left', lang, currentStock)}
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: '#E1F5EE', color: '#0F6E56' }}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: OK }} />
-                  {translateStorefront('available', lang)}
-                </span>
-              )}
-
-              <h1 className="text-2xl lg:text-[26px] font-bold leading-snug mt-3 mb-2" style={{ color: INK, letterSpacing: '-0.3px' }}>{displayName}</h1>
-
-              {avgRating && (
-                <div className="flex items-center gap-2 mb-5" aria-label={`${avgRating} / 5 — ${reviewCount} ${reviewsWord}`}>
-                  <span aria-hidden="true" style={{ color: '#EF9F27', fontSize: 16, letterSpacing: 2 }}>★★★★★</span>
-                  <span className="text-sm font-bold" style={{ color: INK }}>{avgRating}</span>
-                  <span className="text-sm" style={{ color: MUTED }}>· {reviewCount} {reviewsWord}</span>
-                </div>
-              )}
-
-              {/* Price */}
-              <div className="flex items-end gap-3 flex-wrap mt-1">
-                <span className="font-bold tabular-nums leading-none" style={{ color: A, fontSize: 46, letterSpacing: '-1.5px' }}>{formatDZD(product.price)}</span>
-                {hasDisc && (
-                  <>
-                    <span className="text-base line-through pb-1.5" style={{ color: MUTED }}>{formatDZD(product.compare_price)}</span>
-                    <span className="text-xs font-bold text-white px-2.5 py-1 rounded-lg mb-1.5" style={{ background: INK }}>
-                      {lang === 'ar' ? 'وفّر ' : lang === 'fr' ? 'Économisez ' : 'Save '}{formatDZD(product.compare_price - product.price)}
-                    </span>
-                  </>
-                )}
-              </div>
-              <p className="text-sm mt-3 mb-6" style={{ color: MUTED }}>
-                {lang === 'ar' ? '+ سعر التوصيل حسب ولايتك' : lang === 'fr' ? '+ Frais de livraison selon la wilaya' : '+ Delivery fee depends on your wilaya'}
-              </p>
-
-              {/* Trust */}
-              {showTrust && (
-                <div className="grid grid-cols-3 gap-2 py-4" style={{ borderTop: `0.5px solid ${LINE}`, borderBottom: `0.5px solid ${LINE}` }}>
-                  {[
-                    { icon: <Truck className="w-5 h-5" />, text: translateStorefront('delivery_dz', lang) },
-                    { icon: <Package className="w-5 h-5" />, text: translateStorefront('open_before_pay', lang) },
-                    { icon: <Shield className="w-5 h-5" />, text: translateStorefront('quality_guarantee', lang) },
-                  ].map((b, i) => (
-                    <div key={b.text} className="flex flex-col items-center gap-2 text-center px-1" style={i === 1 ? { borderRight: `0.5px solid ${LINE}`, borderLeft: `0.5px solid ${LINE}` } : undefined}>
-                      <span style={{ color: A }}>{b.icon}</span>
-                      <p className="text-[11px] font-semibold leading-tight" style={{ color: INK }}>{b.text}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {showDescription && displayDescription && (
-                <p className="text-sm leading-relaxed mt-5" style={{ color: MUTED }}>{displayDescription}</p>
-              )}
-
-              {/* Variants */}
-              {variantGroups.length > 0 && (
-                <div className="mt-5">
-                  <ProductVariants
-                    groups={variantGroups}
-                    selected={selected}
-                    onSelect={(g, o) => setSelected(prev => ({ ...prev, [g]: o }))}
-                    isOptionAvailable={isOptionAvailable}
-                  />
-                </div>
-              )}
-
-              {/* Desktop CTA (mobile uses the sticky bar) */}
-              <div className="hidden lg:flex gap-3 mt-6">
-                <button type="button" onClick={scrollToForm}
-                  className="flex-1 flex items-center justify-center gap-2.5 h-14 rounded-2xl text-white font-bold text-[15px] transition-transform active:scale-95"
-                  style={{ background: A }}>
-                  <ShoppingBag className="w-5 h-5" />{translateStorefront('order_now', lang).replace(' 🛒', '').replace(' اضغط هنا للطلب', 'اطلب')}
-                </button>
-                {waUrl && (
-                  <a href={waUrl} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
-                    className="w-14 h-14 flex items-center justify-center rounded-2xl shrink-0" style={{ background: '#1FAE54' }}>
-                    <WhatsAppIcon size={26} />
-                  </a>
-                )}
-              </div>
-              <p className="hidden lg:block text-[11px] text-center mt-3" style={{ color: MUTED }}>
-                {lang === 'ar' ? 'الدفع عند الاستلام · نتصل بك لتأكيد الطلب' : lang === 'fr' ? 'Paiement à la livraison · Appel de confirmation' : 'Cash on delivery · We call to confirm'}
-              </p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* ── Order form (one-page inline) ── */}
@@ -455,8 +491,8 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
           />
         </div>
 
-        {/* ── Product details image ── */}
-        {showDescription && (product.description_image_url || product.attributes?.description_image_url) && (
+        {/* ── Product details image (part of the `description` section) ── */}
+        {vis('description') && (product.description_image_url || product.attributes?.description_image_url) && (
           <div className="max-w-3xl mx-auto mt-10">
             <h2 className="text-lg font-bold mb-4" style={{ color: INK }}>
               {lang === 'ar' ? 'تفاصيل المنتج' : lang === 'fr' ? 'Détails du produit' : 'Product details'}
@@ -481,7 +517,9 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
         </div>
       )}
 
-      {/* Universal premium sticky buy bar */}
+      {/* Universal premium sticky buy bar — hidden when the merchant hides the
+          `buybox` section (the inline order form below is always available). */}
+      {vis('buybox') && (<>
       <div
         className={`fixed bottom-0 inset-x-0 z-40 flex justify-center px-3.5 pt-3.5 transition-all duration-300 ease-in-out ${showSticky ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}
         style={{
@@ -508,6 +546,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
           matches the bar's own safe-area-aware height so it never falls short
           on notched devices. */}
       <div className="lg:hidden" style={{ height: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }} />
+      </>)}
     </div>
   )
 }
