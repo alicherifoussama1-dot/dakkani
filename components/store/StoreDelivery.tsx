@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { PROVIDERS, providerMeta, validateCreds, type ProviderType } from '@/lib/delivery/types'
+import { getBaladiasBilingualForWilaya } from '@/lib/algeria-baladias'
 import { 
   Trash2, Link2, RefreshCw, CheckCircle, X, Download, AlertTriangle, 
   Loader2, Plus, Eye, EyeOff, Copy, Check, ShieldAlert, History, 
@@ -1277,9 +1278,15 @@ function OfficesTab({
   setToast: (m: string) => void;
 }) {
   const [offices, setOffices] = useState<any[]>([])
-  const [form, setForm] = useState({ provider_id: '', wilaya_code: '', name: '', address: '' })
+  const [form, setForm] = useState({ provider_id: '', wilaya_code: '', commune: '', name: '', address: '' })
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
+
+  // Official baladias for the chosen wilaya — customers see full bilingual names,
+  // so the commune must be picked from this list (never free-typed). This is what
+  // prevents truncated municipality names (e.g. "Oum El", "Ain El") from ever
+  // reaching store_delivery_offices in the first place.
+  const communeOptions = getBaladiasBilingualForWilaya(form.wilaya_code)
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/store/delivery/offices?storeId=${storeId}`)
@@ -1289,23 +1296,27 @@ function OfficesTab({
   useEffect(() => { load() }, [load])
 
   const add = async () => {
-    if (!form.wilaya_code || !form.name.trim()) { setToast('اختر الولاية واكتب اسم المكتب'); return }
+    if (!form.wilaya_code || !form.commune || !form.name.trim()) { setToast('اختر الولاية والبلدية واكتب اسم المكتب'); return }
     setSaving(true)
+    // Store as "<official commune> | <office name>" so the storefront shows the
+    // full official municipality name (the desks API splits on "|"). The commune
+    // value comes from the official baladias list, so it is never truncated.
+    const composedName = `${form.commune} | ${form.name.trim()}`
     const res = await fetch('/api/store/delivery/offices', {
-      method: 'POST', 
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        storeId, 
-        provider_id: form.provider_id || null, 
-        wilaya_code: form.wilaya_code, 
-        name: form.name.trim(), 
-        address: form.address.trim() || undefined 
+      body: JSON.stringify({
+        storeId,
+        provider_id: form.provider_id || null,
+        wilaya_code: form.wilaya_code,
+        name: composedName,
+        address: form.address.trim() || undefined
       }),
     })
     const d = await res.json().catch(() => ({}))
     setSaving(false)
     if (!res.ok) { setToast(d.error ?? 'تعذّر الحفظ'); return }
-    setForm(f => ({ ...f, name: '', address: '' }))
+    setForm(f => ({ ...f, commune: '', name: '', address: '' }))
     setToast('تمت إضافة المكتب بنجاح')
     load()
   }
@@ -1341,25 +1352,32 @@ function OfficesTab({
 
       {/* Office creation card */}
       <div className="bg-white border border-gray-200/80 rounded-xl p-5 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end shadow-2xs">
-        <div className="sm:col-span-3 space-y-1">
+        <div className="sm:col-span-4 space-y-1">
           <label className="block text-[11px] font-bold text-gray-600">الشركة المربوطة</label>
           <select className="px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 font-bold h-9 w-full" value={form.provider_id} onChange={e => setForm(f => ({ ...f, provider_id: e.target.value }))}>
             <option value="">كل الشركات</option>
             {providers.map(p => <option key={p.id} value={p.id}>{p.display_name}</option>)}
           </select>
         </div>
-        <div className="sm:col-span-2 space-y-1">
+        <div className="sm:col-span-4 space-y-1">
           <label className="block text-[11px] font-bold text-gray-600">الولاية</label>
-          <select className="px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 font-bold h-9 w-full" value={form.wilaya_code} onChange={e => setForm(f => ({ ...f, wilaya_code: e.target.value }))}>
+          <select className="px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 font-bold h-9 w-full" value={form.wilaya_code} onChange={e => setForm(f => ({ ...f, wilaya_code: e.target.value, commune: '' }))}>
             <option value="">اختر الولاية</option>
             {wilayas.map(w => <option key={w.code} value={w.code}>{w.code} — {w.name_ar}</option>)}
           </select>
         </div>
-        <div className="sm:col-span-3 space-y-1">
+        <div className="sm:col-span-4 space-y-1">
+          <label className="block text-[11px] font-bold text-gray-600">البلدية (الاسم الرسمي)</label>
+          <select disabled={!form.wilaya_code} className="px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 font-bold h-9 w-full disabled:opacity-50 disabled:cursor-not-allowed" value={form.commune} onChange={e => setForm(f => ({ ...f, commune: e.target.value }))}>
+            <option value="">{form.wilaya_code ? 'اختر البلدية' : 'اختر الولاية أولاً'}</option>
+            {communeOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </div>
+        <div className="sm:col-span-5 space-y-1">
           <label className="block text-[11px] font-bold text-gray-600">اسم مكتب التوصيل</label>
           <input className="w-full px-3 py-2 text-xs bg-gray-50/30 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 placeholder-gray-400 h-9" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: مكتب شاطئ الشراقة" />
         </div>
-        <div className="sm:col-span-3 space-y-1">
+        <div className="sm:col-span-6 space-y-1">
           <label className="block text-[11px] font-bold text-gray-600">العنوان بالتفصيل (اختياري)</label>
           <input className="w-full px-3 py-2 text-xs bg-gray-50/30 border border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 outline-none text-gray-900 placeholder-gray-400 h-9" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="الشارع أو المبنى..." />
         </div>

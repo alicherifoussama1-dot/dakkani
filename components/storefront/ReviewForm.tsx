@@ -75,7 +75,7 @@ export default function ReviewForm({ storeId, productId, lang = 'ar' }: Props) {
         <input value={name} onChange={e=>setName(e.target.value)} required
           placeholder={lang === 'ar' ? 'أحمد م.' : lang === 'fr' ? 'Ahmed M.' : 'Ahmed M.'}
           dir={isRtl ? 'rtl' : 'ltr'}
-          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 outline-none"/>
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-lg focus:ring-2 focus:ring-primary/30 outline-none"/>
       </div>
 
       {/* Comment */}
@@ -84,7 +84,7 @@ export default function ReviewForm({ storeId, productId, lang = 'ar' }: Props) {
         <textarea value={comment} onChange={e=>setComment(e.target.value)}
           placeholder={translateStorefront('tell_us_about_experience', lang)}
           dir={isRtl ? 'rtl' : 'ltr'} rows={3}
-          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 outline-none resize-none"/>
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-lg focus:ring-2 focus:ring-primary/30 outline-none resize-none"/>
       </div>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
