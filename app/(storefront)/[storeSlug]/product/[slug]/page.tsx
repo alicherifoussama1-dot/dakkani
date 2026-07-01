@@ -11,7 +11,7 @@ import ReviewForm          from '@/components/storefront/ReviewForm'
 import Image               from 'next/image'
 import { formatDZD } from '@/lib/utils/format'
 import { applyStoreDeliveryPrices } from '@/lib/delivery/pricing'
-import { getProductTheme, themeToCSSVars } from '@/lib/product-themes'
+import { getProductTheme, themeToCSSVars, normalizeProductOrder } from '@/lib/product-themes'
 import Link from 'next/link'
 
 interface Props { params: { storeSlug: string; slug: string } }
@@ -139,87 +139,47 @@ export default async function ProductPage({ params }: Props) {
     '--pt-shadow-sm': 'none', '--pt-shadow-md': '0 1px 3px rgba(20,18,15,0.05)', '--pt-shadow-lg': '0 12px 32px rgba(20,18,15,0.12)',
   } as any
 
-  // Merchant Product-Page-Builder config (Product Editor → Product Page). Both
-  // the above-the-fold hero order/visibility (handled inside ProductPageClient)
-  // and the modular bottom sections (reviews / related, below) now honor it —
-  // default = the built-in order + all visible (backward compatible).
+  // ── Product-Page-Builder config — the SINGLE source of truth for what shows
+  // and in what order. section_order + section_visibility drive every section;
+  // nothing below is hardcoded to always-show or to a fixed position. ──
   const sectionVisibility: Record<string, boolean> = (product as any).section_visibility ?? {}
-  const isSectionVisible = (id: string) => sectionVisibility[id] !== false
-  const DEFAULT_SECTION_ORDER = ['gallery', 'info', 'variants', 'buybox', 'trust', 'description', 'reviews', 'upsells', 'related']
-  const sectionOrder: string[] = Array.isArray((product as any).section_order) && (product as any).section_order.length
-    ? (product as any).section_order
-    : DEFAULT_SECTION_ORDER
-  // Relative order of the two modular bottom sections (the FAQ + review form are
-  // not builder sections and keep their fixed position).
-  const reviewsBeforeRelated = sectionOrder.indexOf('reviews') <= sectionOrder.indexOf('related')
-  const relatedSection = isSectionVisible('related') && relatedData.length > 0 ? (
-    <section className="max-w-6xl mx-auto px-4 py-12 border-t" style={{ borderColor: 'var(--pt-border)' }}>
-      <h2 className="pt-heading text-2xl mb-7">منتجات مشابهة</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-        {relatedData.map((p) => {
-          const img = (p.images as any[])?.[0]?.url
-          return (
-            <Link key={p.id} href={`/store/${store.slug}/product/${p.slug}`}
-              className="group block overflow-hidden transition-transform hover:-translate-y-1"
-              style={{ background: 'var(--pt-surface)', borderRadius: 'var(--pt-radius-lg)', border: '1px solid var(--pt-border)', boxShadow: 'var(--pt-shadow-sm)' }}>
-              <div className="relative aspect-[4/5]" style={{ background: 'var(--pt-surface-soft)' }}>
-                {img
-                  ? <Image src={img} alt={p.name_ar ?? p.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover" loading="lazy" />
-                  : <div className="w-full h-full flex items-center justify-center text-4xl" style={{ color: 'var(--pt-text-muted)' }}>{(p.name_ar ?? p.name)[0]}</div>
-                }
-              </div>
-              <div className="p-4">
-                <p className="font-bold text-[15px] line-clamp-2" style={{ color: 'var(--pt-text)' }}>{p.name_ar ?? p.name}</p>
-                <p className="font-bold text-base mt-1.5 tabular-nums" style={{ color: 'var(--pt-accent)' }}>{formatDZD(p.price)}</p>
-              </div>
-            </Link>
-          )
-        })}
-      </div>
-    </section>
-  ) : null
+  const sectionOrder = normalizeProductOrder((product as any).section_order)
+  const isVisible = (id: string) => sectionVisibility[id] !== false
+  // `upsells` (يُشترى عادة مع) never had a storefront block before, so it is opt-IN
+  // (explicit true only) — enabling it never silently appears on existing pages.
+  const isUpsellsOn = sectionVisibility['upsells'] === true
 
-  return (
-    <StorefrontLayout store={store as any}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
-      <ProductPagePixels
-        metaPixelId={metaPixelId}
-        tiktokPixelId={tiktokPixelId}
-        product={{ id: product.id, name: product.name_ar ?? product.name, price: product.price }}
-      />
+  const relatedGrid = (items: typeof relatedData) => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+      {items.map((p) => {
+        const img = (p.images as any[])?.[0]?.url
+        return (
+          <Link key={p.id} href={`/store/${store.slug}/product/${p.slug}`}
+            className="group block overflow-hidden transition-transform hover:-translate-y-1"
+            style={{ background: 'var(--pt-surface)', borderRadius: 'var(--pt-radius-lg)', border: '1px solid var(--pt-border)', boxShadow: 'var(--pt-shadow-sm)' }}>
+            <div className="relative aspect-[4/5]" style={{ background: 'var(--pt-surface-soft)' }}>
+              {img
+                ? <Image src={img} alt={p.name_ar ?? p.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover" loading="lazy" />
+                : <div className="w-full h-full flex items-center justify-center text-4xl" style={{ color: 'var(--pt-text-muted)' }}>{(p.name_ar ?? p.name)[0]}</div>
+              }
+            </div>
+            <div className="p-4">
+              <p className="font-bold text-[15px] line-clamp-2" style={{ color: 'var(--pt-text)' }}>{p.name_ar ?? p.name}</p>
+              <p className="font-bold text-base mt-1.5 tabular-nums" style={{ color: 'var(--pt-accent)' }}>{formatDZD(p.price)}</p>
+            </div>
+          </Link>
+        )
+      })}
+    </div>
+  )
 
-      <div className="pt-16 min-h-screen" dir="rtl"
-        data-theme={productTheme.key}
-        style={{ ...dkVars, background: '#FAF8F5', color: '#1B1B1F' }}>
-        {/* Breadcrumb */}
-        <div className="max-w-6xl mx-auto px-4 pt-6 pb-2">
-          <nav className="flex text-sm gap-2 items-center" style={{ color: 'var(--pt-text-muted)' }}>
-            <Link href={`/store/${store.slug}`} className="hover:opacity-70 transition-opacity">الرئيسية</Link>
-            <span style={{ color: 'var(--pt-border)' }}>/</span>
-            <Link href={`/store/${store.slug}/products`} className="hover:opacity-70 transition-opacity">المنتجات</Link>
-            <span style={{ color: 'var(--pt-border)' }}>/</span>
-            <span className="font-semibold truncate max-w-[200px]" style={{ color: 'var(--pt-text)' }}>{product.name_ar ?? product.name}</span>
-          </nav>
-        </div>
-
-        {/* Main product section */}
-        <ProductPageClient
-          product={product as any}
-          store={store as any}
-          wilayas={wilayas}
-          totalStock={totalStock}
-          stockMap={stockMap}
-          reviewCount={reviewsRes.data?.length ?? 0}
-          avgRating={avgRating}
-          sectionOrder={sectionOrder}
-          sectionVisibility={sectionVisibility}
-        />
-
-        {/* Related — rendered first when the builder orders it before reviews */}
-        {!reviewsBeforeRelated && relatedSection}
-
-        {/* Reviews */}
-        {isSectionVisible('reviews') && (reviewsRes.data?.length ?? 0) > 0 && (
+  // Bottom (below-hero) section nodes — each gated by its OWN visibility, keyed by
+  // its section id, rendered in section_order. The review form is part of the
+  // `reviews` section (hiding reviews hides the form too — it was the leak).
+  const bottomNodes: Record<string, JSX.Element | null> = {
+    reviews: isVisible('reviews') ? (
+      <div key="reviews">
+        {(reviewsRes.data?.length ?? 0) > 0 && (
           <section className="max-w-4xl mx-auto px-4 py-12">
             <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
               <h2 className="pt-heading text-2xl">آراء العملاء</h2>
@@ -259,39 +219,88 @@ export default async function ProductPage({ params }: Props) {
             </div>
           </section>
         )}
-
-        {/* FAQ — objection handling (COD). Native <details>: zero JS, fast,
-            mobile-friendly, accessible. */}
-        <section className="max-w-3xl mx-auto px-4 py-12 border-t" style={{ borderColor: 'var(--pt-border)' }}>
-          <h2 className="pt-heading text-2xl mb-6">الأسئلة الشائعة</h2>
-          <div className="space-y-2.5">
-            {[
-              { q: 'كيف أدفع؟', a: 'الدفع عند الاستلام (COD): تدفع نقداً لموصّل التوصيل عند استلام طردك — بلا بطاقة ولا دفع مسبق.' },
-              { q: 'هل يمكنني فتح الطرد قبل الدفع؟', a: 'نعم، يمكنك معاينة المنتج والتأكد منه قبل أن تدفع.' },
-              { q: 'كم يستغرق التوصيل؟', a: 'عادةً بين 24 و72 ساعة حسب ولايتك.' },
-              { q: 'هل تُوصّلون إلى كل الولايات؟', a: 'نعم، نوصّل إلى جميع الولايات الـ58.' },
-              { q: 'كيف أطلب؟', a: 'اختر خياراتك، أدخل اسمك ورقم هاتفك وولايتك ثم اضغط «اطلب» — يتصل بك المتجر لتأكيد الطلب.' },
-            ].map((f, i) => (
-              <details key={i} className="faq-item" style={{ background: 'var(--pt-surface)', borderRadius: 'var(--pt-radius-lg)', border: '1px solid var(--pt-border)' }}>
-                <summary className="flex items-center justify-between gap-3 cursor-pointer select-none px-4 py-4 font-bold text-sm" style={{ color: 'var(--pt-text)' }}>
-                  <span>{f.q}</span>
-                  <svg className="faq-chev shrink-0 transition-transform" width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ stroke: 'var(--pt-accent)' }} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
-                </summary>
-                <p className="px-4 pb-4 -mt-1 text-sm leading-relaxed" style={{ color: 'var(--pt-text-soft)' }}>{f.a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-
-        {/* Review Form */}
         <section className="max-w-3xl mx-auto px-4 py-12 border-t" style={{ borderColor: 'var(--pt-border)' }}>
           <div className="max-w-lg mx-auto p-8" style={{ background: 'var(--pt-surface)', borderRadius: 'var(--pt-radius-lg)', border: '1px solid var(--pt-border)', boxShadow: 'var(--pt-shadow-sm)' }}>
             <ReviewForm storeId={store.id} productId={product.id} />
           </div>
         </section>
+      </div>
+    ) : null,
+    faq: isVisible('faq') ? (
+      <section key="faq" className="max-w-3xl mx-auto px-4 py-12 border-t" style={{ borderColor: 'var(--pt-border)' }}>
+        <h2 className="pt-heading text-2xl mb-6">الأسئلة الشائعة</h2>
+        <div className="space-y-2.5">
+          {[
+            { q: 'كيف أدفع؟', a: 'الدفع عند الاستلام (COD): تدفع نقداً لموصّل التوصيل عند استلام طردك — بلا بطاقة ولا دفع مسبق.' },
+            { q: 'هل يمكنني فتح الطرد قبل الدفع؟', a: 'نعم، يمكنك معاينة المنتج والتأكد منه قبل أن تدفع.' },
+            { q: 'كم يستغرق التوصيل؟', a: 'عادةً بين 24 و72 ساعة حسب ولايتك.' },
+            { q: 'هل تُوصّلون إلى كل الولايات؟', a: 'نعم، نوصّل إلى جميع الولايات الـ58.' },
+            { q: 'كيف أطلب؟', a: 'اختر خياراتك، أدخل اسمك ورقم هاتفك وولايتك ثم اضغط «اطلب» — يتصل بك المتجر لتأكيد الطلب.' },
+          ].map((f, i) => (
+            <details key={i} className="faq-item" style={{ background: 'var(--pt-surface)', borderRadius: 'var(--pt-radius-lg)', border: '1px solid var(--pt-border)' }}>
+              <summary className="flex items-center justify-between gap-3 cursor-pointer select-none px-4 py-4 font-bold text-sm" style={{ color: 'var(--pt-text)' }}>
+                <span>{f.q}</span>
+                <svg className="faq-chev shrink-0 transition-transform" width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ stroke: 'var(--pt-accent)' }} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+              </summary>
+              <p className="px-4 pb-4 -mt-1 text-sm leading-relaxed" style={{ color: 'var(--pt-text-soft)' }}>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+    ) : null,
+    upsells: isUpsellsOn && relatedData.length > 0 ? (
+      <section key="upsells" className="max-w-6xl mx-auto px-4 py-12 border-t" style={{ borderColor: 'var(--pt-border)' }}>
+        <h2 className="pt-heading text-2xl mb-7">يُشترى عادة مع</h2>
+        {relatedGrid(relatedData.slice(0, 4))}
+      </section>
+    ) : null,
+    related: isVisible('related') && relatedData.length > 0 ? (
+      <section key="related" className="max-w-6xl mx-auto px-4 py-12 border-t" style={{ borderColor: 'var(--pt-border)' }}>
+        <h2 className="pt-heading text-2xl mb-7">منتجات مشابهة</h2>
+        {relatedGrid(relatedData)}
+      </section>
+    ) : null,
+  }
 
-        {/* Related — default position (after reviews / FAQ / review form) */}
-        {reviewsBeforeRelated && relatedSection}
+  return (
+    <StorefrontLayout store={store as any}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <ProductPagePixels
+        metaPixelId={metaPixelId}
+        tiktokPixelId={tiktokPixelId}
+        product={{ id: product.id, name: product.name_ar ?? product.name, price: product.price }}
+      />
+
+      <div className="pt-16 min-h-screen" dir="rtl"
+        data-theme={productTheme.key}
+        style={{ ...dkVars, background: '#FAF8F5', color: '#1B1B1F' }}>
+        {/* Breadcrumb */}
+        <div className="max-w-6xl mx-auto px-4 pt-6 pb-2">
+          <nav className="flex text-sm gap-2 items-center" style={{ color: 'var(--pt-text-muted)' }}>
+            <Link href={`/store/${store.slug}`} className="hover:opacity-70 transition-opacity">الرئيسية</Link>
+            <span style={{ color: 'var(--pt-border)' }}>/</span>
+            <Link href={`/store/${store.slug}/products`} className="hover:opacity-70 transition-opacity">المنتجات</Link>
+            <span style={{ color: 'var(--pt-border)' }}>/</span>
+            <span className="font-semibold truncate max-w-[200px]" style={{ color: 'var(--pt-text)' }}>{product.name_ar ?? product.name}</span>
+          </nav>
+        </div>
+
+        {/* Main product section */}
+        <ProductPageClient
+          product={product as any}
+          store={store as any}
+          wilayas={wilayas}
+          totalStock={totalStock}
+          stockMap={stockMap}
+          reviewCount={reviewsRes.data?.length ?? 0}
+          avgRating={avgRating}
+          sectionOrder={sectionOrder}
+          sectionVisibility={sectionVisibility}
+        />
+
+        {/* Bottom sections — rendered strictly in section_order, each self-gated
+            by its visibility. No hardcoded order or always-on section remains. */}
+        {sectionOrder.map(id => bottomNodes[id] ?? null)}
       </div>
 
       {/* Desktop only: on mobile this fixed float overlaps the sticky buy bar

@@ -397,6 +397,7 @@ export const DEFAULT_SECTION_ORDER = [
   'trust',
   'description',
   'reviews',
+  'faq',
   'upsells',
   'related',
 ] as const
@@ -411,6 +412,29 @@ export const SECTION_LABELS: Record<ProductSectionId, string> = {
   trust:       'شارات الثقة',
   description: 'الوصف والتفاصيل',
   reviews:     'التقييمات',
+  faq:         'الأسئلة الشائعة',
   upsells:     'يُشترى عادة مع',
   related:     'منتجات مشابهة',
+}
+
+// The product page renders strictly from this. A merchant's stored order may be
+// missing ids added later (e.g. 'faq'), or contain unknown ones — normalize to a
+// clean, complete list: keep the stored order, drop unknown ids, and insert any
+// missing default id right after its default predecessor (so legacy pages keep
+// their layout). This is the SINGLE source of truth for section order.
+export function normalizeProductOrder(stored: unknown): ProductSectionId[] {
+  const valid = new Set<string>(DEFAULT_SECTION_ORDER)
+  const result: ProductSectionId[] = Array.isArray(stored)
+    ? (stored.filter((id): id is ProductSectionId => typeof id === 'string' && valid.has(id)))
+    : []
+  DEFAULT_SECTION_ORDER.forEach((id, defIdx) => {
+    if (result.includes(id)) return
+    let insertAt = result.length
+    for (let k = defIdx - 1; k >= 0; k--) {
+      const pos = result.indexOf(DEFAULT_SECTION_ORDER[k])
+      if (pos !== -1) { insertAt = pos + 1; break }
+    }
+    result.splice(insertAt, 0, id)
+  })
+  return result
 }

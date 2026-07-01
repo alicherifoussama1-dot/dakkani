@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils/format'
 import { Upload, X, Plus, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, GripVertical, Eye, EyeOff } from 'lucide-react'
-import { DEFAULT_SECTION_ORDER, SECTION_LABELS, DEFAULT_THEME_KEY, type ProductSectionId } from '@/lib/product-themes'
+import { DEFAULT_SECTION_ORDER, SECTION_LABELS, DEFAULT_THEME_KEY, normalizeProductOrder, type ProductSectionId } from '@/lib/product-themes'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -596,9 +596,7 @@ export default function AdminProductEditor({
       initial_stock:    product ? (stockData.find(r => r.variant_key === 'default' && r.warehouse_id === (warehouses[0]?.id ?? ''))?.quantity ?? 0) : 0,
       warehouse_id:     warehouses[0]?.id ?? '',
       theme_key:          product?.theme_key ?? DEFAULT_THEME_KEY,
-      section_order:      Array.isArray(product?.section_order) && product.section_order.length
-        ? product.section_order
-        : [...DEFAULT_SECTION_ORDER],
+      section_order:      normalizeProductOrder(product?.section_order),
       section_visibility: product?.section_visibility ?? {},
       video_url:          product?.video_url ?? '',
       description_image_url: product?.description_image_url ?? product?.attributes?.description_image_url ?? '',

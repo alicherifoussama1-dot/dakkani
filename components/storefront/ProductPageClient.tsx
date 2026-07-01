@@ -5,7 +5,7 @@ import ProductOrderForm from './ProductOrderForm'
 import { Shield, Truck, Package, ChevronLeft, ChevronRight, ZoomIn, X, ShoppingBag } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { getProductTheme, themeToCSSVars } from '@/lib/product-themes'
+import { getProductTheme, themeToCSSVars, normalizeProductOrder } from '@/lib/product-themes'
 import ProductVariants, { type VariantGroup } from '@/components/discover/product/ProductVariants'
 import '@/components/discover/product/product-theme.css'
 import { translateStorefront, type Locale } from '@/lib/utils/translations'
@@ -23,9 +23,6 @@ interface Props {
   showTrust?: boolean; showDescription?: boolean
 }
 
-// Same default the DB column ships with (migration 013) — used when a product
-// has no explicit order yet, so the layout is identical to before.
-const DEFAULT_SECTION_ORDER = ['gallery', 'info', 'variants', 'buybox', 'trust', 'description', 'reviews', 'upsells', 'related']
 // Hero (above-the-fold) sections rendered by ProductPageClient. `gallery` is the
 // media column; the rest stack inside the buy card in the configured order.
 const HERO_RIGHT_IDS = ['info', 'variants', 'buybox', 'trust', 'description']
@@ -41,7 +38,8 @@ function buildVariantKey(groups: VariantGroup[], selected: Record<string, string
 
 export default function ProductPageClient({ product, store, wilayas, totalStock, reviewCount, avgRating, stockMap = {}, sectionOrder, sectionVisibility, showTrust = true, showDescription = true }: Props) {
   // Builder config → ordering + visibility helpers (mirrors the /discover engine).
-  const order = Array.isArray(sectionOrder) && sectionOrder.length ? sectionOrder : DEFAULT_SECTION_ORDER
+  // section_order is the SINGLE source of truth (normalized against the canonical list).
+  const order = normalizeProductOrder(sectionOrder)
   const vis = (id: string): boolean => {
     if (sectionVisibility && id in sectionVisibility) return sectionVisibility[id] !== false
     if (id === 'trust') return showTrust
@@ -444,6 +442,25 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
   const galleryVisible = vis('gallery') && heroNodes.gallery
   const heroRightIds = order.filter(id => HERO_RIGHT_IDS.includes(id) && vis(id) && heroNodes[id])
 
+  // Column placement follows section_order: if the merchant moves the panel
+  // (title/price/variants/CTA…) before `gallery`, the buy panel becomes the
+  // leading column and the image the trailing one. The image always keeps the
+  // wider track, so only the SIDE changes — never the proportions.
+  const galleryIdx = order.indexOf('gallery')
+  const panelIdx = heroRightIds.length ? Math.min(...heroRightIds.map(id => order.indexOf(id))) : Number.POSITIVE_INFINITY
+  const galleryFirst = galleryIdx <= panelIdx
+  const galleryCol = galleryVisible ? <div key="gallery">{heroNodes.gallery}</div> : null
+  const panelCol = heroRightIds.length > 0 ? (
+    <div key="panel" className="lg:sticky lg:top-6 lg:self-start">
+      <div className="rounded-3xl p-6 sm:p-7" style={{ background: SURFACE, border: `0.5px solid ${LINE}`, borderTop: `3px solid ${A}` }}>
+        {heroRightIds.map(id => <div key={id}>{heroNodes[id]}</div>)}
+      </div>
+    </div>
+  ) : null
+  const twoCols = galleryCol && panelCol
+  const heroCols = galleryFirst ? [galleryCol, panelCol] : [panelCol, galleryCol]
+  const gridColsClass = galleryFirst ? 'lg:grid-cols-[1.35fr_1fr]' : 'lg:grid-cols-[1fr_1.35fr]'
+
   return (
     <div data-pt-root dir={isRtl ? 'rtl' : 'ltr'} style={{ ...dkVars, background: PAPER, color: INK }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 lg:py-8">
@@ -466,16 +483,9 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
         {/* ── HERO — Product-Page-Builder driven (section order + visibility) ──
             `gallery` is the media column; the info / price / variants / CTA /
             trust / description blocks stack inside the buy card in the order the
-            merchant set. Each section's markup & styling are unchanged. */}
-        <div className={galleryVisible ? 'grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-6 lg:gap-10 items-start' : ''}>
-          {galleryVisible && <div>{heroNodes.gallery}</div>}
-          {heroRightIds.length > 0 && (
-            <div className="lg:sticky lg:top-6 lg:self-start">
-              <div className="rounded-3xl p-6 sm:p-7" style={{ background: SURFACE, border: `0.5px solid ${LINE}`, borderTop: `3px solid ${A}` }}>
-                {heroRightIds.map(id => <div key={id}>{heroNodes[id]}</div>)}
-              </div>
-            </div>
-          )}
+            merchant set. Column side follows section_order. Markup/styling unchanged. */}
+        <div className={twoCols ? `grid grid-cols-1 ${gridColsClass} gap-6 lg:gap-10 items-start` : ''}>
+          {heroCols}
         </div>
 
         {/* ── Order form (one-page inline) ── */}
