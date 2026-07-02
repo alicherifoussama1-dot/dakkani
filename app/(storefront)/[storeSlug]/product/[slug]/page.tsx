@@ -6,7 +6,8 @@ import type { Metadata } from 'next'
 import StorefrontLayout    from '@/components/storefront/StorefrontLayout'
 import WhatsAppFloat       from '@/components/storefront/WhatsAppFloat'
 import ProductPageClient   from '@/components/storefront/ProductPageClient'
-import ProductPagePixels   from '@/components/storefront/ProductPagePixels'
+import ProductTracking      from '@/components/storefront/ProductTracking'
+import { getProductTracking } from '@/lib/tracking/service'
 import ReviewForm          from '@/components/storefront/ReviewForm'
 import Image               from 'next/image'
 import { formatDZD } from '@/lib/utils/format'
@@ -98,8 +99,19 @@ export default async function ProductPage({ params }: Props) {
     const key = r.variant_key || 'default'
     stockMap[key] = (stockMap[key] ?? 0) + (r.quantity - r.reserved)
   }
-  const metaPixelId  = product.use_store_pixel ? store.meta_pixel_id  : product.meta_pixel_id
-  const tiktokPixelId = product.use_store_pixel ? store.tiktok_pixel_id : product.tiktok_pixel_id
+  // ── Per-product ISOLATED tracking. Resolves ONLY the pixels assigned to
+  // this product (new tracking library) with graceful fallback to the store
+  // default. Falls back to the legacy store/product pixel columns only when
+  // the tracking library has no config yet. ──
+  const trackingBundle = await getProductTracking(supabase, product as any, store.slug)
+  const legacyMeta   = product.use_store_pixel ? store.meta_pixel_id   : product.meta_pixel_id
+  const legacyTiktok = product.use_store_pixel ? store.tiktok_pixel_id : product.tiktok_pixel_id
+  const pixelIds = {
+    meta:     trackingBundle.pixelIds.meta     ?? legacyMeta   ?? null,
+    tiktok:   trackingBundle.pixelIds.tiktok   ?? legacyTiktok ?? null,
+    google:   trackingBundle.pixelIds.google   ?? null,
+    snapchat: trackingBundle.pixelIds.snapchat ?? null,
+  }
   const storePhone = (store as any).whatsapp ?? store.phone
 
   const avgRating = reviewsRes.data?.length
@@ -265,9 +277,8 @@ export default async function ProductPage({ params }: Props) {
   return (
     <StorefrontLayout store={store as any}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
-      <ProductPagePixels
-        metaPixelId={metaPixelId}
-        tiktokPixelId={tiktokPixelId}
+      <ProductTracking
+        pixelIds={pixelIds}
         product={{ id: product.id, name: product.name_ar ?? product.name, price: product.price }}
       />
 

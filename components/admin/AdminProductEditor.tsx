@@ -14,6 +14,7 @@ import { DEFAULT_SECTION_ORDER, SECTION_LABELS, DEFAULT_THEME_KEY, normalizeProd
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import ProductTrackingTab from '@/components/admin/ProductTrackingTab'
 
 // ── Schema ────────────────────────────────────────────────
 const variantGroupSchema = z.object({
@@ -66,7 +67,7 @@ interface Props {
   stockData?:  StockRow[]
   googleSheets?: { id: string; spreadsheet_name: string; worksheet_name: string; is_default: boolean }[]
 }
-type Tab = 'general' | 'pricing' | 'media' | 'variants' | 'inventory' | 'productpage' | 'checkout' | 'pixels' | 'seo' | 'advanced'
+type Tab = 'general' | 'pricing' | 'media' | 'variants' | 'inventory' | 'productpage' | 'checkout' | 'pixels' | 'tracking' | 'seo' | 'advanced'
 
 // ═══════════════════════════════════════════════════════════
 // STATIC CONSTANTS — outside component, never recreated
@@ -79,7 +80,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'inventory',   label: 'المخزون',      icon: '📦' },
   { id: 'productpage', label: 'صفحة المنتج',  icon: '📄' },
   { id: 'checkout',    label: 'الدفع',        icon: '🛒' },
-  { id: 'pixels',      label: 'البكسل',       icon: '📡' },
+  { id: 'tracking',    label: 'التتبع والدومين', icon: '🎯' },
   { id: 'seo',         label: 'SEO',          icon: '🔍' },
   { id: 'advanced',    label: 'متقدّم',       icon: '⚙️' },
 ]
@@ -1119,8 +1120,12 @@ export default function AdminProductEditor({
       )}
 
       {/* ── PIXELS TAB ── */}
-      {tab === 'pixels' && (
-        <PixelSection control={control} register={register} storePixels={storePixels} />
+      {/* ── TRACKING & DOMAIN TAB (isolated per-product tracking) ── */}
+      {tab === 'tracking' && (
+        <ProductTrackingTab
+          productId={product?.id ?? null}
+          storeId={storeId}
+        />
       )}
 
       {/* ── SEO TAB ── */}

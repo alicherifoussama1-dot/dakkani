@@ -206,6 +206,9 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   const onSubmit = async (data: FormData) => {
     if (isSubmitting) return // extra guard against a double submit
     setSubmitError('')
+    // Tracking bridge (isolated pixels live in <ProductTracking/>). Fire-and-forget;
+    // no pixel logic here so order/business logic stays untouched.
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('dakkani:ic'))
     const isStopdesk = data.delivery_type === 'stopdesk'
     const genericErr = lang === 'ar'
       ? 'تعذّر إرسال الطلب. تحقّق من اتصالك وحاول مرة أخرى، أو تواصل معنا.'
@@ -230,6 +233,11 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       if (res.ok && json.success) {
         setOrderId(json.order_number)
         setSubmitted(true)
+        // Tracking bridge → <ProductTracking/> fires Purchase to this product's pixels only.
+        if (typeof window !== 'undefined') {
+          const value = ((product as any)?.price ?? 0) * (data.quantity ?? 1)
+          window.dispatchEvent(new CustomEvent('dakkani:purchase', { detail: { orderId: json.order_number, value } }))
+        }
       } else {
         setSubmitError(json.error || genericErr)
         formRef.current?.querySelector<HTMLElement>('[data-submit-error="true"]')

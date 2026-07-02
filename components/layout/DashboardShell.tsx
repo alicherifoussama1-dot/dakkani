@@ -26,7 +26,7 @@ const NAV_MAIN = [
   { href: '/reviews',        label: 'التقييمات',   icon: Star },
   { href: '/blacklist',      label: 'القائمة السوداء', icon: ShieldOff },
   { href: '/landing-pages',  label: 'صفحات الهبوط', icon: Globe },
-  { href: '/tracking',       label: 'التتبع',      icon: Navigation2 },
+  { href: '/settings/tracking-domains', label: 'التتبع والدومينات', icon: Navigation2 },
 ]
 const NAV_FEATURES = [
   { href: '/confirmili',    label: 'Confirmili',  icon: Phone,         badge: 'جديد' },
