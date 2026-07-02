@@ -401,17 +401,22 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
     ),
     description: (displayDescription || product.description_image_url || product.attributes?.description_image_url) ? (
       <>
-        {displayDescription && <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{displayDescription}</p>}
+        {displayDescription && (
+          <div className="max-w-3xl mx-auto px-4 sm:px-6">
+            <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{displayDescription}</p>
+          </div>
+        )}
         {(product.description_image_url || product.attributes?.description_image_url) && (
+          // Full-bleed, edge-to-edge description banner. `unoptimized` serves the
+          // original uploaded file untouched (no Next resizing/compression), so it
+          // stays sharp on high-DPI/Retina screens at any viewport width.
           <div className={displayDescription ? 'mt-6' : ''}>
-            <h2 className="text-lg font-bold mb-4" style={{ color: INK }}>
-              {lang === 'ar' ? 'تفاصيل المنتج' : lang === 'fr' ? 'Détails du produit' : 'Product details'}
-            </h2>
             <Image
               src={product.description_image_url ?? product.attributes?.description_image_url}
               alt={lang === 'ar' ? 'وصف المنتج' : 'Description du produit'}
-              width={1200} height={1200} sizes="(max-width: 768px) 100vw, 800px"
-              className="w-full h-auto rounded-3xl object-contain" style={{ border: `0.5px solid ${LINE}` }} loading="lazy" />
+              width={1200} height={1200} sizes="100vw"
+              unoptimized
+              className="block w-full h-auto m-0 p-0" style={{ borderRadius: 0, border: 'none', boxShadow: 'none' }} loading="lazy" />
           </div>
         )}
       </>
@@ -451,7 +456,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
     variants:    heroNodes.variants ? <section key="variants" className={wrapCls}>{heroNodes.variants}</section> : null,
     buybox:      <section key="buybox" id="order-form" className={wrapCls} style={{ scrollMarginTop: 24 }}>{heroNodes.buybox}</section>,
     trust:       <section key="trust" className={wrapCls}>{heroNodes.trust}</section>,
-    description: heroNodes.description ? <section key="description" className="max-w-3xl mx-auto px-4 sm:px-6 pt-6">{heroNodes.description}</section> : null,
+    description: heroNodes.description ? <section key="description" className="pt-6">{heroNodes.description}</section> : null,
     ...(extraSections ?? {}),
   }
 
