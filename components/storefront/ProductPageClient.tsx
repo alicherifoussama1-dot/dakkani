@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useState, useRef } from 'react'
+import { useEffect, useMemo, useState, useRef, type ReactNode } from 'react'
 import { formatDZD } from '@/lib/utils/format'
 import ProductOrderForm from './ProductOrderForm'
 import { Shield, Truck, Package, ChevronLeft, ChevronRight, ZoomIn, X, ShoppingBag } from 'lucide-react'
@@ -14,18 +14,16 @@ interface Props {
   product: any; store: any; wilayas: any[]
   totalStock: number; reviewCount: number; avgRating: string | null
   stockMap?: Record<string, number>
-  // Merchant Product-Page-Builder config. `sectionOrder` orders the hero blocks
-  // (image / title+price / variants / CTA / trust / description); `sectionVisibility`
-  // toggles each. Both default to the built-in order → backward compatible.
+  // Merchant Product-Page-Builder config — the SINGLE source of truth. Every
+  // section is rendered strictly in `sectionOrder`, gated by `sectionVisibility`.
   sectionOrder?: string[]
   sectionVisibility?: Record<string, boolean>
+  // Below-hero section nodes (reviews / faq / upsells / related), pre-built on the
+  // server and placed into the SAME ordered loop as the hero sections.
+  extraSections?: Record<string, ReactNode>
   // Legacy visibility props (still accepted; superseded by sectionVisibility).
   showTrust?: boolean; showDescription?: boolean
 }
-
-// Hero (above-the-fold) sections rendered by ProductPageClient. `gallery` is the
-// media column; the rest stack inside the buy card in the configured order.
-const HERO_RIGHT_IDS = ['info', 'variants', 'buybox', 'trust', 'description']
 
 // Builds the warehouse_stock variant_key from the user's current selections —
 // mirrors the exact helper already used (and proven) on the /discover product page,
@@ -36,7 +34,7 @@ function buildVariantKey(groups: VariantGroup[], selected: Record<string, string
   return parts.length === groups.length ? parts.join('|') : 'default'
 }
 
-export default function ProductPageClient({ product, store, wilayas, totalStock, reviewCount, avgRating, stockMap = {}, sectionOrder, sectionVisibility, showTrust = true, showDescription = true }: Props) {
+export default function ProductPageClient({ product, store, wilayas, totalStock, reviewCount, avgRating, stockMap = {}, sectionOrder, sectionVisibility, extraSections, showTrust = true, showDescription = true }: Props) {
   // Builder config → ordering + visibility helpers (mirrors the /discover engine).
   // section_order is the SINGLE source of truth (normalized against the canonical list).
   const order = normalizeProductOrder(sectionOrder)
@@ -401,9 +399,23 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
         ))}
       </div>
     ),
-    description: displayDescription
-      ? <p className="text-sm leading-relaxed mt-5" style={{ color: MUTED }}>{displayDescription}</p>
-      : null,
+    description: (displayDescription || product.description_image_url || product.attributes?.description_image_url) ? (
+      <>
+        {displayDescription && <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{displayDescription}</p>}
+        {(product.description_image_url || product.attributes?.description_image_url) && (
+          <div className={displayDescription ? 'mt-6' : ''}>
+            <h2 className="text-lg font-bold mb-4" style={{ color: INK }}>
+              {lang === 'ar' ? 'تفاصيل المنتج' : lang === 'fr' ? 'Détails du produit' : 'Product details'}
+            </h2>
+            <Image
+              src={product.description_image_url ?? product.attributes?.description_image_url}
+              alt={lang === 'ar' ? 'وصف المنتج' : 'Description du produit'}
+              width={1200} height={1200} sizes="(max-width: 768px) 100vw, 800px"
+              className="w-full h-auto rounded-3xl object-contain" style={{ border: `0.5px solid ${LINE}` }} loading="lazy" />
+          </div>
+        )}
+      </>
+    ) : null,
     variants: variantGroups.length > 0
       ? (
         <div className="mt-5">
@@ -417,103 +429,53 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
       )
       : null,
     buybox: (
-      <div>
-        {/* Desktop CTA (mobile uses the sticky bar) */}
-        <div className="hidden lg:flex gap-3 mt-6">
-          <button type="button" onClick={scrollToForm}
-            className="flex-1 flex items-center justify-center gap-2.5 h-14 rounded-2xl text-white font-bold text-[15px] transition-transform active:scale-95"
-            style={{ background: A }}>
-            <ShoppingBag className="w-5 h-5" />{translateStorefront('order_now', lang).replace(' 🛒', '').replace(' اضغط هنا للطلب', 'اطلب')}
-          </button>
-          {waUrl && (
-            <a href={waUrl} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
-              className="w-14 h-14 flex items-center justify-center rounded-2xl shrink-0" style={{ background: '#1FAE54' }}>
-              <WhatsAppIcon size={26} />
-            </a>
-          )}
-        </div>
-        <p className="hidden lg:block text-[11px] text-center mt-3" style={{ color: MUTED }}>
-          {lang === 'ar' ? 'الدفع عند الاستلام · نتصل بك لتأكيد الطلب' : lang === 'fr' ? 'Paiement à la livraison · Appel de confirmation' : 'Cash on delivery · We call to confirm'}
-        </p>
-      </div>
+      <ProductOrderForm
+        product={product}
+        store={store}
+        wilayas={wilayas}
+        variantKey={variantKey}
+        variantLabel={variantLabel}
+        lang={lang}
+        maxQty={(product.track_inventory === false || product.attributes?.track_inventory === false) ? undefined : (currentStock > 0 ? currentStock : undefined)}
+      />
     ),
   }
 
-  const galleryVisible = vis('gallery') && heroNodes.gallery
-  const heroRightIds = order.filter(id => HERO_RIGHT_IDS.includes(id) && vis(id) && heroNodes[id])
-
-  // Column placement follows section_order: if the merchant moves the panel
-  // (title/price/variants/CTA…) before `gallery`, the buy panel becomes the
-  // leading column and the image the trailing one. The image always keeps the
-  // wider track, so only the SIDE changes — never the proportions.
-  const galleryIdx = order.indexOf('gallery')
-  const panelIdx = heroRightIds.length ? Math.min(...heroRightIds.map(id => order.indexOf(id))) : Number.POSITIVE_INFINITY
-  const galleryFirst = galleryIdx <= panelIdx
-  const galleryCol = galleryVisible ? <div key="gallery">{heroNodes.gallery}</div> : null
-  const panelCol = heroRightIds.length > 0 ? (
-    <div key="panel" className="lg:sticky lg:top-6 lg:self-start">
-      <div className="rounded-3xl p-6 sm:p-7" style={{ background: SURFACE, border: `0.5px solid ${LINE}`, borderTop: `3px solid ${A}` }}>
-        {heroRightIds.map(id => <div key={id}>{heroNodes[id]}</div>)}
-      </div>
-    </div>
-  ) : null
-  const twoCols = galleryCol && panelCol
-  const heroCols = galleryFirst ? [galleryCol, panelCol] : [panelCol, galleryCol]
-  const gridColsClass = galleryFirst ? 'lg:grid-cols-[1.35fr_1fr]' : 'lg:grid-cols-[1fr_1.35fr]'
+  const wrapCls = 'max-w-2xl mx-auto px-4 sm:px-6 pt-6'
+  // Every section — hero AND below — keyed by its builder id. There is NO fixed
+  // JSX ordering: the render loop below walks `order` (section_order) and outputs
+  // each section EXACTLY where the merchant placed it.
+  const nodes: Record<string, ReactNode> = {
+    gallery:     <section key="gallery" className={wrapCls}>{heroNodes.gallery}</section>,
+    info:        <section key="info" className={wrapCls}>{heroNodes.info}</section>,
+    variants:    heroNodes.variants ? <section key="variants" className={wrapCls}>{heroNodes.variants}</section> : null,
+    buybox:      <section key="buybox" id="order-form" className={wrapCls} style={{ scrollMarginTop: 24 }}>{heroNodes.buybox}</section>,
+    trust:       <section key="trust" className={wrapCls}>{heroNodes.trust}</section>,
+    description: heroNodes.description ? <section key="description" className="max-w-3xl mx-auto px-4 sm:px-6 pt-6">{heroNodes.description}</section> : null,
+    ...(extraSections ?? {}),
+  }
 
   return (
     <div data-pt-root dir={isRtl ? 'rtl' : 'ltr'} style={{ ...dkVars, background: PAPER, color: INK }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 lg:py-8">
-
-        {/* Language switcher */}
-        {enabledLanguages.length > 1 && (
-          <div className={`flex ${isRtl ? 'justify-start' : 'justify-end'} mb-4`}>
-            <div className="inline-flex items-center gap-1 p-1 rounded-full" style={{ background: SURFACE, border: `0.5px solid ${LINE}` }}>
-              {enabledLanguages.map((l) => (
-                <button key={l} onClick={() => handleLanguageChange(l)}
-                  className="px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-colors"
-                  style={lang === l ? { background: A, color: '#fff' } : { color: MUTED, background: 'transparent' }}>
-                  {l === 'ar' ? 'العربية' : l === 'fr' ? 'Français' : 'English'}
-                </button>
-              ))}
-            </div>
+      {/* Language switcher */}
+      {enabledLanguages.length > 1 && (
+        <div className={`max-w-2xl mx-auto px-4 sm:px-6 pt-4 flex ${isRtl ? 'justify-start' : 'justify-end'}`}>
+          <div className="inline-flex items-center gap-1 p-1 rounded-full" style={{ background: SURFACE, border: `0.5px solid ${LINE}` }}>
+            {enabledLanguages.map((l) => (
+              <button key={l} onClick={() => handleLanguageChange(l)}
+                className="px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-colors"
+                style={lang === l ? { background: A, color: '#fff' } : { color: MUTED, background: 'transparent' }}>
+                {l === 'ar' ? 'العربية' : l === 'fr' ? 'Français' : 'English'}
+              </button>
+            ))}
           </div>
-        )}
-
-        {/* ── HERO — Product-Page-Builder driven (section order + visibility) ──
-            `gallery` is the media column; the info / price / variants / CTA /
-            trust / description blocks stack inside the buy card in the order the
-            merchant set. Column side follows section_order. Markup/styling unchanged. */}
-        <div className={twoCols ? `grid grid-cols-1 ${gridColsClass} gap-6 lg:gap-10 items-start` : ''}>
-          {heroCols}
         </div>
+      )}
 
-        {/* ── Order form (one-page inline) ── */}
-        <div id="order-form" className="max-w-2xl mx-auto mt-8 lg:mt-12" style={{ scrollMarginTop: 24 }}>
-          <ProductOrderForm
-            product={product}
-            store={store}
-            wilayas={wilayas}
-            variantKey={variantKey}
-            variantLabel={variantLabel}
-            lang={lang}
-            maxQty={(product.track_inventory === false || product.attributes?.track_inventory === false) ? undefined : (currentStock > 0 ? currentStock : undefined)}
-          />
-        </div>
-
-        {/* ── Product details image (part of the `description` section) ── */}
-        {vis('description') && (product.description_image_url || product.attributes?.description_image_url) && (
-          <div className="max-w-3xl mx-auto mt-10">
-            <h2 className="text-lg font-bold mb-4" style={{ color: INK }}>
-              {lang === 'ar' ? 'تفاصيل المنتج' : lang === 'fr' ? 'Détails du produit' : 'Product details'}
-            </h2>
-            <Image
-              src={product.description_image_url ?? product.attributes?.description_image_url}
-              alt={lang === 'ar' ? 'وصف المنتج' : 'Description du produit'}
-              width={1200} height={1200} sizes="(max-width: 768px) 100vw, 800px"
-              className="w-full h-auto rounded-3xl object-contain" style={{ border: `0.5px solid ${LINE}` }} loading="lazy" />
-          </div>
-        )}
+      {/* ── Sections rendered STRICTLY in section_order (single source of truth).
+          No section has a hardcoded position; each shows only when visible. ── */}
+      <div className="pb-6">
+        {order.map(id => (vis(id) ? (nodes[id] ?? null) : null))}
       </div>
 
       {/* Lightbox */}

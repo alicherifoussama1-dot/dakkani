@@ -296,11 +296,8 @@ export default async function ProductPage({ params }: Props) {
           avgRating={avgRating}
           sectionOrder={sectionOrder}
           sectionVisibility={sectionVisibility}
+          extraSections={bottomNodes}
         />
-
-        {/* Bottom sections — rendered strictly in section_order, each self-gated
-            by its visibility. No hardcoded order or always-on section remains. */}
-        {sectionOrder.map(id => bottomNodes[id] ?? null)}
       </div>
 
       {/* Desktop only: on mobile this fixed float overlaps the sticky buy bar
