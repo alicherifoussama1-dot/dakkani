@@ -8,7 +8,7 @@
 // ============================================================
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { CheckCircle2, AlertTriangle, XCircle, Link2, ExternalLink } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, XCircle, Link2, ExternalLink, Eye, Globe } from 'lucide-react'
 import { PROVIDER_LIST, type ProviderKey } from '@/lib/tracking/registry'
 import {
   resolveProductTracking, resolveDomain,
@@ -112,8 +112,10 @@ export default function ProductTrackingTab({ productId, storeId }: Props) {
           const opts = integrations.filter(i => i.provider === p.key && i.is_active)
           return (
             <div key={p.key} className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: p.color }} />
-              <label className="text-sm w-40 shrink-0" style={{ color: 'var(--color-text-secondary)' }}>{p.labelAr}</label>
+              <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${p.color}1A` }}>
+                <span className="w-3 h-3 rounded-full" style={{ background: p.color }} />
+              </span>
+              <label className="text-sm w-36 shrink-0 font-medium" style={{ color: 'var(--color-text-secondary)' }}>{p.labelAr}</label>
               <select value={sel[p.key]} onChange={e => setSel(s => ({ ...s, [p.key]: e.target.value }))} className="input text-sm flex-1">
                 <option value="default">الافتراضي للمتجر</option>
                 {opts.map(i => <option key={i.id} value={i.id}>{i.name} — {i.pixel_id}</option>)}
@@ -140,12 +142,16 @@ export default function ProductTrackingTab({ productId, storeId }: Props) {
 
       {/* ── Preview ── */}
       <div className="card p-5 space-y-3">
-        <h3 className="font-semibold text-sm pb-2 border-b" style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>معاينة التتبع</h3>
-        <div className="text-sm space-y-1.5">
-          <div className="flex gap-2"><span className="w-28" style={{ color: 'var(--color-text-muted)' }}>الدومين</span><span className="font-mono" dir="ltr">{domain.hostname}</span></div>
-          <div className="flex gap-2 items-center"><span className="w-28" style={{ color: 'var(--color-text-muted)' }}>رابط المنتج</span>
-            <a href={productUrl} target="_blank" rel="noreferrer" className="font-mono text-xs inline-flex items-center gap-1" dir="ltr" style={{ color: 'var(--color-accent)' }}>{productUrl}<ExternalLink size={11} /></a>
+        <h3 className="font-semibold text-sm pb-2 border-b flex items-center gap-1.5" style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>
+          <Eye size={15} style={{ color: 'var(--color-accent)' }} />معاينة التتبع
+        </h3>
+        {/* Final URL — prominent */}
+        <div className="rounded-xl p-3" style={{ background: 'var(--color-surface-2, #F8F9FA)', border: '1px solid var(--color-border)' }}>
+          <div className="flex items-center gap-2 mb-1">
+            <Globe size={13} style={{ color: 'var(--color-text-muted)' }} />
+            <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>الرابط النهائي · {domain.source === 'platform' ? 'دومين المنصّة' : domain.source === 'product' ? 'دومين المنتج' : 'الافتراضي للمتجر'}</span>
           </div>
+          <a href={productUrl} target="_blank" rel="noreferrer" className="font-mono text-xs inline-flex items-center gap-1 break-all" dir="ltr" style={{ color: 'var(--color-accent)' }}>{productUrl}<ExternalLink size={11} className="shrink-0" /></a>
         </div>
         <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
           {PROVIDER_LIST.map(p => {

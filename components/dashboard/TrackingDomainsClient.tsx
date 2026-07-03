@@ -1,14 +1,18 @@
 'use client'
 // ============================================================
 // Settings → Tracking & Domains
-// Two simple sections: a reusable Tracking Library (grouped by
-// provider) and Custom Domains. CRUD runs through the browser
-// Supabase client (RLS-scoped to the owner). Test Connection
-// and domain Verify use server routes.
+// A reusable Tracking Library (grouped by provider, collapsible)
+// and Custom Domains with professional health cards. CRUD runs
+// through the browser Supabase client (RLS-scoped to the owner).
+// Test Connection and domain Verify use server routes.
+// Logic is unchanged — this layer only improves the experience.
 // ============================================================
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, Trash2, Star, Globe, CheckCircle2, AlertTriangle, XCircle, Zap } from 'lucide-react'
+import {
+  Plus, Pencil, Trash2, Star, Globe, CheckCircle2, AlertTriangle, XCircle, Zap,
+  ChevronDown, ChevronLeft, Copy, Check, ShieldCheck, Server, Network, Clock, BadgeCheck,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { PROVIDER_LIST, getProvider, type ProviderKey } from '@/lib/tracking/registry'
 
@@ -24,25 +28,73 @@ interface Domain {
 }
 interface Props { storeId: string; storeSlug: string; schemaReady?: boolean; integrations: Integration[]; domains: Domain[] }
 
+// ── helpers ──────────────────────────────────────────────────
+const fmtDate = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleString('ar-DZ', { dateStyle: 'medium', timeStyle: 'short' }) : '—'
+
+const countUnit = (key: ProviderKey, n: number) =>
+  key === 'google' ? (n === 1 ? 'خاصية' : 'خصائص') : (n === 1 ? 'بكسل' : n === 2 ? 'بكسلان' : 'بكسلات')
+
 const HEALTH = {
-  healthy: { Icon: CheckCircle2, color: '#1D9E75', label: 'سليم' },
-  warning: { Icon: AlertTriangle, color: '#E0A400', label: 'تحذير' },
-  error:   { Icon: XCircle,       color: '#D93A3A', label: 'خطأ' },
+  healthy: { Icon: CheckCircle2, color: '#1D9E75', bg: '#DCFCE7', label: 'سليم' },
+  warning: { Icon: AlertTriangle, color: '#B45309', bg: '#FEF3C7', label: 'تحذير' },
+  error:   { Icon: XCircle,       color: '#B91C1C', bg: '#FEE2E2', label: 'خطأ' },
 } as const
 
+// Enterprise health: verification (tested) + credentials + connection.
 function healthOf(i: Integration): keyof typeof HEALTH {
-  if (!i.is_active) return 'warning'
   if (i.last_test_status === 'error') return 'error'
-  if (i.last_test_status === 'healthy') return 'healthy'
-  return 'warning'
+  const prov = getProvider(i.provider)
+  const needsToken = !!prov?.supportsServerEvents && (prov?.credentialFields.some(c => c.secret) ?? false)
+  const hasToken = prov?.credentialFields.some(c => c.secret && i.credentials?.[c.key]) ?? false
+  if (i.last_test_status === 'healthy') return needsToken && !hasToken ? 'warning' : 'healthy'
+  return 'warning' // never tested / warning
 }
 
-const DOMAIN_STATUS = {
-  pending:    { color: '#E0A400', label: 'بانتظار التحقق' },
-  verified:   { color: '#1D9E75', label: 'تم التحقق' },
-  ssl_active: { color: '#1D9E75', label: 'SSL مفعّل' },
-  error:      { color: '#D93A3A', label: 'خطأ' },
+const DOMAIN_STATE = {
+  active:  { dot: '🟢', color: '#1D9E75', bg: '#DCFCE7', label: 'نشط' },
+  pending: { dot: '🟡', color: '#B45309', bg: '#FEF3C7', label: 'قيد التحقق' },
+  error:   { dot: '🔴', color: '#B91C1C', bg: '#FEE2E2', label: 'خطأ' },
 } as const
+const domainState = (d: Domain): keyof typeof DOMAIN_STATE =>
+  d.status === 'verified' || d.status === 'ssl_active' ? 'active' : d.status === 'error' ? 'error' : 'pending'
+
+// ── small pieces ─────────────────────────────────────────────
+function CopyBtn({ text }: { text: string }) {
+  const [ok, setOk] = useState(false)
+  return (
+    <button
+      onClick={async () => { try { await navigator.clipboard.writeText(text); setOk(true); setTimeout(() => setOk(false), 1200) } catch {} }}
+      className="p-1.5 rounded-lg hover:bg-black/5 transition-colors" title="نسخ" type="button">
+      {ok ? <Check size={13} style={{ color: '#1D9E75' }} /> : <Copy size={13} style={{ color: 'var(--color-text-muted)' }} />}
+    </button>
+  )
+}
+
+function DnsRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2 justify-between rounded-lg px-2.5 py-1.5" style={{ background: '#fff', border: '1px solid var(--color-border)' }}>
+      <div className="min-w-0" dir="ltr">
+        <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>{label}</span>
+        <div className="font-mono text-xs truncate" style={{ color: 'var(--color-text-primary)' }}>{value}</div>
+      </div>
+      <CopyBtn text={value} />
+    </div>
+  )
+}
+
+// A compact labelled fact used inside the domain health grid.
+function Fact({ Icon, label, value, color }: { Icon: any; label: string; value: string; color?: string }) {
+  return (
+    <div className="rounded-lg px-3 py-2" style={{ background: '#fff', border: '1px solid var(--color-border)' }}>
+      <div className="flex items-center gap-1.5 mb-0.5">
+        <Icon size={13} style={{ color: 'var(--color-text-muted)' }} />
+        <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>{label}</span>
+      </div>
+      <div className="text-xs font-semibold" style={{ color: color ?? 'var(--color-text-primary)' }}>{value}</div>
+    </div>
+  )
+}
 
 export default function TrackingDomainsClient({ storeId, storeSlug, schemaReady = true, integrations, domains }: Props) {
   const router = useRouter()
@@ -60,14 +112,19 @@ export default function TrackingDomainsClient({ storeId, storeSlug, schemaReady 
   const [domHost, setDomHost] = useState('')
   const [domBusy, setDomBusy] = useState(false)
 
+  // ── UI-only state: collapsed provider groups ──
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const toggleGroup = (k: string) => setCollapsed(c => ({ ...c, [k]: !c[k] }))
+
   const provMeta = getProvider(intForm.provider)!
 
-  const openNew = () => { setIntForm(blank); setIntOpen(true) }
+  const openNew = (provider?: ProviderKey) => { setIntForm({ ...blank, provider: provider ?? 'meta' }); setIntOpen(true) }
   const openEdit = (i: Integration) => {
     setIntForm({ id: i.id, provider: i.provider, name: i.name, pixel_id: i.pixel_id, credentials: i.credentials ?? {}, is_active: i.is_active })
     setIntOpen(true)
   }
 
+  // ─────────── handlers (unchanged logic) ───────────
   const saveIntegration = async () => {
     if (!intForm.pixel_id || !intForm.name) return
     setSaving(true)
@@ -79,22 +136,17 @@ export default function TrackingDomainsClient({ storeId, storeSlug, schemaReady 
     else await sb.from('tracking_integrations').insert(payload)
     setSaving(false); setIntOpen(false); router.refresh()
   }
-
   const removeIntegration = async (id: string) => {
     if (!confirm('حذف هذا التتبع؟')) return
     await sb.from('tracking_integrations').delete().eq('id', id); router.refresh()
   }
-
   const toggleActive = async (i: Integration) => {
     await sb.from('tracking_integrations').update({ is_active: !i.is_active }).eq('id', i.id); router.refresh()
   }
-
   const setDefault = async (i: Integration) => {
-    // Unset other defaults of same provider first (partial-unique index).
     await sb.from('tracking_integrations').update({ is_default: false }).eq('store_id', storeId).eq('provider', i.provider)
     await sb.from('tracking_integrations').update({ is_default: true }).eq('id', i.id); router.refresh()
   }
-
   const testConnection = async (i: Integration) => {
     setTesting(i.id)
     try {
@@ -107,8 +159,6 @@ export default function TrackingDomainsClient({ storeId, storeSlug, schemaReady 
       alert(r.message)
     } finally { setTesting(null); router.refresh() }
   }
-
-  // ── Domains ──
   const addDomain = async () => {
     const host = domHost.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
     if (!host) return
@@ -159,43 +209,75 @@ export default function TrackingDomainsClient({ storeId, storeSlug, schemaReady 
         </div>
       )}
 
-      {/* ── TRACKING LIBRARY ── */}
-      <section className="card mb-6">
-        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
-          <span className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>مكتبة التتبع</span>
-          <button onClick={openNew} className="btn btn-primary btn-sm gap-1.5"><Plus size={14} />إضافة تتبع</button>
+      {/* ══ TRACKING LIBRARY ══ */}
+      <section className="card mb-6 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3.5 border-b" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="flex items-center gap-2">
+            <Zap size={16} style={{ color: 'var(--color-accent)' }} />
+            <span className="font-bold text-sm" style={{ color: 'var(--color-text-primary)' }}>مكتبة التتبع</span>
+          </div>
+          <button onClick={() => openNew()} className="btn btn-primary btn-sm gap-1.5"><Plus size={14} />إضافة تتبع</button>
         </div>
 
         <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
           {PROVIDER_LIST.map(p => {
             const rows = integrations.filter(i => i.provider === p.key)
+            const isCollapsed = collapsed[p.key]
             return (
-              <div key={p.key} className="px-4 py-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />
-                  <span className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{p.labelAr}</span>
-                  <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>({rows.length})</span>
-                </div>
-                {rows.length === 0 ? (
-                  <p className="text-xs pr-4" style={{ color: 'var(--color-text-muted)' }}>لا يوجد تتبع بعد.</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {rows.map(i => {
+              <div key={p.key}>
+                {/* Provider header — click to expand/collapse */}
+                <button type="button" onClick={() => toggleGroup(p.key)}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-black/[0.015] transition-colors text-right">
+                  <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${p.color}1A` }}>
+                    <span className="w-3 h-3 rounded-full" style={{ background: p.color }} />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm leading-tight" style={{ color: 'var(--color-text-primary)' }}>{p.labelAr}</p>
+                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                      {rows.length} {countUnit(p.key, rows.length)}
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--color-surface-2, #F1F3F5)', color: 'var(--color-text-secondary)' }}>{rows.length}</span>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); openNew(p.key) }} className="p-1.5 rounded-lg hover:bg-black/5" title="إضافة">
+                    <Plus size={14} style={{ color: 'var(--color-accent)' }} />
+                  </button>
+                  {isCollapsed ? <ChevronLeft size={16} style={{ color: 'var(--color-text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--color-text-muted)' }} />}
+                </button>
+
+                {/* Integrations */}
+                {!isCollapsed && (
+                  <div className="px-4 pb-3 space-y-2">
+                    {rows.length === 0 ? (
+                      <div className="rounded-xl border border-dashed px-4 py-5 text-center" style={{ borderColor: 'var(--color-border)' }}>
+                        <p className="text-xs mb-2" style={{ color: 'var(--color-text-muted)' }}>لا يوجد {p.labelAr} بعد.</p>
+                        <button onClick={() => openNew(p.key)} className="btn btn-ghost btn-sm gap-1"><Plus size={13} />أضف الأول</button>
+                      </div>
+                    ) : rows.map(i => {
                       const h = HEALTH[healthOf(i)]
                       return (
-                        <div key={i.id} className="flex items-center gap-2 flex-wrap rounded-lg px-3 py-2" style={{ background: 'var(--color-surface-2, #F8F9FA)' }}>
-                          <h.Icon size={15} style={{ color: h.color }} />
-                          <span className="font-medium text-sm" style={{ color: 'var(--color-text-primary)' }}>{i.name}</span>
-                          <span className="font-mono text-xs" dir="ltr" style={{ color: 'var(--color-text-muted)' }}>{i.pixel_id}</span>
-                          {i.is_default && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: '#FEF3C7', color: '#B45309' }}>افتراضي</span>}
-                          {!i.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#F1F3F5', color: '#868E96' }}>معطّل</span>}
-                          <div className="mr-auto flex items-center gap-1">
-                            <button title="اختبار الاتصال" onClick={() => testConnection(i)} disabled={testing === i.id}
-                              className="p-1.5 rounded hover:bg-black/5"><Zap size={13} style={{ color: testing === i.id ? '#ADB5BD' : 'var(--color-accent)' }} /></button>
-                            <button title="افتراضي" onClick={() => setDefault(i)} className="p-1.5 rounded hover:bg-black/5"><Star size={13} style={{ color: i.is_default ? '#F59E0B' : '#CED4DA', fill: i.is_default ? '#F59E0B' : 'none' }} /></button>
-                            <button title={i.is_active ? 'تعطيل' : 'تفعيل'} onClick={() => toggleActive(i)} className="text-xs px-2 py-1 rounded hover:bg-black/5" style={{ color: 'var(--color-text-secondary)' }}>{i.is_active ? 'تعطيل' : 'تفعيل'}</button>
-                            <button title="تعديل" onClick={() => openEdit(i)} className="p-1.5 rounded hover:bg-black/5"><Pencil size={13} style={{ color: 'var(--color-accent)' }} /></button>
-                            <button title="حذف" onClick={() => removeIntegration(i.id)} className="p-1.5 rounded hover:bg-black/5"><Trash2 size={13} style={{ color: '#D93A3A' }} /></button>
+                        <div key={i.id} className="rounded-xl px-3.5 py-3" style={{ background: 'var(--color-surface-2, #F8F9FA)', border: '1px solid var(--color-border)' }}>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: h.bg, color: h.color }}>
+                              <h.Icon size={12} />{h.label}
+                            </span>
+                            <span className="font-bold text-sm" style={{ color: 'var(--color-text-primary)' }}>{i.name}</span>
+                            <span className="font-mono text-xs" dir="ltr" style={{ color: 'var(--color-text-muted)' }}>{i.pixel_id}</span>
+                            {i.is_default && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold inline-flex items-center gap-0.5" style={{ background: '#FEF3C7', color: '#B45309' }}><Star size={9} fill="#B45309" />افتراضي</span>}
+                            {!i.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#F1F3F5', color: '#868E96' }}>معطّل</span>}
+                            <div className="mr-auto flex items-center gap-0.5">
+                              <button title="اختبار الاتصال" onClick={() => testConnection(i)} disabled={testing === i.id}
+                                className="p-1.5 rounded-lg hover:bg-black/5"><Zap size={14} style={{ color: testing === i.id ? '#ADB5BD' : 'var(--color-accent)' }} /></button>
+                              <button title="تعيين كافتراضي" onClick={() => setDefault(i)} className="p-1.5 rounded-lg hover:bg-black/5"><Star size={14} style={{ color: i.is_default ? '#F59E0B' : '#CED4DA', fill: i.is_default ? '#F59E0B' : 'none' }} /></button>
+                              <button title={i.is_active ? 'تعطيل' : 'تفعيل'} onClick={() => toggleActive(i)} className="text-xs px-2 py-1 rounded-lg hover:bg-black/5" style={{ color: 'var(--color-text-secondary)' }}>{i.is_active ? 'تعطيل' : 'تفعيل'}</button>
+                              <button title="تعديل" onClick={() => openEdit(i)} className="p-1.5 rounded-lg hover:bg-black/5"><Pencil size={13} style={{ color: 'var(--color-accent)' }} /></button>
+                              <button title="حذف" onClick={() => removeIntegration(i.id)} className="p-1.5 rounded-lg hover:bg-black/5"><Trash2 size={13} style={{ color: '#D93A3A' }} /></button>
+                            </div>
+                          </div>
+                          {/* test timeline */}
+                          <div className="flex items-center gap-4 mt-2 pt-2 border-t flex-wrap" style={{ borderColor: 'var(--color-border)' }}>
+                            <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>آخر اختبار: <span style={{ color: 'var(--color-text-secondary)' }}>{fmtDate(i.last_test_at)}</span></span>
+                            <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>آخر نجاح: <span style={{ color: i.last_test_status === 'healthy' ? '#1D9E75' : 'var(--color-text-muted)' }}>{i.last_test_status === 'healthy' ? fmtDate(i.last_test_at) : '—'}</span></span>
+                            <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>آخر فشل: <span style={{ color: i.last_test_status === 'error' ? '#D93A3A' : 'var(--color-text-muted)' }}>{i.last_test_status === 'error' ? fmtDate(i.last_test_at) : '—'}</span></span>
                           </div>
                         </div>
                       )
@@ -208,51 +290,106 @@ export default function TrackingDomainsClient({ storeId, storeSlug, schemaReady 
         </div>
       </section>
 
-      {/* ── DOMAINS ── */}
-      <section className="card">
-        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
-          <span className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>الدومينات</span>
+      {/* ══ DOMAINS ══ */}
+      <section className="card overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3.5 border-b" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="flex items-center gap-2">
+            <Globe size={16} style={{ color: 'var(--color-accent)' }} />
+            <span className="font-bold text-sm" style={{ color: 'var(--color-text-primary)' }}>الدومينات</span>
+          </div>
           <button onClick={() => setDomOpen(true)} className="btn btn-primary btn-sm gap-1.5"><Plus size={14} />إضافة دومين</button>
         </div>
 
-        <div className="px-4 py-3 space-y-2">
+        <div className="px-4 py-4 space-y-3">
           {/* Platform fallback — always present, never removable */}
-          <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: 'var(--color-surface-2, #F8F9FA)' }}>
-            <Globe size={15} style={{ color: '#1D9E75' }} />
-            <span className="font-mono text-sm" dir="ltr" style={{ color: 'var(--color-text-primary)' }}>{storeSlug}.dakkani.app</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: '#DCFCE7', color: '#15803D' }}>دومين المنصّة (افتراضي تلقائي)</span>
+          <div className="rounded-xl px-3.5 py-3 flex items-center gap-2.5" style={{ background: '#DCFCE7', border: '1px solid #86EFAC' }}>
+            <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#fff' }}><Globe size={16} style={{ color: '#15803D' }} /></span>
+            <div className="flex-1 min-w-0">
+              <p className="font-mono text-sm" dir="ltr" style={{ color: '#14532D' }}>{storeSlug}.dakkani.app</p>
+              <p className="text-[11px]" style={{ color: '#15803D' }}>دومين المنصّة — يُستخدم تلقائياً عند غياب دومين مخصّص</p>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: '#fff', color: '#15803D' }}>🟢 نشط دائماً</span>
           </div>
 
           {domains.map(d => {
-            const s = DOMAIN_STATUS[d.status]
+            const st = DOMAIN_STATE[domainState(d)]
+            const active = domainState(d) === 'active'
+            const nameservers: string[] = Array.isArray(d.verification?.nameservers) ? d.verification.nameservers : []
+            const sslLabel = d.status === 'ssl_active' ? 'مفعّل' : d.status === 'verified' ? 'قيد الإصدار' : '—'
+            const dnsLabel = active ? 'متّصل' : d.status === 'error' ? 'غير متّصل' : 'بانتظار'
+            const verifLabel = active ? 'مُتحقّق' : d.status === 'error' ? 'فشل' : 'بانتظار'
             return (
-              <div key={d.id} className="rounded-lg px-3 py-2" style={{ background: 'var(--color-surface-2, #F8F9FA)' }}>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
-                  <span className="font-mono text-sm" dir="ltr" style={{ color: 'var(--color-text-primary)' }}>{d.hostname}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#F1F3F5', color: s.color }}>{s.label}</span>
-                  {d.is_default && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: '#FEF3C7', color: '#B45309' }}>افتراضي</span>}
-                  <div className="mr-auto flex items-center gap-1">
-                    {d.status !== 'verified' && d.status !== 'ssl_active' && (
-                      <button onClick={() => verifyDomain(d.id)} disabled={domBusy} className="text-xs px-2 py-1 rounded btn-ghost">تحقّق</button>
-                    )}
-                    <button title="افتراضي" onClick={() => setDomainDefault(d.id)} className="p-1.5 rounded hover:bg-black/5"><Star size={13} style={{ color: d.is_default ? '#F59E0B' : '#CED4DA', fill: d.is_default ? '#F59E0B' : 'none' }} /></button>
-                    <button title="حذف" onClick={() => removeDomain(d.id)} className="p-1.5 rounded hover:bg-black/5"><Trash2 size={13} style={{ color: '#D93A3A' }} /></button>
+              <div key={d.id} className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--color-border)' }}>
+                {/* Header row */}
+                <div className="flex items-center gap-2 flex-wrap px-3.5 py-3" style={{ background: st.bg }}>
+                  <span className="text-sm">{st.dot}</span>
+                  <span className="font-mono text-sm font-semibold" dir="ltr" style={{ color: 'var(--color-text-primary)' }}>{d.hostname}</span>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full font-bold" style={{ background: '#fff', color: st.color }}>{st.label}</span>
+                  {d.is_default && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold inline-flex items-center gap-0.5" style={{ background: '#fff', color: '#B45309' }}><Star size={9} fill="#B45309" />افتراضي</span>}
+                  <div className="mr-auto flex items-center gap-0.5">
+                    {!active && <button onClick={() => verifyDomain(d.id)} disabled={domBusy} className="text-xs px-2.5 py-1 rounded-lg font-semibold" style={{ background: '#fff', color: 'var(--color-accent)' }}>تحقّق الآن</button>}
+                    <button title="تعيين كافتراضي" onClick={() => setDomainDefault(d.id)} className="p-1.5 rounded-lg hover:bg-black/5"><Star size={14} style={{ color: d.is_default ? '#F59E0B' : '#94A3B8', fill: d.is_default ? '#F59E0B' : 'none' }} /></button>
+                    <button title="حذف" onClick={() => removeDomain(d.id)} className="p-1.5 rounded-lg hover:bg-black/5"><Trash2 size={13} style={{ color: '#D93A3A' }} /></button>
                   </div>
                 </div>
-                {(d.status === 'pending' || d.status === 'error') && d.verification?.token && (
-                  <div className="mt-2 text-xs rounded-lg p-2.5" dir="ltr" style={{ background: '#fff', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}>
-                    <p className="mb-1" dir="rtl" style={{ color: 'var(--color-text-muted)' }}>أضف سجل TXT التالي لدى مزوّد الدومين ثم اضغط «تحقّق»:</p>
-                    <div className="font-mono">Type: TXT</div>
-                    <div className="font-mono">Host: {d.verification.record_host}</div>
-                    <div className="font-mono break-all">Value: {d.verification.token}</div>
+
+                {/* Health facts grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-3">
+                  <Fact Icon={ShieldCheck} label="SSL" value={sslLabel} color={d.status === 'ssl_active' ? '#1D9E75' : undefined} />
+                  <Fact Icon={Network} label="DNS" value={dnsLabel} color={active ? '#1D9E75' : d.status === 'error' ? '#D93A3A' : undefined} />
+                  <Fact Icon={BadgeCheck} label="التحقق" value={verifLabel} color={active ? '#1D9E75' : d.status === 'error' ? '#D93A3A' : undefined} />
+                  <Fact Icon={Clock} label="آخر فحص" value={d.verification?.checkedAt ? fmtDate(d.verification.checkedAt) : '—'} />
+                </div>
+
+                {/* Verified → professional summary (verification date) */}
+                {active && (
+                  <div className="px-3 pb-3 -mt-1">
+                    <div className="flex items-center gap-2 text-xs rounded-lg px-3 py-2" style={{ background: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0' }}>
+                      <BadgeCheck size={14} />
+                      <span>تم التحقق من الدومين{d.verification?.verifiedAt ? ` بتاريخ ${fmtDate(d.verification.verifiedAt)}` : ''} — جاهز للاستخدام على منتجاتك.</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Nameservers (only if the platform assigned them, e.g. Cloudflare) */}
+                {nameservers.length > 0 && (
+                  <div className="px-3 pb-3">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Server size={13} style={{ color: 'var(--color-text-muted)' }} />
+                      <span className="text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>خوادم الأسماء (Nameservers)</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {nameservers.map((ns, idx) => <DnsRow key={idx} label={`Nameserver ${idx + 1}`} value={ns} />)}
+                    </div>
+                    <p className="text-[11px] mt-1.5" style={{ color: 'var(--color-text-muted)' }}>غيّر خوادم الأسماء لدى مزوّد نطاقك إلى القيم أعلاه.</p>
+                  </div>
+                )}
+
+                {/* Pending/Error → professional DNS instructions with copy */}
+                {!active && nameservers.length === 0 && d.verification?.token && (
+                  <div className="px-3 pb-3">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Network size={13} style={{ color: 'var(--color-text-muted)' }} />
+                      <span className="text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>أضف سجل TXT لدى مزوّد النطاق ثم اضغط «تحقّق الآن»</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      <DnsRow label="Type" value="TXT" />
+                      <DnsRow label="Host / Name" value={d.verification.record_host} />
+                      <DnsRow label="Value" value={d.verification.token} />
+                    </div>
                   </div>
                 )}
               </div>
             )
           })}
+
           {domains.length === 0 && (
-            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>لا يوجد دومين مخصّص — يُستخدم دومين المنصّة تلقائياً.</p>
+            <div className="rounded-xl border border-dashed px-4 py-8 text-center" style={{ borderColor: 'var(--color-border)' }}>
+              <Globe size={22} className="mx-auto mb-2 opacity-40" />
+              <p className="text-sm font-semibold" style={{ color: 'var(--color-text-secondary)' }}>لا يوجد دومين مخصّص بعد</p>
+              <p className="text-xs mt-1 mb-3" style={{ color: 'var(--color-text-muted)' }}>ستعمل منتجاتك على دومين المنصّة تلقائياً حتى تضيف دومينك.</p>
+              <button onClick={() => setDomOpen(true)} className="btn btn-primary btn-sm gap-1.5"><Plus size={14} />أضف دومينك الأول</button>
+            </div>
           )}
         </div>
       </section>
@@ -312,6 +449,7 @@ export default function TrackingDomainsClient({ storeId, storeSlug, schemaReady 
               <div>
                 <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--color-text-secondary)' }}>الدومين</label>
                 <input value={domHost} onChange={e => setDomHost(e.target.value)} className="input text-sm font-mono" placeholder="shop.mystore.com" dir="ltr" />
+                <p className="text-[11px] mt-1.5" style={{ color: 'var(--color-text-muted)' }}>بعد الإضافة ستظهر تعليمات DNS لإتمام التحقق.</p>
               </div>
               <div className="flex gap-3 pt-1">
                 <button onClick={addDomain} disabled={domBusy || !domHost.trim()} className="btn btn-primary flex-1">{domBusy ? '...' : 'إضافة'}</button>

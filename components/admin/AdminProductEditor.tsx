@@ -199,41 +199,6 @@ const SlugPreview = memo(function SlugPreview({
   )
 })
 
-// ── Pixel section — isolated so pixel toggle doesn't re-render whole form ──
-const PixelSection = memo(function PixelSection({
-  control, register, storePixels,
-}: { control: Control<FormData>; register: UseFormRegister<FormData>; storePixels: { meta?: string | null; tiktok?: string | null } }) {
-  const useStore = useWatch({ control, name: 'use_store_pixel' })
-  return (
-    <div className={CC}>
-      <h3 className="font-semibold text-sm pb-2 border-b" style={{color:"var(--color-text-primary)",borderColor:"var(--color-border)"}}>البكسل والتتبع 📡</h3>
-      <Toggle
-        label="استخدام بكسل المتجر الافتراضي"
-        name="use_store_pixel"
-        desc={`Meta: ${storePixels.meta ?? 'غير مضبوط'} | TikTok: ${storePixels.tiktok ?? 'غير مضبوط'}`}
-        register={register}
-      />
-      {!useStore && (
-        <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 space-y-3">
-          <p className="text-xs font-bold text-orange-700">بكسل خاص بهذا المنتج فقط</p>
-          <div>
-            <label className={LC}>Meta Pixel ID</label>
-            <input {...register('meta_pixel_id')} placeholder="123456789012345" dir="ltr" className={IC} />
-          </div>
-          <div>
-            <label className={LC}>TikTok Pixel ID</label>
-            <input {...register('tiktok_pixel_id')} placeholder="CXXXXXXXX" dir="ltr" className={IC} />
-          </div>
-        </div>
-      )}
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700 space-y-1">
-        <p className="font-bold">الأحداث المتتبعة تلقائياً:</p>
-        <p>• ViewContent • AddToCart • InitiateCheckout • Purchase + CAPI server-side</p>
-      </div>
-    </div>
-  )
-})
-
 // ── SEO preview — isolated so meta desc typing doesn't re-render form ──
 const SeoPreview = memo(function SeoPreview({
   control, register,

@@ -33,11 +33,17 @@ export async function POST(req: Request) {
     verified = false
   }
 
+  const now = new Date().toISOString()
   const status = verified ? 'verified' : 'error'
   await supabase.from('domains').update({
     status,
-    verification: { ...domain.verification, checkedAt: new Date().toISOString() },
-    updated_at: new Date().toISOString(),
+    verification: {
+      ...domain.verification,
+      checkedAt: now,
+      // Preserve the first successful verification date; set it on success.
+      verifiedAt: verified ? (domain.verification?.verifiedAt ?? now) : domain.verification?.verifiedAt,
+    },
+    updated_at: now,
   }).eq('id', id)
 
   return NextResponse.json({
