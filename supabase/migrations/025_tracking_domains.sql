@@ -45,15 +45,27 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_tracking_integrations_default
 
 -- ── Domains ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS domains (
-  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  store_id      UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
-  hostname      TEXT NOT NULL UNIQUE,                -- shop.mystore.com
-  status        TEXT NOT NULL DEFAULT 'pending'
-                  CHECK (status IN ('pending','verified','ssl_active','error')),
-  verification  JSONB NOT NULL DEFAULT '{}'::jsonb,  -- { method, token, record_host }
-  is_default    BOOLEAN NOT NULL DEFAULT false,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  store_id       UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+  hostname       TEXT NOT NULL UNIQUE,                -- example.com
+  -- Lifecycle: pending (zone created, NS not propagated) → ssl_active (live) → error
+  status         TEXT NOT NULL DEFAULT 'pending'
+                   CHECK (status IN ('pending','verified','ssl_active','error')),
+  -- Cloudflare-for-SaaS (full-zone) provisioning ──────────────
+  provider       TEXT NOT NULL DEFAULT 'cloudflare',  -- 'cloudflare' | 'txt'(fallback)
+  cf_zone_id     TEXT,                                -- Cloudflare zone id
+  nameservers    TEXT[] NOT NULL DEFAULT '{}',        -- assigned CF nameservers (2)
+  ssl_status     TEXT NOT NULL DEFAULT 'pending'
+                   CHECK (ssl_status IN ('pending','provisioning','issued','error')),
+  dns_status     TEXT NOT NULL DEFAULT 'pending'
+                   CHECK (dns_status IN ('pending','connected','error')),
+  activated_at   TIMESTAMPTZ,
+  last_checked_at TIMESTAMPTZ,
+  -- TXT fallback (advanced / troubleshooting only)
+  verification   JSONB NOT NULL DEFAULT '{}'::jsonb,  -- { method, token, record_host }
+  is_default     BOOLEAN NOT NULL DEFAULT false,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_domains_store ON domains(store_id);

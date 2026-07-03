@@ -3,6 +3,7 @@ export const metadata = { title: 'التتبع والدومينات' }
 
 import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import TrackingDomainsClient from '@/components/dashboard/TrackingDomainsClient'
+import { cfConfigured } from '@/lib/cloudflare/client'
 
 export default async function TrackingDomainsPage() {
   const supabase = createServerClient()
@@ -28,6 +29,7 @@ export default async function TrackingDomainsPage() {
       storeId={store.id}
       storeSlug={store.slug}
       schemaReady={schemaReady}
+      cloudflareReady={cfConfigured()}
       integrations={integrationsRes.data ?? []}
       domains={domainsRes.data ?? []}
     />
