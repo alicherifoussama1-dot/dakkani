@@ -32,9 +32,6 @@ interface Domain {
 }
 interface Props { storeId: string; storeSlug: string; schemaReady?: boolean; cloudflareReady?: boolean; integrations: Integration[]; domains: Domain[] }
 
-// Registrars we tell merchants they can change nameservers at.
-const REGISTRARS = ['Namecheap', 'GoDaddy', 'Hostinger', 'Porkbun', 'Dynadot', 'Name.com', 'Cloudflare Registrar']
-
 // ── helpers ──────────────────────────────────────────────────
 const fmtDate = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleString('ar-DZ', { dateStyle: 'medium', timeStyle: 'short' }) : '—'
@@ -348,7 +345,7 @@ export default function TrackingDomainsClient({ storeId, storeSlug, schemaReady 
           {!cloudflareReady && (
             <div className="rounded-xl px-3.5 py-2.5 flex items-start gap-2 text-xs" style={{ background: '#FEF3C7', border: '1px solid #FCD34D', color: '#92400E' }}>
               <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-              <span>تزويد Cloudflare غير مُفعّل على المنصّة بعد. أضف <span className="font-mono" dir="ltr">CLOUDFLARE_API_TOKEN</span> و <span className="font-mono" dir="ltr">CLOUDFLARE_ACCOUNT_ID</span> في إعدادات الاستضافة لتفعيل خوادم الأسماء التلقائية. حتى ذلك الحين يُستخدم تحقق TXT كبديل.</span>
+              <span>تزويد Cloudflare غير مُفعّل على المنصّة. إضافة الدومينات تتطلّب Cloudflare — أضف <span className="font-mono" dir="ltr">CLOUDFLARE_API_TOKEN</span> و <span className="font-mono" dir="ltr">CLOUDFLARE_ACCOUNT_ID</span> صالحين في إعدادات الاستضافة. بدونهما ستظهر رسالة «Cloudflare API configuration error» عند الإضافة.</span>
             </div>
           )}
 
@@ -365,11 +362,12 @@ export default function TrackingDomainsClient({ storeId, storeSlug, schemaReady 
           {domains.map(d => {
             const st = DOMAIN_STATE[domainState(d)]
             const active = domainState(d) === 'active'
+            const isError = d.status === 'error'
             const nameservers: string[] = Array.isArray(d.nameservers) ? d.nameservers : []
-            const isCloudflare = !!d.cf_zone_id && nameservers.length > 0
+            const cfStatusLabel = active ? 'Active' : isError ? 'Configuration error' : 'Pending'
             const sslLabel = d.ssl_status === 'issued' ? 'صادرة' : d.ssl_status === 'provisioning' ? 'قيد الإصدار' : d.ssl_status === 'error' ? 'خطأ' : '—'
             const dnsLabel = d.dns_status === 'connected' ? 'متّصل' : d.dns_status === 'error' ? 'غير متّصل' : 'بانتظار'
-            const verifLabel = active ? 'مكتمل' : d.status === 'error' ? 'فشل' : 'بانتظار'
+            const verifLabel = active ? 'مكتمل' : isError ? 'فشل' : 'بانتظار'
             return (
               <div key={d.id} className="rounded-xl p-4 space-y-4" style={{ border: '1px solid var(--color-border)' }}>
                 {/* Header: "Domain Details" pill + actions */}
@@ -378,7 +376,6 @@ export default function TrackingDomainsClient({ storeId, storeSlug, schemaReady 
                     <Globe size={14} />تفاصيل الدومين
                   </span>
                   <div className="flex items-center gap-0.5">
-                    {!active && <button onClick={() => verifyDomain(d.id)} disabled={domBusy} className="text-xs px-2.5 py-1.5 rounded-lg font-semibold inline-flex items-center gap-1 border" style={{ color: 'var(--color-accent)', borderColor: 'var(--color-border)', background: '#fff' }}><RefreshCw size={12} className={domBusy ? 'animate-spin' : ''} />فحص الحالة</button>}
                     <button title="تعيين كافتراضي" onClick={() => setDomainDefault(d.id)} className="p-1.5 rounded-lg hover:bg-black/5"><Star size={15} style={{ color: d.is_default ? '#F59E0B' : '#94A3B8', fill: d.is_default ? '#F59E0B' : 'none' }} /></button>
                     <button title="حذف" onClick={() => removeDomain(d.id)} className="p-1.5 rounded-lg hover:bg-black/5"><Trash2 size={14} style={{ color: '#D93A3A' }} /></button>
                   </div>
@@ -393,74 +390,62 @@ export default function TrackingDomainsClient({ storeId, storeSlug, schemaReady 
                   </p>
                 </div>
 
-                {isCloudflare ? (
-                  <>
-                    {/* Cloudflare Status + Nameservers (JustSell layout) */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <Field label="حالة Cloudflare" value={st.label} dot={st.color} />
-                      <Field label="Nameserver 1" value={nameservers[0] ?? '—'} mono copy={!!nameservers[0]} />
-                      <Field label="Nameserver 2" value={nameservers[1] ?? '—'} mono copy={!!nameservers[1]} />
-                    </div>
+                {/* Cloudflare Status + Nameservers (exactly JustSell) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Field label="حالة Cloudflare" value={cfStatusLabel} dot={st.color} />
+                  <Field label="Nameserver 1" value={nameservers[0] ?? '—'} mono copy={!!nameservers[0]} />
+                  <Field label="Nameserver 2" value={nameservers[1] ?? '—'} mono copy={!!nameservers[1]} />
+                </div>
 
-                    {/* Secondary health strip */}
+                {/* Status feedback (config error is required; active/pending kept minimal) */}
+                {isError && (
+                  <div className="flex items-center gap-2 text-xs rounded-lg px-3 py-2" style={{ background: '#FEE2E2', color: '#B91C1C', border: '1px solid #FCA5A5' }}>
+                    <XCircle size={14} />
+                    <span><span className="font-bold" dir="ltr">Cloudflare API configuration error</span> — تحقّق من توكن Cloudflare ثم اضغط «تحديث».</span>
+                  </div>
+                )}
+                {active && (
+                  <div className="flex items-center gap-2 text-xs rounded-lg px-3 py-2" style={{ background: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0' }}>
+                    <BadgeCheck size={14} />
+                    <span>الدومين نشط{d.activated_at ? ` منذ ${fmtDate(d.activated_at)}` : ''} — SSL صادرة وDNS متّصل. جاهز للاستخدام.</span>
+                  </div>
+                )}
+                {!active && !isError && nameservers.length > 0 && (
+                  <div className="flex items-start gap-2 text-xs rounded-lg px-3 py-2" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE' }}>
+                    <Server size={14} className="mt-0.5 shrink-0" />
+                    <span>استبدل خوادم الأسماء الحالية لدى مزوّد نطاقك بالقيمتين أعلاه. سنكتشف الانتشار تلقائياً ونفعّل الدومين.</span>
+                  </div>
+                )}
+
+                {/* Update (JustSell) + Advanced toggle */}
+                <div className="flex items-center justify-between pt-1">
+                  <button type="button" onClick={() => setAdvancedOpen(a => ({ ...a, [d.id]: !a[d.id] }))}
+                    className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--color-text-muted)' }}>
+                    {advancedOpen[d.id] ? <ChevronDown size={13} /> : <ChevronLeft size={13} />}DNS متقدّم
+                  </button>
+                  <button onClick={() => verifyDomain(d.id)} disabled={domBusy} className="btn btn-primary btn-sm gap-1.5">
+                    <RefreshCw size={13} className={domBusy ? 'animate-spin' : ''} />تحديث
+                  </button>
+                </div>
+
+                {/* Advanced — health details + TXT fallback (troubleshooting only) */}
+                {advancedOpen[d.id] && (
+                  <div className="space-y-2 pt-1">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                       <Fact Icon={ShieldCheck} label="SSL" value={sslLabel} color={d.ssl_status === 'issued' ? '#1D9E75' : d.ssl_status === 'error' ? '#D93A3A' : undefined} />
                       <Fact Icon={Network} label="DNS" value={dnsLabel} color={d.dns_status === 'connected' ? '#1D9E75' : d.dns_status === 'error' ? '#D93A3A' : undefined} />
-                      <Fact Icon={BadgeCheck} label="التحقق" value={verifLabel} color={active ? '#1D9E75' : d.status === 'error' ? '#D93A3A' : undefined} />
+                      <Fact Icon={BadgeCheck} label="التحقق" value={verifLabel} color={active ? '#1D9E75' : isError ? '#D93A3A' : undefined} />
                       <Fact Icon={Clock} label="آخر فحص" value={d.last_checked_at ? fmtDate(d.last_checked_at) : '—'} />
                     </div>
-
-                    {active ? (
-                      <div className="flex items-center gap-2 text-xs rounded-lg px-3 py-2" style={{ background: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0' }}>
-                        <BadgeCheck size={14} />
-                        <span>الدومين نشط{d.activated_at ? ` منذ ${fmtDate(d.activated_at)}` : ''} — SSL صادرة وDNS متّصل. جاهز للاستخدام على منتجاتك.</span>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-start gap-2 text-xs rounded-lg px-3 py-2" style={{ background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE' }}>
-                          <Server size={14} className="mt-0.5 shrink-0" />
-                          <span>استبدل خوادم الأسماء الحالية لدى مزوّد نطاقك بالقيمتين أعلاه. سنكتشف الانتشار تلقائياً ثم نُصدر SSL ونفعّل الدومين (من دقائق حتى ٤٨ ساعة).</span>
-                        </div>
-                        <div>
-                          <p className="text-[11px] mb-1" style={{ color: 'var(--color-text-muted)' }}>مزوّدو النطاقات المدعومون:</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {REGISTRARS.map(r => <span key={r} className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--color-surface-2, #F1F3F5)', color: 'var(--color-text-secondary)' }}>{r}</span>)}
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {/* Advanced DNS — hidden TXT fallback for troubleshooting */}
                     {d.verification?.token && (
-                      <div>
-                        <button type="button" onClick={() => setAdvancedOpen(a => ({ ...a, [d.id]: !a[d.id] }))}
-                          className="flex items-center gap-1.5 text-xs font-semibold py-1" style={{ color: 'var(--color-text-muted)' }}>
-                          {advancedOpen[d.id] ? <ChevronDown size={13} /> : <ChevronLeft size={13} />}
-                          DNS متقدّم (تحقّق بديل عبر TXT — لاستكشاف الأخطاء فقط)
-                        </button>
-                        {advancedOpen[d.id] && (
-                          <div className="space-y-1.5 mt-1.5">
-                            <DnsRow label="Type" value="TXT" />
-                            <DnsRow label="Host / Name" value={d.verification.record_host} />
-                            <DnsRow label="Value" value={d.verification.token} />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  /* Fallback (Cloudflare not configured) → TXT verification */
-                  <>
-                    <Field label="الحالة" value={st.label} dot={st.color} />
-                    {!active && d.verification?.token && (
                       <div className="space-y-1.5">
-                        <p className="text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>أضف سجل TXT لدى مزوّد النطاق ثم اضغط «فحص الحالة»</p>
+                        <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>تحقّق بديل عبر TXT (لاستكشاف الأخطاء فقط — ليس مطلوباً في الوضع الطبيعي):</p>
                         <DnsRow label="Type" value="TXT" />
                         <DnsRow label="Host / Name" value={d.verification.record_host} />
                         <DnsRow label="Value" value={d.verification.token} />
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             )

@@ -1,12 +1,16 @@
 // ============================================================
 // POST /api/tracking/domains/provision   { hostname }
-// Cloudflare full-zone provisioning. Creates a zone for the
-// domain and returns its assigned nameservers. Falls back to a
-// TXT-verification record only when Cloudflare isn't configured.
+// Cloudflare-ONLY provisioning (JustSell model). Creating a
+// domain immediately creates a Cloudflare zone and stores the
+// zone id + nameservers. No TXT-first flow, no fallback:
+//   • invalid/missing token  → "Cloudflare API configuration error"
+//   • zone creation fails     → NOT saved to the database
 // ============================================================
 import { NextResponse } from 'next/server'
 import { createServerClient, getActiveStore } from '@/lib/supabase/server'
-import { cfConfigured, cfCreateZone } from '@/lib/cloudflare/client'
+import { cfConfigured, cfVerifyToken, cfCreateZone } from '@/lib/cloudflare/client'
+
+const CF_CONFIG_ERROR = 'Cloudflare API configuration error'
 
 function normalizeHost(input: string): string {
   return input.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '')
@@ -25,36 +29,30 @@ export async function POST(req: Request) {
   const { activeStore: store } = await getActiveStore(supabase, user.id)
   if (!store) return NextResponse.json({ error: 'لا يوجد متجر نشط' }, { status: 400 })
 
-  // TXT token is always stored as an advanced fallback.
-  const token = 'dakkani-verify-' + (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2))
-  const verification = { method: 'txt', token, record_host: `_dakkani.${host}` }
-
-  // ── Cloudflare path ──
-  if (cfConfigured()) {
-    const zone = await cfCreateZone(host)
-    if (!zone.ok) return NextResponse.json({ error: zone.error }, { status: 502 })
-
-    const { error } = await supabase.from('domains').insert({
-      store_id: store.id, hostname: host,
-      provider: 'cloudflare', cf_zone_id: zone.zone.id,
-      nameservers: zone.zone.name_servers ?? [],
-      status: 'pending', ssl_status: 'provisioning', dns_status: 'pending',
-      last_checked_at: new Date().toISOString(),
-      verification,
-    })
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-    return NextResponse.json({ ok: true, configured: true, nameservers: zone.zone.name_servers ?? [] })
+  // Cloudflare is REQUIRED. If it isn't configured or the token is invalid,
+  // fail explicitly — never fall back to TXT.
+  if (!cfConfigured() || !(await cfVerifyToken())) {
+    return NextResponse.json({ error: CF_CONFIG_ERROR, code: 'cf_config' }, { status: 502 })
   }
 
-  // ── Fallback: no Cloudflare configured → TXT verification ──
+  // Create the Cloudflare zone FIRST. If it fails, do not touch the DB.
+  const zone = await cfCreateZone(host)
+  if (!zone.ok || !zone.zone.name_servers?.length) {
+    return NextResponse.json({ error: zone.ok ? CF_CONFIG_ERROR : zone.error, code: 'cf_zone' }, { status: 502 })
+  }
+
+  // Zone created → persist. TXT token is stored ONLY for the hidden
+  // Advanced-DNS troubleshooting panel; it is never part of verification.
+  const token = 'dakkani-verify-' + (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2))
   const { error } = await supabase.from('domains').insert({
     store_id: store.id, hostname: host,
-    provider: 'txt', status: 'pending', ssl_status: 'pending', dns_status: 'pending',
-    verification,
+    provider: 'cloudflare', cf_zone_id: zone.zone.id,
+    nameservers: zone.zone.name_servers,
+    status: 'pending', ssl_status: 'provisioning', dns_status: 'pending',
+    last_checked_at: new Date().toISOString(),
+    verification: { method: 'txt', token, record_host: `_dakkani.${host}` },
   })
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-  return NextResponse.json({
-    ok: true, configured: false,
-    message: 'Cloudflare غير مُهيّأ على المنصّة — تم إنشاء تحقق TXT كبديل. أضف CLOUDFLARE_API_TOKEN و CLOUDFLARE_ACCOUNT_ID لتفعيل التزويد التلقائي.',
-  })
+
+  return NextResponse.json({ ok: true, nameservers: zone.zone.name_servers, status: 'pending' })
 }

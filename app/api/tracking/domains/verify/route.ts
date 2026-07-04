@@ -1,17 +1,16 @@
 // ============================================================
 // POST /api/tracking/domains/verify   { id }
-// Checks a domain's status and activates it.
-//
-// Cloudflare zone → poll zone status; when `active` we provision
-// the platform DNS records, mark SSL issued/provisioning, and set
-// the domain live. No manual DNS for the merchant.
-//
-// TXT provider (fallback) → resolve the _dakkani TXT record.
+// Cloudflare-ONLY status check + activation (JustSell model).
+// Verification relies entirely on the Cloudflare Zone status —
+// never on TXT. When the zone is `active` we provision the
+// platform DNS, mark SSL issued/provisioning + DNS connected,
+// and activate the domain.
 // ============================================================
 import { NextResponse } from 'next/server'
-import { resolveTxt } from 'node:dns/promises'
 import { createServerClient } from '@/lib/supabase/server'
-import { cfConfigured, cfCreateZone, cfGetZone, cfProvisionDns, cfSslStatus } from '@/lib/cloudflare/client'
+import { cfConfigured, cfVerifyToken, cfCreateZone, cfGetZone, cfProvisionDns, cfSslStatus } from '@/lib/cloudflare/client'
+
+const CF_CONFIG_ERROR = 'Cloudflare API configuration error'
 
 export async function POST(req: Request) {
   const { id } = await req.json().catch(() => ({}))
@@ -26,85 +25,48 @@ export async function POST(req: Request) {
 
   const now = new Date().toISOString()
 
-  // ── Self-heal: Cloudflare is configured but this domain has no zone yet
-  // (e.g. added before provisioning, or a failed create). Create the zone
-  // now so the merchant gets real nameservers without deleting/re-adding. ──
-  if (cfConfigured() && domain.provider !== 'txt' && !domain.cf_zone_id) {
+  // Cloudflare must be usable. No TXT fallback — ever.
+  if (!cfConfigured() || !(await cfVerifyToken())) {
+    return NextResponse.json({ status: 'error', message: CF_CONFIG_ERROR, code: 'cf_config' }, { status: 502 })
+  }
+
+  // Self-heal: a domain missing its zone (legacy row) gets one created now.
+  if (!domain.cf_zone_id) {
     const zone = await cfCreateZone(domain.hostname)
-    if (!zone.ok) {
+    if (!zone.ok || !zone.zone.name_servers?.length) {
       await supabase.from('domains').update({ status: 'error', last_checked_at: now }).eq('id', id)
-      return NextResponse.json({ status: 'error', message: `تعذّر إنشاء نطاق Cloudflare: ${zone.error}` }, { status: 502 })
+      return NextResponse.json({ status: 'error', message: zone.ok ? CF_CONFIG_ERROR : zone.error, code: 'cf_zone' }, { status: 502 })
     }
     await supabase.from('domains').update({
-      provider: 'cloudflare', cf_zone_id: zone.zone.id,
-      nameservers: zone.zone.name_servers ?? [],
-      status: 'pending', ssl_status: 'provisioning', dns_status: 'pending',
-      last_checked_at: now,
+      provider: 'cloudflare', cf_zone_id: zone.zone.id, nameservers: zone.zone.name_servers,
+      status: 'pending', ssl_status: 'provisioning', dns_status: 'pending', last_checked_at: now,
     }).eq('id', id)
-    return NextResponse.json({
-      status: 'pending', provisioned: true,
-      nameservers: zone.zone.name_servers ?? [],
-      message: 'تم إنشاء النطاق في Cloudflare. ضع خادمَي الأسماء الظاهرين لدى مزوّد نطاقك.',
-    })
+    return NextResponse.json({ status: 'pending', provisioned: true, nameservers: zone.zone.name_servers, message: 'تم إنشاء النطاق في Cloudflare. ضع خادمَي الأسماء لدى مزوّد نطاقك.' })
   }
 
-  // ── Cloudflare full-zone path ──
-  if (domain.cf_zone_id && cfConfigured()) {
-    const zone = await cfGetZone(domain.cf_zone_id)
-    if (!zone) {
-      await supabase.from('domains').update({ status: 'error', last_checked_at: now }).eq('id', id)
-      return NextResponse.json({ status: 'error', message: 'تعذّر الوصول إلى نطاق Cloudflare' })
-    }
+  const zone = await cfGetZone(domain.cf_zone_id)
+  if (!zone) {
+    await supabase.from('domains').update({ status: 'error', last_checked_at: now }).eq('id', id)
+    return NextResponse.json({ status: 'error', message: CF_CONFIG_ERROR, code: 'cf_zone' }, { status: 502 })
+  }
 
-    if (zone.status === 'active') {
-      await cfProvisionDns(domain.cf_zone_id, domain.hostname)
-      const ssl = await cfSslStatus(domain.cf_zone_id)
-      await supabase.from('domains').update({
-        status: 'ssl_active',
-        ssl_status: ssl,                        // 'issued' | 'provisioning'
-        dns_status: 'connected',
-        nameservers: zone.name_servers ?? domain.nameservers,
-        activated_at: domain.activated_at ?? now,
-        last_checked_at: now,
-        verification: { ...domain.verification, verifiedAt: domain.verification?.verifiedAt ?? now, checkedAt: now },
-      }).eq('id', id)
-      return NextResponse.json({ status: 'active', ssl, message: 'تم تفعيل الدومين بنجاح 🎉' })
-    }
-
-    // Not active yet → NS not propagated.
+  if (zone.status === 'active') {
+    await cfProvisionDns(domain.cf_zone_id, domain.hostname)
+    const ssl = await cfSslStatus(domain.cf_zone_id)
     await supabase.from('domains').update({
-      status: 'pending',
+      status: 'ssl_active', ssl_status: ssl, dns_status: 'connected',
       nameservers: zone.name_servers ?? domain.nameservers,
-      last_checked_at: now,
+      activated_at: domain.activated_at ?? now, last_checked_at: now,
     }).eq('id', id)
-    return NextResponse.json({
-      status: 'pending',
-      message: 'لم تنتشر خوادم الأسماء بعد. تأكد من تغييرها لدى مزوّد نطاقك — قد يستغرق الانتشار من دقائق حتى ٤٨ ساعة.',
-    })
+    return NextResponse.json({ status: 'active', ssl, message: 'تم تفعيل الدومين بنجاح 🎉' })
   }
 
-  // ── TXT fallback (advanced / when Cloudflare not configured) ──
-  const token: string | undefined = domain.verification?.token
-  if (!token) return NextResponse.json({ error: 'لا يوجد رمز تحقق لهذا الدومين' }, { status: 400 })
-
-  let verified = false
-  try {
-    const records = await resolveTxt(`_dakkani.${domain.hostname}`)
-    verified = records.some(chunks => chunks.join('').trim() === token)
-  } catch { verified = false }
-
-  const status = verified ? 'ssl_active' : 'error'
+  // Zone still pending → nameservers not propagated yet.
   await supabase.from('domains').update({
-    status,
-    dns_status: verified ? 'connected' : 'error',
-    ssl_status: verified ? 'issued' : 'pending',
-    activated_at: verified ? (domain.activated_at ?? now) : domain.activated_at,
-    last_checked_at: now,
-    verification: { ...domain.verification, checkedAt: now, verifiedAt: verified ? (domain.verification?.verifiedAt ?? now) : domain.verification?.verifiedAt },
+    status: 'pending', nameservers: zone.name_servers ?? domain.nameservers, last_checked_at: now,
   }).eq('id', id)
-
   return NextResponse.json({
-    status: verified ? 'active' : 'error',
-    message: verified ? 'تم التحقق من الدومين عبر TXT' : `لم يُعثر على سجل TXT الصحيح على _dakkani.${domain.hostname}.`,
+    status: 'pending',
+    message: 'لم تنتشر خوادم الأسماء بعد. تأكد من تغييرها لدى مزوّد نطاقك — قد يستغرق الانتشار من دقائق حتى ٤٨ ساعة.',
   })
 }
