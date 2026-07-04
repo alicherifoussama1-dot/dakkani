@@ -158,7 +158,7 @@ export default function SheetsServiceAccountClient({
           <li>حُط أسماء الأعمدة التالية في <b>الصف الأول</b> (بالترتيب):</li>
         </ol>
         <div className="flex items-start gap-2 p-2.5 rounded-lg" style={{ background: '#F8F9FA', border: '1px solid var(--color-border)' }}>
-          <span className="text-xs flex-1" style={{ color: 'var(--color-text-secondary)' }}>{requiredHeaders.join(' | ')}</span>
+          <span className="text-xs flex-1 font-mono" dir="ltr" style={{ color: 'var(--color-text-secondary)' }}>{requiredHeaders.join(' | ')}</span>
           <CopyBtn text={requiredHeaders.join('\t')} />
         </div>
         <ol className="text-xs space-y-1.5 leading-relaxed list-decimal pr-4" start={4} style={{ color: 'var(--color-text-secondary)' }}>

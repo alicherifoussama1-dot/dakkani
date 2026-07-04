@@ -18,26 +18,36 @@ const SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets'
 const TOKEN_URL  = 'https://oauth2.googleapis.com/token'
 const SCOPE      = 'https://www.googleapis.com/auth/spreadsheets'
 
-// ── Required header row (row 1), Arabic, adapted to Algeria ──
+// ── Required header row (row 1) — default sheet structure ──
 export const SHEET_HEADERS = [
-  'الاسم', 'الهاتف', 'الولاية', 'البلدية', 'SKU', 'المتغير', 'الكمية',
-  'السعر', 'التوصيل', 'السعر الكلي', 'نوع التوصيل', 'اسم المنتج', 'الحالة',
+  'Username', 'Phone', 'City', 'State', 'SKU', 'Variant', 'Quantity',
+  'Price', 'Shipping Price', 'Total', 'Shipping To?', 'Product Name', 'Created At',
 ] as const
 
 export interface SheetOrderRow {
   name: string; phone: string; wilaya: string; baladia: string
   sku: string; variant: string; qty: number
   price: number; delivery: number; total: number
-  deliveryType: 'home' | 'stopdesk'; productName: string; status?: string
+  deliveryType: 'home' | 'stopdesk'; productName: string; createdAt?: string
 }
 
-/** Build a row in the exact SHEET_HEADERS order. */
+/** Build a row in the exact SHEET_HEADERS order.
+ *  City = baladia (commune), State = wilaya (province). */
 export function buildOrderRow(o: SheetOrderRow): (string | number)[] {
   return [
-    o.name, o.phone, o.wilaya, o.baladia, o.sku, o.variant, o.qty,
-    o.price, o.delivery, o.total,
-    o.deliveryType === 'stopdesk' ? 'المكتب' : 'المنزل',
-    o.productName, o.status ?? 'معلقة',
+    o.name,        // Username
+    o.phone,       // Phone
+    o.baladia,     // City
+    o.wilaya,      // State
+    o.sku,         // SKU
+    o.variant,     // Variant
+    o.qty,         // Quantity
+    o.price,       // Price
+    o.delivery,    // Shipping Price
+    o.total,       // Total
+    o.deliveryType === 'stopdesk' ? 'المكتب' : 'المنزل', // Shipping To?
+    o.productName, // Product Name
+    o.createdAt ?? '', // Created At
   ]
 }
 

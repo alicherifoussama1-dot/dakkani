@@ -107,7 +107,10 @@ export async function pushOrderToSheet(opts: {
       total: o.total,
       deliveryType: o.delivery_type === 'stopdesk' ? 'stopdesk' : 'home',
       productName: productLabel,
-      status: 'معلقة',
+      createdAt: ((o as any).created_at
+        ? new Date((o as any).created_at)
+        : new Date()
+      ).toISOString().slice(0, 19).replace('T', ' '),
     })
 
     const res = await writeRow(sheet.sheet_id, sheet.sheet_page_name || 'Sheet1', row)
