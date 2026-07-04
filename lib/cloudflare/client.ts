@@ -25,6 +25,15 @@ export function platformDnsTarget(): string {
 
 interface CfResult<T> { success: boolean; result: T; errors?: { message: string }[] }
 
+// Validate the configured API token against Cloudflare (no secrets returned).
+export async function cfVerifyToken(): Promise<boolean> {
+  if (!process.env.CLOUDFLARE_API_TOKEN) return false
+  try {
+    const r = await cf<{ status: string }>('/user/tokens/verify')
+    return r.success && r.result?.status === 'active'
+  } catch { return false }
+}
+
 async function cf<T>(path: string, init?: RequestInit): Promise<CfResult<T>> {
   const res = await fetch(`${CF_API}${path}`, {
     ...init,

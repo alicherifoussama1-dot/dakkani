@@ -11,7 +11,7 @@
 import { NextResponse } from 'next/server'
 import { resolveTxt } from 'node:dns/promises'
 import { createServerClient } from '@/lib/supabase/server'
-import { cfConfigured, cfGetZone, cfProvisionDns, cfSslStatus } from '@/lib/cloudflare/client'
+import { cfConfigured, cfCreateZone, cfGetZone, cfProvisionDns, cfSslStatus } from '@/lib/cloudflare/client'
 
 export async function POST(req: Request) {
   const { id } = await req.json().catch(() => ({}))
@@ -25,6 +25,28 @@ export async function POST(req: Request) {
   if (!domain) return NextResponse.json({ error: 'الدومين غير موجود' }, { status: 404 })
 
   const now = new Date().toISOString()
+
+  // ── Self-heal: Cloudflare is configured but this domain has no zone yet
+  // (e.g. added before provisioning, or a failed create). Create the zone
+  // now so the merchant gets real nameservers without deleting/re-adding. ──
+  if (cfConfigured() && domain.provider !== 'txt' && !domain.cf_zone_id) {
+    const zone = await cfCreateZone(domain.hostname)
+    if (!zone.ok) {
+      await supabase.from('domains').update({ status: 'error', last_checked_at: now }).eq('id', id)
+      return NextResponse.json({ status: 'error', message: `تعذّر إنشاء نطاق Cloudflare: ${zone.error}` }, { status: 502 })
+    }
+    await supabase.from('domains').update({
+      provider: 'cloudflare', cf_zone_id: zone.zone.id,
+      nameservers: zone.zone.name_servers ?? [],
+      status: 'pending', ssl_status: 'provisioning', dns_status: 'pending',
+      last_checked_at: now,
+    }).eq('id', id)
+    return NextResponse.json({
+      status: 'pending', provisioned: true,
+      nameservers: zone.zone.name_servers ?? [],
+      message: 'تم إنشاء النطاق في Cloudflare. ضع خادمَي الأسماء الظاهرين لدى مزوّد نطاقك.',
+    })
+  }
 
   // ── Cloudflare full-zone path ──
   if (domain.cf_zone_id && cfConfigured()) {
