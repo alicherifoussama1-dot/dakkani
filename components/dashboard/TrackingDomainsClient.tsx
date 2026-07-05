@@ -353,7 +353,7 @@ export default function TrackingDomainsClient({ storeId, storeSlug, schemaReady 
           <div className="rounded-xl px-3.5 py-3 flex items-center gap-2.5" style={{ background: '#DCFCE7', border: '1px solid #86EFAC' }}>
             <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#fff' }}><Globe size={16} style={{ color: '#15803D' }} /></span>
             <div className="flex-1 min-w-0">
-              <p className="font-mono text-sm" dir="ltr" style={{ color: '#14532D' }}>{storeSlug}.commerco.app</p>
+              <p className="font-mono text-sm" dir="ltr" style={{ color: '#14532D' }}>{storeSlug}.dakkani.app</p>
               <p className="text-[11px]" style={{ color: '#15803D' }}>دومين المنصّة — يُستخدم تلقائياً عند غياب دومين مخصّص</p>
             </div>
             <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: '#fff', color: '#15803D' }}>🟢 نشط دائماً</span>
