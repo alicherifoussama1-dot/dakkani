@@ -36,6 +36,7 @@ export function dirOf(locale: Locale): 'rtl' | 'ltr' {
   return RTL_LOCALES.includes(locale) ? 'rtl' : 'ltr'
 }
 
-// Cookie names — dashboard and store persist INDEPENDENTLY.
+// Cookie names — dashboard, public site, and store persist INDEPENDENTLY.
 export const DASHBOARD_LANG_COOKIE = 'commerco_dashboard_lang'
+export const SITE_LANG_COOKIE = 'commerco_site_lang' // landing + auth (public marketing)
 export const storeLangCookie = (storeId: string) => `dakkani_store_lang_${storeId}` // kept for backward compat

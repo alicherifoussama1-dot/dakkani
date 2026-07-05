@@ -4,15 +4,18 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X } from 'lucide-react'
 import Link from 'next/link'
+import { useT } from '@/lib/i18n/react'
+import LanguageSwitcher from '@/components/i18n/LanguageSwitcher'
 
 const LINKS = [
-  { label: 'المميزات',    href: '#features' },
-  { label: 'كيف يعمل',   href: '#how-it-works' },
-  { label: 'الأسعار',    href: '#pricing' },
-  { label: 'آراء العملاء', href: '#testimonials' },
+  { key: 'features',     href: '#features' },
+  { key: 'how_it_works', href: '#how-it-works' },
+  { key: 'pricing',      href: '#pricing' },
+  { key: 'testimonials', href: '#testimonials' },
 ]
 
 export default function LandingNavbar() {
+  const t = useT()
   const [scrolled,    setScrolled]    = useState(false)
   const [mobileOpen,  setMobileOpen]  = useState(false)
   const [activeLink,  setActiveLink]  = useState('')
@@ -119,13 +122,14 @@ export default function LandingNavbar() {
                       e.currentTarget.style.background = 'transparent'
                     }
                   }}
-                >{l.label}</a>
+                >{t(`nav.${l.key}`)}</a>
               )
             })}
           </nav>
 
           {/* CTA + hamburger */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <LanguageSwitcher />
             <Link
               href="/auth/login"
               className="hidden md:block"
@@ -134,7 +138,7 @@ export default function LandingNavbar() {
                 color: '#475569', textDecoration: 'none', padding: '8px 14px',
                 borderRadius: 10, transition: 'color 0.2s',
               }}>
-              تسجيل الدخول
+              {t('nav.login')}
             </Link>
             <motion.a
               href="/auth/register"
@@ -147,7 +151,7 @@ export default function LandingNavbar() {
                 fontSize: 14, padding: '10px 20px', borderRadius: 12,
                 textDecoration: 'none', boxShadow: '0 4px 14px rgba(79,70,229,0.25)',
               }}>
-              ابدأ مجاناً
+              {t('nav.start_free')}
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round"
@@ -163,7 +167,7 @@ export default function LandingNavbar() {
                 color: '#0F172A', padding: 8, minWidth: 44, minHeight: 44,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
-              aria-label="فتح القائمة">
+              aria-label={t('nav.open_menu')}>
               <motion.div
                 animate={{ rotate: mobileOpen ? 90 : 0 }}
                 transition={{ duration: 0.2 }}>
@@ -252,7 +256,7 @@ export default function LandingNavbar() {
                       background: isActive ? 'rgba(79,70,229,0.07)' : 'transparent',
                       display: 'block', transition: 'background 0.2s',
                     }}>
-                    {l.label}
+                    {t(`nav.${l.key}`)}
                   </motion.a>
                 )
               })}
@@ -265,7 +269,7 @@ export default function LandingNavbar() {
                 borderRadius: 12, border: '1.5px solid #E2E8F0',
                 fontFamily: 'var(--font-tajawal)', fontWeight: 600, fontSize: 15,
                 color: '#475569', textDecoration: 'none',
-              }}>تسجيل الدخول</a>
+              }}>{t('nav.login')}</a>
               <a href="/auth/register" style={{
                 display: 'block', textAlign: 'center', padding: '13px',
                 background: 'linear-gradient(135deg, #4F46E5, #4338CA)',
@@ -273,7 +277,7 @@ export default function LandingNavbar() {
                 fontFamily: 'var(--font-tajawal)', fontWeight: 700, fontSize: 15,
                 color: '#fff', textDecoration: 'none',
                 boxShadow: '0 4px 14px rgba(79,70,229,0.3)',
-              }}>ابدأ مجاناً</a>
+              }}>{t('nav.start_free')}</a>
             </div>
           </motion.div>
         )}
