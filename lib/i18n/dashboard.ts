@@ -15,6 +15,11 @@ export function getDashboardMessages(locale: Locale): Messages {
   return CATALOG[locale] ?? CATALOG[DEFAULT_LOCALE]
 }
 
+/** All catalogs — passed to the client provider for instant switching. */
+export function getAllDashboardMessages(): Record<Locale, Messages> {
+  return CATALOG
+}
+
 /** Read the dashboard locale from the cookie (server components). */
 export function getDashboardLocale(): Locale {
   const raw = cookies().get(DASHBOARD_LANG_COOKIE)?.value

@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { slugify } from '@/lib/utils/format'
 import { useT, useLocale, useDir } from '@/lib/i18n/react'
-import { LOCALES, LOCALE_LABELS, LOCALE_FLAGS, DASHBOARD_LANG_COOKIE, type Locale } from '@/lib/i18n/config'
+import LanguageSwitcher from '@/components/i18n/LanguageSwitcher'
 
 // ── Nav structure (labels come from the i18n catalog via `key`) ──
 const NAV_MAIN = [
@@ -72,13 +72,6 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
     setStoreDropdownOpen(false)
     router.refresh()
     window.location.href = '/dashboard'
-  }
-
-  // Persist the dashboard language (independent from the store) + re-render SSR.
-  const changeLanguage = (l: Locale) => {
-    document.cookie = `${DASHBOARD_LANG_COOKIE}=${l}; path=/; max-age=31536000`
-    setAvatarOpen(false)
-    router.refresh()
   }
 
   const handleCreateStore = async (e: React.FormEvent) => {
@@ -373,6 +366,8 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
 
           {/* Left side (RTL) */}
           <div className="flex items-center gap-1.5">
+            {/* Language switcher — dashboard language (independent from store) */}
+            <LanguageSwitcher />
             {/* Credits */}
             <button onClick={() => setCreditsOpen(true)}
               className="flex items-center gap-1.5 px-3 h-8 rounded-full border text-sm font-medium transition-colors hover:bg-[#F8F9FA]"
@@ -439,23 +434,6 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
                           {darkMode ? <Moon size={14}/> : <Sun size={14}/>} {t('shell.dark_mode')}
                         </span>
                         <input type="checkbox" checked={darkMode} onChange={() => setDarkMode(o => !o)} className="w-4 h-4 accent-blue-500" />
-                      </div>
-                      {/* Language switcher — dashboard language (independent from store) */}
-                      <div className="px-3 py-2">
-                        <span className="text-xs flex items-center gap-1.5 mb-1.5" style={{ color: 'var(--color-text-secondary)', fontFamily: 'var(--font-arabic)' }}>
-                          <Globe size={14} />{t('shell.language')}
-                        </span>
-                        <div className="flex gap-1">
-                          {LOCALES.map(l => (
-                            <button key={l} type="button" onClick={() => changeLanguage(l)}
-                              className="flex-1 flex items-center justify-center gap-1 text-[11px] py-1.5 rounded-lg border transition-colors"
-                              style={locale === l
-                                ? { background: 'var(--color-accent)', color: '#fff', borderColor: 'var(--color-accent)' }
-                                : { borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
-                              <span>{LOCALE_FLAGS[l]}</span>{LOCALE_LABELS[l]}
-                            </button>
-                          ))}
-                        </div>
                       </div>
                       <div className="h-px mx-2 my-1" style={{ background: 'var(--color-border)' }} />
                       <button onClick={signOut}

@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation'
 import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import DashboardShell from '@/components/layout/DashboardShell'
 import { I18nProvider } from '@/lib/i18n/react'
-import { getDashboardLocale, getDashboardMessages } from '@/lib/i18n/dashboard'
+import { getDashboardLocale, getAllDashboardMessages } from '@/lib/i18n/dashboard'
+import { DASHBOARD_LANG_COOKIE } from '@/lib/i18n/config'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = createServerClient()
@@ -27,10 +28,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   // Dashboard locale is independent from the store language.
   const locale = getDashboardLocale()
-  const messages = getDashboardMessages(locale)
 
   return (
-    <I18nProvider locale={locale} messages={messages}>
+    <I18nProvider initialLocale={locale} catalogs={getAllDashboardMessages()} cookieName={DASHBOARD_LANG_COOKIE}>
       <DashboardShell
         store={{ id: store.id, name: store.name, slug: store.slug ?? undefined, plan: store.plan ?? 'free', logo_url: store.logo_url ?? undefined }}
         user={{ name: user.email?.split('@')[0], email: user.email }}
