@@ -1,0 +1,61 @@
+{
+  "nav": {
+    "home": "الرئيسية",
+    "orders": "الطلبات",
+    "products": "المنتجات",
+    "store_builder": "مُنشئ المتجر",
+    "delivery": "التوصيل",
+    "checkout_page": "صفحة الدفع",
+    "customers": "الزبائن",
+    "analytics": "الإحصائيات",
+    "reviews": "التقييمات",
+    "blacklist": "القائمة السوداء",
+    "landing_pages": "صفحات الهبوط",
+    "tracking_domains": "التتبع والدومينات",
+    "confirmili": "Confirmili",
+    "google_sheets": "قوقل شيت",
+    "settings": "الإعدادات"
+  },
+  "section": {
+    "features": "الميزات",
+    "subscription": "الاشتراك",
+    "new": "جديد"
+  },
+  "billing": {
+    "title": "الفواتير والاشتراك",
+    "plans": "الخطط",
+    "history": "سجل الفواتير"
+  },
+  "shell": {
+    "store": "المتجر",
+    "visit_store": "زيارة المتجر",
+    "add_store_hint": "أضف رابط متجرك في الإعدادات لزيارته",
+    "help": "مساعدة؟",
+    "credits": "{count} كريدت",
+    "add_new_store": "إضافة متجر جديد",
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات",
+    "notifications": "الإشعارات",
+    "dark_mode": "الوضع الليلي",
+    "logout": "تسجيل الخروج",
+    "user": "المستخدم",
+    "language": "اللغة"
+  },
+  "credits": {
+    "title": "اشتري كريدت",
+    "subtitle": "اختر باقة وادفع دون تغيير اشتراكك الحالي",
+    "current_balance": "الرصيد الحالي:",
+    "unit": "كريدت",
+    "continue": "متابعة الدفع"
+  },
+  "new_store": {
+    "title": "إنشاء متجر جديد",
+    "name_ar": "اسم المتجر بالعربية *",
+    "name_ar_ph": "مثال: متجر الأناقة الجزائري",
+    "name_fr": "اسم المتجر بالفرنسية / الإنجليزية *",
+    "phone": "رقم الهاتف (اختياري)",
+    "cancel": "إلغاء",
+    "creating": "جارٍ الإنشاء...",
+    "create": "🚀 أنشئ المتجر الآن"
+  }
+}

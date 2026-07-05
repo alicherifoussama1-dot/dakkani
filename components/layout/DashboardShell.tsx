@@ -12,28 +12,27 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { slugify } from '@/lib/utils/format'
+import { useT, useLocale, useDir } from '@/lib/i18n/react'
+import { LOCALES, LOCALE_LABELS, LOCALE_FLAGS, DASHBOARD_LANG_COOKIE, type Locale } from '@/lib/i18n/config'
 
-// ── Nav structure ─────────────────────────────────────────
+// ── Nav structure (labels come from the i18n catalog via `key`) ──
 const NAV_MAIN = [
-  { href: '/dashboard',      label: 'الرئيسية',    icon: Home },
-  { href: '/orders',         label: 'الطلبات',     icon: ShoppingCart },
-  { href: '/products',       label: 'المنتجات',    icon: Package },
-  { href: '/store-builder',  label: 'مُنشئ المتجر', icon: Store, badge: 'جديد' },
-  { href: '/store/delivery', label: 'التوصيل',      icon: Truck, badge: 'جديد' },
-  { href: '/settings?tab=checkout', label: 'صفحة الدفع', icon: ShoppingCart },
-  { href: '/customers',      label: 'الزبائن',     icon: Users },
-  { href: '/analytics',      label: 'الإحصائيات', icon: BarChart2 },
-  { href: '/reviews',        label: 'التقييمات',   icon: Star },
-  { href: '/blacklist',      label: 'القائمة السوداء', icon: ShieldOff },
-  { href: '/landing-pages',  label: 'صفحات الهبوط', icon: Globe },
-  { href: '/settings/tracking-domains', label: 'التتبع والدومينات', icon: Navigation2 },
+  { href: '/dashboard',      key: 'home',            icon: Home },
+  { href: '/orders',         key: 'orders',          icon: ShoppingCart },
+  { href: '/products',       key: 'products',        icon: Package },
+  { href: '/store-builder',  key: 'store_builder',   icon: Store, badge: true },
+  { href: '/store/delivery', key: 'delivery',        icon: Truck, badge: true },
+  { href: '/settings?tab=checkout', key: 'checkout_page', icon: ShoppingCart },
+  { href: '/customers',      key: 'customers',       icon: Users },
+  { href: '/analytics',      key: 'analytics',       icon: BarChart2 },
+  { href: '/reviews',        key: 'reviews',         icon: Star },
+  { href: '/blacklist',      key: 'blacklist',       icon: ShieldOff },
+  { href: '/landing-pages',  key: 'landing_pages',   icon: Globe },
+  { href: '/settings/tracking-domains', key: 'tracking_domains', icon: Navigation2 },
 ]
 const NAV_FEATURES = [
-  { href: '/confirmili',    label: 'Confirmili',  icon: Phone,         badge: 'جديد' },
-  { href: '/google-sheets', label: 'قوقل شيت',    icon: Globe,         badge: 'جديد' },
-]
-const NAV_BILLING = [
-  { href: '/billing/plans', label: 'الفواتير والاشتراك', icon: CreditCard },
+  { href: '/confirmili',    key: 'confirmili',    icon: Phone, badge: true },
+  { href: '/google-sheets', key: 'google_sheets', icon: Globe, badge: true },
 ]
 
 interface Props {
@@ -49,6 +48,9 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
   const router   = useRouter()
   const searchParams = useSearchParams()
   const activeTab = searchParams ? searchParams.get('tab') : null
+  const t = useT()
+  const locale = useLocale()
+  const dir = useDir()
 
   const [sidebarOpen,  setSidebarOpen]  = useState(true)
   const [mobileOpen,   setMobileOpen]   = useState(false)
@@ -70,6 +72,13 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
     setStoreDropdownOpen(false)
     router.refresh()
     window.location.href = '/dashboard'
+  }
+
+  // Persist the dashboard language (independent from the store) + re-render SSR.
+  const changeLanguage = (l: Locale) => {
+    document.cookie = `${DASHBOARD_LANG_COOKIE}=${l}; path=/; max-age=31536000`
+    setAvatarOpen(false)
+    router.refresh()
   }
 
   const handleCreateStore = async (e: React.FormEvent) => {
@@ -156,16 +165,16 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
     router.refresh()
   }
 
-  const NavItem = ({ item, count }: { item: { href: string; label: string; icon: any; badge?: string }; count?: number }) => {
+  const NavItem = ({ item, count }: { item: { href: string; key: string; icon: any; badge?: boolean }; count?: number }) => {
     const active = isActive(item.href)
     return (
       <Link href={item.href} className={`sidebar-item ${active ? 'active' : ''}`}>
         <item.icon size={16} className="icon flex-shrink-0" />
-        <span className="flex-1 truncate">{item.label}</span>
+        <span className="flex-1 truncate">{t(`nav.${item.key}`)}</span>
         {count && count > 0 ? (
           <span className="badge badge-red text-[10px] h-[18px] px-1.5">{count > 99 ? '99+' : count}</span>
         ) : item.badge ? (
-          <span className="badge badge-blue text-[10px] h-[18px] px-1.5">{item.badge}</span>
+          <span className="badge badge-blue text-[10px] h-[18px] px-1.5">{t('section.new')}</span>
         ) : null}
       </Link>
     )
@@ -189,14 +198,14 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
 
         <div className="pt-3 pb-1 px-2">
           <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-            الميزات
+            {t('section.features')}
           </p>
         </div>
         {NAV_FEATURES.map(item => <NavItem key={item.href} item={item} />)}
 
         <div className="pt-3 pb-1 px-2">
           <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-            الاشتراك
+            {t('section.subscription')}
           </p>
         </div>
         <div>
@@ -205,17 +214,17 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
             className={`sidebar-item w-full ${isActive('/billing') ? 'active' : ''}`}
           >
             <CreditCard size={16} className="icon flex-shrink-0" />
-            <span className="flex-1 text-right truncate">الفواتير والاشتراك</span>
+            <span className="flex-1 text-right truncate">{t('billing.title')}</span>
             <ChevronDown size={14} className={`transition-transform duration-200 ${billingOpen ? 'rotate-180' : ''}`} style={{ color: 'var(--color-text-muted)' }} />
           </button>
           {billingOpen && (
             <div className="pr-6 py-0.5 space-y-0.5">
-              <Link href="/billing/plans"   className={`sidebar-item text-sm ${isActive('/billing/plans') ? 'active' : ''}`}><ChevronRight size={12} className="flex-shrink-0" />الخطط</Link>
-              <Link href="/billing/history" className={`sidebar-item text-sm ${isActive('/billing/history') ? 'active' : ''}`}><ChevronRight size={12} className="flex-shrink-0" />سجل الفواتير</Link>
+              <Link href="/billing/plans"   className={`sidebar-item text-sm ${isActive('/billing/plans') ? 'active' : ''}`}><ChevronRight size={12} className="flex-shrink-0" />{t('billing.plans')}</Link>
+              <Link href="/billing/history" className={`sidebar-item text-sm ${isActive('/billing/history') ? 'active' : ''}`}><ChevronRight size={12} className="flex-shrink-0" />{t('billing.history')}</Link>
             </div>
           )}
         </div>
-        <NavItem item={{ href: '/settings', label: 'الإعدادات', icon: Settings }} />
+        <NavItem item={{ href: '/settings', key: 'settings', icon: Settings }} />
       </div>
 
       {/* Bottom */}
@@ -267,7 +276,7 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
                     className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg bg-[#EBF5FF] hover:bg-[#EBF5FF]/80 text-[#0D6EFD] font-bold text-xs transition-colors"
                   >
                     <Plus size={13} />
-                    <span>إضافة متجر جديد</span>
+                    <span>{t('shell.add_new_store')}</span>
                   </button>
                 </div>
               </>
@@ -283,7 +292,7 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
               <p className="text-xs font-semibold truncate" style={{ color: 'var(--color-text-primary)' }}>{user.name}</p>
               <p className="text-[11px] truncate" style={{ color: 'var(--color-text-muted)' }}>{user.email}</p>
             </div>
-            <button onClick={signOut} className="p-1.5 rounded-md hover:bg-red-50 transition-colors" title="تسجيل الخروج">
+            <button onClick={signOut} className="p-1.5 rounded-md hover:bg-red-50 transition-colors" title={t('shell.logout')}>
               <LogOut size={14} style={{ color: '#DC3545' }} />
             </button>
           </div>
@@ -296,11 +305,11 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
   // (see ConfirmiliClient). Render it full-bleed without the Commerco shell so
   // the design system takes over the whole screen. (After all hooks above.)
   if (pathname?.startsWith('/confirmili')) {
-    return <div className="h-screen overflow-hidden">{children}</div>
+    return <div dir={dir} lang={locale} className="h-screen overflow-hidden">{children}</div>
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--color-bg-soft)' }}>
+    <div dir={dir} lang={locale} className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--color-bg-soft)' }}>
       {/* ── Desktop Sidebar ── */}
       <aside
         className="hidden lg:flex flex-col flex-shrink-0 h-full border-l transition-all duration-200 overflow-hidden"
@@ -347,17 +356,17 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
               <a href={`/store/${store.slug}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-3 h-8 rounded-full border text-xs sm:text-sm font-semibold transition-all hover:bg-[#F8F9FA]"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
-                title="زيارة المتجر">
+                title={t('shell.visit_store')}>
                 <ExternalLink size={13} />
-                <span>المتجر</span>
+                <span>{t('shell.store')}</span>
               </a>
             ) : (
               <Link href="/settings"
                 className="flex items-center gap-1.5 px-3 h-8 rounded-full border text-xs sm:text-sm font-semibold transition-all hover:bg-[#F8F9FA]"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
-                title="أضف رابط متجرك في الإعدادات لزيارته">
+                title={t('shell.add_store_hint')}>
                 <ExternalLink size={13} />
-                <span>المتجر</span>
+                <span>{t('shell.store')}</span>
               </Link>
             )}
           </div>
@@ -369,13 +378,13 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
               className="flex items-center gap-1.5 px-3 h-8 rounded-full border text-sm font-medium transition-colors hover:bg-[#F8F9FA]"
               style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
               <Coins size={13} />
-              <span>0 كريدت</span>
+              <span>{t('shell.credits', { count: 0 })}</span>
             </button>
             <a href="https://wa.me/213000000000?text=مرحبا، أحتاج مساعدة في Commerco" target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 px-2.5 h-8 rounded-md border text-xs font-medium hover:bg-[#F8F9FA] transition-colors"
               style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
               <HelpCircle size={13} />
-              <span className="hidden sm:block">مساعدة؟</span>
+              <span className="hidden sm:block">{t('shell.help')}</span>
             </a>
             {store?.plan && (
               <span className="badge badge-blue px-2.5 h-7 text-xs">{store.plan}</span>
@@ -400,7 +409,7 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
                           {(user?.name ?? 'U')[0]}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-sm truncate" style={{ color: 'var(--color-text-primary)' }}>{user?.name ?? 'المستخدم'}</p>
+                          <p className="font-semibold text-sm truncate" style={{ color: 'var(--color-text-primary)' }}>{user?.name ?? t('shell.user')}</p>
                           <p className="text-xs truncate" style={{ color: 'var(--color-text-muted)' }}>{user?.email ?? ''}</p>
                           {store?.plan && <span className="badge badge-blue text-[10px] mt-0.5">{store.plan}</span>}
                         </div>
@@ -408,8 +417,8 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
                     </div>
                     <div className="p-1">
                       {[
-                        { label: 'الملف الشخصي', href: '/settings', icon: User },
-                        { label: 'الإعدادات', href: '/settings', icon: Settings },
+                        { label: t('shell.profile'), href: '/settings', icon: User },
+                        { label: t('shell.settings'), href: '/settings', icon: Settings },
                       ].map(item => (
                         <Link key={item.href} href={item.href} onClick={() => setAvatarOpen(false)}
                           className="flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg hover:bg-[#F8F9FA] transition-colors"
@@ -418,7 +427,7 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
                         </Link>
                       ))}
                       <div className="flex items-center justify-between px-3 py-2">
-                        <span className="text-sm" style={{ color: 'var(--color-text-secondary)', fontFamily: 'var(--font-arabic)' }}>الإشعارات</span>
+                        <span className="text-sm" style={{ color: 'var(--color-text-secondary)', fontFamily: 'var(--font-arabic)' }}>{t('shell.notifications')}</span>
                         <button onClick={() => setNotifOn(o => !o)} className="toggle-wrap">
                           <span className={`inline-block w-9 h-5 rounded-full transition-colors duration-200 ${notifOn ? 'bg-[#0D6EFD]' : 'bg-[#DEE2E6]'}`}>
                             <span className={`block w-4 h-4 bg-white rounded-full shadow mt-0.5 transition-transform duration-200 ${notifOn ? 'translate-x-[-16px] mr-0.5' : 'mr-0.5'}`} />
@@ -427,15 +436,32 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
                       </div>
                       <div className="flex items-center justify-between px-3 py-2">
                         <span className="text-sm flex items-center gap-1.5" style={{ color: 'var(--color-text-secondary)', fontFamily: 'var(--font-arabic)' }}>
-                          {darkMode ? <Moon size={14}/> : <Sun size={14}/>} الوضع الليلي
+                          {darkMode ? <Moon size={14}/> : <Sun size={14}/>} {t('shell.dark_mode')}
                         </span>
                         <input type="checkbox" checked={darkMode} onChange={() => setDarkMode(o => !o)} className="w-4 h-4 accent-blue-500" />
+                      </div>
+                      {/* Language switcher — dashboard language (independent from store) */}
+                      <div className="px-3 py-2">
+                        <span className="text-xs flex items-center gap-1.5 mb-1.5" style={{ color: 'var(--color-text-secondary)', fontFamily: 'var(--font-arabic)' }}>
+                          <Globe size={14} />{t('shell.language')}
+                        </span>
+                        <div className="flex gap-1">
+                          {LOCALES.map(l => (
+                            <button key={l} type="button" onClick={() => changeLanguage(l)}
+                              className="flex-1 flex items-center justify-center gap-1 text-[11px] py-1.5 rounded-lg border transition-colors"
+                              style={locale === l
+                                ? { background: 'var(--color-accent)', color: '#fff', borderColor: 'var(--color-accent)' }
+                                : { borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
+                              <span>{LOCALE_FLAGS[l]}</span>{LOCALE_LABELS[l]}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                       <div className="h-px mx-2 my-1" style={{ background: 'var(--color-border)' }} />
                       <button onClick={signOut}
                         className="flex items-center gap-2.5 w-full px-3 py-2 text-sm rounded-lg hover:bg-red-50 transition-colors"
                         style={{ color: '#DC3545' }}>
-                        <LogOut size={14} />تسجيل الخروج
+                        <LogOut size={14} />{t('shell.logout')}
                       </button>
                     </div>
                   </div>
@@ -458,7 +484,7 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-xl z-50 overflow-hidden animate-scale-in" dir="rtl">
             <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--color-border)' }}>
               <h3 className="font-bold text-base" style={{ fontFamily: 'var(--font-arabic)', color: 'var(--color-text-primary)' }}>
-                اشتري كريدت
+                {t('credits.title')}
               </h3>
               <button onClick={() => setCreditsOpen(false)} className="p-1.5 rounded-md hover:bg-[#F8F9FA]">
                 <X size={16} style={{ color: 'var(--color-text-muted)' }} />
@@ -466,21 +492,21 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
             </div>
             <div className="p-5 space-y-4">
               <p className="text-sm" style={{ color: 'var(--color-text-secondary)', fontFamily: 'var(--font-arabic)' }}>
-                اختر باقة وادفع دون تغيير اشتراكك الحالي
+                {t('credits.subtitle')}
               </p>
               <div className="p-3 rounded-lg text-sm font-semibold text-center" style={{ background: 'var(--color-bg-soft)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-arabic)' }}>
-                الرصيد الحالي: <span className="text-accent font-bold">0 كريدت</span>
+                {t('credits.current_balance')} <span className="text-accent font-bold">{t('shell.credits', { count: 0 })}</span>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 {[{c:1000,p:'990 دج'},{c:2000,p:'1,990 دج'},{c:3000,p:'2,990 دج'}].map(pkg => (
                   <button key={pkg.c} className="p-3 border rounded-xl text-center hover:border-blue-400 hover:bg-[#EBF5FF] transition-all" style={{ borderColor: 'var(--color-border)' }}>
                     <p className="font-bold text-base" style={{ color: 'var(--color-accent)', fontFamily: 'var(--font-primary)' }}>{pkg.c.toLocaleString()}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-arabic)' }}>كريدت</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-arabic)' }}>{t('credits.unit')}</p>
                     <p className="text-xs font-semibold mt-1" style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-primary)' }}>{pkg.p}</p>
                   </button>
                 ))}
               </div>
-              <button className="btn btn-primary w-full" style={{ fontFamily: 'var(--font-arabic)' }}>متابعة الدفع</button>
+              <button className="btn btn-primary w-full" style={{ fontFamily: 'var(--font-arabic)' }}>{t('credits.continue')}</button>
             </div>
           </div>
         </>
@@ -492,7 +518,7 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
           <div className="fixed inset-0 bg-black/50 z-50 animate-fade-in" onClick={() => setNewStoreModalOpen(false)} />
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-3xl shadow-xl z-50 overflow-hidden animate-scale-in" dir="rtl" style={{ fontFamily: 'var(--font-arabic)' }}>
             <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--color-border)' }}>
-              <h3 className="font-bold text-base text-[#111111]">إنشاء متجر جديد</h3>
+              <h3 className="font-bold text-base text-[#111111]">{t('new_store.title')}</h3>
               <button onClick={() => setNewStoreModalOpen(false)} className="p-1.5 rounded-md hover:bg-[#F8F9FA]">
                 <X size={16} style={{ color: 'var(--color-text-muted)' }} />
               </button>
@@ -500,19 +526,19 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
             <form onSubmit={handleCreateStore}>
               <div className="p-5 space-y-4">
                 <div>
-                  <label className="block text-xs font-bold mb-1.5 text-[#111111]">اسم المتجر بالعربية *</label>
+                  <label className="block text-xs font-bold mb-1.5 text-[#111111]">{t('new_store.name_ar')}</label>
                   <input
                     type="text"
                     required
                     value={newStoreNameAr}
                     onChange={e => setNewStoreNameAr(e.target.value)}
-                    placeholder="مثال: متجر الأناقة الجزائري"
+                    placeholder={t('new_store.name_ar_ph')}
                     className="w-full border border-[#EBEBEB] focus:border-[#0D6EFD] rounded-xl px-3 py-2 text-sm outline-none transition"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold mb-1.5 text-[#111111]">اسم المتجر بالفرنسية / الإنجليزية *</label>
+                  <label className="block text-xs font-bold mb-1.5 text-[#111111]">{t('new_store.name_fr')}</label>
                   <input
                     type="text"
                     required
@@ -525,7 +551,7 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold mb-1.5 text-[#111111]">رقم الهاتف (اختياري)</label>
+                  <label className="block text-xs font-bold mb-1.5 text-[#111111]">{t('new_store.phone')}</label>
                   <input
                     type="tel"
                     value={newStorePhone}
@@ -547,7 +573,7 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
                     onClick={() => setNewStoreModalOpen(false)}
                     className="w-1/3 border border-[#EBEBEB] text-[#444444] font-bold py-2.5 rounded-xl hover:bg-[#F9F9F9] transition text-xs"
                   >
-                    إلغاء
+                    {t('new_store.cancel')}
                   </button>
                   <button
                     type="submit"
@@ -555,9 +581,9 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
                     className="flex-1 bg-gradient-to-r from-[#0D6EFD] to-[#0B5ED7] hover:from-[#0B5ED7] hover:to-[#0B5ED7] text-white font-black py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 text-xs"
                   >
                     {isSubmittingNewStore ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" />جارٍ الإنشاء...</>
+                      <><Loader2 className="w-4 h-4 animate-spin" />{t('new_store.creating')}</>
                     ) : (
-                      '🚀 أنشئ المتجر الآن'
+                      t('new_store.create')
                     )}
                   </button>
                 </div>

@@ -1,0 +1,61 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "orders": "Commandes",
+    "products": "Produits",
+    "store_builder": "Créateur de boutique",
+    "delivery": "Livraison",
+    "checkout_page": "Page de paiement",
+    "customers": "Clients",
+    "analytics": "Statistiques",
+    "reviews": "Avis",
+    "blacklist": "Liste noire",
+    "landing_pages": "Pages d'atterrissage",
+    "tracking_domains": "Suivi & Domaines",
+    "confirmili": "Confirmili",
+    "google_sheets": "Google Sheets",
+    "settings": "Paramètres"
+  },
+  "section": {
+    "features": "Fonctionnalités",
+    "subscription": "Abonnement",
+    "new": "Nouveau"
+  },
+  "billing": {
+    "title": "Facturation & Abonnement",
+    "plans": "Forfaits",
+    "history": "Historique de facturation"
+  },
+  "shell": {
+    "store": "Boutique",
+    "visit_store": "Visiter la boutique",
+    "add_store_hint": "Ajoutez le lien de votre boutique dans les Paramètres",
+    "help": "Besoin d'aide ?",
+    "credits": "{count} crédits",
+    "add_new_store": "Ajouter une boutique",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "notifications": "Notifications",
+    "dark_mode": "Mode sombre",
+    "logout": "Déconnexion",
+    "user": "Utilisateur",
+    "language": "Langue"
+  },
+  "credits": {
+    "title": "Acheter des crédits",
+    "subtitle": "Choisissez un pack et payez sans changer votre forfait",
+    "current_balance": "Solde actuel :",
+    "unit": "crédits",
+    "continue": "Continuer le paiement"
+  },
+  "new_store": {
+    "title": "Créer une nouvelle boutique",
+    "name_ar": "Nom de la boutique en arabe *",
+    "name_ar_ph": "ex : Elegance Store DZ",
+    "name_fr": "Nom de la boutique en français / anglais *",
+    "phone": "Numéro de téléphone (optionnel)",
+    "cancel": "Annuler",
+    "creating": "Création...",
+    "create": "🚀 Créer la boutique"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "nav": {
+    "home": "Home",
+    "orders": "Orders",
+    "products": "Products",
+    "store_builder": "Store Builder",
+    "delivery": "Delivery",
+    "checkout_page": "Checkout Page",
+    "customers": "Customers",
+    "analytics": "Analytics",
+    "reviews": "Reviews",
+    "blacklist": "Blacklist",
+    "landing_pages": "Landing Pages",
+    "tracking_domains": "Tracking & Domains",
+    "confirmili": "Confirmili",
+    "google_sheets": "Google Sheets",
+    "settings": "Settings"
+  },
+  "section": {
+    "features": "Features",
+    "subscription": "Subscription",
+    "new": "New"
+  },
+  "billing": {
+    "title": "Billing & Subscription",
+    "plans": "Plans",
+    "history": "Billing History"
+  },
+  "shell": {
+    "store": "Store",
+    "visit_store": "Visit store",
+    "add_store_hint": "Add your store link in Settings to visit it",
+    "help": "Need help?",
+    "credits": "{count} credits",
+    "add_new_store": "Add new store",
+    "profile": "Profile",
+    "settings": "Settings",
+    "notifications": "Notifications",
+    "dark_mode": "Dark mode",
+    "logout": "Log out",
+    "user": "User",
+    "language": "Language"
+  },
+  "credits": {
+    "title": "Buy credits",
+    "subtitle": "Pick a pack and pay without changing your current plan",
+    "current_balance": "Current balance:",
+    "unit": "credits",
+    "continue": "Continue to payment"
+  },
+  "new_store": {
+    "title": "Create a new store",
+    "name_ar": "Store name in Arabic *",
+    "name_ar_ph": "e.g. Elegance Store DZ",
+    "name_fr": "Store name in French / English *",
+    "phone": "Phone number (optional)",
+    "cancel": "Cancel",
+    "creating": "Creating...",
+    "create": "🚀 Create store now"
+  }
+}

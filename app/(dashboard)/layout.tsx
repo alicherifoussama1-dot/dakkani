@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic'
 import { redirect } from 'next/navigation'
 import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import DashboardShell from '@/components/layout/DashboardShell'
+import { I18nProvider } from '@/lib/i18n/react'
+import { getDashboardLocale, getDashboardMessages } from '@/lib/i18n/dashboard'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = createServerClient()
@@ -23,14 +25,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('status', 'new')
     .gte('created_at', today.toISOString())
 
+  // Dashboard locale is independent from the store language.
+  const locale = getDashboardLocale()
+  const messages = getDashboardMessages(locale)
+
   return (
-    <DashboardShell
-      store={{ id: store.id, name: store.name, slug: store.slug ?? undefined, plan: store.plan ?? 'free', logo_url: store.logo_url ?? undefined }}
-      user={{ name: user.email?.split('@')[0], email: user.email }}
-      newOrdersCount={newOrdersToday ?? 0}
-      allStores={allStores}
-    >
-      {children}
-    </DashboardShell>
+    <I18nProvider locale={locale} messages={messages}>
+      <DashboardShell
+        store={{ id: store.id, name: store.name, slug: store.slug ?? undefined, plan: store.plan ?? 'free', logo_url: store.logo_url ?? undefined }}
+        user={{ name: user.email?.split('@')[0], email: user.email }}
+        newOrdersCount={newOrdersToday ?? 0}
+        allStores={allStores}
+      >
+        {children}
+      </DashboardShell>
+    </I18nProvider>
   )
 }
