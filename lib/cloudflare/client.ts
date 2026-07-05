@@ -111,3 +111,13 @@ export async function cfSslStatus(zoneId: string): Promise<'issued' | 'provision
   const anyActive = r.result.some(v => v.status === 'active')
   return anyActive ? 'issued' : 'provisioning'
 }
+
+// SSL mode must be "full" when the origin (Vercel) serves its own cert;
+// "flexible" (the default on some plans) breaks POSTs and can 525/redirect-loop.
+export async function cfSetSslFull(zoneId: string): Promise<boolean> {
+  const r = await cf<{ value: string }>(`/zones/${zoneId}/settings/ssl`, {
+    method: 'PATCH',
+    body: JSON.stringify({ value: 'full' }),
+  })
+  return r.success
+}

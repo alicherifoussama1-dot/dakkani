@@ -12,8 +12,49 @@ const PROTECTED = ['/dashboard','/admin','/products','/orders','/settings','/cat
 // Auth pages that redirect already-logged-in users to /dashboard.
 const AUTH_PAGES = ['/login','/register','/auth/login','/auth/register']
 
+// ── Custom-domain host → store slug resolution (cached) ─────
+// afnane.store/product/x  →  rewrite to  /{storeSlug}/product/x
+// Uses the Supabase REST API directly (edge-safe) + in-memory TTL cache.
+const PLATFORM_HOSTS = /(\.vercel\.app|\.dakkani\.app|^localhost(:\d+)?$|^127\.0\.0\.1(:\d+)?$)$/i
+const hostCache = new Map<string, { slug: string | null; at: number }>()
+const HOST_TTL = 60_000
+
+async function resolveCustomHost(host: string): Promise<string | null> {
+  const cached = hostCache.get(host)
+  if (cached && Date.now() - cached.at < HOST_TTL) return cached.slug
+  let slug: string | null = null
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (url && key) {
+      const res = await fetch(
+        `${url}/rest/v1/domains?hostname=eq.${encodeURIComponent(host)}&status=eq.ssl_active&select=stores(slug)&limit=1`,
+        { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' },
+      )
+      const rows = await res.json().catch(() => [])
+      slug = rows?.[0]?.stores?.slug ?? null
+    }
+  } catch { slug = null }
+  hostCache.set(host, { slug, at: Date.now() })
+  return slug
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // ── Custom domain serving: rewrite the host's paths onto the storefront ──
+  const rawHost = (request.headers.get('host') ?? '').toLowerCase().split(':')[0]
+  const host = rawHost.replace(/^www\./, '')
+  if (host && !PLATFORM_HOSTS.test(host) && !pathname.startsWith('/api/') && !pathname.startsWith('/_next')) {
+    const slug = await resolveCustomHost(host)
+    if (slug) {
+      // Avoid double-prefixing if the path already targets this store.
+      const target = pathname === '/' ? `/${slug}` : `/${slug}${pathname}`
+      if (!pathname.startsWith(`/${slug}/`) && pathname !== `/${slug}`) {
+        return NextResponse.rewrite(new URL(target, request.url), { request: { headers: request.headers } })
+      }
+    }
+  }
 
   // Always allow API, webhooks, and storefront — they never consult `user`,
   // so skip the Supabase auth round-trip entirely.

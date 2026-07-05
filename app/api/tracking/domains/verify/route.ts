@@ -8,7 +8,8 @@
 // ============================================================
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { cfConfigured, cfVerifyToken, cfCreateZone, cfGetZone, cfProvisionDns, cfSslStatus } from '@/lib/cloudflare/client'
+import { cfConfigured, cfVerifyToken, cfCreateZone, cfGetZone, cfProvisionDns, cfSslStatus, cfSetSslFull } from '@/lib/cloudflare/client'
+import { vercelConfigured, vercelAttachDomainPair } from '@/lib/vercel/client'
 
 const CF_CONFIG_ERROR = 'Cloudflare API configuration error'
 
@@ -52,13 +53,24 @@ export async function POST(req: Request) {
 
   if (zone.status === 'active') {
     await cfProvisionDns(domain.cf_zone_id, domain.hostname)
+    // Origin must terminate TLS for this hostname → SSL mode Full +
+    // attach the domain to the Vercel project. Without this the site 525s.
+    await cfSetSslFull(domain.cf_zone_id)
+    const origin = vercelConfigured()
+      ? await vercelAttachDomainPair(domain.hostname)
+      : { ok: false, error: 'VERCEL_API_TOKEN / VERCEL_PROJECT_ID غير مضبوطين' }
     const ssl = await cfSslStatus(domain.cf_zone_id)
     await supabase.from('domains').update({
       status: 'ssl_active', ssl_status: ssl, dns_status: 'connected',
       nameservers: zone.name_servers ?? domain.nameservers,
       activated_at: domain.activated_at ?? now, last_checked_at: now,
     }).eq('id', id)
-    return NextResponse.json({ status: 'active', ssl, message: 'تم تفعيل الدومين بنجاح 🎉' })
+    return NextResponse.json({
+      status: 'active', ssl, originAttached: origin.ok,
+      message: origin.ok
+        ? 'تم تفعيل الدومين بنجاح 🎉'
+        : `الدومين نشط في Cloudflare لكن ربطه بالخادم فشل (${origin.error}) — قد تظهر صفحة SSL 525 حتى يُضاف الدومين إلى مشروع Vercel.`,
+    })
   }
 
   // Zone still pending → nameservers not propagated yet.

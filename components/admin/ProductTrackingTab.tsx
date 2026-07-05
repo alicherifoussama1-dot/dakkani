@@ -8,7 +8,7 @@
 // ============================================================
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { CheckCircle2, AlertTriangle, XCircle, Link2, ExternalLink, Eye, Globe } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, XCircle, ExternalLink, Eye, Globe } from 'lucide-react'
 import { PROVIDER_LIST, type ProviderKey } from '@/lib/tracking/registry'
 import {
   resolveProductTracking, resolveDomain,
@@ -105,38 +105,61 @@ export default function ProductTrackingTab({ productId, storeId }: Props) {
 
   return (
     <div className="space-y-5" dir="rtl">
-      {/* ── Selectors ── */}
-      <div className="card p-5 space-y-4">
-        <h3 className="font-semibold text-sm pb-2 border-b" style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>التتبع لكل منصّة</h3>
-        {PROVIDER_LIST.map(p => {
-          const opts = integrations.filter(i => i.provider === p.key && i.is_active)
-          return (
-            <div key={p.key} className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${p.color}1A` }}>
-                <span className="w-3 h-3 rounded-full" style={{ background: p.color }} />
+      {/* ── Domains & Pixels (JustSell-style) ── */}
+      <div className="card p-5 space-y-5">
+        {/* Domains — toggle pills, single selection */}
+        <div>
+          <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--color-text-primary)' }}>الدومينات</h3>
+          <div className="flex flex-wrap gap-3">
+            {/* Platform domain toggle */}
+            <button type="button" onClick={() => setDomainSel('default')}
+              className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors"
+              style={{ border: `1.5px solid ${domainSel === 'default' ? 'var(--color-accent)' : 'var(--color-border)'}`, background: '#fff', minWidth: 220 }}>
+              <span className="relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors" style={{ background: domainSel === 'default' ? 'var(--color-accent)' : '#CED4DA' }}>
+                <span className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all" style={{ right: domainSel === 'default' ? 2 : 18 }} />
               </span>
-              <label className="text-sm w-36 shrink-0 font-medium" style={{ color: 'var(--color-text-secondary)' }}>{p.labelAr}</label>
-              <select value={sel[p.key]} onChange={e => setSel(s => ({ ...s, [p.key]: e.target.value }))} className="input text-sm flex-1">
-                <option value="default">الافتراضي للمتجر</option>
-                {opts.map(i => <option key={i.id} value={i.id}>{i.name} — {i.pixel_id}</option>)}
-                <option value="disabled">معطّل</option>
-              </select>
-            </div>
-          )
-        })}
-
-        <h3 className="font-semibold text-sm pb-2 border-b pt-2" style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>الدومين</h3>
-        <div className="flex items-center gap-3">
-          <Link2 size={15} className="shrink-0" style={{ color: 'var(--color-text-muted)' }} />
-          <label className="text-sm w-40 shrink-0" style={{ color: 'var(--color-text-secondary)' }}>دومين المنتج</label>
-          <select value={domainSel} onChange={e => setDomainSel(e.target.value)} className="input text-sm flex-1">
-            <option value="default">الافتراضي للمتجر ({storeSlug}.dakkani.app)</option>
-            {domains.map(d => <option key={d.id} value={d.id}>{d.hostname}</option>)}
-          </select>
+              <span className="font-mono text-sm" dir="ltr" style={{ color: 'var(--color-text-primary)' }}>{storeSlug}.dakkani.app</span>
+            </button>
+            {/* Custom domain toggles */}
+            {domains.map(d => {
+              const on = domainSel === d.id
+              return (
+                <button key={d.id} type="button" onClick={() => setDomainSel(on ? 'default' : d.id)}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors"
+                  style={{ border: `1.5px solid ${on ? 'var(--color-accent)' : 'var(--color-border)'}`, background: '#fff', minWidth: 220 }}>
+                  <span className="relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors" style={{ background: on ? 'var(--color-accent)' : '#CED4DA' }}>
+                    <span className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all" style={{ right: on ? 2 : 18 }} />
+                  </span>
+                  <span className="font-mono text-sm" dir="ltr" style={{ color: 'var(--color-text-primary)' }}>{d.hostname}</span>
+                </button>
+              )
+            })}
+          </div>
+          <p className="text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>كل منتج يجب أن يكون مرتبطاً بدومين واحد للمتجر.</p>
         </div>
 
-        <div className="pt-2">
-          <button onClick={save} disabled={saving} className="btn btn-primary btn-sm">{saving ? 'جارٍ الحفظ…' : 'حفظ التتبع'}</button>
+        {/* Pixels — two-column dropdown grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          {PROVIDER_LIST.map(p => {
+            const opts = integrations.filter(i => i.provider === p.key && i.is_active)
+            return (
+              <div key={p.key}>
+                <label className="flex items-center gap-2 text-sm font-bold mb-1.5" style={{ color: 'var(--color-text-primary)' }}>
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />{p.labelAr}
+                </label>
+                <select value={sel[p.key]} onChange={e => setSel(s => ({ ...s, [p.key]: e.target.value }))} className="input text-sm w-full">
+                  <option value="default">الافتراضي للمتجر</option>
+                  {opts.map(i => <option key={i.id} value={i.id}>{i.name} — {i.pixel_id}</option>)}
+                  <option value="disabled">معطّل</option>
+                </select>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Update */}
+        <div className="flex justify-start pt-1 border-t" style={{ borderColor: 'var(--color-border)' }}>
+          <button onClick={save} disabled={saving} className="btn btn-primary btn-sm mt-3 px-6">{saving ? 'جارٍ الحفظ…' : 'تحديث'}</button>
         </div>
       </div>
 
