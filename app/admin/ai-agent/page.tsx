@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'AI Agent — دكاني' }
+export const metadata = { title: 'AI Agent — Commerco' }
 
 import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import AIAgentChat from '@/components/admin/AIAgentChat'

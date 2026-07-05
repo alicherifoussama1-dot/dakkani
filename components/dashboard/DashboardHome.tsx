@@ -44,7 +44,7 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
 
   const KPI_CARDS = [
     { label: 'طلبات اليوم',    value: todayStats.total,    iconBg: '#EBF5FF', iconColor: '#0D6EFD',
-      icon: () => <div className="w-5 h-5 rounded font-black text-white text-xs flex items-center justify-center" style={{background:'#0D6EFD'}}>د</div> },
+      icon: () => <div className="w-5 h-5 rounded font-black text-white text-xs flex items-center justify-center" style={{background:'#0D6EFD'}}>C</div> },
     { label: 'طلبات فيسبوك',   value: todayStats.facebook, iconBg: '#EBF5FF', iconColor: '#1877F2',
       icon: () => <Facebook size={18} style={{color:'#1877F2'}} /> },
     { label: 'طلبات تيك توك',  value: todayStats.tiktok,   iconBg: '#F1F3F5', iconColor: '#000',
@@ -109,7 +109,7 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
             ))}
           </div>
           <div>
-            <p className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>انضم لمجتمع دكاني</p>
+            <p className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>انضم لمجتمع Commerco</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>+12,000 تاجر نشط</p>
           </div>
         </div>

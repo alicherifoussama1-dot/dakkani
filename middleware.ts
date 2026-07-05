@@ -15,7 +15,7 @@ const AUTH_PAGES = ['/login','/register','/auth/login','/auth/register']
 // ── Custom-domain host → store slug resolution (cached) ─────
 // afnane.store/product/x  →  rewrite to  /{storeSlug}/product/x
 // Uses the Supabase REST API directly (edge-safe) + in-memory TTL cache.
-const PLATFORM_HOSTS = /(\.vercel\.app|\.dakkani\.app|^localhost(:\d+)?$|^127\.0\.0\.1(:\d+)?$)$/i
+const PLATFORM_HOSTS = /(\.vercel\.app|\.commerco\.app|^localhost(:\d+)?$|^127\.0\.0\.1(:\d+)?$)$/i
 const hostCache = new Map<string, { slug: string | null; at: number }>()
 const HOST_TTL = 60_000
 

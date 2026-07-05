@@ -24,7 +24,7 @@ type FormData = {
   notes?: string
 }
 
-// Dakkani design tokens — ONE system for every store; only the accent varies.
+// Commerco design tokens — ONE system for every store; only the accent varies.
 const DK = { accent: 'var(--pt-accent)', ink: '#1B1B1F', muted: '#71716E', line: '#EBE8E1', paper: '#FAF8F5', surface: '#FFFFFF', ok: '#1D9E75' }
 
 // Simple dependent البلدية dropdown — mirrors the cascade already used in

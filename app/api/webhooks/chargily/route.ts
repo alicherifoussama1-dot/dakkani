@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
           orderNumber: order.order_number,
           customerName: 'عميلنا',
           total:       payload.amount,
-          storeName:   'دكاني',
+          storeName:   'Commerco',
           type:        'order_confirmed',
         }),
       }).catch(() => {})

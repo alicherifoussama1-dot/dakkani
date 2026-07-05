@@ -1,5 +1,5 @@
 // ============================================================
-// DAKKANI — Unified Delivery Types (adapter contract + DTOs)
+// COMMERCO — Unified Delivery Types (adapter contract + DTOs)
 // One internal shape for every courier despite different APIs.
 // ============================================================
 

@@ -5,10 +5,10 @@ import { motion } from 'framer-motion'
 
 const NAV_COLS = [
   {
-    title: 'عن دكاني',
+    title: 'عن Commerco',
     links: [
       { label: 'من نحن',     href: '/about' },
-      { label: 'مدونة دكاني', href: '/blog' },
+      { label: 'مدونة Commerco', href: '/blog' },
       { label: 'الوظائف',    href: '/careers' },
       { label: 'شركاؤنا',    href: '/partners' },
     ],
@@ -34,7 +34,7 @@ const NAV_COLS = [
   {
     title: 'تواصل معنا',
     links: [
-      { label: '📧 support@dakkani.dz',  href: 'mailto:support@dakkani.dz' },
+      { label: '📧 support@commerco.dz',  href: 'mailto:support@commerco.dz' },
       { label: '📱 واتساب للدعم',         href: 'https://wa.me/213000000000' },
       { label: '📍 الجزائر العاصمة',     href: '#' },
       { label: '🕐 24/7 دعم متواصل',     href: '#' },
@@ -114,7 +114,7 @@ export default function LandingFooter() {
               <span style={{
                 fontFamily: 'var(--font-tajawal)', fontWeight: 900,
                 fontSize: 28, color: '#fff',
-              }}>دكاني</span>
+              }}>Commerco</span>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4F46E5' }} />
             </div>
             <p style={{
@@ -275,12 +275,12 @@ export default function LandingFooter() {
           <p style={{
             fontFamily: 'var(--font-tajawal)', fontSize: 12, color: '#334155',
           }}>
-            © 2026 دكاني · جميع الحقوق محفوظة
+            © 2026 Commerco · جميع الحقوق محفوظة
           </p>
           <p style={{
             fontFamily: 'var(--font-tajawal)', fontSize: 12, color: '#334155',
           }}>
-            دكاني — سوقك الرقمي الجزائري 🇩🇿
+            Commerco — سوقك الرقمي الجزائري 🇩🇿
           </p>
           <div style={{ display: 'flex', gap: 20 }}>
             {['سياسة الخصوصية', 'شروط الاستخدام', 'خريطة الموقع'].map(l => (

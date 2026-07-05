@@ -47,7 +47,7 @@ export default function Features() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h2 className="section-title">لماذا دكاني؟</h2>
+          <h2 className="section-title">لماذا Commerco؟</h2>
           <p className="section-subtitle mx-auto" style={{ maxWidth: '480px' }}>
             كل ما تحتاجه لتبدأ تبيع أونلاين في الجزائر في مكان واحد
           </p>

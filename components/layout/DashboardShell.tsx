@@ -176,9 +176,9 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 h-14 border-b flex-shrink-0" style={{ borderColor: 'var(--color-sidebar-border)' }}>
         <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-white text-sm" style={{ background: 'var(--color-accent)' }}>
-          د
+          C
         </div>
-        <span className="font-bold text-sm" style={{ color: 'var(--color-text-primary)' }}>دكاني</span>
+        <span className="font-bold text-sm" style={{ color: 'var(--color-text-primary)' }}>Commerco</span>
       </div>
 
       {/* Nav */}
@@ -293,7 +293,7 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
   )
 
   // Confirmili is a self-contained module with its own teal chrome + sidebar
-  // (see ConfirmiliClient). Render it full-bleed without the Dakkani shell so
+  // (see ConfirmiliClient). Render it full-bleed without the Commerco shell so
   // the design system takes over the whole screen. (After all hooks above.)
   if (pathname?.startsWith('/confirmili')) {
     return <div className="h-screen overflow-hidden">{children}</div>
@@ -340,8 +340,8 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
               <Menu size={18} style={{ color: 'var(--color-text-secondary)' }} />
             </button>
             <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-white text-sm" style={{ background: 'var(--color-accent)' }}>د</div>
-              <span className="font-bold text-sm hidden sm:block" style={{ color: 'var(--color-text-primary)' }}>دكاني</span>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-white text-sm" style={{ background: 'var(--color-accent)' }}>C</div>
+              <span className="font-bold text-sm hidden sm:block" style={{ color: 'var(--color-text-primary)' }}>Commerco</span>
             </Link>
             {store?.slug ? (
               <a href={`/store/${store.slug}`} target="_blank" rel="noopener noreferrer"
@@ -371,7 +371,7 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
               <Coins size={13} />
               <span>0 كريدت</span>
             </button>
-            <a href="https://wa.me/213000000000?text=مرحبا، أحتاج مساعدة في دكاني" target="_blank" rel="noopener noreferrer"
+            <a href="https://wa.me/213000000000?text=مرحبا، أحتاج مساعدة في Commerco" target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 px-2.5 h-8 rounded-md border text-xs font-medium hover:bg-[#F8F9FA] transition-colors"
               style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
               <HelpCircle size={13} />

@@ -1,4 +1,4 @@
-# Dakkani Database Migrations
+# Commerco Database Migrations
 
 ## Run in Supabase SQL Editor (in order):
 

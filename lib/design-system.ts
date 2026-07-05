@@ -1,5 +1,5 @@
 // ============================================================
-// DAKKANI — Design System Tokens 2026
+// COMMERCO — Design System Tokens 2026
 // ============================================================
 
 export const colors = {

@@ -72,7 +72,7 @@ domains
   verification     jsonb         -- {method:'txt'|'cname', token, expected, checkedAt}
   ssl_status       text          -- 'none' | 'provisioning' | 'issued' | 'error'
   is_default       boolean
-  is_platform      boolean       -- true for the auto Dakkani subdomain row (virtual)
+  is_platform      boolean       -- true for the auto Commerco subdomain row (virtual)
   created_at / updated_at
   PARTIAL UNIQUE(store_id) WHERE is_default
 
@@ -160,7 +160,7 @@ InitiateCheckout, Purchase`. Each adapter's `eventMap` translates
 - **List**: each domain as a card row → hostname, status badge (Pending / Verifying /
   Active / Error), SSL badge, Default star, Edit, Delete.
 - A permanent, non-deletable **Platform domain** row at top:
-  `store-slug.dakkani.com` — labelled "Default (Dakkani)". Always Active. This is the
+  `store-slug.commerco.com` — labelled "Default (Commerco)". Always Active. This is the
   guaranteed fallback and cannot be removed.
 - **Add domain** modal: enter hostname → we show DNS records to add
   (apex → A/ALIAS to platform; subdomain → CNAME) plus a TXT verification token.
@@ -187,11 +187,11 @@ active --(SSL issue)--> ssl:provisioning --> ssl:issued
 - Middleware gains a **host resolver**: incoming `Host` header →
   `domains.hostname (active)` → `store_id`. Cache the map (Redis/edge KV, short TTL) so
   it costs ~0 per request at scale.
-- Platform domain path (`slug.dakkani.com` / `/store/:slug`) keeps working unchanged.
+- Platform domain path (`slug.commerco.com` / `/store/:slug`) keeps working unchanged.
 - **Product → domain resolution order** (mandatory fallback):
   1. `product.domain_id` if set and Active.
   2. else store **default custom domain** if one is Active.
-  3. else **platform store domain** (`slug.dakkani.com`). ← always succeeds.
+  3. else **platform store domain** (`slug.commerco.com`). ← always succeeds.
 - Canonical URLs, OG tags, and pixel `event_source_url` all use the resolved domain so
   attribution and SEO stay consistent.
 
@@ -270,7 +270,7 @@ Domain resolution order:
 1. product_domains primary (is_primary, Active)      # per-product override
 2. effectiveProfile.domain_id (Active)               # inherited from profile
 3. store default custom domain (Active)
-4. platform store domain (slug.dakkani.com)          # always succeeds
+4. platform store domain (slug.commerco.com)          # always succeeds
 ```
 
 The resolver returns a **closed, frozen list of integrations + one domain** for exactly
@@ -363,7 +363,7 @@ not a black box.
 
 ## 9. Fallback logic (explicit)
 
-- **No custom domain** → product serves on the platform domain `slug.dakkani.com`.
+- **No custom domain** → product serves on the platform domain `slug.commerco.com`.
   Always works; never an error state.
 - **No tracking selected for a provider** → nothing injected for that provider; page is
   clean, zero overhead. A product with no tracking at all ships zero tracking code.
@@ -513,7 +513,7 @@ future capabilities need **no migration**, only UI:
 
 ## 17. Why this beats JustSell
 
-| Dimension | JustSell | Dakkani (this design) |
+| Dimension | JustSell | Commerco (this design) |
 |---|---|---|
 | Pixel model | Store-level, limited providers | Reusable **library**, unlimited pixels per provider, assignable per product |
 | Config reuse | Per-product setup | **Tracking Profiles** — configure once, inherit everywhere, edit propagates instantly |

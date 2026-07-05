@@ -36,8 +36,8 @@ export default function AuthRegisterPage() {
       <div className="hidden lg:flex flex-col justify-between w-1/2 p-12" style={{ background:'linear-gradient(135deg,#0D6EFD 0%,#0B5ED7 100%)' }}>
         <div>
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center font-black text-white text-xl">د</div>
-            <span className="font-black text-white text-xl">دكاني</span>
+            <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center font-black text-white text-xl">C</div>
+            <span className="font-black text-white text-xl">Commerco</span>
           </div>
           <h2 className="text-3xl font-black text-white leading-tight mb-4" style={{ fontFamily:'var(--font-arabic)' }}>انضم لآلاف<br/>التجار الجزائريين</h2>
           <ul className="space-y-3 mt-6">
@@ -55,8 +55,8 @@ export default function AuthRegisterPage() {
       <div className="flex-1 flex items-center justify-center p-6 bg-white overflow-y-auto">
         <div className="w-full max-w-sm py-6">
           <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-white" style={{ background:'var(--color-accent)' }}>د</div>
-            <span className="font-black text-xl" style={{ color:'var(--color-text-primary)' }}>دكاني</span>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-white" style={{ background:'var(--color-accent)' }}>C</div>
+            <span className="font-black text-xl" style={{ color:'var(--color-text-primary)' }}>Commerco</span>
           </div>
           <h1 className="font-bold text-2xl mb-1" style={{ color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)' }}>إنشاء حساب مجاني 🚀</h1>
           <p className="text-sm mb-6" style={{ color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)' }}>ابدأ البيع في أقل من 5 دقائق</p>

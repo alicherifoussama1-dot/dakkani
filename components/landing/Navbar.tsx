@@ -78,7 +78,7 @@ export default function LandingNavbar() {
             <span style={{
               fontFamily: 'var(--font-tajawal)', fontWeight: 900,
               fontSize: 26, color: '#0F172A', letterSpacing: '-0.5px',
-            }}>دكاني</span>
+            }}>Commerco</span>
             <motion.span
               animate={{ scale: [1, 1.3, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', repeatDelay: 3 }}
@@ -218,7 +218,7 @@ export default function LandingNavbar() {
                 fontSize: 22, color: '#0F172A',
                 display: 'flex', alignItems: 'center', gap: 6,
               }}>
-                دكاني
+                Commerco
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#4F46E5', display: 'inline-block' }} />
               </div>
               <button

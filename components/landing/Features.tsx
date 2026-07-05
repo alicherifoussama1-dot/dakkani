@@ -93,7 +93,7 @@ function MiniStorePreview() {
           border: '1px solid #E2E8F0',
         }}>
           <span style={{ fontSize: 9, color: '#94A3B8', fontFamily: 'var(--font-inter)' }}>
-            متجري.دكاني.دز
+            متجري.Commerco.دز
           </span>
         </div>
       </div>

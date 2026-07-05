@@ -451,7 +451,7 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
                   <button
                     onClick={() => navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://dakkani.vercel.app'}/store/${store.slug}`)}
                     className="btn btn-sm btn-outline">نسخ</button>
-                  <a href={`https://wa.me/?text=${encodeURIComponent(`زور متجري على دكاني: https://dakkani.vercel.app/store/${store.slug}`)}`}
+                  <a href={`https://wa.me/?text=${encodeURIComponent(`زور متجري على Commerco: https://dakkani.vercel.app/store/${store.slug}`)}`}
                     target="_blank" rel="noopener noreferrer"
                     className="btn btn-sm" style={{background:'#25D366',color:'#fff',border:'none'}}>
                     مشاركة

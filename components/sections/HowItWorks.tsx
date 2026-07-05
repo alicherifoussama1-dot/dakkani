@@ -36,7 +36,7 @@ export default function HowItWorks() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="section-title">كيف يشتغل دكاني؟</h2>
+          <h2 className="section-title">كيف يشتغل Commerco؟</h2>
           <p className="section-subtitle mx-auto" style={{ maxWidth: '400px' }}>
             ثلاث خطوات بسيطة تفصلك عن أول بيع
           </p>

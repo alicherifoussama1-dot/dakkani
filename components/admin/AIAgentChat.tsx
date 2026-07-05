@@ -104,7 +104,7 @@ export default function AIAgentChat({ storeContext }: { storeContext: StoreConte
           <Sparkles className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-sm font-black text-white">مساعد AI — دكاني</h1>
+          <h1 className="text-sm font-black text-white">مساعد AI — Commerco</h1>
           <p className="text-xs text-gray-500">مدعوم بـ Gemini 2.0 Flash</p>
         </div>
         <div className="mr-auto flex gap-2">

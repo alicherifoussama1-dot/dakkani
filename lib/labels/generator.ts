@@ -1,5 +1,5 @@
 // ============================================================
-// Dakkani Label Generator
+// Commerco Label Generator
 // A6 (10cm × 15cm) shipping label with barcode + QR
 // A4 format: 4 labels per page (2×2)
 // ============================================================
@@ -248,7 +248,7 @@ function renderA6Label(
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(5)
   doc.setFont('helvetica', 'normal')
-  doc.text('Powered by دكاني', x(A6_W / 2), y(A6_H - 1.5), { align: 'center' })
+  doc.text('Powered by Commerco', x(A6_W / 2), y(A6_H - 1.5), { align: 'center' })
 
   // ── Border ───────────────────────────────────────────────
   doc.setDrawColor(...ORANGE)

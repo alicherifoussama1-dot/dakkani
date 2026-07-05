@@ -244,7 +244,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
     scrollToIdx(nextIdx)
   }
 
-  // ── Dakkani design system — ONE premium system for every store. Only the
+  // ── Commerco design system — ONE premium system for every store. Only the
   // accent (var(--pt-accent)) varies per store; everything else is fixed.
   const A = 'var(--pt-accent)'
   const ASOFT = 'color-mix(in srgb, var(--pt-accent) 12%, transparent)'
@@ -252,7 +252,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
   const isRtl = lang === 'ar'
 
   // Collapse the 7-theme palette to ONE system: keep ONLY the per-store accent
-  // (and fonts) from the theme; pin every other --pt-* token to fixed Dakkani
+  // (and fonts) from the theme; pin every other --pt-* token to fixed Commerco
   // values so ProductVariants and any --pt-* consumer share one design language.
   const dkVars = {
     ...cssVars,

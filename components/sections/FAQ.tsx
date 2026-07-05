@@ -26,7 +26,7 @@ const FAQS = [
   },
   {
     q: 'هل لوحة التحكم سهلة الاستخدام على الموبايل؟',
-    a: 'نعم! صممنا دكاني للموبايل أولاً. يمكنك إدارة متجرك، تتبع الطلبات، وإضافة المنتجات من هاتفك في أي وقت وأي مكان.',
+    a: 'نعم! صممنا Commerco للموبايل أولاً. يمكنك إدارة متجرك، تتبع الطلبات، وإضافة المنتجات من هاتفك في أي وقت وأي مكان.',
   },
 ]
 
@@ -44,7 +44,7 @@ export default function FAQ() {
         {/* Header */}
         <div className="text-center mb-10">
           <h2 className="section-title">أسئلة شائعة</h2>
-          <p className="section-subtitle">كل ما تحتاج تعرفه عن دكاني</p>
+          <p className="section-subtitle">كل ما تحتاج تعرفه عن Commerco</p>
         </div>
 
         {/* Accordion */}

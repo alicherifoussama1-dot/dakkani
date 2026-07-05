@@ -136,7 +136,7 @@ export default async function ProductPage({ params }: Props) {
     } : {}),
   }
 
-  // ONE Dakkani design system for every store — keep only the per-store accent
+  // ONE Commerco design system for every store — keep only the per-store accent
   // (and fonts) from the theme; pin every other --pt-* token to fixed values so
   // the whole page (Hero, reviews, FAQ, related) shares one design language.
   const productTheme = getProductTheme((product as any).theme_key)

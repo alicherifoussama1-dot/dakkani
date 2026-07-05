@@ -122,7 +122,7 @@ export default function ProductTrackingTab({ productId, storeId }: Props) {
               <span className="relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors" style={{ background: domainSel === 'default' ? 'var(--color-accent)' : '#CED4DA' }}>
                 <span className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all" style={{ right: domainSel === 'default' ? 2 : 18 }} />
               </span>
-              <span className="font-mono text-sm" dir="ltr" style={{ color: 'var(--color-text-primary)' }}>{storeSlug}.dakkani.app</span>
+              <span className="font-mono text-sm" dir="ltr" style={{ color: 'var(--color-text-primary)' }}>{storeSlug}.commerco.app</span>
             </button>
             {/* Custom domain toggles */}
             {domains.map(d => {

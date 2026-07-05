@@ -7,7 +7,7 @@ export function generateInvoicePDF(order: Order, store: Store): void {
   const pageW = doc.internal.pageSize.getWidth()
 
   // Header
-  doc.setFillColor(249, 115, 22) // dakkani orange
+  doc.setFillColor(249, 115, 22) // commerco orange
   doc.rect(0, 0, pageW, 35, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(22)
@@ -82,7 +82,7 @@ export function generateInvoicePDF(order: Order, store: Store): void {
   doc.rect(0, pageH - 20, pageW, 20, 'F')
   doc.setFontSize(8)
   doc.setTextColor(100)
-  doc.text('شكراً على ثقتكم | دكاني - منصة التجارة الإلكترونية الجزائرية', pageW / 2, pageH - 8, { align: 'center' })
+  doc.text('شكراً على ثقتكم | Commerco - منصة التجارة الإلكترونية الجزائرية', pageW / 2, pageH - 8, { align: 'center' })
 
   doc.save(`فاتورة-${order.order_number}.pdf`)
 }

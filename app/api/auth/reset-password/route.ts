@@ -60,9 +60,9 @@ export async function POST(req: Request) {
         Authorization: `Bearer ${resendKey}`,
       },
       body: JSON.stringify({
-        from: 'دكاني <onboarding@resend.dev>',
+        from: 'Commerco <onboarding@resend.dev>',
         to: [email],
-        subject: 'إعادة تعيين كلمة المرور — دكاني',
+        subject: 'إعادة تعيين كلمة المرور — Commerco',
         html: `
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
         <!-- Header -->
         <tr>
           <td style="background:linear-gradient(135deg,#0D6EFD,#0B5ED7);padding:32px;text-align:center">
-            <h1 style="color:white;margin:0;font-size:28px;font-weight:900">دكاني</h1>
+            <h1 style="color:white;margin:0;font-size:28px;font-weight:900">Commerco</h1>
             <p style="color:rgba(255,255,255,0.75);margin:8px 0 0;font-size:14px">منصة التجارة الإلكترونية الجزائرية</p>
           </td>
         </tr>
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
             <h2 style="color:#111827;margin:0 0 12px;font-size:22px">إعادة تعيين كلمة المرور 🔐</h2>
             <p style="color:#6B7280;font-size:15px;line-height:1.7;margin:0 0 24px">
               مرحباً،<br>
-              طلبت إعادة تعيين كلمة المرور لحسابك في دكاني.<br>
+              طلبت إعادة تعيين كلمة المرور لحسابك في Commerco.<br>
               اضغط على الزر أدناه للمتابعة:
             </p>
 
@@ -125,7 +125,7 @@ export async function POST(req: Request) {
         <tr>
           <td style="background:#F9FAFB;padding:20px 32px;text-align:center;border-top:1px solid #E5E7EB">
             <p style="color:#9CA3AF;font-size:12px;margin:0">
-              دكاني © ${new Date().getFullYear()} · منصة التجارة الإلكترونية الجزائرية
+              Commerco © ${new Date().getFullYear()} · منصة التجارة الإلكترونية الجزائرية
             </p>
           </td>
         </tr>

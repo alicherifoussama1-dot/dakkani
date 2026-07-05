@@ -483,7 +483,7 @@
 .faq-item > summary::-webkit-details-marker { display: none; }
 .faq-item[open] > summary .faq-chev { transform: rotate(180deg); }
 
-/* Dakkani product-page order form — ONE design system (accent = var(--pt-accent))
+/* Commerco product-page order form — ONE design system (accent = var(--pt-accent))
    font-size is deliberately >=16px: iOS Safari auto-zooms the viewport on focus
    for any text input/select/textarea whose computed font-size is below 16px —
    this was the root cause of the page appearing to "zoom" while using the form. */

@@ -1,6 +1,6 @@
 {
-  "name": "دكاني — متجرك الإلكتروني",
-  "short_name": "دكاني",
+  "name": "Commerco — متجرك الإلكتروني",
+  "short_name": "Commerco",
   "description": "أدر متجرك الإلكتروني الجزائري من أي مكان",
   "start_url": "/dashboard",
   "display": "standalone",

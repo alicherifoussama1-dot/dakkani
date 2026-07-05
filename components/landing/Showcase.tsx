@@ -37,7 +37,7 @@ function StoreMockup() {
             <path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14.4C4.5 14.4 1.6 11.5 1.6 8S4.5 1.6 8 1.6s6.4 2.9 6.4 6.4-2.9 6.4-6.4 6.4z"/>
           </svg>
           <span style={{ fontSize: 10, color: '#94A3B8', fontFamily: 'var(--font-inter)' }}>
-            elegance.dakkani.dz
+            elegance.commerco.dz
           </span>
         </div>
       </div>
@@ -161,7 +161,7 @@ function DashboardMockup() {
         borderBottom: '1px solid #E2E8F0',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontFamily: 'var(--font-tajawal)', fontWeight: 900, fontSize: 16, color: '#4F46E5' }}>دكاني</span>
+          <span style={{ fontFamily: 'var(--font-tajawal)', fontWeight: 900, fontSize: 16, color: '#4F46E5' }}>Commerco</span>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4F46E5' }} />
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -364,10 +364,10 @@ function ConfirmiliMockup() {
 
       {/* Order rows */}
       {[
-        { num: 'DK-0041', name: 'فاطمة الزهراء', wilaya: 'وهران',     price: '4,200', src: 'Dakkani', status: 'مؤكدة',    color: '#22C55E', bg: 'rgba(34,197,94,0.1)'  },
-        { num: 'DK-0040', name: 'محمد أمين',     wilaya: 'قسنطينة',  price: '3,500', src: 'Dakkani', status: 'معلقة',    color: '#80BCBD', bg: 'rgba(129,140,248,0.05)' },
+        { num: 'DK-0041', name: 'فاطمة الزهراء', wilaya: 'وهران',     price: '4,200', src: 'Commerco', status: 'مؤكدة',    color: '#22C55E', bg: 'rgba(34,197,94,0.1)'  },
+        { num: 'DK-0040', name: 'محمد أمين',     wilaya: 'قسنطينة',  price: '3,500', src: 'Commerco', status: 'معلقة',    color: '#80BCBD', bg: 'rgba(129,140,248,0.05)' },
         { num: 'ORD-0039',name: 'سارة عمري',    wilaya: 'الجزائر',   price: '1,800', src: 'يدوي',    status: 'فاشلة 01', color: '#FFA447', bg: 'transparent' },
-        { num: 'DK-0038', name: 'كريم بلال',    wilaya: 'بجاية',     price: '5,600', src: 'Dakkani', status: 'مؤكدة',    color: '#22C55E', bg: 'transparent' },
+        { num: 'DK-0038', name: 'كريم بلال',    wilaya: 'بجاية',     price: '5,600', src: 'Commerco', status: 'مؤكدة',    color: '#22C55E', bg: 'transparent' },
         { num: 'ORD-0037',name: 'نور الهدى',    wilaya: 'سطيف',      price: '2,200', src: 'يدوي',    status: 'مؤجلة',    color: '#9D76C1', bg: 'transparent' },
       ].map((row, i) => (
         <div key={i} style={{

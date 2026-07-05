@@ -94,5 +94,5 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const challenge = req.nextUrl.searchParams.get('hub.challenge')
   if (challenge) return new Response(challenge, { status: 200 })
-  return NextResponse.json({ status: 'Dakkani delivery webhook active' })
+  return NextResponse.json({ status: 'Commerco delivery webhook active' })
 }

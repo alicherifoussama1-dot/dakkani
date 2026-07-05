@@ -24,7 +24,7 @@ export async function GET(_req: NextRequest, { params }: { params: { size: strin
     fill="white"
     text-anchor="middle"
     dominant-baseline="middle"
-  >د</text>
+  >C</text>
 </svg>`
 
   return new NextResponse(svg, {

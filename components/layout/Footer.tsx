@@ -4,7 +4,7 @@ import { Facebook, Instagram } from 'lucide-react'
 
 const COLS = [
   {
-    title: 'عن دكاني',
+    title: 'عن Commerco',
     links: [
       { label: 'من نحن',         href: '#about' },
       { label: 'كيف يشتغل',      href: '#how' },
@@ -35,15 +35,15 @@ const COLS = [
     links: [
       { label: 'مركز المساعدة', href: '#help' },
       { label: 'واتساب',        href: 'https://wa.me/213000000000' },
-      { label: 'البريد الإلكتروني', href: 'mailto:hello@dakkani.dz' },
+      { label: 'البريد الإلكتروني', href: 'mailto:hello@commerco.dz' },
       { label: 'الشروط والخصوصية', href: '#terms' },
     ],
   },
 ]
 
 const SOCIALS = [
-  { Icon: Facebook,  href: 'https://facebook.com/dakkani',  label: 'فيسبوك' },
-  { Icon: Instagram, href: 'https://instagram.com/dakkani', label: 'انستغرام' },
+  { Icon: Facebook,  href: 'https://facebook.com/commerco',  label: 'فيسبوك' },
+  { Icon: Instagram, href: 'https://instagram.com/commerco', label: 'انستغرام' },
   {
     // TikTok via SVG path (not in lucide)
     Icon: ({ size = 20 }: { size?: number }) => (
@@ -51,7 +51,7 @@ const SOCIALS = [
         <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.31a8.16 8.16 0 004.77 1.52V7.39a4.85 4.85 0 01-1-.7z" />
       </svg>
     ),
-    href: 'https://tiktok.com/@dakkani',
+    href: 'https://tiktok.com/@commerco',
     label: 'تيك توك',
   },
 ]
@@ -68,7 +68,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12 pb-10 border-b border-white/10">
           <div>
             <div className="font-black text-2xl mb-1" style={{ fontFamily: 'var(--font-tajawal)' }}>
-              دكاني
+              Commerco
               <span style={{ color: '#0D6EFD' }}>.</span>
             </div>
             <p style={{ color: '#0D6EFD', fontFamily: 'var(--font-tajawal)' }} className="text-sm font-medium">
@@ -138,7 +138,7 @@ export default function Footer() {
           className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-white/10 text-xs"
           style={{ color: '#666666', fontFamily: 'var(--font-tajawal)' }}
         >
-          <p>© {new Date().getFullYear()} دكاني — جميع الحقوق محفوظة</p>
+          <p>© {new Date().getFullYear()} Commerco — جميع الحقوق محفوظة</p>
           <div className="flex items-center gap-4">
             <Link href="#privacy" className="hover:text-white transition-colors">سياسة الخصوصية</Link>
             <Link href="#terms"   className="hover:text-white transition-colors">شروط الاستخدام</Link>

@@ -1,5 +1,5 @@
 // ============================================================
-// Dakkani Seed Script
+// Commerco Seed Script
 // Run: npx ts-node --project tsconfig.seed.json scripts/seed.ts
 // ============================================================
 import { createClient } from '@supabase/supabase-js'
@@ -11,7 +11,7 @@ const supabase = createClient(
 
 // ── Test stores ───────────────────────────────────────────
 const STORES = [
-  { name: 'دكاني الجزائر', name_ar: 'دكاني الجزائر', slug: 'dakkani-alger',   plan: 'pro',       wilaya_id: 16 },
+  { name: 'Commerco الجزائر', name_ar: 'Commerco الجزائر', slug: 'commerco-alger',   plan: 'pro',       wilaya_id: 16 },
   { name: 'متجر الموضة',   name_ar: 'متجر الموضة',   slug: 'moda-store-dz',  plan: 'starter',   wilaya_id: 31 },
   { name: 'سوق الإلكترون', name_ar: 'سوق الإلكترون', slug: 'souk-electron',  plan: 'free',      wilaya_id: 25 },
 ]
@@ -62,14 +62,14 @@ const ALGERIAN_PHONES = [
 ]
 
 async function seed() {
-  console.log('🌱 Starting Dakkani seed...\n')
+  console.log('🌱 Starting Commerco seed...\n')
 
   for (const storeData of STORES) {
     console.log(`📦 Creating store: ${storeData.name}`)
 
     // Create a dummy auth user (in real usage, use admin.auth)
-    const email    = `store-${storeData.slug}@dakkani.dz`
-    const password = 'Dakkani2025!'
+    const email    = `store-${storeData.slug}@commerco.dz`
+    const password = 'Commerco2025!'
 
     let userId: string
     const { data: existingUsers } = await supabase.auth.admin.listUsers()

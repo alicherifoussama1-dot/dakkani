@@ -59,7 +59,7 @@ export default function Navbar() {
               className="flex items-center gap-1 font-black text-xl shrink-0"
               style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}
             >
-              دكاني
+              Commerco
               <span
                 className="w-1.5 h-1.5 rounded-full inline-block mt-0.5"
                 style={{ backgroundColor: '#0D6EFD' }}
@@ -150,7 +150,7 @@ export default function Navbar() {
             style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}
             onClick={() => setDrawerOpen(false)}
           >
-            دكاني
+            Commerco
             <span
               className="inline-block w-1.5 h-1.5 rounded-full mr-0.5 mb-0.5"
               style={{ backgroundColor: '#0D6EFD' }}

@@ -3,14 +3,14 @@ import { useStaggerAnimation } from '@/hooks/useScrollAnimation'
 
 const TESTIMONIALS = [
   {
-    quote: 'دكاني غيّر حياتي! كنت نبيع من صفحة فيسبوك وكانت الفوضى كبيرة. دلوقتي عندي متجر احترافي والطلبات تيجي لوحدها.',
+    quote: 'Commerco غيّر حياتي! كنت نبيع من صفحة فيسبوك وكانت الفوضى كبيرة. دلوقتي عندي متجر احترافي والطلبات تيجي لوحدها.',
     name: 'سارة م.',
     wilaya: 'وهران',
     stars: 5,
     avatar: 'س',
   },
   {
-    quote: 'في أسبوع واحد من إطلاق متجري على دكاني عندي 40 طلب! الأداة سهلة وفريق الدعم متوفر دائماً للمساعدة.',
+    quote: 'في أسبوع واحد من إطلاق متجري على Commerco عندي 40 طلب! الأداة سهلة وفريق الدعم متوفر دائماً للمساعدة.',
     name: 'محمد ب.',
     wilaya: 'قسنطينة',
     stars: 5,
@@ -37,7 +37,7 @@ export default function Testimonials() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-10">
-          <h2 className="section-title">قالوا عن دكاني</h2>
+          <h2 className="section-title">قالوا عن Commerco</h2>
           <p className="section-subtitle">آلاف التجار يثقون فينا كل يوم</p>
         </div>
 

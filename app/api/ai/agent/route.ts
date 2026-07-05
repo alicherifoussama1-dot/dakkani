@@ -188,7 +188,7 @@ export async function POST(req: Request) {
       })
     }
 
-    const systemPrompt = `أنت مساعد AI ذكي لإدارة متجر "${context.storeName}" على منصة دكاني الجزائرية.
+    const systemPrompt = `أنت مساعد AI ذكي لإدارة متجر "${context.storeName}" على منصة Commerco الجزائرية.
 لديك صلاحية الوصول لبيانات المتجر واتخاذ إجراءات حقيقية.
 السياق الحالي:
 - طلبات اليوم: ${context.todayOrders}

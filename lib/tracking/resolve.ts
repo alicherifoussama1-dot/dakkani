@@ -115,13 +115,13 @@ export interface ResolvedDomain {
  * Domain fallback chain:
  *   1. product's chosen domain (if verified/ssl_active)
  *   2. store default custom domain (if verified/ssl_active)
- *   3. platform domain: <slug>.dakkani.app   ← always succeeds
+ *   3. platform domain: <slug>.commerco.app   ← always succeeds
  */
 export function resolveDomain(
   domains: DomainRow[],
   productDomainId: string | null,
   storeSlug: string,
-  platformSuffix = 'dakkani.app',
+  platformSuffix = 'commerco.app',
 ): ResolvedDomain {
   const usable = (d?: DomainRow) => !!d && (d.status === 'verified' || d.status === 'ssl_active')
 

@@ -96,7 +96,7 @@ const T: Record<string, Record<string, string>> = {
     whatsapp: 'واتساب', call_attempt: 'محاولة اتصال', move_to_trash: 'نقل للسلة',
     restore: 'استعادة', order_history: 'سجل الطلبية', status_history: 'تاريخ التغييرات',
     no_history: 'لا يوجد سجل لهذه الطلبية', close: 'إغلاق',
-    source_dakkani: 'دكاني', source_manual: 'يدوي', source_sheet: 'شيت',
+    source_dakkani: 'Commerco', source_manual: 'يدوي', source_sheet: 'شيت',
   },
   fr: {
     statistics: 'Statistiques', orders: 'Commandes', tracking: 'Suivi',
@@ -110,7 +110,7 @@ const T: Record<string, Record<string, string>> = {
     whatsapp: 'WhatsApp', call_attempt: 'Tentative appel', move_to_trash: 'Mettre à la corbeille',
     restore: 'Restaurer', order_history: 'Historique', status_history: 'Historique des statuts',
     no_history: 'Aucun historique', close: 'Fermer',
-    source_dakkani: 'Dakkani', source_manual: 'Manuel', source_sheet: 'Tableur',
+    source_dakkani: 'Commerco', source_manual: 'Manuel', source_sheet: 'Tableur',
   },
   en: {
     statistics: 'Statistics', orders: 'Orders', tracking: 'Tracking',
@@ -124,7 +124,7 @@ const T: Record<string, Record<string, string>> = {
     whatsapp: 'WhatsApp', call_attempt: 'Call attempt', move_to_trash: 'Move to trash',
     restore: 'Restore', order_history: 'Order history', status_history: 'Status history',
     no_history: 'No history found', close: 'Close',
-    source_dakkani: 'Dakkani', source_manual: 'Manual', source_sheet: 'Sheet',
+    source_dakkani: 'Commerco', source_manual: 'Manual', source_sheet: 'Sheet',
   },
 }
 
@@ -787,7 +787,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
       return <span title="يدوي" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#EEE5FF',color:'#7B2FBE'}}>✎</span>
     }
     if (source === 'storefront' || source === 'Dakkani') {
-      return <span title="دكاني" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#E0F5F2',color:'#3CC6B9'}}>د</span>
+      return <span title="Commerco" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#E0F5F2',color:'#3CC6B9'}}>C</span>
     }
     if (source?.includes('sheet') || source?.includes('Sheet')) {
       return <span title="Google Sheet" className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold" style={{background:'#D1E7DD',color:'#198754'}}>📊</span>
@@ -1625,9 +1625,9 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
               <table className="data-table">
                 <thead><tr>{['المنصة','الاسم','الحالة','الإجراءات'].map(h=><th key={h}>{h}</th>)}</tr></thead>
                 <tbody>
-                  {/* Dakkani always shown as connected */}
+                  {/* Commerco always shown as connected */}
                   <tr>
-                    <td><div className="flex items-center gap-2"><span>🔵</span><span className="text-xs font-mono" style={{color:'var(--color-accent)'}}>Dakkani</span></div></td>
+                    <td><div className="flex items-center gap-2"><span>🔵</span><span className="text-xs font-mono" style={{color:'var(--color-accent)'}}>Commerco</span></div></td>
                     <td className="font-medium text-sm">{storeName}</td>
                     <td><span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{background:'#D1E7DD',color:'#198754'}}>متصل ✓</span></td>
                     <td><a href="/settings" className="btn btn-sm" style={{background:'#E0F5F2',color:'var(--color-accent)'}}>إعدادات</a></td>
@@ -2267,7 +2267,7 @@ export default function ConfirmiliClient({ storeId='', storeName='متجري', p
     <div className="confirmili-theme flex h-full" dir={lang === 'ar' ? 'rtl' : 'ltr'} onClick={() => actionMenu && setActionMenu(null)}>
       {/* ── Right-edge vertical icon sidebar ───────────────── */}
       <aside className="cf-sidebar">
-        <a href="/dashboard" title="العودة إلى لوحة دكاني"
+        <a href="/dashboard" title="العودة إلى لوحة Commerco"
           className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 flex-shrink-0 transition-transform hover:scale-105" style={{background:'var(--cf-turq)',color:'#00414D',fontWeight:800,fontSize:18}}>C</a>
         {TABS.map(tab => {
           const newCount = tab.id === 'orders' ? localOrders.filter(o=>o.status==='new'&&!trashedOrders.has(o.id)).length : 0

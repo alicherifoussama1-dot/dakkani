@@ -32,7 +32,7 @@ const montserrat = Montserrat({
 })
 
 export const metadata: Metadata = {
-  title: { default: 'دكاني | منصة التجارة الإلكترونية الجزائرية', template: '%s | دكاني' },
+  title: { default: 'Commerco | منصة التجارة الإلكترونية الجزائرية', template: '%s | Commerco' },
   description: 'أنشئ متجرك الإلكتروني الجزائري في دقائق.',
   manifest: '/manifest.json',
   icons: { icon: '/api/icons/192', apple: '/api/icons/152' },

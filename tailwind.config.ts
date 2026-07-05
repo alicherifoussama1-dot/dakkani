@@ -45,7 +45,7 @@ const config: Config = {
           info:'#0DCAF0',    'info-soft':'#CFF4FC',
         },
         // Backward compat — mapped to JustSell blue
-        dakkani: {
+        commerco: {
           50:'#EBF5FF', 100:'#CCE4FF', 200:'#99C8FE', 300:'#66ABFD',
           400:'#338FFD', 500:'#0D6EFD', 600:'#0B5ED7', 700:'#0950B5',
           800:'#074293', 900:'#053571',

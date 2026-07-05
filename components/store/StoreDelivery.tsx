@@ -928,7 +928,7 @@ function ProviderDrawer({
           {/* Sync Logs Tab (Terminal layout) */}
           {drawerTab === 'logs' && (
             <div className="bg-gray-950 text-gray-100 font-mono text-[10px] p-4 rounded-xl border border-gray-800 shadow-inner h-[320px] overflow-y-auto space-y-2 leading-relaxed" dir="ltr">
-              <p className="text-gray-500 select-none border-b border-gray-800 pb-2 mb-3"># Dakkani Delivery Console Logs v1.0.0</p>
+              <p className="text-gray-500 select-none border-b border-gray-800 pb-2 mb-3"># Commerco Delivery Console Logs v1.0.0</p>
               {syncLogs.map((log, i) => (
                 <div key={i} className="flex gap-2">
                   <span className="text-gray-600 select-none">&gt;</span>

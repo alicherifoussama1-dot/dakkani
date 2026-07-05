@@ -145,7 +145,7 @@ export default function StorefrontLayout({ store, children }: Props) {
                 <span key={t}>{t}</span>
               ))}
             </div>
-            <p className="text-white/30 text-xs">مدعوم بـ دكاني</p>
+            <p className="text-white/30 text-xs">مدعوم بـ Commerco</p>
           </div>
         </div>
       </footer>

@@ -49,8 +49,8 @@ export default function DiscoverPage() {
       <header className="bg-white border-b sticky top-0 z-40" style={{borderColor:'var(--color-border)'}}>
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-3" dir="rtl">
           <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-white" style={{background:'var(--color-accent)'}}>د</div>
-            <span className="font-black text-base" style={{color:'var(--color-text-primary)'}}>دكاني</span>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-white" style={{background:'var(--color-accent)'}}>C</div>
+            <span className="font-black text-base" style={{color:'var(--color-text-primary)'}}>Commerco</span>
           </Link>
           <div className="flex-1 relative max-w-lg mx-auto">
             <Search size={14} className="absolute right-3 top-1/2 -translate-y-1/2" style={{color:'var(--color-text-muted)'}}/>

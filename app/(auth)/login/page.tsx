@@ -29,10 +29,10 @@ function MerchantLoginInner() {
     <div className="w-full max-w-md rounded-2xl border bg-white p-8" style={{ borderColor:'var(--color-border)', boxShadow:'var(--shadow-card)' }}>
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-2 mb-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-xl" style={{ background:'var(--color-accent)' }}>د</div>
-          <span className="font-black text-2xl" style={{ color:'var(--color-text-primary)' }}>دكاني</span>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-xl" style={{ background:'var(--color-accent)' }}>C</div>
+          <span className="font-black text-2xl" style={{ color:'var(--color-text-primary)' }}>Commerco</span>
         </div>
-        <h1 className="font-bold text-xl" style={{ color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)' }}>مرحبا بك في دكاني</h1>
+        <h1 className="font-bold text-xl" style={{ color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)' }}>مرحبا بك في Commerco</h1>
         <p className="text-xs mt-1 font-medium px-3 py-1 rounded-full inline-block" style={{ background:'var(--color-accent-soft)',color:'var(--color-accent)',fontFamily:'var(--font-arabic)' }}>للتجار فقط</p>
       </div>
       <form onSubmit={submit} className="space-y-4" dir="rtl">

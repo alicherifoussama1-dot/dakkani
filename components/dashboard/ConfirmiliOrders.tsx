@@ -1,7 +1,7 @@
 'use client'
 // ============================================================
 // ConfirmiliOrders — Exact Octomatic /orders page replica
-// Dakkani blue #3CC6B9 · Exact status colors · RTL Arabic · Tajawal
+// Commerco blue #3CC6B9 · Exact status colors · RTL Arabic · Tajawal
 // ============================================================
 import React, {
   useState, useMemo, useCallback, useEffect,
@@ -77,7 +77,7 @@ function hexToRgba(hex: string, alpha: number): string {
 function SourceBadge({ source }: { source: string }) {
   const s = (source ?? '').toLowerCase()
   if (s.includes('dakkani') || s.includes('storefront')) return (
-    <span title="Dakkani" className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{background:'#E0F5F2',color:'#3CC6B9'}}>🔵 Dakkani</span>
+    <span title="Commerco" className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{background:'#E0F5F2',color:'#3CC6B9'}}>🔵 Commerco</span>
   )
   if (s.includes('sheet') || s.includes('google'))  return (
     <span title="Google Sheet" className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{background:'#E8F5E9',color:'#2E7D32'}}>📊 Sheet</span>

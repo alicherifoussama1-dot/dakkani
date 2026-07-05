@@ -85,9 +85,9 @@ export default function OnboardingPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-br [#0D6EFD] to-[#0B5ED7] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-white font-black text-2xl">د</span>
+            <span className="text-white font-black text-2xl">C</span>
           </div>
-          <h1 className="text-3xl font-black text-[#111111]">مرحباً في دكاني! 🎉</h1>
+          <h1 className="text-3xl font-black text-[#111111]">مرحباً في Commerco! 🎉</h1>
           <p className="text-[#999999] mt-2">أنشئ متجرك الإلكتروني في دقيقتين</p>
         </div>
 
@@ -167,7 +167,7 @@ export default function OnboardingPage() {
                   <div className="bg-[#F9F9F9] border border-[#EBEBEB] rounded-2xl p-3">
                     <p className="text-xs text-[#999999] mb-1">رابط متجرك سيكون:</p>
                     <p className="font-mono text-sm text-[#0D6EFD] font-bold">
-                      dakkani.dz/store/<span className="text-[#111111]">{slugify(nameAr || name || '')}</span>
+                      commerco.dz/store/<span className="text-[#111111]">{slugify(nameAr || name || '')}</span>
                     </p>
                   </div>
                 )}
@@ -272,7 +272,7 @@ export default function OnboardingPage() {
         </form>
 
         <p className="text-center text-xs text-[#CCCCCC] mt-6">
-          بالإنشاء، تقبل شروط الاستخدام · دكاني — منصة التجارة الإلكترونية الجزائرية
+          بالإنشاء، تقبل شروط الاستخدام · Commerco — منصة التجارة الإلكترونية الجزائرية
         </p>
       </div>
     </div>

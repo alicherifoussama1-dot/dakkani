@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'الرئيسية — دكاني' }
+export const metadata = { title: 'الرئيسية — Commerco' }
 
 import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import DashboardHome from '@/components/dashboard/DashboardHome'

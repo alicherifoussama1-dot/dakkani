@@ -1,19 +1,19 @@
 ---
-name: Dakkani Dashboard UI Designer
-description: Permanent skill to design premium, consistent dashboard UI and components for Dakkani, inspired by Vercel, Stripe, and Linear.
+name: Commerco Dashboard UI Designer
+description: Permanent skill to design premium, consistent dashboard UI and components for Commerco, inspired by Vercel, Stripe, and Linear.
 ---
 
-# Dakkani Dashboard UI Designer Skill
+# Commerco Dashboard UI Designer Skill
 
-This skill defines the permanent design system, visual guidelines, UI/UX philosophy, component architectures, and responsive layout rules for the Dakkani Merchant and Admin Dashboard. 
+This skill defines the permanent design system, visual guidelines, UI/UX philosophy, component architectures, and responsive layout rules for the Commerco Merchant and Admin Dashboard. 
 
-Any new page or component in the Dakkani Dashboard must be designed according to this specification before implementation.
+Any new page or component in the Commerco Dashboard must be designed according to this specification before implementation.
 
 ---
 
 ## 🎯 UI/UX Philosophy
 
-The Dakkani Dashboard UI is:
+The Commerco Dashboard UI is:
 - **Minimal & Premium**: Clean space, thin borders, soft shadows, and subtle color accents. Never crowded or cluttered.
 - **Calm & Professional**: Uses neutral backgrounds and borders, with brand color highlights. Avoids flashy animations or over-saturated colors.
 - **Fast & Responsive**: Optimized for instant feedback and works perfectly across desktop, tablet, and mobile (mobile-first layout support).

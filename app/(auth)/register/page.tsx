@@ -54,7 +54,7 @@ export default function RegisterPage() {
     >
       <div className="text-center mb-8">
         <Link href="/" className="inline-block font-black text-3xl mb-3" style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}>
-          دكاني<span style={{ color: '#0D6EFD' }}>.</span>
+          Commerco<span style={{ color: '#0D6EFD' }}>.</span>
         </Link>
         <h1 className="font-bold text-xl" style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}>
           إنشاء حساب مجاني

@@ -222,7 +222,7 @@ export default function POSTerminal({ storeId, storeName, cashierId, products: s
       ` : ''}
       <div class="line"></div>
       <div class="center">شكراً لزيارتكم</div>
-      <div class="center" style="font-size:10px">دكاني POS</div>
+      <div class="center" style="font-size:10px">Commerco POS</div>
       </body></html>
     `)
     win.print()
