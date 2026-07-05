@@ -48,10 +48,19 @@ export async function middleware(request: NextRequest) {
   if (host && !PLATFORM_HOSTS.test(host) && !pathname.startsWith('/api/') && !pathname.startsWith('/_next')) {
     const slug = await resolveCustomHost(host)
     if (slug) {
+      // Canonicalize internal links: on a custom host, `/store/<slug>/...`
+      // (emitted by shared storefront components) collapses to `/...` so the
+      // visitor stays on the custom domain instead of 404ing.
+      let path = pathname
+      const m = path.match(/^\/store\/[^/]+(\/.*)?$/)
+      if (m) path = m[1] ?? '/'
       // Avoid double-prefixing if the path already targets this store.
-      const target = pathname === '/' ? `/${slug}` : `/${slug}${pathname}`
-      if (!pathname.startsWith(`/${slug}/`) && pathname !== `/${slug}`) {
+      if (!path.startsWith(`/${slug}/`) && path !== `/${slug}`) {
+        const target = path === '/' ? `/${slug}` : `/${slug}${path}`
         return NextResponse.rewrite(new URL(target, request.url), { request: { headers: request.headers } })
+      }
+      if (path !== pathname) {
+        return NextResponse.rewrite(new URL(path, request.url), { request: { headers: request.headers } })
       }
     }
   }

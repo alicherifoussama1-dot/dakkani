@@ -10,10 +10,11 @@ export default async function ProductsPage() {
   if (!user) return null
   const { activeStore: store } = await getActiveStore(supabase, user.id)
   if (!store) return null
-  const [productsRes, catsRes, warehousesRes] = await Promise.all([
+  const [productsRes, catsRes, warehousesRes, domainsRes] = await Promise.all([
     supabase.from('products').select('*,warehouse_stock(quantity,reserved)').eq('store_id', store.id).order('created_at', { ascending: false }),
     supabase.from('categories').select('id,name,name_ar').eq('store_id', store.id).eq('is_active', true),
     supabase.from('warehouses').select('id,name').eq('store_id', store.id).eq('is_active', true),
+    supabase.from('domains').select('id,hostname,status,is_default').eq('store_id', store.id),
   ])
   return (
     <ProductsPageClient
@@ -23,6 +24,7 @@ export default async function ProductsPage() {
       storePixels={{ meta: store.meta_pixel_id, tiktok: store.tiktok_pixel_id }}
       categories={catsRes.data ?? []}
       warehouses={warehousesRes.data ?? []}
+      domains={(domainsRes.data ?? []) as any[]}
     />
   )
 }

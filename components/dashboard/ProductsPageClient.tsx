@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Search, Eye, Pencil, ExternalLink, Package, Trash2, Download } from 'lucide-react'
 import { formatDZD } from '@/lib/utils/format'
 import { createClient } from '@/lib/supabase/client'
+import { resolveProductHostname, productPublicUrl, type DomainLite } from '@/lib/domains/url'
 
 interface Props {
   initialProducts: any[]
@@ -13,10 +14,11 @@ interface Props {
   storePixels: { meta?: string | null; tiktok?: string | null }
   categories: { id: string; name: string; name_ar?: string | null }[]
   warehouses: { id: string; name: string }[]
+  domains?: DomainLite[]
 }
 
 export default function ProductsPageClient({
-  initialProducts, storeId, storeSlug, storePixels, categories, warehouses,
+  initialProducts, storeId, storeSlug, storePixels, categories, warehouses, domains = [],
 }: Props) {
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -245,8 +247,9 @@ export default function ProductsPageClient({
                     <td>
                       <div className="flex items-center gap-1">
                         {p.slug && (
-                          <a href={`/store/${storeSlug}/product/${p.slug}`} target="_blank" rel="noopener noreferrer"
-                            className="p-1.5 rounded hover:bg-[#F8F9FA] transition-colors">
+                          <a href={productPublicUrl({ hostname: resolveProductHostname(domains, p.domain_id), storeSlug, productSlug: p.slug })}
+                            target="_blank" rel="noopener noreferrer"
+                            className="p-1.5 rounded hover:bg-[#F8F9FA] transition-colors" title="عرض على الدومين النهائي">
                             <Eye size={13} style={{ color: 'var(--color-text-muted)' }} />
                           </a>
                         )}

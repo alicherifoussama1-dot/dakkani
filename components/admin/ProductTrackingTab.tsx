@@ -70,7 +70,11 @@ export default function ProductTrackingTab({ productId, storeId }: Props) {
 
   const resolved = useMemo(() => resolveProductTracking(integrations, assignmentsFromSel), [integrations, assignmentsFromSel])
   const domain = useMemo(() => resolveDomain(domains, domainSel === 'default' ? null : domainSel, storeSlug), [domains, domainSel, storeSlug])
-  const productUrl = product ? `https://${domain.hostname}/product/${product.slug}` : ''
+  const productUrl = product
+    ? (domain.isCustom
+        ? `https://${domain.hostname}/product/${product.slug}`
+        : `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://dakkani.vercel.app'}/store/${storeSlug}/product/${product.slug}`)
+    : ''
 
   const save = async () => {
     if (!productId) return
