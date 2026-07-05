@@ -33,14 +33,34 @@ async function vc(path: string, init?: RequestInit) {
   return { status: res.status, json }
 }
 
-/** Idempotently add a domain to the project (409 = already added → ok). */
-export async function vercelAttachDomain(hostname: string): Promise<{ ok: boolean; error?: string }> {
-  if (!vercelConfigured()) return { ok: false, error: 'Vercel API not configured' }
-  const r = await vc(`/v10/projects/${process.env.VERCEL_PROJECT_ID}/domains${teamQS()}`, {
+export interface VercelDomainInfo {
+  name?: string
+  verified?: boolean
+  verification?: { type: string; domain: string; value: string; reason?: string }[]
+  error?: { code: string; message: string }
+}
+
+/** Raw attach — returns Vercel's exact JSON (verification challenges included). */
+export async function vercelAttachDomainRaw(hostname: string): Promise<{ status: number; json: VercelDomainInfo }> {
+  return vc(`/v10/projects/${process.env.VERCEL_PROJECT_ID}/domains${teamQS()}`, {
     method: 'POST',
     body: JSON.stringify({ name: hostname }),
   })
-  if (r.status === 200 || r.status === 409) return { ok: true } // 409 = domain_already_in_use by this project
+}
+
+export async function vercelGetDomain(hostname: string): Promise<{ status: number; json: VercelDomainInfo }> {
+  return vc(`/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains/${encodeURIComponent(hostname)}${teamQS()}`)
+}
+
+export async function vercelVerifyDomain(hostname: string): Promise<{ status: number; json: VercelDomainInfo }> {
+  return vc(`/v9/projects/${process.env.VERCEL_PROJECT_ID}/domains/${encodeURIComponent(hostname)}/verify${teamQS()}`, { method: 'POST' })
+}
+
+/** Idempotently add a domain to the project (409/already-in-use → ok). */
+export async function vercelAttachDomain(hostname: string): Promise<{ ok: boolean; error?: string }> {
+  if (!vercelConfigured()) return { ok: false, error: 'Vercel API not configured' }
+  const r = await vercelAttachDomainRaw(hostname)
+  if (r.status === 200 || r.status === 409) return { ok: true }
   const code = r.json?.error?.code
   if (code === 'domain_already_in_use') return { ok: true }
   return { ok: false, error: r.json?.error?.message ?? `Vercel HTTP ${r.status}` }

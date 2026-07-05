@@ -84,13 +84,17 @@ export async function cfGetZone(zoneId: string): Promise<CfZone | null> {
 // Idempotently create a DNS record (skips if an equivalent one exists).
 export async function cfUpsertDns(
   zoneId: string,
-  record: { type: 'A' | 'CNAME'; name: string; content: string; proxied?: boolean },
+  record: { type: 'A' | 'CNAME' | 'TXT'; name: string; content: string; proxied?: boolean },
 ): Promise<boolean> {
-  const existing = await cf<{ id: string }[]>(`/zones/${zoneId}/dns_records?type=${record.type}&name=${encodeURIComponent(record.name)}`)
-  if (existing.success && existing.result?.length) return true
+  const existing = await cf<{ id: string; content: string }[]>(`/zones/${zoneId}/dns_records?type=${record.type}&name=${encodeURIComponent(record.name)}`)
+  if (existing.success && existing.result?.length) {
+    // Non-TXT: one record per name is enough. TXT: only skip if same value exists.
+    if (record.type !== 'TXT') return true
+    if (existing.result.some(r => (r.content ?? '').includes(record.content))) return true
+  }
   const r = await cf<{ id: string }>(`/zones/${zoneId}/dns_records`, {
     method: 'POST',
-    body: JSON.stringify({ proxied: true, ttl: 1, ...record }),
+    body: JSON.stringify({ ttl: 1, proxied: record.type === 'TXT' ? false : true, ...record }),
   })
   return r.success
 }

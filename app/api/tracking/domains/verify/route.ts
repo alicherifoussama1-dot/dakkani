@@ -9,7 +9,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { cfConfigured, cfVerifyToken, cfCreateZone, cfGetZone, cfProvisionDns, cfSslStatus, cfSetSslFull } from '@/lib/cloudflare/client'
-import { vercelConfigured, vercelAttachDomainPair } from '@/lib/vercel/client'
+import { ensureOriginDomainPair } from '@/lib/domains/attach'
 
 const CF_CONFIG_ERROR = 'Cloudflare API configuration error'
 
@@ -54,11 +54,13 @@ export async function POST(req: Request) {
   if (zone.status === 'active') {
     await cfProvisionDns(domain.cf_zone_id, domain.hostname)
     // Origin must terminate TLS for this hostname → SSL mode Full +
-    // attach the domain to the Vercel project. Without this the site 525s.
+    // attach & VERIFY the domain on the Vercel project (completes the
+    // TXT challenge through the CF zone). Without this the site 525s.
     await cfSetSslFull(domain.cf_zone_id)
-    const origin = vercelConfigured()
-      ? await vercelAttachDomainPair(domain.hostname)
-      : { ok: false, error: 'VERCEL_API_TOKEN / VERCEL_PROJECT_ID غير مضبوطين' }
+    const pair = await ensureOriginDomainPair(domain.cf_zone_id, domain.hostname)
+    const origin = pair.apex.ok && pair.apex.verified !== false
+      ? { ok: true as const }
+      : { ok: false as const, error: pair.apex.error ?? 'التحقق لدى Vercel لم يكتمل بعد' }
     const ssl = await cfSslStatus(domain.cf_zone_id)
     await supabase.from('domains').update({
       status: 'ssl_active', ssl_status: ssl, dns_status: 'connected',
