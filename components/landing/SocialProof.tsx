@@ -2,16 +2,18 @@
 
 import { useRef } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
+import { useT, useRaw } from '@/lib/i18n/react'
 
 const HIGHLIGHTS = [
-  { icon: '⚡', title: 'إنشاء المتجر في 30 ثانية', sub: 'أسرع نشر في الجزائر' },
-  { icon: '🔒', title: 'بيانات آمنة 100%', sub: 'تشفير SSL + GDPR' },
-  { icon: '📞', title: 'دعم 7 أيام / 24 ساعة', sub: 'عبر واتساب والبريد' },
-  { icon: '🇩🇿', title: 'مصمّم للجزائر', sub: 'دارجة · ولايات · COD' },
-  { icon: '🚀', title: 'تحديثات أسبوعية', sub: 'ميزات جديدة باستمرار' },
+  { icon: '⚡' },
+  { icon: '🔒' },
+  { icon: '📞' },
+  { icon: '🇩🇿' },
+  { icon: '🚀' },
 ]
 
 export default function SocialProof() {
+  const t = useT()
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-40px' })
   const prefersReduced = useReducedMotion()
@@ -51,11 +53,11 @@ export default function SocialProof() {
                 <div style={{
                   fontFamily: 'var(--font-tajawal)', fontWeight: 700, fontSize: 14,
                   color: '#fff',
-                }}>{h.title}</div>
+                }}>{t(`landing.social.items.${i}.title`)}</div>
                 <div style={{
                   fontFamily: 'var(--font-tajawal)', fontSize: 12,
                   color: 'rgba(255,255,255,0.65)',
-                }}>{h.sub}</div>
+                }}>{t(`landing.social.items.${i}.sub`)}</div>
               </div>
             </motion.div>
           ))}

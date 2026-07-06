@@ -2,70 +2,47 @@
 
 import { useRef, useState } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
+import { useT, useRaw } from '@/lib/i18n/react'
 
 const REVIEWS = [
   {
-    name: 'سارة بن عمر',
-    role: 'صاحبة متجر أزياء',
-    wilaya: 'وهران',
-    flag: '🏙️',
-    quote: 'Commerco غيّر حياتي! فتحت متجري في أقل من ساعة وصلتلي أول طلبية من قسنطينة. الآن عندي أكثر من 200 عميل من كل الجزائر.',
-    rating: 5,
+                flag: '🏙️',
+        rating: 5,
     avatar: '👩',
     bg: '#FDF2F8',
     accent: '#EC4899',
   },
   {
-    name: 'محمد لعموري',
-    role: 'تاجر إلكترونيات',
-    wilaya: 'قسنطينة',
-    flag: '🕌',
-    quote: 'المنصة سهلة جداً واحترافية. إدارة المخزون والطلبات صارت أسهل بكثير. وخدمة العملاء تجاوبت معايا في 5 دقائق!',
-    rating: 5,
+                flag: '🕌',
+        rating: 5,
     avatar: '👨',
     bg: '#EEF2FF',
     accent: '#4F46E5',
   },
   {
-    name: 'أمينة بوغازي',
-    role: 'صاحبة متجر حلويات',
-    wilaya: 'تيزي وزو',
-    flag: '🌄',
-    quote: 'كنت خايفة من البيع أونلاين، بس Commerco خلاها سهلة. الآن عندي متجر احترافي وأبيع لكل الولايات. شكراً Commerco!',
-    rating: 5,
+                flag: '🌄',
+        rating: 5,
     avatar: '👩‍🍳',
     bg: '#FFFBEB',
     accent: '#D97706',
   },
   {
-    name: 'عبد الرحمن قاسمي',
-    role: 'تاجر رياضة',
-    wilaya: 'الجزائر العاصمة',
-    flag: '🏟️',
-    quote: 'Commerco الأفضل للسوق الجزائري. الدفع عند الاستلام والتوصيل لـ48 ولاية ميزة لا تتوفر في غيره.',
-    rating: 5,
+                flag: '🏟️',
+        rating: 5,
     avatar: '👨‍💼',
     bg: '#ECFDF5',
     accent: '#059669',
   },
   {
-    name: 'نور الهدى تومي',
-    role: 'صاحبة متجر مستحضرات',
-    wilaya: 'بجاية',
-    flag: '🌊',
-    quote: 'الردود الذكية بالدارجة حلت مشكلة التواصل مع العملاء تماماً. متجري نما 300% في أقل من 6 أشهر.',
-    rating: 5,
+                flag: '🌊',
+        rating: 5,
     avatar: '💄',
     bg: '#F5F3FF',
     accent: '#7C3AED',
   },
   {
-    name: 'كمال زروق',
-    role: 'صاحب متجر أثاث',
-    wilaya: 'سطيف',
-    flag: '🏛️',
-    quote: 'ما كنتش نتوقع يجي عندي طلبيات من 12 ولاية مختلفة! Commerco وسّع مبيعاتي بشكل ما تخيلتوش قبل.',
-    rating: 5,
+                flag: '🏛️',
+        rating: 5,
     avatar: '🛋️',
     bg: '#F0F9FF',
     accent: '#0EA5E9',
@@ -85,7 +62,7 @@ function Stars({ count }: { count: number }) {
 function ReviewCard({
   r, i, inView, prefersReduced,
 }: {
-  r: typeof REVIEWS[0]; i: number; inView: boolean; prefersReduced: boolean | null
+  r: any; i: number; inView: boolean; prefersReduced: boolean | null
 }) {
   const [tilt, setTilt] = useState({ x: 0, y: 0, active: false })
 
@@ -154,6 +131,9 @@ function ReviewCard({
 }
 
 export default function Testimonials() {
+  const t = useT()
+  const raw = useRaw()
+  const RT: any[] = REVIEWS.map((r: any, i: number) => ({ ...r, ...(((raw('landing.testimonials.items') as any[]) ?? [])[i] ?? {}) }))
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
   const prefersReduced = useReducedMotion()
@@ -182,7 +162,7 @@ export default function Testimonials() {
             fontFamily: 'var(--font-tajawal)', fontWeight: 900,
             fontSize: 'clamp(28px, 4vw, 44px)', color: '#0F172A',
             lineHeight: 1.3, margin: '0 0 12px',
-          }}>ماذا يقول تجارنا</h2>
+          }}>{t('landing.testimonials.title')}</h2>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 2, marginBottom: 6 }}>
             {Array.from({ length: 5 }).map((_, i) => (
               <span key={i} style={{ color: '#FBBF24', fontSize: 20 }}>★</span>
@@ -190,14 +170,14 @@ export default function Testimonials() {
           </div>
           <p style={{
             fontFamily: 'var(--font-tajawal)', fontSize: 14, color: '#94A3B8',
-          }}>4.9/5 من أكثر من 2,000 تقييم</p>
+          }}>{t('landing.testimonials.rating')}</p>
         </motion.div>
 
         {/* Desktop 3-col grid */}
         <div className="testimonials-desktop" style={{
           display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20,
         }}>
-          {REVIEWS.slice(0, 3).map((r, i) => (
+          {RT.slice(0, 3).map((r, i) => (
             <ReviewCard key={i} r={r} i={i} inView={inView} prefersReduced={prefersReduced} />
           ))}
         </div>
@@ -206,7 +186,7 @@ export default function Testimonials() {
         <div className="testimonials-row2" style={{
           display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginTop: 20,
         }}>
-          {REVIEWS.slice(3).map((r, i) => (
+          {RT.slice(3).map((r, i) => (
             <ReviewCard key={i} r={r} i={i + 3} inView={inView} prefersReduced={prefersReduced} />
           ))}
         </div>
@@ -220,7 +200,7 @@ export default function Testimonials() {
               paddingBottom: 12, cursor: 'grab',
             }}
             className="scrollbar-none">
-            {REVIEWS.map((r, i) => (
+            {RT.map((r, i) => (
               <div key={i} style={{
                 minWidth: 'calc(90vw - 48px)', maxWidth: 360,
                 scrollSnapAlign: 'center', flexShrink: 0,
@@ -232,7 +212,7 @@ export default function Testimonials() {
 
           {/* Dot indicators */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 20 }}>
-            {REVIEWS.map((_, i) => (
+            {RT.map((_, i) => (
               <div key={i} style={{
                 width: i === mobileIndex ? 20 : 6,
                 height: 6, borderRadius: 3,

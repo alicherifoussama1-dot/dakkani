@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { useT, useRaw } from '@/lib/i18n/react'
 
 export default function FloatingCTA() {
+  const t = useT()
   const [show, setShow] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const prefersReduced = useReducedMotion()
@@ -43,7 +45,7 @@ export default function FloatingCTA() {
               color: '#fff', fontFamily: 'var(--font-tajawal)', fontWeight: 700, fontSize: 15,
               padding: '14px', borderRadius: 14, textDecoration: 'none',
               boxShadow: '0 4px 16px rgba(79,70,229,0.3)',
-            }}>ابدأ مجاناً الآن</a>
+            }}>{t('landing.floating.cta')}</a>
             <button
               onClick={() => setDismissed(true)}
               style={{

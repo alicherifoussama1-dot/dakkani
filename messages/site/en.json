@@ -7,5 +7,466 @@
     "login": "Log in",
     "start_free": "Start free",
     "open_menu": "Open menu"
+  },
+  "auth": {
+    "error_generic": "Something went wrong",
+    "email": "Email",
+    "password": "Password",
+    "login": {
+      "aside_title": "Start selling online in minutes",
+      "aside_sub": "Algeria's #1 e-commerce platform. Delivery to 48 wilayas, secure payment, AI in Darija.",
+      "stat_merchants": "12,000+ merchants",
+      "stat_wilayas": "48 wilayas",
+      "stat_satisfaction": "98% satisfaction",
+      "welcome": "Welcome back 👋",
+      "subtitle": "Sign in to manage your store",
+      "forgot": "Forgot password?",
+      "submit": "Log in",
+      "submitting": "Signing in...",
+      "no_account": "Don't have an account?",
+      "register_free": "Sign up free",
+      "welcome_commerco": "Welcome to Commerco",
+      "merchants_only": "Merchants only",
+      "register_now": "Sign up free now"
+    },
+    "register": {
+      "aside_title": "Join thousands of Algerian merchants",
+      "feature_1": "A professional online store in minutes",
+      "feature_2": "Delivery to all 48 wilayas",
+      "feature_3": "AI replies in Algerian Darija",
+      "feature_4": "Advanced stats and analytics",
+      "aside_sub": "Join 12,000+ active merchants",
+      "title": "Create a free account 🚀",
+      "subtitle": "Start selling in under 5 minutes",
+      "f_store": "Store name *",
+      "f_store_ph": "My Algerian Store",
+      "f_email": "Email *",
+      "f_phone": "Phone number *",
+      "f_phone_ph": "0555 xx xx xx",
+      "f_password": "Password *",
+      "f_password_ph": "At least 8 characters",
+      "wilaya": "Wilaya",
+      "terms_pre": "By signing up you agree to the",
+      "terms": "Terms of Use",
+      "and": "and",
+      "privacy": "Privacy Policy",
+      "submit": "Create free account →",
+      "submitting": "Creating...",
+      "have_account": "Already have an account?",
+      "login_link": "Log in",
+      "error": "Registration error",
+      "title2": "Create a free account",
+      "subtitle2": "Start selling online in under 2 minutes"
+    }
+  },
+  "forgot": {
+    "title": "Forgot your password?",
+    "subtitle": "Enter your email and we will send you a reset link",
+    "send": "Send reset link",
+    "sending": "Sending...",
+    "back": "Back to login",
+    "error_generic": "Something went wrong, try again",
+    "sent_title": "Check your inbox! 📬",
+    "sent_sub": "We sent a reset link to:",
+    "dev_mode": "🔧 Dev mode:",
+    "not_received": "Did not get the email?",
+    "check_spam": "• Check your Spam or Junk folder",
+    "wait_retry": "• Wait 2 minutes and check again",
+    "resend": "Resend"
+  },
+  "landing": {
+    "hero": {
+      "eyebrow": "Algeria's #1 e-commerce platform",
+      "headline": "Your online store, ready in minutes",
+      "accent": "for Algerian merchants",
+      "sub": "Create your store, add your products, and start selling to all 48 wilayas — no technical skills needed",
+      "cta_start": "Start free",
+      "cta_demo": "Watch demo",
+      "scroll": "Scroll to explore",
+      "trust": [
+        "No credit card required",
+        "48 wilayas",
+        "Cancel anytime"
+      ]
+    },
+    "stats": {
+      "items": [
+        "Active merchants",
+        "Wilayas covered",
+        "Orders processed",
+        "Customer satisfaction"
+      ]
+    },
+    "social": {
+      "items": [
+        {
+          "title": "Store live in 30 seconds",
+          "sub": "Fastest launch in Algeria"
+        },
+        {
+          "title": "100% secure data",
+          "sub": "SSL encryption + GDPR"
+        },
+        {
+          "title": "Support 7 days / 24h",
+          "sub": "Via WhatsApp and email"
+        },
+        {
+          "title": "Built for Algeria",
+          "sub": "Darija · Wilayas · COD"
+        },
+        {
+          "title": "Weekly updates",
+          "sub": "New features constantly"
+        }
+      ]
+    },
+    "announce": {
+      "pre": "Limited offer — get",
+      "highlight": "3 months free",
+      "post": "on the Pro plan when you subscribe this week",
+      "cta": "Start now",
+      "close": "Close"
+    },
+    "logobar": {
+      "pre": "Trusted by more than",
+      "post": "Algerian merchants",
+      "names": [
+        "Elegance Store",
+        "Electronic Pro",
+        "Tazej Fresh",
+        "Sports House",
+        "Cosmetic DZ",
+        "Algeria Furniture",
+        "Smart Tech",
+        "Oum El Banine Sweets",
+        "Books & Reading",
+        "Kids World",
+        "Style Moda",
+        "Modern Kitchen"
+      ]
+    },
+    "floating": {
+      "cta": "Start free now"
+    },
+    "cta": {
+      "title": "Ready to start selling?",
+      "sub": "Start free today. No credit card required. No technical skills.",
+      "start": "Start free now",
+      "discover": "Discover the features",
+      "points": [
+        "✓ Free forever on the basic plan",
+        "✓ 14-day free trial for Pro",
+        "✓ Cancel anytime"
+      ]
+    },
+    "how": {
+      "title": "Just 3 steps to start",
+      "sub": "The fastest start among e-commerce platforms in Algeria",
+      "steps": [
+        {
+          "title": "Sign up free",
+          "desc": "Create your account in 30 seconds without a credit card. Pick your store name and start right away.",
+          "detail": "Only 30 seconds"
+        },
+        {
+          "title": "Add your products",
+          "desc": "Add your product photos, prices and stock. Import from Excel or add them manually.",
+          "detail": "Excel import"
+        },
+        {
+          "title": "Start selling",
+          "desc": "Share your store link on social media and receive orders from 48 wilayas.",
+          "detail": "48 wilayas"
+        }
+      ]
+    },
+    "faq": {
+      "title": "Questions merchants often ask",
+      "more_q": "Have another question?",
+      "more_a": "Our support team is available 7 days a week to answer all your questions",
+      "items": [
+        {
+          "q": "Do I need technical skills to create a store on Commerco?",
+          "a": "Not at all. Commerco is designed for the everyday Algerian merchant. You can create your store, add your products and start selling in under an hour, with zero coding or technical knowledge."
+        },
+        {
+          "q": "How do customers reach my store in every wilaya?",
+          "a": "Your Commerco store supports delivery to all 48 Algerian wilayas through certified shipping partners. The customer picks their wilaya at checkout and the order lands straight in your dashboard."
+        },
+        {
+          "q": "Which payment methods are available to customers?",
+          "a": "Cash on delivery (COD) is the main and preferred method for Algerians. We are working on adding online payment soon as it becomes available in the Algerian market."
+        },
+        {
+          "q": "What is Confirmili and do I need it?",
+          "a": "Confirmili is a dedicated dashboard for confirming orders and managing delivery, similar to Octomatic. It helps you track every order, confirm it, follow its status and send reports to shipping companies. Available on the Pro plan."
+        },
+        {
+          "q": "Can I connect my store to other platforms like YouCan or Shopify?",
+          "a": "Yes. On the Pro and Business plans you can connect your store to other platforms via Confirmili integrations, including YouCan, WooCommerce and Google Sheets for order and inventory sync."
+        },
+        {
+          "q": "What happens if I exceed my plan order limit?",
+          "a": "You will get a notification at 80% of your monthly limit. Your service is never cut off automatically — you get a short grace period while you upgrade. Upgrading takes one click from the dashboard."
+        }
+      ]
+    },
+    "features": {
+      "eyebrow": "✦ Features",
+      "title": "Everything you need to succeed in e-commerce",
+      "sub": "A complete platform built specifically for the Algerian merchant",
+      "items": [
+        {
+          "title": "A professional store in minutes",
+          "desc": "Pick a ready template, customize it with your colors and logo, and publish instantly — no technical skills or code."
+        },
+        {
+          "title": "Delivery to 48 wilayas",
+          "desc": "Full coverage of Algeria with certified shipping companies."
+        },
+        {
+          "title": "AI replies in Darija",
+          "desc": "A smart assistant that replies to your customers in Algerian Darija automatically."
+        },
+        {
+          "title": "Live analytics",
+          "desc": "Track your sales in real time."
+        },
+        {
+          "title": "Cash on delivery",
+          "desc": "The payment method Algerians prefer."
+        },
+        {
+          "title": "Order tracking",
+          "desc": "Automatic WhatsApp notifications for the customer."
+        },
+        {
+          "title": "Inventory management",
+          "desc": "Automatic low-stock alerts."
+        }
+      ]
+    },
+    "testimonials": {
+      "title": "What our merchants say",
+      "rating": "4.9/5 from more than 2,000 reviews",
+      "items": [
+        {
+          "name": "Sara Ben Amar",
+          "role": "Fashion store owner",
+          "wilaya": "Oran",
+          "quote": "Commerco changed my life! I opened my store in under an hour and got my first order from Constantine. Now I have 200+ customers across Algeria."
+        },
+        {
+          "name": "Mohamed Lamouri",
+          "role": "Electronics merchant",
+          "wilaya": "Constantine",
+          "quote": "The platform is easy and professional. Managing stock and orders became much simpler. And support answered me within 5 minutes!"
+        },
+        {
+          "name": "Amina Boughazi",
+          "role": "Pastry shop owner",
+          "wilaya": "Tizi Ouzou",
+          "quote": "I was afraid of selling online, but Commerco made it easy. Now I run a professional store and sell to every wilaya. Thank you Commerco!"
+        },
+        {
+          "name": "Abderrahmane Kasmi",
+          "role": "Sports merchant",
+          "wilaya": "Algiers",
+          "quote": "Commerco is the best for the Algerian market. COD and delivery to 48 wilayas are features you will not find elsewhere."
+        },
+        {
+          "name": "Nour El Houda Toumi",
+          "role": "Cosmetics store owner",
+          "wilaya": "Bejaia",
+          "quote": "Smart replies in Darija completely solved customer communication. My store grew 300% in under 6 months."
+        },
+        {
+          "name": "Kamel Zerrouk",
+          "role": "Furniture store owner",
+          "wilaya": "Setif",
+          "quote": "I never expected orders from 12 different wilayas! Commerco expanded my sales beyond anything I imagined."
+        }
+      ]
+    },
+    "footer": {
+      "about": "About Commerco",
+      "about_us": "About us",
+      "blog": "Commerco Blog",
+      "careers": "Careers",
+      "partners": "Our partners",
+      "quick": "Quick links",
+      "login": "Log in",
+      "register": "Create account",
+      "pricing": "Pricing",
+      "faq": "FAQ",
+      "features": "Features",
+      "store_builder": "Store builder",
+      "delivery48": "Delivery to 48 wilayas",
+      "ai_darija": "AI replies in Darija",
+      "contact": "Contact us",
+      "whatsapp": "📱 WhatsApp support",
+      "algiers": "📍 Algiers",
+      "support247": "🕐 24/7 continuous support",
+      "newsletter": "Subscribe to our newsletter",
+      "email_ph": "Your email",
+      "subscribed": "✓ Subscribed",
+      "subscribe": "Subscribe",
+      "stat_merchant": "merchants",
+      "stat_wilaya": "wilayas",
+      "stat_order": "orders",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Use",
+      "sitemap": "Sitemap",
+      "tagline": "The Algerian e-commerce platform — build your online store and sell to 48 wilayas in one click.",
+      "made_in": "Made in Algeria",
+      "newsletter_sub": "Tips for Algerian merchants · Platform news · Sales strategies",
+      "copyright": "© 2026 Commerco · All rights reserved",
+      "tagline2": "Commerco — your Algerian digital marketplace 🇩🇿",
+      "bottom": [
+        "Privacy Policy",
+        "Terms of Use",
+        "Sitemap"
+      ],
+      "social": [
+        "Facebook",
+        "Instagram",
+        "TikTok"
+      ],
+      "cols": [
+        {
+          "title": "About Commerco",
+          "links": [
+            "About us",
+            "Commerco Blog",
+            "Careers",
+            "Our partners"
+          ]
+        },
+        {
+          "title": "Quick links",
+          "links": [
+            "Log in",
+            "Create account",
+            "Pricing",
+            "FAQ"
+          ]
+        },
+        {
+          "title": "Features",
+          "links": [
+            "Store builder",
+            null,
+            "Delivery to 48 wilayas",
+            "AI replies in Darija"
+          ]
+        },
+        {
+          "title": "Contact us",
+          "links": [
+            null,
+            "📱 WhatsApp support",
+            "📍 Algiers",
+            "🕐 24/7 continuous support"
+          ]
+        }
+      ]
+    },
+    "pricing": {
+      "annual": "Annual",
+      "save20": "Save 20%",
+      "free_label": "Free",
+      "per_month": "/month",
+      "save_year": "💰 Save {amount} DZD/year",
+      "note": "All prices in Algerian dinar · No hidden fees · Cancel anytime",
+      "badges": [
+        "100% secure payment",
+        "Change plan anytime",
+        "14-day free trial for Pro"
+      ],
+      "plans": [
+        {
+          "name": "Free",
+          "currency": "DZD",
+          "desc": "Start free and try the platform",
+          "cta": "Start free",
+          "badge": "",
+          "features": [
+            "100 orders / month",
+            "10 products",
+            "Professional store",
+            "Delivery to 48 wilayas",
+            "Order tracking",
+            "Email support",
+            "AI replies in Darija",
+            "Full Confirmili",
+            "Custom domain",
+            "Advanced reports"
+          ]
+        },
+        {
+          "name": "Pro",
+          "currency": "DZD",
+          "desc": "For the serious merchant who wants to grow",
+          "badge": "Most popular ⭐",
+          "cta": "Start Pro free for 14 days",
+          "features": [
+            "5,000 orders / month",
+            "Unlimited products",
+            "Professional store",
+            "Delivery to 48 wilayas",
+            "Order tracking",
+            "Priority 24/7 support",
+            "AI replies in Darija",
+            "Full Confirmili",
+            "Custom domain",
+            "Advanced reports"
+          ]
+        },
+        {
+          "name": "Business",
+          "currency": "DZD",
+          "desc": "For companies and large stores",
+          "cta": "Contact sales",
+          "badge": "",
+          "features": [
+            "50,000 orders / month",
+            "Unlimited products",
+            "Professional store",
+            "Delivery to 48 wilayas",
+            "Order tracking",
+            "Dedicated account manager",
+            "AI replies in Darija",
+            "Full Confirmili",
+            "Custom domain",
+            "Advanced reports"
+          ]
+        }
+      ],
+      "eyebrow": "✦ Pricing",
+      "title": "Simple, transparent pricing",
+      "monthly": "Monthly"
+    },
+    "showcase": {
+      "eyebrow": "✦ Platform preview",
+      "title": "All your tools in one place",
+      "sub": "From storefront to orders — a 100% integrated system",
+      "new_order": "New order",
+      "now_from": "Now · Oran",
+      "tabs": [
+        {
+          "label": "Store",
+          "desc": "The storefront your customers see"
+        },
+        {
+          "label": "Dashboard",
+          "desc": "Track your sales and manage products"
+        },
+        {
+          "label": "Confirmili",
+          "desc": "Manage orders and confirm delivery"
+        }
+      ]
+    }
   }
 }

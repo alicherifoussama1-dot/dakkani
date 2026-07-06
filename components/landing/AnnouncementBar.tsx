@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useT, useRaw } from '@/lib/i18n/react'
 
 export default function AnnouncementBar() {
+  const t = useT()
   const [visible, setVisible] = useState(true)
 
   return (
@@ -28,11 +30,11 @@ export default function AnnouncementBar() {
               fontFamily: 'var(--font-tajawal)', fontSize: 13, fontWeight: 600,
               color: '#fff', margin: 0, textAlign: 'center',
             }}>
-              عرض محدود — احصل على{' '}
+              {t('landing.announce.pre')}{' '}
               <span style={{ textDecoration: 'underline', fontWeight: 800 }}>
-                3 أشهر مجاناً
+                {t('landing.announce.highlight')}
               </span>
-              {' '}على خطة Pro عند الاشتراك هذا الأسبوع
+              {' '}{t('landing.announce.post')}
               {' '}
               <a href="/auth/register" style={{
                 color: '#fff', fontWeight: 800,
@@ -41,11 +43,11 @@ export default function AnnouncementBar() {
                 textDecoration: 'none', display: 'inline-block',
                 border: '1px solid rgba(255,255,255,0.3)',
                 marginRight: 4,
-              }}>ابدأ الآن</a>
+              }}>{t('landing.announce.cta')}</a>
             </p>
             <button
               onClick={() => setVisible(false)}
-              aria-label="إغلاق"
+              aria-label={t('landing.announce.close')}
               style={{
                 position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
                 background: 'none', border: 'none', cursor: 'pointer',

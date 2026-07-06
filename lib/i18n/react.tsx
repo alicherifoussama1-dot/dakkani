@@ -6,7 +6,7 @@
 // fully independent. Switching is INSTANT (state) — no reload.
 // ============================================================
 import { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react'
-import { createTranslator, type Messages, type Translator } from './core'
+import { createTranslator, lookup, type Messages, type Translator } from './core'
 import { makeFormatters, type Formatters } from './formats'
 import { dirOf, LOCALES, type Locale } from './config'
 
@@ -14,6 +14,8 @@ interface I18nValue extends Formatters {
   locale: Locale
   dir: 'rtl' | 'ltr'
   t: Translator
+  /** Raw catalog node (arrays/objects) for list-style content. */
+  raw: (key: string) => any
   setLocale: (l: Locale) => void
 }
 
@@ -42,13 +44,17 @@ export function I18nProvider({
     document.documentElement.setAttribute('lang', locale)
   }, [locale])
 
-  const value = useMemo<I18nValue>(() => ({
-    locale,
-    dir: dirOf(locale),
-    t: createTranslator(catalogs[locale] ?? catalogs[initialLocale]),
-    setLocale,
-    ...makeFormatters(locale),
-  }), [locale, catalogs, initialLocale, setLocale])
+  const value = useMemo<I18nValue>(() => {
+    const messages = catalogs[locale] ?? catalogs[initialLocale]
+    return {
+      locale,
+      dir: dirOf(locale),
+      t: createTranslator(messages),
+      raw: (key: string) => lookup(messages, key),
+      setLocale,
+      ...makeFormatters(locale),
+    }
+  }, [locale, catalogs, initialLocale, setLocale])
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }
@@ -60,6 +66,7 @@ export function useI18n(): I18nValue {
 }
 
 export const useT = () => useI18n().t
+export const useRaw = () => useI18n().raw
 export const useLocale = () => useI18n().locale
 export const useDir = () => useI18n().dir
 export const useSetLocale = () => useI18n().setLocale

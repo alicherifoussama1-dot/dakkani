@@ -6,7 +6,7 @@
 // ============================================================
 export type Messages = Record<string, any>
 
-function lookup(messages: Messages, path: string): unknown {
+export function lookup(messages: Messages, path: string): unknown {
   return path.split('.').reduce<any>((acc, part) => (acc == null ? undefined : acc[part]), messages)
 }
 

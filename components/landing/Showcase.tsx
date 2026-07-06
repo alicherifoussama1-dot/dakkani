@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence, useInView, useReducedMotion } from 'framer-motion'
+import { useT, useRaw } from '@/lib/i18n/react'
 
 const TABS = [
   { id: 'store',      label: 'المتجر',       icon: '🏪', desc: 'واجهة المتجر التي يراها عملاؤك' },
@@ -425,6 +426,7 @@ const MOCKUPS: Record<string, React.ReactNode> = {
 }
 
 export default function Showcase() {
+  const t = useT()
   const [active, setActive] = useState('store')
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
@@ -444,17 +446,17 @@ export default function Showcase() {
             background: '#EEF2FF', borderRadius: 100, padding: '7px 18px', marginBottom: 16,
           }}>
             <span style={{ fontFamily: 'var(--font-tajawal)', fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>
-              ✦ معاينة المنصة
+              {t('landing.showcase.eyebrow')}
             </span>
           </div>
           <h2 style={{
             fontFamily: 'var(--font-tajawal)', fontWeight: 900,
             fontSize: 'clamp(28px, 4vw, 44px)', color: '#0F172A',
             lineHeight: 1.3, margin: '0 0 12px',
-          }}>كل أدواتك في مكان واحد</h2>
+          }}>{t('landing.showcase.title')}</h2>
           <p style={{
             fontFamily: 'var(--font-tajawal)', fontSize: 15, color: '#475569',
-          }}>من المتجر إلى الطلبيات — نظام متكامل 100%</p>
+          }}>{t('landing.showcase.sub')}</p>
         </motion.div>
 
         {/* Tabs */}
@@ -483,7 +485,7 @@ export default function Showcase() {
                   boxShadow: isActive ? '0 4px 16px rgba(79,70,229,0.28)' : '0 1px 4px rgba(0,0,0,0.04)',
                 }}>
                 <span>{tab.icon}</span>
-                <span>{tab.label}</span>
+                <span>{t(`landing.showcase.tabs.${TABS.indexOf(tab)}.label`)}</span>
               </button>
             )
           })}
@@ -505,7 +507,7 @@ export default function Showcase() {
               style={{
                 fontFamily: 'var(--font-tajawal)', fontSize: 14, color: '#94A3B8',
               }}>
-              {TABS.find(t => t.id === active)?.desc}
+              {t(`landing.showcase.tabs.${TABS.findIndex(x => x.id === active)}.desc`)}
             </motion.p>
           </AnimatePresence>
         </motion.div>
@@ -550,10 +552,10 @@ export default function Showcase() {
             <span style={{ fontSize: 18 }}>🚀</span>
             <div>
               <div style={{ fontFamily: 'var(--font-tajawal)', fontSize: 10, fontWeight: 700, color: '#fff' }}>
-                طلبية جديدة
+                {t('landing.showcase.new_order')}
               </div>
               <div style={{ fontFamily: 'var(--font-tajawal)', fontSize: 9, color: 'rgba(255,255,255,0.7)' }}>
-                الآن · وهران
+                {t('landing.showcase.now_from')}
               </div>
             </div>
           </motion.div>

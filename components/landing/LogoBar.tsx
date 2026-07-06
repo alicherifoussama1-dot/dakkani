@@ -1,26 +1,30 @@
 'use client'
 
 import { motion, useInView } from 'framer-motion'
+import { useT, useRaw } from '@/lib/i18n/react'
 import { useRef } from 'react'
 
 const MERCHANTS = [
-  { name: 'متجر الأناقة', icon: '👗' },
-  { name: 'إلكترونيك برو', icon: '📱' },
-  { name: 'طازج فريش', icon: '🛒' },
-  { name: 'بيت الرياضة', icon: '⚽' },
-  { name: 'كوزميتيك DZ', icon: '💄' },
-  { name: 'أثاث الجزائر', icon: '🛋️' },
-  { name: 'سمارت تك', icon: '💻' },
-  { name: 'حلويات أم البنين', icon: '🍰' },
-  { name: 'كتب وقراءة', icon: '📚' },
-  { name: 'كيدس ورلد', icon: '🧸' },
-  { name: 'ستايل مودا', icon: '👠' },
-  { name: 'مطبخ عصري', icon: '🍳' },
+  { name: '', icon: '👗' },
+  { name: '', icon: '📱' },
+  { name: '', icon: '🛒' },
+  { name: '', icon: '⚽' },
+  { name: '', icon: '💄' },
+  { name: '', icon: '🛋️' },
+  { name: '', icon: '💻' },
+  { name: '', icon: '🍰' },
+  { name: '', icon: '📚' },
+  { name: '', icon: '🧸' },
+  { name: '', icon: '👠' },
+  { name: '', icon: '🍳' },
 ]
 
 const DOUBLED = [...MERCHANTS, ...MERCHANTS]
 
 export default function LogoBar() {
+  const t = useT()
+  const raw = useRaw()
+  const names: string[] = (raw('landing.logobar.names') as string[]) ?? []
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-40px' })
 
@@ -39,9 +43,9 @@ export default function LogoBar() {
         <p style={{
           fontFamily: 'var(--font-tajawal)', fontSize: 13, color: '#94A3B8', fontWeight: 500,
         }}>
-          موثوق به من أكثر من{' '}
+          {t('landing.logobar.pre')}{' '}
           <span style={{ color: '#4F46E5', fontWeight: 700 }}>12,000</span>
-          {' '}تاجر جزائري
+          {' '}{t('landing.logobar.post')}
         </p>
       </motion.div>
 
@@ -76,7 +80,7 @@ export default function LogoBar() {
               <span style={{
                 fontFamily: 'var(--font-tajawal)', fontWeight: 600, fontSize: 13,
                 color: '#475569', whiteSpace: 'nowrap',
-              }}>{m.name}</span>
+              }}>{names[i % names.length] ?? m.name}</span>
             </div>
           ))}
         </div>

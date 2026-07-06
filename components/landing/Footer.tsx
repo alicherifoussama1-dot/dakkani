@@ -2,42 +2,39 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useT, useRaw } from '@/lib/i18n/react'
 
 const NAV_COLS = [
   {
-    title: 'عن Commerco',
-    links: [
-      { label: 'من نحن',     href: '/about' },
-      { label: 'مدونة Commerco', href: '/blog' },
-      { label: 'الوظائف',    href: '/careers' },
-      { label: 'شركاؤنا',    href: '/partners' },
+        links: [
+      { label: '',     href: '/about' },
+      { label: '', href: '/blog' },
+      { label: '',    href: '/careers' },
+      { label: '',    href: '/partners' },
     ],
   },
   {
-    title: 'روابط سريعة',
-    links: [
-      { label: 'تسجيل الدخول', href: '/auth/login' },
-      { label: 'إنشاء حساب',  href: '/auth/register' },
-      { label: 'الأسعار',      href: '#pricing' },
-      { label: 'الأسئلة الشائعة', href: '#faq' },
+        links: [
+      { label: '', href: '/auth/login' },
+      { label: '',  href: '/auth/register' },
+      { label: '',      href: '#pricing' },
+      { label: '', href: '#faq' },
     ],
   },
   {
-    title: 'الميزات',
-    links: [
-      { label: 'بناء المتجر',        href: '#features' },
+        links: [
+      { label: '',        href: '#features' },
       { label: 'Confirmili',         href: '#showcase' },
-      { label: 'توصيل 48 ولاية',     href: '#features' },
-      { label: 'ردود AI بالدارجة',   href: '#features' },
+      { label: '',     href: '#features' },
+      { label: '',   href: '#features' },
     ],
   },
   {
-    title: 'تواصل معنا',
-    links: [
+        links: [
       { label: '📧 support@commerco.dz',  href: 'mailto:support@commerco.dz' },
-      { label: '📱 واتساب للدعم',         href: 'https://wa.me/213000000000' },
-      { label: '📍 الجزائر العاصمة',     href: '#' },
-      { label: '🕐 24/7 دعم متواصل',     href: '#' },
+      { label: '',         href: 'https://wa.me/213000000000' },
+      { label: '',     href: '#' },
+      { label: '',     href: '#' },
     ],
   },
 ]
@@ -78,6 +75,10 @@ const SOCIAL = [
 ]
 
 export default function LandingFooter() {
+  const t = useT()
+  const raw = useRaw()
+  const COLS_T = ((raw('landing.footer.cols') as any[]) ?? [])
+  const SOCIAL_T = ((raw('landing.footer.social') as string[]) ?? [])
   const [email, setEmail] = useState('')
   const [subStatus, setSubStatus] = useState<'idle'|'ok'|'err'>('idle')
 
@@ -121,14 +122,14 @@ export default function LandingFooter() {
               fontFamily: 'var(--font-tajawal)', fontSize: 13, color: '#64748B',
               lineHeight: 1.85, marginBottom: 20, maxWidth: 220,
             }}>
-              منصة التجارة الإلكترونية الجزائرية — ابنِ متجرك الإلكتروني وبع لـ 48 ولاية بضغطة زر.
+              {t('landing.footer.tagline')}
             </p>
 
             {/* Social */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-              {SOCIAL.map(s => (
+              {SOCIAL.map((s, si) => (
                 <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
-                  aria-label={s.label}
+                  aria-label={SOCIAL_T[si] ?? s.label}
                   style={{
                     width: 36, height: 36, borderRadius: 10,
                     background: '#111827', color: '#64748B',
@@ -159,7 +160,7 @@ export default function LandingFooter() {
               <span style={{ fontSize: 20 }}>🇩🇿</span>
               <div>
                 <div style={{ fontSize: 11, color: '#fff', fontFamily: 'var(--font-tajawal)', fontWeight: 600 }}>
-                  صُنع في الجزائر
+                  {t('landing.footer.made_in')}
                 </div>
                 <div style={{ fontSize: 10, color: '#475569', fontFamily: 'var(--font-tajawal)' }}>
                   Made in Algeria
@@ -169,14 +170,14 @@ export default function LandingFooter() {
           </div>
 
           {/* Nav columns */}
-          {NAV_COLS.map(col => (
-            <div key={col.title}>
+          {NAV_COLS.map((col, ci) => (
+            <div key={ci}>
               <h4 style={{
                 fontFamily: 'var(--font-tajawal)', fontWeight: 700, fontSize: 14,
                 color: '#fff', marginBottom: 16, opacity: 0.9,
-              }}>{col.title}</h4>
+              }}>{COLS_T[ci]?.title ?? ''}</h4>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {col.links.map(link => (
+                {col.links.map((link, li) => (
                   <li key={link.label}>
                     <a href={link.href} style={{
                       fontFamily: 'var(--font-tajawal)', fontSize: 13, color: '#64748B',
@@ -185,7 +186,7 @@ export default function LandingFooter() {
                     }}
                       onMouseEnter={e => (e.currentTarget.style.color = '#A5B4FC')}
                       onMouseLeave={e => (e.currentTarget.style.color = '#64748B')}
-                    >{link.label}</a>
+                    >{COLS_T[ci]?.links?.[li] ?? link.label}</a>
                   </li>
                 ))}
               </ul>
@@ -204,9 +205,9 @@ export default function LandingFooter() {
             <div style={{
               fontFamily: 'var(--font-tajawal)', fontWeight: 700, fontSize: 15,
               color: '#fff', marginBottom: 4,
-            }}>اشترك في نشرتنا البريدية</div>
+            }}>{t('landing.footer.newsletter')}</div>
             <div style={{ fontFamily: 'var(--font-tajawal)', fontSize: 13, color: '#64748B' }}>
-              نصائح للتجار الجزائريين · جديد المنصة · استراتيجيات البيع
+              {t('landing.footer.newsletter_sub')}
             </div>
           </div>
           <form onSubmit={handleSub} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -214,7 +215,7 @@ export default function LandingFooter() {
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="بريدك الإلكتروني"
+              placeholder={t('landing.footer.email_ph')}
               style={{
                 background: '#1E293B', border: `1px solid ${subStatus === 'err' ? '#EF4444' : '#334155'}`,
                 borderRadius: 12, padding: '11px 16px',
@@ -232,7 +233,7 @@ export default function LandingFooter() {
               onMouseEnter={e => ((e.target as HTMLButtonElement).style.background = '#4338CA')}
               onMouseLeave={e => ((e.target as HTMLButtonElement).style.background = '#4F46E5')}
             >
-              {subStatus === 'ok' ? '✓ تم الاشتراك' : 'اشترك'}
+              {subStatus === 'ok' ? t('landing.footer.subscribed') : t('landing.footer.subscribe')}
             </button>
           </form>
         </div>
@@ -246,9 +247,9 @@ export default function LandingFooter() {
           flexWrap: 'wrap',
         }}>
           {[
-            { val: '12,000+', label: 'تاجر' },
-            { val: '48',      label: 'ولاية' },
-            { val: '2M+',     label: 'طلب' },
+            { val: '12,000+', label: t('landing.footer.stat_merchant') },
+            { val: '48',      label: t('landing.footer.stat_wilaya') },
+            { val: '2M+',     label: t('landing.footer.stat_order') },
             { val: '99.9%',   label: 'uptime' },
           ].map((s, i) => (
             <div key={i} style={{
@@ -275,15 +276,15 @@ export default function LandingFooter() {
           <p style={{
             fontFamily: 'var(--font-tajawal)', fontSize: 12, color: '#334155',
           }}>
-            © 2026 Commerco · جميع الحقوق محفوظة
+            {t('landing.footer.copyright')}
           </p>
           <p style={{
             fontFamily: 'var(--font-tajawal)', fontSize: 12, color: '#334155',
           }}>
-            Commerco — سوقك الرقمي الجزائري 🇩🇿
+            {t('landing.footer.tagline2')}
           </p>
           <div style={{ display: 'flex', gap: 20 }}>
-            {['سياسة الخصوصية', 'شروط الاستخدام', 'خريطة الموقع'].map(l => (
+            {((raw('landing.footer.bottom') as string[]) ?? []).map(l => (
               <a key={l} href="#" style={{
                 fontFamily: 'var(--font-tajawal)', fontSize: 12, color: '#334155',
                 textDecoration: 'none', transition: 'color 0.2s',

@@ -2,32 +2,30 @@
 
 import { useState, useRef } from 'react'
 import { motion, useInView, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { useT, useRaw } from '@/lib/i18n/react'
 
 const PLANS = [
   {
     id: 'free',
-    name: 'مجاني',
-    priceMonthly: 0,
+        priceMonthly: 0,
     priceAnnual: 0,
-    currency: 'دج',
-    desc: 'ابدأ مجاناً وجرّب المنصة',
-    highlight: false,
+    currency: 'DZD',
+        highlight: false,
     badge: null,
     color: '#475569',
     accentBg: '#F8FAFC',
-    cta: 'ابدأ مجاناً',
-    ctaVariant: 'outline' as const,
+        ctaVariant: 'outline' as const,
     features: [
-      { text: '100 طلب / شهر',          ok: true  },
-      { text: '10 منتجات',               ok: true  },
-      { text: 'متجر احترافي',            ok: true  },
-      { text: 'توصيل لـ 48 ولاية',       ok: true  },
-      { text: 'تتبع الطلبات',            ok: true  },
-      { text: 'دعم بالبريد',             ok: true  },
-      { text: 'ردود AI بالدارجة',        ok: false },
-      { text: 'Confirmili كاملة',        ok: false },
-      { text: 'نطاق مخصص',              ok: false },
-      { text: 'تقارير متقدمة',           ok: false },
+      { text: '',          ok: true  },
+      { text: '',               ok: true  },
+      { text: '',            ok: true  },
+      { text: '',       ok: true  },
+      { text: '',            ok: true  },
+      { text: '',             ok: true  },
+      { text: '',        ok: false },
+      { text: '',        ok: false },
+      { text: '',              ok: false },
+      { text: '',           ok: false },
     ],
   },
   {
@@ -35,25 +33,22 @@ const PLANS = [
     name: 'Pro',
     priceMonthly: 2500,
     priceAnnual: 2000,
-    currency: 'دج',
-    desc: 'للتاجر الجاد الذي يريد النمو',
-    highlight: true,
-    badge: 'الأشهر ⭐',
-    color: '#4F46E5',
+    currency: 'DZD',
+        highlight: true,
+        color: '#4F46E5',
     accentBg: '#EEF2FF',
-    cta: 'ابدأ Pro مجاناً 14 يوم',
-    ctaVariant: 'solid' as const,
+        ctaVariant: 'solid' as const,
     features: [
-      { text: '5,000 طلب / شهر',         ok: true  },
-      { text: 'منتجات غير محدودة',        ok: true  },
-      { text: 'متجر احترافي',             ok: true  },
-      { text: 'توصيل لـ 48 ولاية',        ok: true  },
-      { text: 'تتبع الطلبات',             ok: true  },
-      { text: 'دعم أولوية 24/7',          ok: true  },
-      { text: 'ردود AI بالدارجة',         ok: true  },
-      { text: 'Confirmili كاملة',         ok: true  },
-      { text: 'نطاق مخصص',               ok: true  },
-      { text: 'تقارير متقدمة',            ok: false },
+      { text: '',         ok: true  },
+      { text: '',        ok: true  },
+      { text: '',             ok: true  },
+      { text: '',        ok: true  },
+      { text: '',             ok: true  },
+      { text: '',          ok: true  },
+      { text: '',         ok: true  },
+      { text: '',         ok: true  },
+      { text: '',               ok: true  },
+      { text: '',            ok: false },
     ],
   },
   {
@@ -61,25 +56,23 @@ const PLANS = [
     name: 'Business',
     priceMonthly: 6000,
     priceAnnual: 4800,
-    currency: 'دج',
-    desc: 'للشركات والمتاجر الكبيرة',
-    highlight: false,
+    currency: 'DZD',
+        highlight: false,
     badge: null,
     color: '#0F172A',
     accentBg: '#F8FAFC',
-    cta: 'تواصل مع المبيعات',
-    ctaVariant: 'dark' as const,
+        ctaVariant: 'dark' as const,
     features: [
-      { text: '50,000 طلب / شهر',         ok: true  },
-      { text: 'منتجات غير محدودة',         ok: true  },
-      { text: 'متجر احترافي',              ok: true  },
-      { text: 'توصيل لـ 48 ولاية',         ok: true  },
-      { text: 'تتبع الطلبات',              ok: true  },
-      { text: 'مدير حساب مخصص',           ok: true  },
-      { text: 'ردود AI بالدارجة',          ok: true  },
-      { text: 'Confirmili كاملة',          ok: true  },
-      { text: 'نطاق مخصص',                ok: true  },
-      { text: 'تقارير متقدمة + API',       ok: true  },
+      { text: '',         ok: true  },
+      { text: '',         ok: true  },
+      { text: '',              ok: true  },
+      { text: '',         ok: true  },
+      { text: '',              ok: true  },
+      { text: '',           ok: true  },
+      { text: '',          ok: true  },
+      { text: '',          ok: true  },
+      { text: '',                ok: true  },
+      { text: '',       ok: true  },
     ],
   },
 ]
@@ -113,6 +106,9 @@ function CheckIcon({ ok, color }: { ok: boolean; color: string }) {
 }
 
 export default function Pricing() {
+  const t = useT()
+  const raw = useRaw()
+  const PT: any[] = PLANS.map((p: any, i: number) => { const c = ((raw('landing.pricing.plans') as any[]) ?? [])[i] ?? {}; return { ...p, name: c.name ?? p.name, desc: c.desc ?? p.desc, cta: c.cta ?? p.cta, badge: (p as any).badge ? (c.badge || (p as any).badge) : (p as any).badge, currency: c.currency ?? p.currency, features: p.features.map((x: any, j: number) => ({ ...x, text: c.features?.[j] ?? x.text })) } })
   const [annual, setAnnual] = useState(false)
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
@@ -133,14 +129,14 @@ export default function Pricing() {
             background: '#EEF2FF', borderRadius: 100, padding: '7px 18px', marginBottom: 16,
           }}>
             <span style={{ fontFamily: 'var(--font-tajawal)', fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>
-              ✦ الأسعار
+              {t('landing.pricing.eyebrow')}
             </span>
           </div>
           <h2 style={{
             fontFamily: 'var(--font-tajawal)', fontWeight: 900,
             fontSize: 'clamp(28px, 4vw, 44px)', color: '#0F172A',
             lineHeight: 1.3, margin: '0 0 32px',
-          }}>أسعار بسيطة وشفافة</h2>
+          }}>{t('landing.pricing.title')}</h2>
 
           {/* Billing toggle */}
           <div style={{
@@ -157,7 +153,7 @@ export default function Pricing() {
                 color: !annual ? '#fff' : '#64748B',
                 fontFamily: 'var(--font-tajawal)', fontWeight: 600, fontSize: 13,
                 cursor: 'pointer', transition: 'all 0.2s',
-              }}>شهري</button>
+              }}>{t('landing.pricing.monthly')}</button>
             <button
               onClick={() => setAnnual(true)}
               style={{
@@ -168,7 +164,7 @@ export default function Pricing() {
                 cursor: 'pointer', transition: 'all 0.2s',
                 display: 'flex', alignItems: 'center', gap: 8,
               }}>
-              سنوي
+              {t('landing.pricing.annual')}
               <AnimatePresence>
                 {annual ? null : (
                   <motion.span
@@ -180,7 +176,7 @@ export default function Pricing() {
                       fontSize: 10, fontWeight: 700,
                       padding: '2px 8px', borderRadius: 10,
                       fontFamily: 'var(--font-tajawal)',
-                    }}>وفّر 20%</motion.span>
+                    }}>{t('landing.pricing.save20')}</motion.span>
                 )}
               </AnimatePresence>
             </button>
@@ -194,7 +190,7 @@ export default function Pricing() {
           gap: 20, alignItems: 'start',
         }}
           className="pricing-grid">
-          {PLANS.map((plan, i) => {
+          {PT.map((plan, i) => {
             const price = annual ? plan.priceAnnual : plan.priceMonthly
             return (
               <motion.div
@@ -256,7 +252,7 @@ export default function Pricing() {
                         <span style={{
                           fontFamily: 'var(--font-tajawal)', fontWeight: 900, fontSize: 38,
                           color: plan.highlight ? '#4F46E5' : '#0F172A',
-                        }}>مجاني</span>
+                        }}>{t('landing.pricing.free_label')}</span>
                       ) : (
                         <>
                           <span style={{
@@ -265,7 +261,7 @@ export default function Pricing() {
                           }}>{price.toLocaleString()}</span>
                           <span style={{
                             fontFamily: 'var(--font-tajawal)', fontSize: 13, color: '#94A3B8',
-                          }}>{plan.currency}/شهر</span>
+                          }}>{plan.currency}{t('landing.pricing.per_month')}</span>
                         </>
                       )}
                     </motion.div>
@@ -274,7 +270,7 @@ export default function Pricing() {
                     <div style={{
                       fontFamily: 'var(--font-tajawal)', fontSize: 12, color: '#16A34A', marginTop: 4,
                     }}>
-                      💰 توفير {((plan.priceMonthly - plan.priceAnnual) * 12).toLocaleString()} دج/سنة
+                      {t('landing.pricing.save_year', { amount: ((plan.priceMonthly - plan.priceAnnual) * 12).toLocaleString() })}
                     </div>
                   )}
                 </div>
@@ -316,7 +312,7 @@ export default function Pricing() {
 
                 {/* Feature list */}
                 <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 11 }}>
-                  {plan.features.map((f, j) => (
+                  {plan.features.map((f: any, j: number) => (
                     <li key={j} style={{
                       display: 'flex', alignItems: 'center', gap: 10,
                       fontFamily: 'var(--font-tajawal)', fontSize: 13,
@@ -341,22 +337,22 @@ export default function Pricing() {
           <p style={{
             fontFamily: 'var(--font-tajawal)', fontSize: 13, color: '#94A3B8',
           }}>
-            جميع الأسعار بالدينار الجزائري · بدون رسوم خفية · إلغاء في أي وقت
+            {t('landing.pricing.note')}
           </p>
           <div style={{
             display: 'flex', justifyContent: 'center', gap: 20,
             marginTop: 16, flexWrap: 'wrap',
           }}>
             {[
-              { icon: '🔒', text: 'دفع آمن 100%' },
-              { icon: '🔄', text: 'تحديث الخطة في أي وقت' },
-              { icon: '🎁', text: '14 يوم تجربة مجانية لـ Pro' },
-            ].map((t, i) => (
+              { icon: '🔒', text: '' },
+              { icon: '🔄', text: '' },
+              { icon: '🎁', text: '' },
+            ].map((b, i) => (
               <span key={i} style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 fontFamily: 'var(--font-tajawal)', fontSize: 12, color: '#64748B',
               }}>
-                <span>{t.icon}</span>{t.text}
+                <span>{b.icon}</span>{t(`landing.pricing.badges.${i}`)}
               </span>
             ))}
           </div>

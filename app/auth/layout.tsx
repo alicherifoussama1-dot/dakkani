@@ -1,19 +1,12 @@
 import { I18nProvider } from '@/lib/i18n/react'
 import { getSiteLocale, getAllSiteMessages } from '@/lib/i18n/site'
 import { SITE_LANG_COOKIE } from '@/lib/i18n/config'
-import LanguageSwitcher from '@/components/i18n/LanguageSwitcher'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const locale = getSiteLocale()
   return (
     <I18nProvider initialLocale={locale} catalogs={getAllSiteMessages()} cookieName={SITE_LANG_COOKIE}>
-      <div
-        className="min-h-screen flex items-center justify-center p-4 relative"
-        style={{ background: 'linear-gradient(135deg, #F8F9FA 0%, #EBF5FF 50%, #F8F9FA 100%)' }}
-      >
-        <div className="absolute top-4 left-4"><LanguageSwitcher /></div>
-        {children}
-      </div>
+      {children}
     </I18nProvider>
   )
 }

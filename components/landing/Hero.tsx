@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { Hero3DErrorBoundary } from './Hero3DErrorBoundary'
+import { useT, useRaw } from '@/lib/i18n/react'
 
 // Lazy-load 3D canvas — never blocks first paint
 const Hero3D = dynamic(() => import('./Hero3D'), {
@@ -20,15 +21,12 @@ const GradientOrb = () => (
   }} />
 )
 
-const HEADLINE_WORDS = ['متجرك', 'الإلكتروني،', 'جاهز', 'في', 'دقائق']
-
-const TRUST_ITEMS = [
-  { icon: '✓', text: 'بدون بطاقة بنكية' },
-  { icon: '✓', text: '48 ولاية' },
-  { icon: '✓', text: 'إلغاء في أي وقت' },
-]
 
 export default function Hero() {
+  const t = useT()
+  const raw = useRaw()
+  const HEADLINE_WORDS: string[] = t('landing.hero.headline').split(' ')
+  const TRUST_ITEMS: { text: string }[] = ((raw('landing.hero.trust') as string[]) ?? []).map(text => ({ text }))
   const [isMobile, setIsMobile] = useState(false)
   const prefersReduced = useReducedMotion()
 
@@ -149,7 +147,7 @@ export default function Hero() {
               <span style={{
                 fontFamily: 'var(--font-tajawal)', fontWeight: 700, fontSize: 13,
                 color: '#4F46E5',
-              }}>منصة التجارة الإلكترونية رقم 1 في الجزائر</span>
+              }}>{t('landing.hero.eyebrow')}</span>
             </span>
           </motion.div>
 
@@ -193,7 +191,7 @@ export default function Hero() {
               backgroundClip: 'text',
               lineHeight: 1.3, marginBottom: 24,
             }}>
-            للتجار الجزائريين
+            {t('landing.hero.accent')}
           </motion.span>
 
           {/* Sub */}
@@ -206,7 +204,7 @@ export default function Hero() {
               color: '#475569', lineHeight: 1.85, marginBottom: 36,
               maxWidth: 460,
             }}>
-            أنشئ متجرك، أضف منتجاتك، وابدأ البيع لكل الولايات الـ48 — بدون خبرة تقنية
+            {t('landing.hero.sub')}
           </motion.p>
 
           {/* CTAs */}
@@ -227,7 +225,7 @@ export default function Hero() {
                 boxShadow: '0 6px 20px rgba(79,70,229,0.32)',
                 minHeight: 52,
               }}>
-              ابدأ مجاناً
+              {t('landing.hero.cta_start')}
               <svg width="18" height="18" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round"
@@ -262,7 +260,7 @@ export default function Hero() {
                   <path d="M0.5 0.5l10 6-10 6V0.5z" />
                 </svg>
               </motion.span>
-              شاهد العرض
+              {t('landing.hero.cta_demo')}
             </motion.a>
           </motion.div>
 
@@ -313,7 +311,7 @@ export default function Hero() {
         <span style={{
           fontFamily: 'var(--font-tajawal)', fontSize: 11,
           color: '#94A3B8', letterSpacing: '0.05em',
-        }}>تمرر للاستكشاف</span>
+        }}>{t('landing.hero.scroll')}</span>
         <div style={{
           width: 28, height: 44, borderRadius: 14,
           border: '2px solid rgba(79,70,229,0.25)',

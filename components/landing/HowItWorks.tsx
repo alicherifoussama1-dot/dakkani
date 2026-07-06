@@ -2,35 +2,28 @@
 
 import { useRef } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
+import { useT, useRaw } from '@/lib/i18n/react'
 
 const STEPS = [
   {
     number: '01',
     icon: '✍️',
-    title: 'سجّل مجاناً',
-    desc: 'أنشئ حسابك في 30 ثانية بدون بطاقة بنكية. اختر اسم متجرك وابدأ مباشرة.',
-    color: '#4F46E5', bg: '#EEF2FF', border: 'rgba(79,70,229,0.15)',
-    detail: '30 ثانية فقط',
-  },
+            color: '#4F46E5', bg: '#EEF2FF', border: 'rgba(79,70,229,0.15)',
+      },
   {
     number: '02',
     icon: '📦',
-    title: 'أضف منتجاتك',
-    desc: 'أضف صور منتجاتك وأسعارها ومخزونها. يمكنك الاستيراد من Excel أو إضافتها يدوياً.',
-    color: '#7C3AED', bg: '#F5F3FF', border: 'rgba(124,58,237,0.15)',
-    detail: 'استيراد Excel',
-  },
+            color: '#7C3AED', bg: '#F5F3FF', border: 'rgba(124,58,237,0.15)',
+      },
   {
     number: '03',
     icon: '💰',
-    title: 'ابدأ البيع',
-    desc: 'شارك رابط متجرك على وسائل التواصل واستلم طلباتك من 48 ولاية.',
-    color: '#059669', bg: '#ECFDF5', border: 'rgba(5,150,105,0.15)',
-    detail: '48 ولاية',
-  },
+            color: '#059669', bg: '#ECFDF5', border: 'rgba(5,150,105,0.15)',
+      },
 ]
 
 export default function HowItWorks() {
+  const t = useT()
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
   const prefersReduced = useReducedMotion()
@@ -56,10 +49,10 @@ export default function HowItWorks() {
             fontFamily: 'var(--font-tajawal)', fontWeight: 900,
             fontSize: 'clamp(28px, 4vw, 44px)', color: '#0F172A',
             lineHeight: 1.3, margin: '0 0 14px',
-          }}>3 خطوات فقط للبدء</h2>
+          }}>{t('landing.how.title')}</h2>
           <p style={{
             fontFamily: 'var(--font-tajawal)', fontSize: 15, color: '#94A3B8',
-          }}>أسرع بداية في منصات التجارة الإلكترونية بالجزائر</p>
+          }}>{t('landing.how.sub')}</p>
         </motion.div>
 
         {/* Desktop: horizontal steps + connecting SVG line */}
@@ -155,17 +148,17 @@ export default function HowItWorks() {
                     <span style={{
                       fontFamily: 'var(--font-tajawal)', fontSize: 11, fontWeight: 700,
                       color: step.color,
-                    }}>{step.detail}</span>
+                    }}>{t(`landing.how.steps.${i}.detail`)}</span>
                   </div>
 
                   <h3 style={{
                     fontFamily: 'var(--font-tajawal)', fontWeight: 800, fontSize: 20,
                     color: '#0F172A', margin: '0 0 10px',
-                  }}>{step.title}</h3>
+                  }}>{t(`landing.how.steps.${i}.title`)}</h3>
                   <p style={{
                     fontFamily: 'var(--font-tajawal)', fontSize: 14, color: '#475569',
                     lineHeight: 1.8, margin: 0,
-                  }}>{step.desc}</p>
+                  }}>{t(`landing.how.steps.${i}.desc`)}</p>
                 </div>
               </motion.div>
             ))}

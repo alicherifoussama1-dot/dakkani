@@ -7,5 +7,466 @@
     "login": "Connexion",
     "start_free": "Commencer gratuitement",
     "open_menu": "Ouvrir le menu"
+  },
+  "auth": {
+    "error_generic": "Une erreur est survenue",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "login": {
+      "aside_title": "Vendez en ligne en quelques minutes",
+      "aside_sub": "La plateforme e-commerce n°1 en Algérie. Livraison dans 48 wilayas, paiement sécurisé, IA en Darija.",
+      "stat_merchants": "+12 000 marchands",
+      "stat_wilayas": "48 wilayas",
+      "stat_satisfaction": "98% de satisfaction",
+      "welcome": "Bon retour 👋",
+      "subtitle": "Connectez-vous pour gérer votre boutique",
+      "forgot": "Mot de passe oublié ?",
+      "submit": "Connexion",
+      "submitting": "Connexion...",
+      "no_account": "Vous n'avez pas de compte ?",
+      "register_free": "Inscrivez-vous gratuitement",
+      "welcome_commerco": "Bienvenue sur Commerco",
+      "merchants_only": "Réservé aux marchands",
+      "register_now": "Inscrivez-vous gratuitement"
+    },
+    "register": {
+      "aside_title": "Rejoignez des milliers de marchands algériens",
+      "feature_1": "Une boutique en ligne professionnelle en minutes",
+      "feature_2": "Livraison dans les 48 wilayas",
+      "feature_3": "Réponses IA en Darija algérienne",
+      "feature_4": "Statistiques et analyses avancées",
+      "aside_sub": "Rejoignez plus de 12 000 marchands actifs",
+      "title": "Créer un compte gratuit 🚀",
+      "subtitle": "Commencez à vendre en moins de 5 minutes",
+      "f_store": "Nom de la boutique *",
+      "f_store_ph": "Ma boutique algérienne",
+      "f_email": "E-mail *",
+      "f_phone": "Numéro de téléphone *",
+      "f_phone_ph": "0555 xx xx xx",
+      "f_password": "Mot de passe *",
+      "f_password_ph": "Au moins 8 caractères",
+      "wilaya": "Wilaya",
+      "terms_pre": "En vous inscrivant, vous acceptez les",
+      "terms": "Conditions d'utilisation",
+      "and": "et",
+      "privacy": "Politique de confidentialité",
+      "submit": "Créer un compte gratuit →",
+      "submitting": "Création...",
+      "have_account": "Vous avez déjà un compte ?",
+      "login_link": "Connectez-vous",
+      "error": "Erreur d'inscription",
+      "title2": "Créer un compte gratuit",
+      "subtitle2": "Vendez en ligne en moins de 2 minutes"
+    }
+  },
+  "forgot": {
+    "title": "Mot de passe oublié ?",
+    "subtitle": "Entrez votre e-mail et nous vous enverrons un lien de réinitialisation",
+    "send": "Envoyer le lien",
+    "sending": "Envoi...",
+    "back": "Retour à la connexion",
+    "error_generic": "Une erreur est survenue, réessayez",
+    "sent_title": "Vérifiez votre boîte mail ! 📬",
+    "sent_sub": "Nous avons envoyé un lien de réinitialisation à :",
+    "dev_mode": "🔧 Mode développement :",
+    "not_received": "E-mail non reçu ?",
+    "check_spam": "• Vérifiez le dossier Spam ou Indésirables",
+    "wait_retry": "• Attendez 2 minutes puis revérifiez",
+    "resend": "Renvoyer"
+  },
+  "landing": {
+    "hero": {
+      "eyebrow": "La plateforme e-commerce n°1 en Algérie",
+      "headline": "Votre boutique en ligne, prête en quelques minutes",
+      "accent": "pour les marchands algériens",
+      "sub": "Créez votre boutique, ajoutez vos produits et vendez dans les 48 wilayas — sans compétences techniques",
+      "cta_start": "Commencer gratuitement",
+      "cta_demo": "Voir la démo",
+      "scroll": "Faites défiler",
+      "trust": [
+        "Sans carte bancaire",
+        "48 wilayas",
+        "Annulation à tout moment"
+      ]
+    },
+    "stats": {
+      "items": [
+        "Marchands actifs",
+        "Wilayas couvertes",
+        "Commandes traitées",
+        "Satisfaction client"
+      ]
+    },
+    "social": {
+      "items": [
+        {
+          "title": "Boutique en ligne en 30 secondes",
+          "sub": "Le lancement le plus rapide en Algérie"
+        },
+        {
+          "title": "Données 100% sécurisées",
+          "sub": "Chiffrement SSL + RGPD"
+        },
+        {
+          "title": "Support 7j/7 · 24h/24",
+          "sub": "Via WhatsApp et e-mail"
+        },
+        {
+          "title": "Conçu pour l’Algérie",
+          "sub": "Darija · Wilayas · COD"
+        },
+        {
+          "title": "Mises à jour hebdomadaires",
+          "sub": "De nouvelles fonctionnalités en continu"
+        }
+      ]
+    },
+    "announce": {
+      "pre": "Offre limitée — obtenez",
+      "highlight": "3 mois gratuits",
+      "post": "sur le forfait Pro en vous abonnant cette semaine",
+      "cta": "Commencer",
+      "close": "Fermer"
+    },
+    "logobar": {
+      "pre": "Approuvé par plus de",
+      "post": "marchands algériens",
+      "names": [
+        "Elegance Store",
+        "Electronic Pro",
+        "Tazej Fresh",
+        "Maison du Sport",
+        "Cosmetic DZ",
+        "Meubles d’Algérie",
+        "Smart Tech",
+        "Douceurs Oum El Banine",
+        "Livres & Lecture",
+        "Kids World",
+        "Style Moda",
+        "Cuisine Moderne"
+      ]
+    },
+    "floating": {
+      "cta": "Commencez gratuitement"
+    },
+    "cta": {
+      "title": "Prêt à vendre ?",
+      "sub": "Commencez gratuitement aujourd’hui. Sans carte bancaire. Sans compétences techniques.",
+      "start": "Commencer gratuitement",
+      "discover": "Découvrir les fonctionnalités",
+      "points": [
+        "✓ Gratuit à vie sur le forfait de base",
+        "✓ Essai gratuit de 14 jours pour Pro",
+        "✓ Annulation à tout moment"
+      ]
+    },
+    "how": {
+      "title": "Seulement 3 étapes pour démarrer",
+      "sub": "Le démarrage le plus rapide des plateformes e-commerce en Algérie",
+      "steps": [
+        {
+          "title": "Inscrivez-vous gratuitement",
+          "desc": "Créez votre compte en 30 secondes sans carte bancaire. Choisissez le nom de votre boutique et lancez-vous.",
+          "detail": "30 secondes seulement"
+        },
+        {
+          "title": "Ajoutez vos produits",
+          "desc": "Ajoutez photos, prix et stocks. Importez depuis Excel ou ajoutez-les manuellement.",
+          "detail": "Import Excel"
+        },
+        {
+          "title": "Commencez à vendre",
+          "desc": "Partagez le lien de votre boutique sur les réseaux sociaux et recevez des commandes de 48 wilayas.",
+          "detail": "48 wilayas"
+        }
+      ]
+    },
+    "faq": {
+      "title": "Questions fréquentes des marchands",
+      "more_q": "Une autre question ?",
+      "more_a": "Notre équipe support est disponible 7j/7 pour répondre à toutes vos questions",
+      "items": [
+        {
+          "q": "Ai-je besoin de compétences techniques pour créer une boutique sur Commerco ?",
+          "a": "Pas du tout. Commerco est conçu pour le marchand algérien ordinaire. Vous pouvez créer votre boutique, ajouter vos produits et commencer à vendre en moins d’une heure, sans aucune connaissance en programmation."
+        },
+        {
+          "q": "Comment les clients accèdent-ils à ma boutique dans toutes les wilayas ?",
+          "a": "Votre boutique Commerco prend en charge la livraison dans les 48 wilayas algériennes via des partenaires de livraison agréés. Le client choisit sa wilaya à la commande et celle-ci arrive directement dans votre tableau de bord."
+        },
+        {
+          "q": "Quels moyens de paiement sont disponibles pour les clients ?",
+          "a": "Le paiement à la livraison (COD) est la méthode principale et préférée des Algériens. Nous travaillons à ajouter le paiement en ligne dès qu’il sera disponible sur le marché algérien."
+        },
+        {
+          "q": "Qu’est-ce que Confirmili et en ai-je besoin ?",
+          "a": "Confirmili est un tableau de bord spécialisé pour confirmer les commandes et gérer la livraison, similaire à Octomatic. Il vous aide à suivre chaque commande, la confirmer, suivre son statut et envoyer des rapports aux transporteurs. Disponible sur le forfait Pro."
+        },
+        {
+          "q": "Puis-je connecter ma boutique à d’autres plateformes comme YouCan ou Shopify ?",
+          "a": "Oui. Sur les forfaits Pro et Business, vous pouvez connecter votre boutique via les intégrations Confirmili, dont YouCan, WooCommerce et Google Sheets pour synchroniser commandes et stocks."
+        },
+        {
+          "q": "Que se passe-t-il si je dépasse la limite de commandes de mon forfait ?",
+          "a": "Vous recevrez une notification à 80% de votre limite mensuelle. Votre service n’est jamais coupé automatiquement — vous bénéficiez d’un court délai de grâce pour mettre à niveau. La mise à niveau se fait en un clic."
+        }
+      ]
+    },
+    "features": {
+      "eyebrow": "✦ Fonctionnalités",
+      "title": "Tout ce qu’il vous faut pour réussir en e-commerce",
+      "sub": "Une plateforme complète conçue pour le marchand algérien",
+      "items": [
+        {
+          "title": "Une boutique professionnelle en minutes",
+          "desc": "Choisissez un modèle prêt, personnalisez couleurs et logo, et publiez instantanément — sans compétences techniques."
+        },
+        {
+          "title": "Livraison dans 48 wilayas",
+          "desc": "Couverture totale de l’Algérie avec des transporteurs agréés."
+        },
+        {
+          "title": "Réponses IA en Darija",
+          "desc": "Un assistant intelligent qui répond automatiquement à vos clients en darija algérienne."
+        },
+        {
+          "title": "Statistiques en direct",
+          "desc": "Suivez vos ventes en temps réel."
+        },
+        {
+          "title": "Paiement à la livraison",
+          "desc": "La méthode préférée des Algériens."
+        },
+        {
+          "title": "Suivi des commandes",
+          "desc": "Notifications WhatsApp automatiques pour le client."
+        },
+        {
+          "title": "Gestion des stocks",
+          "desc": "Alertes automatiques de rupture de stock."
+        }
+      ]
+    },
+    "testimonials": {
+      "title": "Ce que disent nos marchands",
+      "rating": "4,9/5 sur plus de 2 000 avis",
+      "items": [
+        {
+          "name": "Sara Ben Amar",
+          "role": "Boutique de mode",
+          "wilaya": "Oran",
+          "quote": "Commerco a changé ma vie ! J’ai ouvert ma boutique en moins d’une heure et reçu ma première commande de Constantine. Aujourd’hui j’ai plus de 200 clients dans toute l’Algérie."
+        },
+        {
+          "name": "Mohamed Lamouri",
+          "role": "Marchand d’électronique",
+          "wilaya": "Constantine",
+          "quote": "La plateforme est simple et professionnelle. La gestion du stock et des commandes est devenue bien plus facile. Et le support m’a répondu en 5 minutes !"
+        },
+        {
+          "name": "Amina Boughazi",
+          "role": "Pâtisserie",
+          "wilaya": "Tizi Ouzou",
+          "quote": "J’avais peur de vendre en ligne, mais Commerco a tout simplifié. J’ai maintenant une boutique professionnelle et je vends dans toutes les wilayas. Merci Commerco !"
+        },
+        {
+          "name": "Abderrahmane Kasmi",
+          "role": "Articles de sport",
+          "wilaya": "Alger",
+          "quote": "Commerco est le meilleur pour le marché algérien. Le COD et la livraison dans 48 wilayas sont introuvables ailleurs."
+        },
+        {
+          "name": "Nour El Houda Toumi",
+          "role": "Boutique de cosmétiques",
+          "wilaya": "Béjaïa",
+          "quote": "Les réponses intelligentes en darija ont résolu la communication client. Ma boutique a grandi de 300% en moins de 6 mois."
+        },
+        {
+          "name": "Kamel Zerrouk",
+          "role": "Magasin de meubles",
+          "wilaya": "Sétif",
+          "quote": "Je ne m’attendais pas à des commandes de 12 wilayas différentes ! Commerco a élargi mes ventes au-delà de tout ce que j’imaginais."
+        }
+      ]
+    },
+    "footer": {
+      "about": "À propos de Commerco",
+      "about_us": "Qui sommes-nous",
+      "blog": "Blog Commerco",
+      "careers": "Carrières",
+      "partners": "Nos partenaires",
+      "quick": "Liens rapides",
+      "login": "Connexion",
+      "register": "Créer un compte",
+      "pricing": "Tarifs",
+      "faq": "FAQ",
+      "features": "Fonctionnalités",
+      "store_builder": "Créateur de boutique",
+      "delivery48": "Livraison 48 wilayas",
+      "ai_darija": "Réponses IA en Darija",
+      "contact": "Contactez-nous",
+      "whatsapp": "📱 Support WhatsApp",
+      "algiers": "📍 Alger",
+      "support247": "🕐 Support continu 24/7",
+      "newsletter": "Abonnez-vous à notre newsletter",
+      "email_ph": "Votre e-mail",
+      "subscribed": "✓ Abonné",
+      "subscribe": "S’abonner",
+      "stat_merchant": "marchands",
+      "stat_wilaya": "wilayas",
+      "stat_order": "commandes",
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d’utilisation",
+      "sitemap": "Plan du site",
+      "tagline": "La plateforme e-commerce algérienne — créez votre boutique en ligne et vendez dans 48 wilayas en un clic.",
+      "made_in": "Fabriqué en Algérie",
+      "newsletter_sub": "Conseils pour les marchands algériens · Nouveautés · Stratégies de vente",
+      "copyright": "© 2026 Commerco · Tous droits réservés",
+      "tagline2": "Commerco — votre marché numérique algérien 🇩🇿",
+      "bottom": [
+        "Politique de confidentialité",
+        "Conditions d’utilisation",
+        "Plan du site"
+      ],
+      "social": [
+        "Facebook",
+        "Instagram",
+        "TikTok"
+      ],
+      "cols": [
+        {
+          "title": "À propos de Commerco",
+          "links": [
+            "Qui sommes-nous",
+            "Blog Commerco",
+            "Carrières",
+            "Nos partenaires"
+          ]
+        },
+        {
+          "title": "Liens rapides",
+          "links": [
+            "Connexion",
+            "Créer un compte",
+            "Tarifs",
+            "FAQ"
+          ]
+        },
+        {
+          "title": "Fonctionnalités",
+          "links": [
+            "Créateur de boutique",
+            null,
+            "Livraison 48 wilayas",
+            "Réponses IA en Darija"
+          ]
+        },
+        {
+          "title": "Contactez-nous",
+          "links": [
+            null,
+            "📱 Support WhatsApp",
+            "📍 Alger",
+            "🕐 Support continu 24/7"
+          ]
+        }
+      ]
+    },
+    "pricing": {
+      "annual": "Annuel",
+      "save20": "Économisez 20%",
+      "free_label": "Gratuit",
+      "per_month": "/mois",
+      "save_year": "💰 Économisez {amount} DZD/an",
+      "note": "Tous les prix en dinar algérien · Sans frais cachés · Annulation à tout moment",
+      "badges": [
+        "Paiement 100% sécurisé",
+        "Changez de forfait à tout moment",
+        "Essai gratuit de 14 jours pour Pro"
+      ],
+      "plans": [
+        {
+          "name": "Gratuit",
+          "currency": "DZD",
+          "desc": "Commencez gratuitement et essayez la plateforme",
+          "cta": "Commencer gratuitement",
+          "badge": "",
+          "features": [
+            "100 commandes / mois",
+            "10 produits",
+            "Boutique professionnelle",
+            "Livraison dans 48 wilayas",
+            "Suivi des commandes",
+            "Support par e-mail",
+            "Réponses IA en Darija",
+            "Confirmili complet",
+            "Domaine personnalisé",
+            "Rapports avancés"
+          ]
+        },
+        {
+          "name": "Pro",
+          "currency": "DZD",
+          "desc": "Pour le marchand sérieux qui veut grandir",
+          "badge": "Le plus populaire ⭐",
+          "cta": "Essayez Pro gratuitement 14 jours",
+          "features": [
+            "5 000 commandes / mois",
+            "Produits illimités",
+            "Boutique professionnelle",
+            "Livraison dans 48 wilayas",
+            "Suivi des commandes",
+            "Support prioritaire 24/7",
+            "Réponses IA en Darija",
+            "Confirmili complet",
+            "Domaine personnalisé",
+            "Rapports avancés"
+          ]
+        },
+        {
+          "name": "Business",
+          "currency": "DZD",
+          "desc": "Pour les entreprises et les grandes boutiques",
+          "cta": "Contacter les ventes",
+          "badge": "",
+          "features": [
+            "50 000 commandes / mois",
+            "Produits illimités",
+            "Boutique professionnelle",
+            "Livraison dans 48 wilayas",
+            "Suivi des commandes",
+            "Gestionnaire de compte dédié",
+            "Réponses IA en Darija",
+            "Confirmili complet",
+            "Domaine personnalisé",
+            "Rapports avancés"
+          ]
+        }
+      ],
+      "eyebrow": "✦ Tarifs",
+      "title": "Des tarifs simples et transparents",
+      "monthly": "Mensuel"
+    },
+    "showcase": {
+      "eyebrow": "✦ Aperçu de la plateforme",
+      "title": "Tous vos outils au même endroit",
+      "sub": "De la boutique aux commandes — un système 100% intégré",
+      "new_order": "Nouvelle commande",
+      "now_from": "Maintenant · Oran",
+      "tabs": [
+        {
+          "label": "Boutique",
+          "desc": "La vitrine que voient vos clients"
+        },
+        {
+          "label": "Tableau de bord",
+          "desc": "Suivez vos ventes et gérez vos produits"
+        },
+        {
+          "label": "Confirmili",
+          "desc": "Gérez les commandes et confirmez la livraison"
+        }
+      ]
+    }
   }
 }

@@ -1,4 +1,3 @@
-import { getActiveStore } from '@/lib/supabase/server';
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
@@ -6,9 +5,13 @@ import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils/format'
+import { useT, useDir } from '@/lib/i18n/react'
+
 
 export default function RegisterPage() {
   const router = useRouter()
+  const t = useT()
+  const dir = useDir()
   const [form,    setForm]    = useState({ storeName: '', email: '', phone: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
@@ -23,7 +26,7 @@ export default function RegisterPage() {
       email: form.email,
       password: form.password,
     })
-    if (authError || !authData.user) { setError(authError?.message ?? 'خطأ في التسجيل'); setLoading(false); return }
+    if (authError || !authData.user) { setError(authError?.message ?? t('auth.register.error')); setLoading(false); return }
     const slug = slugify(form.storeName) || `store-${Date.now()}`
     await supabase.from('stores').insert({
       owner_id: authData.user.id,
@@ -41,10 +44,10 @@ export default function RegisterPage() {
   }
 
   const fields = [
-    { key: 'storeName', label: 'اسم المتجر',           ph: 'متجري الجزائري',     required: true },
-    { key: 'email',     label: 'البريد الإلكتروني',   ph: 'example@email.com',  required: true, dir: 'ltr' },
-    { key: 'phone',     label: 'رقم الهاتف',          ph: '0555 xx xx xx',      required: true },
-    { key: 'password',  label: 'كلمة المرور',         ph: '••••••••',            required: true, type: 'password', dir: 'ltr' },
+    { key: 'storeName', label: t('auth.register.f_store'),    ph: t('auth.register.f_store_ph'),     required: true },
+    { key: 'email',     label: t('auth.register.f_email'),    ph: 'example@email.com',  required: true, dir: 'ltr' } as any,
+    { key: 'phone',     label: t('auth.register.f_phone'),    ph: '0555 xx xx xx',      required: true },
+    { key: 'password',  label: t('auth.register.f_password'), ph: '••••••••',            required: true, type: 'password', dir: 'ltr' } as any,
   ]
 
   return (
@@ -57,14 +60,14 @@ export default function RegisterPage() {
           Commerco<span style={{ color: '#0D6EFD' }}>.</span>
         </Link>
         <h1 className="font-bold text-xl" style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}>
-          إنشاء حساب مجاني
+          {t('auth.register.title2')}
         </h1>
         <p className="text-sm mt-1" style={{ color: '#999999', fontFamily: 'var(--font-tajawal)' }}>
-          ابدأ البيع أونلاين في أقل من دقيقتين
+          {t('auth.register.subtitle2')}
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-4" dir="rtl">
+      <form onSubmit={onSubmit} className="space-y-4" dir={dir}>
         {fields.map(f => (
           <div key={f.key}>
             <label className="block text-sm font-semibold mb-1.5" style={{ color: '#111111', fontFamily: 'var(--font-tajawal)' }}>
@@ -96,14 +99,14 @@ export default function RegisterPage() {
           style={{ fontFamily: 'var(--font-tajawal)' }}
         >
           {loading
-            ? <><Loader2 size={18} className="animate-spin ml-2" />جارٍ الإنشاء...</>
-            : 'إنشاء حساب مجاناً ←'
+            ? <><Loader2 size={18} className="animate-spin ml-2" />{t('auth.register.submitting')}</>
+            : t('auth.register.submit')
           }
         </button>
 
         <p className="text-center text-sm" style={{ color: '#999999', fontFamily: 'var(--font-tajawal)' }}>
-          لديك حساب؟{' '}
-          <Link href="/login" className="font-semibold" style={{ color: '#0D6EFD' }}>سجّل دخولك</Link>
+          {t('auth.register.have_account')}{' '}
+          <Link href="/login" className="font-semibold" style={{ color: '#0D6EFD' }}>{t('auth.register.login_link')}</Link>
         </p>
       </form>
     </div>

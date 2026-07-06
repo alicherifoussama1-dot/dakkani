@@ -2,6 +2,7 @@
 
 import { useRef } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
+import { useT, useRaw } from '@/lib/i18n/react'
 
 const FLOATING_ITEMS = [
   { emoji: '🛒', x: '8%',  y: '15%', delay: 0,    size: 40 },
@@ -13,6 +14,8 @@ const FLOATING_ITEMS = [
 ]
 
 export default function CTABanner() {
+  const tr = useT()
+  const raw = useRaw()
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
   const prefersReduced = useReducedMotion()
@@ -119,7 +122,7 @@ export default function CTABanner() {
                 fontSize: 'clamp(32px, 5vw, 60px)',
                 color: '#fff', lineHeight: 1.2, margin: '0 0 16px',
               }}>
-              جاهز تبدأ تبيع؟
+              {tr('landing.cta.title')}
             </motion.h2>
 
             <motion.p
@@ -131,7 +134,7 @@ export default function CTABanner() {
                 color: 'rgba(255,255,255,0.8)', lineHeight: 1.75,
                 maxWidth: 480, margin: '0 auto 40px',
               }}>
-              ابدأ مجاناً اليوم. لا بطاقة بنكية مطلوبة. لا خبرة تقنية.
+              {tr('landing.cta.sub')}
             </motion.p>
 
             <motion.div
@@ -157,7 +160,7 @@ export default function CTABanner() {
                   boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                   minHeight: 54,
                 }}>
-                ابدأ مجاناً الآن
+                {tr('landing.cta.start')}
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24"
                   stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round"
@@ -177,7 +180,7 @@ export default function CTABanner() {
                   padding: '16px 30px', borderRadius: 16, textDecoration: 'none',
                   minHeight: 54,
                 }}>
-                اكتشف المميزات
+                {tr('landing.cta.discover')}
               </motion.a>
             </motion.div>
 
@@ -191,9 +194,9 @@ export default function CTABanner() {
                 gap: 24, marginTop: 32, flexWrap: 'wrap',
               }}>
               {[
-                '✓ مجاني للأبد في الخطة الأساسية',
-                '✓ تجربة 14 يوم مجاناً للـ Pro',
-                '✓ إلغاء في أي وقت',
+                
+                
+                ...(raw('landing.cta.points') as string[] ?? []),
               ].map((t, i) => (
                 <span key={i} style={{
                   fontFamily: 'var(--font-tajawal)', fontSize: 12,

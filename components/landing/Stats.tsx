@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
+import { useT, useRaw } from '@/lib/i18n/react'
 
 const STATS = [
-  { value: 12000,   suffix: '+', label: 'تاجر نشط',     icon: '🏪', color: '#4F46E5', bg: '#EEF2FF' },
-  { value: 48,      suffix: '',  label: 'ولاية مغطاة',  icon: '🗺️', color: '#7C3AED', bg: '#F5F3FF' },
-  { value: 2000000, suffix: '+', label: 'طلب مُعالج',   icon: '📦', color: '#059669', bg: '#ECFDF5' },
-  { value: 98,      suffix: '%', label: 'رضا العملاء',  icon: '⭐', color: '#D97706', bg: '#FFFBEB' },
+  { value: 12000,   suffix: '+', label: '',     icon: '🏪', color: '#4F46E5', bg: '#EEF2FF' },
+  { value: 48,      suffix: '',  label: '',  icon: '🗺️', color: '#7C3AED', bg: '#F5F3FF' },
+  { value: 2000000, suffix: '+', label: '',   icon: '📦', color: '#059669', bg: '#ECFDF5' },
+  { value: 98,      suffix: '%', label: '',  icon: '⭐', color: '#D97706', bg: '#FFFBEB' },
 ]
 
 function CountUp({ target, suffix, color }: { target: number; suffix: string; color: string }) {
@@ -52,6 +53,7 @@ function CountUp({ target, suffix, color }: { target: number; suffix: string; co
 }
 
 export default function Stats() {
+  const t = useT()
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-60px' })
 
@@ -102,7 +104,7 @@ export default function Stats() {
               <div style={{
                 fontFamily: 'var(--font-tajawal)', fontSize: 14,
                 color: '#475569', fontWeight: 500,
-              }}>{s.label}</div>
+              }}>{t(`landing.stats.items.${i}`)}</div>
             </motion.div>
           ))}
         </div>

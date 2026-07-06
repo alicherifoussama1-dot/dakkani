@@ -2,35 +2,25 @@
 
 import { useState, useRef } from 'react'
 import { motion, useInView, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { useT, useRaw } from '@/lib/i18n/react'
 
 const FAQS = [
   {
-    q: 'هل أحتاج خبرة تقنية لإنشاء متجر على Commerco؟',
-    a: 'لا، إطلاقاً. Commerco صُمم خصيصاً للتاجر الجزائري العادي. يمكنك إنشاء متجرك وإضافة منتجاتك وبدء البيع في أقل من ساعة، بدون أي معرفة برمجية أو تقنية.',
-  },
+          },
   {
-    q: 'كيف يصل الزبائن لمتجري في كل الولايات؟',
-    a: 'متجرك على Commerco يدعم التوصيل لكل الـ48 ولاية الجزائرية من خلال شركاء الشحن المعتمدين. العميل يختار ولايته عند الطلب وتصلك الطلبية مباشرة في لوحة التحكم.',
-  },
+          },
   {
-    q: 'ما هي طرق الدفع المتاحة للزبائن؟',
-    a: 'الدفع عند الاستلام (COD) هو الطريقة الرئيسية والمفضلة للجزائريين. نعمل على إضافة الدفع الإلكتروني قريباً عند توفره في السوق الجزائري.',
-  },
+          },
   {
-    q: 'ما هو Confirmili وهل أحتاجه؟',
-    a: 'Confirmili هي لوحة تحكم متخصصة لتأكيد الطلبات وإدارة التوصيل، مشابهة لـ Octomatic. تساعدك على متابعة كل الطلبات، تأكيدها، تتبع حالتها، وإرسال التقارير لشركات الشحن. متاحة في خطة Pro.',
-  },
+          },
   {
-    q: 'هل يمكنني ربط متجري بمنصات أخرى مثل YouCan أو Shopify؟',
-    a: 'نعم، في خطة Pro و Business يمكنك ربط متجرك بمنصات أخرى عبر تكاملات Confirmili، بما فيها YouCan وWooCommerce وGoogle Sheets لمزامنة الطلبات والمخزون.',
-  },
+          },
   {
-    q: 'ماذا يحدث إذا تجاوزت حد الطلبات في خطتي؟',
-    a: 'ستتلقى إشعاراً عند الوصول إلى 80% من حدك الشهري. لن تُوقَف خدمتك تلقائياً — ستحصل على فترة سماح قصيرة ريثما ترقي خطتك. ترقية الخطة تتم بنقرة واحدة من لوحة التحكم.',
-  },
+          },
 ]
 
 export default function FAQ() {
+  const t = useT()
   const [open, setOpen] = useState<number | null>(0)
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
@@ -59,7 +49,7 @@ export default function FAQ() {
             fontFamily: 'var(--font-tajawal)', fontWeight: 900,
             fontSize: 'clamp(28px,4vw,40px)', color: '#0F172A',
             lineHeight: 1.3, margin: 0,
-          }}>أسئلة يسألها التجار كثيراً</h2>
+          }}>{t('landing.faq.title')}</h2>
         </motion.div>
 
         {/* FAQ items */}
@@ -104,7 +94,7 @@ export default function FAQ() {
                   color: open === i ? '#4F46E5' : '#0F172A',
                   transition: 'color 0.2s',
                   flex: 1, textAlign: 'right', paddingRight: 0, paddingLeft: 16,
-                }}>{faq.q}</span>
+                }}>{t(`landing.faq.items.${i}.q`)}</span>
               </button>
 
               <AnimatePresence>
@@ -119,7 +109,7 @@ export default function FAQ() {
                       padding: '0 24px 20px',
                       fontFamily: 'var(--font-tajawal)', fontSize: 14, color: '#475569',
                       lineHeight: 1.8,
-                    }}>{faq.a}</div>
+                    }}>{t(`landing.faq.items.${i}.a`)}</div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -140,11 +130,11 @@ export default function FAQ() {
           <p style={{
             fontFamily: 'var(--font-tajawal)', fontSize: 15, color: '#0F172A',
             fontWeight: 600, marginBottom: 12,
-          }}>لديك سؤال آخر؟</p>
+          }}>{t('landing.faq.more_q')}</p>
           <p style={{
             fontFamily: 'var(--font-tajawal)', fontSize: 13, color: '#475569',
             marginBottom: 16, lineHeight: 1.7,
-          }}>فريق دعمنا متاح 7 أيام في الأسبوع للإجابة على كل استفساراتك</p>
+          }}>{t('landing.faq.more_a')}</p>
           <a href="https://wa.me/213000000000" target="_blank" rel="noopener noreferrer"
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
