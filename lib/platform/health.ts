@@ -118,10 +118,14 @@ async function checkWorkers(): Promise<HealthCheck> {
       .order('created_at', { ascending: false }).limit(1).maybeSingle()
     if (!data) return { name: 'workers', status: 'unconfigured', detail: 'no heartbeat yet' }
     const ageMin = (Date.now() - new Date(data.created_at).getTime()) / 60_000
+    // Threshold follows the configured cron cadence: daily on Vercel Hobby
+    // (default 1440), 5 when minute-level crons are available. Without this,
+    // a healthy daily worker would read as "down" for most of the day.
+    const intervalMin = Number(process.env.QUEUE_CRON_INTERVAL_MINUTES ?? 1440)
     return {
       name: 'workers',
-      status: ageMin > 15 ? 'down' : ageMin > 5 ? 'degraded' : 'up',
-      detail: `last heartbeat ${Math.round(ageMin)}m ago`,
+      status: ageMin > intervalMin * 2.5 ? 'down' : ageMin > intervalMin * 1.25 ? 'degraded' : 'up',
+      detail: `last heartbeat ${Math.round(ageMin)}m ago (expected every ${intervalMin}m)`,
     }
   } catch (e) {
     return { name: 'workers', status: 'down', detail: msg(e) }

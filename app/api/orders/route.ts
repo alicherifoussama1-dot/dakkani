@@ -1,6 +1,5 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import { z } from 'zod'
 import { checkFraud } from '@/lib/fraud/score'
 import { resolveRouting, pushOrderToSheet, markOrderRouting } from '@/lib/orders/route-order'
@@ -50,8 +49,14 @@ export async function POST(req: Request) {
 
     const body = await req.json()
     const data = orderSchema.parse(body)
-    const cookieStore = cookies()
-    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { cookies: { get: (n) => cookieStore.get(n)?.value, set: (n,v,o) => { try { cookieStore.set({name:n,value:v,...o}) } catch {} }, remove: (n,o) => { try { cookieStore.set({name:n,value:'',...o}) } catch {} } } })
+    // Guest checkout writes with the service client (same pattern as
+    // storefront reads in lib/supabase/public.ts). The anon-cookie client
+    // used before could only insert orders when the caller happened to be
+    // the logged-in store owner — real customers were rejected by RLS
+    // (orders has no anonymous INSERT policy), and order_items /
+    // order_history / notifications inserts failed silently. All input is
+    // zod-validated and prices come from the DB, never from the client.
+    const supabase = createPublicClient()
 
     // 1. Validate store exists and is active
     const { data: store, error: storeErr } = await supabase

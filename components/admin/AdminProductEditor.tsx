@@ -573,7 +573,8 @@ export default function AdminProductEditor({
 
   const descriptionImageUrl = useWatch({ control, name: 'description_image_url' })
   const trackInventory = useWatch({ control, name: 'track_inventory' }) ?? true
-  const variantGroups = useWatch({ control, name: 'variant_groups' }) ?? []
+  const watchedVariantGroups = useWatch({ control, name: 'variant_groups' })
+  const variantGroups = useMemo(() => watchedVariantGroups ?? [], [watchedVariantGroups])
   const selectedWarehouseId = useWatch({ control, name: 'warehouse_id' }) || (warehouses[0]?.id ?? '')
 
   const [variantStocks, setVariantStocks] = useState<Record<string, Record<string, number>>>({})

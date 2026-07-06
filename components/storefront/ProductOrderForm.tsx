@@ -103,11 +103,11 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   // Load checkout settings
   const settings = Array.isArray(store.store_settings) ? store.store_settings[0] : store.store_settings
 
-  const fieldsConfig = settings?.checkout_fields ?? {
+  const fieldsConfig = useMemo(() => settings?.checkout_fields ?? {
     phone2: { visible: true, required: false },
     address: { visible: true, required: false },
     notes: { visible: true, required: false }
-  }
+  }, [settings?.checkout_fields])
 
   const fieldOrder: string[] = settings?.checkout_field_order ?? ['name', 'wilaya', 'baladia', 'phone', 'address']
 

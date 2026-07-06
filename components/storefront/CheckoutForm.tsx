@@ -162,7 +162,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
         })
       }
     })
-  }, [store, settings, lang])
+  }, [settings, lang])
 
   const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(dynamicSchema),

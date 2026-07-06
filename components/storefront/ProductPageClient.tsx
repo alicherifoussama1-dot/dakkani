@@ -85,7 +85,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
 
   // Load checkout settings and language defaults
   const settings = Array.isArray(store.store_settings) ? store.store_settings[0] : store.store_settings
-  const enabledLanguages: Locale[] = settings?.languages ?? ['ar']
+  const enabledLanguages: Locale[] = useMemo(() => settings?.languages ?? ['ar'], [settings?.languages])
   const defaultLang: Locale = settings?.default_language ?? 'ar'
   const [lang, setLang] = useState<Locale>('ar')
 
