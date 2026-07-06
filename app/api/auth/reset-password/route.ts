@@ -15,12 +15,26 @@ function emailT() {
 }
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+import { checkRateLimit, rateLimitResponse } from '@/lib/platform/rate-limit'
+import { getClientInfo } from '@/lib/platform/security'
+import { audit } from '@/lib/platform/audit'
 
 const schema = z.object({ email: z.string().email() })
 
 export async function POST(req: Request) {
   const { t: et, dir: edir } = emailT()
   try {
+    // Reset emails are attacker bait (spam + account enumeration): 5/15min/IP.
+    const client = getClientInfo(req)
+    const rl = checkRateLimit(`pw-reset:${client.ip}`, { limit: 5, windowMs: 15 * 60_000 })
+    if (!rl.allowed) {
+      await audit({
+        action: 'auth.reset_rate_limited', severity: 'warning',
+        metadata: { ip: client.ip }, request: req,
+      })
+      return rateLimitResponse(rl)
+    }
+
     const { email } = schema.parse(await req.json())
 
     const supabase = createClient(

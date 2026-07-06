@@ -6,7 +6,7 @@ const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-pa
   '/auth/login', '/auth/register', '/discover']
 
 // Routes that require auth (gate logged-out users to /login).
-const PROTECTED = ['/dashboard','/admin','/products','/orders','/settings','/categories',
+const PROTECTED = ['/dashboard','/admin','/platform','/products','/orders','/settings','/categories',
   '/warehouses','/coupons','/customers','/analytics','/landing-pages','/tracking',
   '/apps','/billing','/confirmili','/justad','/learn','/reviews','/blacklist']
 // Auth pages that redirect already-logged-in users to /dashboard.

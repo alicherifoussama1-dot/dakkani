@@ -4,6 +4,14 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { checkFraud } from '@/lib/fraud/score'
 import { resolveRouting, pushOrderToSheet, markOrderRouting } from '@/lib/orders/route-order'
+import { checkRateLimit, rateLimitResponse } from '@/lib/platform/rate-limit'
+import { getClientInfo } from '@/lib/platform/security'
+import { emit } from '@/lib/platform/events'
+import { enqueue } from '@/lib/platform/queue'
+import { initPlatformRuntime } from '@/lib/platform/queue-handlers'
+
+// Register event subscriptions once per instance so emit() fans out.
+initPlatformRuntime()
 import { formatCommuneFrench } from '@/lib/algeria-baladias'
 import { resolveDeclaredFee } from '@/lib/delivery/pricing'
 
@@ -34,6 +42,12 @@ const orderSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    // Brake on bot bursts: 20 checkout attempts / minute / IP.
+    // Real shoppers never hit this; scripted order-spam does.
+    const client = getClientInfo(req)
+    const rl = checkRateLimit(`checkout:${client.ip}`, { limit: 20, windowMs: 60_000 })
+    if (!rl.allowed) return rateLimitResponse(rl)
+
     const body = await req.json()
     const data = orderSchema.parse(body)
     const cookieStore = cookies()
@@ -373,7 +387,11 @@ export async function POST(req: Request) {
           sheet_status: push.ok ? 'sent' : 'failed',
           sheet_error: push.ok ? null : push.error.slice(0, 300),
         })
-        if (!push.ok) console.error('Sheet push failed for', order.order_number, '—', push.error)
+        if (!push.ok) {
+          console.error('Sheet push failed for', order.order_number, '—', push.error)
+          // Queue an async retry so the order still reaches the sheet later.
+          await enqueue('sheets.push', { orderId: order.id }, { storeId: data.store_id })
+        }
       } else {
         // sheet_only without an assigned/default sheet falls back to Confirmili
         // so the order is never lost.
@@ -382,6 +400,18 @@ export async function POST(req: Request) {
     } catch (e) {
       console.error('Order routing error (non-blocking):', e)
     }
+
+    // 8f. EVENT BUS — announce the new order. Subscribers (emails, WhatsApp,
+    // analytics, future plugins) run as isolated queue jobs; emit() never throws.
+    await emit('order.created', {
+      storeId: data.store_id,
+      orderId: order.id,
+      orderNumber: order.order_number,
+      total,
+      status: finalStatus,
+      wilayaId: data.wilaya_id,
+      source: data.source ?? 'storefront',
+    })
 
     // 9. Update coupon usage
     if (couponId) {

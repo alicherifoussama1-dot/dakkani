@@ -109,6 +109,32 @@ const nextConfig = {
       { source: "/store/:slug/order-confirmation",     destination: "/:slug/order-confirmation" },
     ];
   },
+  // Enterprise security headers on every response (helmet-equivalent for Next.js).
+  // SAMEORIGIN (not DENY): the store builder previews storefronts in a
+  // same-origin iframe; cross-origin framing stays blocked.
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(), payment=()" },
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+        ],
+      },
+      {
+        // Platform Admin gets the strictest policy: no caching of any kind.
+        source: "/platform/:path*",
+        headers: [
+          { key: "Cache-Control", value: "no-store, must-revalidate" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+    ];
+  },
 };
 
 export default pwaConfig(nextConfig);
