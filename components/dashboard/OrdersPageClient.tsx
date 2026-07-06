@@ -1,4 +1,5 @@
 'use client'
+import { useT, useRaw, useDir } from '@/lib/i18n/react'
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -24,6 +25,11 @@ interface Props {
 export default function OrdersPageClient({
   initialOrders, total, page, perPage, storeId, products, filters,
 }: Props) {
+  const t = useT()
+  const raw = useRaw()
+  const dir = useDir()
+  const TYPE_LABELS: Record<string,string> = { 'الكل': t('common.all'), 'نظيف': t('status.clean'), 'قيد المراجعة': t('status.reviewing'), 'مهجور': t('status.abandoned') }
+  const STATUS_LABELS: Record<string,string> = { 'الكل': t('common.all'), 'جديد': t('status.new'), 'مؤكد': t('status.confirmed'), 'يُعالج': t('status.processing'), 'شُحن': t('status.shipped'), 'مُسلَّم': t('status.delivered'), 'ملغى': t('status.cancelled'), 'مُرجَع': t('status.returned') }
   const router   = useRouter()
   const pathname = usePathname()
   const params   = useSearchParams()
@@ -42,9 +48,9 @@ export default function OrdersPageClient({
     try {
       const res = await fetch(`/api/delivery/ship/${orderId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
       const d = await res.json().catch(() => ({}))
-      if (!res.ok) { setToast(d.error ?? 'تعذّر الإرسال — فعّل شركة توصيل من صفحة التوصيل'); }
-      else { setToast(`✓ أُرسل عبر ${d.provider ?? 'شركة التوصيل'} — ${d.trackingNumber}`); router.refresh() }
-    } catch { setToast('تعذّر الإرسال إلى شركة التوصيل') }
+      if (!res.ok) { setToast(d.error ?? t('orders.send_fail')); }
+      else { setToast(t('orders.send_ok', { provider: d.provider ?? t('orders.provider_fallback'), tracking: d.trackingNumber })); router.refresh() }
+    } catch { setToast(t('orders.send_err')) }
     finally { setShipping(null); setTimeout(() => setToast(''), 3000) }
   }
 
@@ -64,30 +70,30 @@ export default function OrdersPageClient({
   const totalPages = Math.ceil(total / perPage)
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto" dir="rtl" style={{ fontFamily: 'var(--font-arabic)' }}>
+    <div className="p-4 md:p-6 max-w-7xl mx-auto" dir={dir} style={{ fontFamily: 'var(--font-arabic)' }}>
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
         <div>
-          <h1 className="page-title">الطلبات</h1>
-          <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)'}}>{total.toLocaleString('ar-DZ')} طلب إجمالاً</p>
+          <h1 className="page-title">{t('orders.title')}</h1>
+          <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)'}}>{t('orders.total_count', { count: total.toLocaleString() })}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => router.refresh()} className="btn btn-sm gap-1.5" style={{ background: '#FFC107', color: '#000', border: 'none' }}>
-            <RefreshCw size={13} />تحديث
+            <RefreshCw size={13} />{t('common.refresh')}
           </button>
           <button
             onClick={() => {
-              const rows = [['رقم الطلب','الاسم','الهاتف','المبلغ','الحالة','التاريخ']]
+              const rows = [raw('orders.csv_cols') as string[]]
               initialOrders.forEach(o => rows.push([o.order_number,o.customer_name,o.customer_phone,String(o.total),o.status,o.created_at?.slice(0,10)]))
               const csv = rows.map(r => r.join(',')).join('\n')
               const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}))
               a.download = `orders-${new Date().toISOString().slice(0,10)}.csv`; a.click()
             }}
             className="btn btn-sm gap-1.5" style={{ border: '1px solid var(--color-border)', background: '#fff', color: 'var(--color-text-secondary)' }}>
-            <Download size={13} />تصدير CSV
+            <Download size={13} />{t('common.export_csv')}
           </button>
           <Link href="/orders/new" className="btn btn-primary btn-sm gap-1.5">
-            <Plus size={13} />إنشاء طلب
+            <Plus size={13} />{t('orders.create')}
           </Link>
         </div>
       </div>
@@ -100,34 +106,34 @@ export default function OrdersPageClient({
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="ابحث في الطلبات..."
+            placeholder={t('orders.search_ph')}
             className="input pr-8 text-sm"
           />
         </div>
 
         {/* Products dropdown */}
         <select className="input text-sm w-44" style={{ minWidth: '160px' }}>
-          <option>كل المنتجات</option>
+          <option>{t('orders.all_products')}</option>
           {products.map(p => <option key={p.id} value={p.id}>{p.name_ar ?? p.name}</option>)}
         </select>
 
         {/* Date range */}
         <div className="flex items-center gap-1">
           <input type="date" onChange={e => push({ from: e.target.value || undefined })}
-            className="input text-xs h-8 w-36" dir="ltr" title="من" />
+            className="input text-xs h-8 w-36" dir="ltr" title={t('common.from')} />
           <span className="text-xs" style={{color:'var(--color-text-muted)'}}>—</span>
           <input type="date" onChange={e => push({ to: e.target.value || undefined })}
-            className="input text-xs h-8 w-36" dir="ltr" title="إلى" />
+            className="input text-xs h-8 w-36" dir="ltr" title={t('common.to')} />
         </div>
 
         {/* Type */}
         <select value={type} onChange={e => setType(e.target.value)} className="input text-sm w-40">
-          {ORDER_TYPES.map(t => <option key={t}>{t}</option>)}
+          {ORDER_TYPES.map(o => <option key={o} value={o}>{TYPE_LABELS[o] ?? o}</option>)}
         </select>
 
         {/* Status */}
         <select value={sit} onChange={e => { setSit(e.target.value); push({ status: STATUS_VALUES[e.target.value] || undefined }) }} className="input text-sm w-44">
-          {ORDER_STATUSES.map(s => <option key={s}>{s}</option>)}
+          {ORDER_STATUSES.map(o => <option key={o} value={o}>{STATUS_LABELS[o] ?? o}</option>)}
         </select>
       </div>
 
@@ -137,7 +143,7 @@ export default function OrdersPageClient({
           <table className="data-table">
             <thead>
               <tr>
-                {['رقم الطلب','معلومات الزبون','الموقع','معلومات الطلب','المنتج','الحالة','التتبع','إجراءات'].map(h => (
+                {(raw('orders.cols') as string[] ?? []).map(h => (
                   <th key={h}>{h}</th>
                 ))}
               </tr>
@@ -146,7 +152,7 @@ export default function OrdersPageClient({
               {initialOrders.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center py-12 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                    لا توجد طلبات — ابدأ بإضافة منتجك الأول
+                    {t('orders.empty')}
                   </td>
                 </tr>
               ) : initialOrders.map(order => (
@@ -172,7 +178,7 @@ export default function OrdersPageClient({
                       {formatDZD(order.total)}
                     </p>
                     <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                      {order.delivery_type === 'stopdesk' ? 'مكتب' : 'منزل'}
+                      {order.delivery_type === 'stopdesk' ? t('common.office') : t('common.home')}
                     </p>
                   </td>
                   <td>
@@ -193,8 +199,8 @@ export default function OrdersPageClient({
                       ? <span className="font-mono text-xs" style={{ color: 'var(--color-accent)' }}>{order.tracking_number}</span>
                       : <button onClick={() => sendToDelivery(order.id)} disabled={shipping === order.id}
                           className="inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg disabled:opacity-60"
-                          style={{ background: '#E7F0FF', color: '#0D6EFD' }} title="أرسل إلى شركة التوصيل">
-                          {shipping === order.id ? <Loader2 size={12} className="animate-spin" /> : <Truck size={12} />} إرسال
+                          style={{ background: '#E7F0FF', color: '#0D6EFD' }} title={t('orders.send_to_delivery')}>
+                          {shipping === order.id ? <Loader2 size={12} className="animate-spin" /> : <Truck size={12} />} {t('orders.send')}
                         </button>
                     }
                   </td>
@@ -216,7 +222,7 @@ export default function OrdersPageClient({
               {[5,10,20,30,50].map(n => <option key={n}>{n}</option>)}
             </select>
             <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              {((page-1)*perPage)+1} - {Math.min(page*perPage, total)} من {total.toLocaleString('ar-DZ')}
+              {t('orders.range', { from: ((page-1)*perPage)+1, to: Math.min(page*perPage, total), total: total.toLocaleString() })}
             </span>
           </div>
           {totalPages > 1 && (

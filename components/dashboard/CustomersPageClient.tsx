@@ -1,4 +1,5 @@
 'use client'
+import { useT, useRaw, useDir } from '@/lib/i18n/react'
 import { useState, useMemo } from 'react'
 import { Search, Users, Phone, MapPin, TrendingUp, Download } from 'lucide-react'
 import { formatDZD, formatDateShort } from '@/lib/utils/format'
@@ -9,10 +10,13 @@ interface Customer {
 }
 
 export default function CustomersPageClient({ customers }: { customers: Customer[] }) {
+  const t = useT()
+  const raw = useRaw()
+  const dir = useDir()
   const [q, setQ] = useState('')
 
   const exportCSV = () => {
-    const rows = [['الاسم','الهاتف','الولاية','البلدية','عدد الطلبات','إجمالي الإنفاق','أول طلب','آخر طلب']]
+    const rows = [raw('customers.csv_cols') as string[]]
     filtered.forEach(c => rows.push([c.name, c.phone, c.wilaya??'', c.commune??'', String(c.orders), String(c.spent), c.first?.slice(0,10)??'', c.last?.slice(0,10)??'']))
     const csv = '﻿' + rows.map(r => r.join(',')).join('\n')
     const a = document.createElement('a')
@@ -38,19 +42,19 @@ export default function CustomersPageClient({ customers }: { customers: Customer
       <div className="grid grid-cols-3 gap-4">
         <div className="card p-4">
           <p className="stat-value">{customers.length.toLocaleString('ar-DZ')}</p>
-          <p className="stat-label">إجمالي الزبائن</p>
+          <p className="stat-label">{t('customers.total')}</p>
         </div>
         <div className="card p-4">
           <p className="stat-value" style={{color:'var(--color-accent)'}}>
             {formatDZD(customers.reduce((s,c) => s + c.spent, 0))}
           </p>
-          <p className="stat-label">إجمالي المبيعات</p>
+          <p className="stat-label">{t('customers.total_sales')}</p>
         </div>
         <div className="card p-4">
           <p className="stat-value">
             {customers.length > 0 ? formatDZD(customers.reduce((s,c) => s + c.spent, 0) / customers.length) : '0 دج'}
           </p>
-          <p className="stat-label">متوسط الإنفاق</p>
+          <p className="stat-label">{t('customers.avg_spend')}</p>
         </div>
       </div>
 
@@ -61,12 +65,12 @@ export default function CustomersPageClient({ customers }: { customers: Customer
           <input
             value={q}
             onChange={e => setQ(e.target.value)}
-            placeholder="ابحث عن زبون، هاتف، ولاية..."
+            placeholder={t('customers.search_ph')}
             className="input pr-8 text-sm"
           />
         </div>
         <button onClick={exportCSV} className="btn btn-sm gap-1.5" style={{border:'1px solid var(--color-border)',background:'#fff',color:'var(--color-text-secondary)'}}>
-          <Download size={13}/>تصدير CSV
+          <Download size={13}/>{t('common.export_csv')}
         </button>
       </div>
 
@@ -76,7 +80,7 @@ export default function CustomersPageClient({ customers }: { customers: Customer
           <table className="data-table">
             <thead>
               <tr>
-                {['الزبون','الموقع','الطلبات','الإنفاق','آخر طلب'].map(h => <th key={h}>{h}</th>)}
+                {(raw('customers.cols') as string[] ?? []).map(h => <th key={h}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -85,7 +89,7 @@ export default function CustomersPageClient({ customers }: { customers: Customer
                   <td colSpan={5} className="text-center py-14">
                     <Users size={28} className="mx-auto mb-2" style={{color:'var(--color-text-muted)'}} />
                     <p className="text-sm" style={{color:'var(--color-text-muted)'}}>
-                      {q ? 'لا توجد نتائج للبحث' : 'لا توجد بيانات زبائن'}
+                      {q ? t('customers.no_results') : t('customers.no_data')}
                     </p>
                   </td>
                 </tr>
@@ -122,7 +126,7 @@ export default function CustomersPageClient({ customers }: { customers: Customer
                   </td>
                   <td>
                     <p className="text-sm" style={{fontFamily:'var(--font-primary)'}}>{formatDateShort(c.last)}</p>
-                    <p className="text-xs" style={{color:'var(--color-text-muted)'}}>أول: {formatDateShort(c.first)}</p>
+                    <p className="text-xs" style={{color:'var(--color-text-muted)'}}>{t('customers.first', { date: formatDateShort(c.first) })}</p>
                   </td>
                 </tr>
               ))}
@@ -131,7 +135,7 @@ export default function CustomersPageClient({ customers }: { customers: Customer
         </div>
         {filtered.length > 0 && (
           <div className="px-4 py-2 border-t text-xs" style={{borderColor:'var(--color-border)',color:'var(--color-text-muted)'}}>
-            {filtered.length} زبون{q ? ` (من ${customers.length})` : ''}
+            {t('customers.count', { count: filtered.length })}{q ? t('customers.of_total', { total: customers.length }) : ''}
           </div>
         )}
       </div>

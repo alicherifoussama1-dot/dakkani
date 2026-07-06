@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { CheckCircle2, AlertTriangle, XCircle, ExternalLink, Eye, Globe } from 'lucide-react'
+import { useT, useDir } from '@/lib/i18n/react'
 import { PROVIDER_LIST, type ProviderKey } from '@/lib/tracking/registry'
 import {
   resolveProductTracking, resolveDomain,
@@ -21,6 +22,8 @@ interface Props { productId: string | null; storeId: string }
 type Selection = Record<ProviderKey, string>
 
 export default function ProductTrackingTab({ productId, storeId }: Props) {
+  const t = useT()
+  const dirn = useDir()
   const sb = createClient()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -87,10 +90,10 @@ export default function ProductTrackingTab({ productId, storeId }: Props) {
 
   if (!productId) return (
     <div className="card p-6 text-sm text-center" style={{ color: 'var(--color-text-muted)' }}>
-      احفظ المنتج أولاً ثم اضبط التتبع والدومين.
+      {t('tracking.save_first')}
     </div>
   )
-  if (loading) return <div className="card p-6 text-sm" style={{ color: 'var(--color-text-muted)' }}>جارٍ التحميل…</div>
+  if (loading) return <div className="card p-6 text-sm" style={{ color: 'var(--color-text-muted)' }}>{t('tracking.loading')}</div>
 
   const overall = (() => {
     const states = PROVIDER_LIST.map(p => {
@@ -108,12 +111,12 @@ export default function ProductTrackingTab({ productId, storeId }: Props) {
   const overallColor = overall === 'healthy' ? '#1D9E75' : overall === 'error' ? '#D93A3A' : '#E0A400'
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="space-y-5" dir={dirn}>
       {/* ── Domains & Pixels (JustSell-style) ── */}
       <div className="card p-5 space-y-5">
         {/* Domains — toggle pills, single selection */}
         <div>
-          <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--color-text-primary)' }}>الدومينات</h3>
+          <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--color-text-primary)' }}>{t('tracking.tab_domains')}</h3>
           <div className="flex flex-wrap gap-3">
             {/* Platform domain toggle */}
             <button type="button" onClick={() => setDomainSel('default')}
@@ -139,7 +142,7 @@ export default function ProductTrackingTab({ productId, storeId }: Props) {
               )
             })}
           </div>
-          <p className="text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>كل منتج يجب أن يكون مرتبطاً بدومين واحد للمتجر.</p>
+          <p className="text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>{t('tracking.tab_domain_note')}</p>
         </div>
 
         {/* Pixels — two-column dropdown grid */}
@@ -152,9 +155,9 @@ export default function ProductTrackingTab({ productId, storeId }: Props) {
                   <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />{p.labelAr}
                 </label>
                 <select value={sel[p.key]} onChange={e => setSel(s => ({ ...s, [p.key]: e.target.value }))} className="input text-sm w-full">
-                  <option value="default">الافتراضي للمتجر</option>
+                  <option value="default">{t('tracking.tab_store_default')}</option>
                   {opts.map(i => <option key={i.id} value={i.id}>{i.name} — {i.pixel_id}</option>)}
-                  <option value="disabled">معطّل</option>
+                  <option value="disabled">{t('tracking.tab_disabled')}</option>
                 </select>
               </div>
             )
@@ -163,36 +166,36 @@ export default function ProductTrackingTab({ productId, storeId }: Props) {
 
         {/* Update */}
         <div className="flex justify-start pt-1 border-t" style={{ borderColor: 'var(--color-border)' }}>
-          <button onClick={save} disabled={saving} className="btn btn-primary btn-sm mt-3 px-6">{saving ? 'جارٍ الحفظ…' : 'تحديث'}</button>
+          <button onClick={save} disabled={saving} className="btn btn-primary btn-sm mt-3 px-6">{saving ? t('tracking.saving') : t('tracking.update')}</button>
         </div>
       </div>
 
       {/* ── Preview ── */}
       <div className="card p-5 space-y-3">
         <h3 className="font-semibold text-sm pb-2 border-b flex items-center gap-1.5" style={{ color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>
-          <Eye size={15} style={{ color: 'var(--color-accent)' }} />معاينة التتبع
+          <Eye size={15} style={{ color: 'var(--color-accent)' }} />{t('tracking.preview')}
         </h3>
         {/* Final URL — prominent */}
         <div className="rounded-xl p-3" style={{ background: 'var(--color-surface-2, #F8F9FA)', border: '1px solid var(--color-border)' }}>
           <div className="flex items-center gap-2 mb-1">
             <Globe size={13} style={{ color: 'var(--color-text-muted)' }} />
-            <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>الرابط النهائي · {domain.source === 'platform' ? 'دومين المنصّة' : domain.source === 'product' ? 'دومين المنتج' : 'الافتراضي للمتجر'}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>{t('tracking.final_url')} · {domain.source === 'platform' ? t('tracking.src_platform') : domain.source === 'product' ? t('tracking.src_product') : t('tracking.src_store')}</span>
           </div>
           <a href={productUrl} target="_blank" rel="noreferrer" className="font-mono text-xs inline-flex items-center gap-1 break-all" dir="ltr" style={{ color: 'var(--color-accent)' }}>{productUrl}<ExternalLink size={11} className="shrink-0" /></a>
         </div>
         <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
           {PROVIDER_LIST.map(p => {
             const r = resolved[p.key]
-            const src = r.source === 'override' ? 'تخصيص المنتج' : r.source === 'default' ? 'الافتراضي للمتجر' : r.source === 'disabled' ? 'معطّل' : '—'
+            const src = r.source === 'override' ? t('tracking.src_override') : r.source === 'default' ? t('tracking.src_store') : r.source === 'disabled' ? t('tracking.src_off') : '—'
             return (
               <div key={p.key} className="flex items-center gap-2 py-2 text-sm">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: p.color }} />
                 <span className="w-40" style={{ color: 'var(--color-text-secondary)' }}>{p.labelAr}</span>
                 <span className="font-medium" style={{ color: r.enabled ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>
-                  {r.enabled ? (r.integration?.name ?? '—') : 'غير مفعّل'}
+                  {r.enabled ? (r.integration?.name ?? '—') : t('tracking.not_active')}
                 </span>
                 <span className="mr-auto text-xs px-2 py-0.5 rounded-full" style={{ background: r.enabled ? '#DCFCE7' : '#F1F3F5', color: r.enabled ? '#15803D' : '#868E96' }}>
-                  {r.enabled ? 'مفعّل' : 'معطّل'}
+                  {r.enabled ? t('tracking.on') : t('tracking.off')}
                 </span>
                 <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{src}</span>
               </div>
@@ -206,11 +209,11 @@ export default function ProductTrackingTab({ productId, storeId }: Props) {
         <div className="flex items-center gap-2">
           <OverallIcon size={18} style={{ color: overallColor }} />
           <span className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>
-            حالة التتبع: {overall === 'healthy' ? 'سليم' : overall === 'error' ? 'خطأ' : 'تحذير'}
+            {t('tracking.health_title', { state: overall === 'healthy' ? t('tracking.healthy') : overall === 'error' ? t('tracking.error') : t('tracking.warning') })}
           </span>
         </div>
         <p className="text-xs mt-1.5" style={{ color: 'var(--color-text-muted)' }}>
-          {overall === 'healthy' ? 'كل المنصّات المفعّلة تم اختبارها بنجاح.' : overall === 'error' ? 'إحدى المنصّات بها خطأ — راجع مكتبة التتبع واختبر الاتصال.' : 'بعض المنصّات لم تُختبر بعد أو معطّلة.'}
+          {overall === 'healthy' ? t('tracking.health_ok') : overall === 'error' ? t('tracking.health_err') : t('tracking.health_warn')}
         </p>
       </div>
     </div>

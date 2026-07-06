@@ -468,5 +468,17 @@
         }
       ]
     }
+  },
+  "email_reset": {
+    "subject": "Réinitialisez votre mot de passe — Commerco",
+    "tagline": "La plateforme e-commerce algérienne",
+    "title": "Réinitialisation du mot de passe 🔐",
+    "body": "Vous avez demandé la réinitialisation du mot de passe de votre compte Commerco.<br>Cliquez sur le bouton ci-dessous pour continuer :",
+    "button": "Réinitialiser le mot de passe",
+    "note": "⏱️ Le lien est valable <strong>24 heures</strong> seulement.<br>🔒 Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail — votre compte est en sécurité.",
+    "fallback": "Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :",
+    "invalid_email": "Adresse e-mail invalide",
+    "link_fail": "Échec de création du lien de récupération",
+    "send_fail": "Échec de l’envoi de l’e-mail : "
   }
 }

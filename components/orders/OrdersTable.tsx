@@ -1,18 +1,20 @@
 'use client'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useT, useRaw, useDir } from '@/lib/i18n/react'
+
 import { formatDZD, formatDateShort } from '@/lib/utils/format'
 import type { Order } from '@/types'
 
 const STATUS_OPTIONS = [
-  { value: '', label: 'الكل' },
-  { value: 'new', label: 'جديد' },
-  { value: 'confirmed', label: 'مؤكد' },
-  { value: 'processing', label: 'يُعالج' },
-  { value: 'shipped', label: 'شُحن' },
-  { value: 'delivered', label: 'سُلّم' },
-  { value: 'returned', label: 'مُرجع' },
-  { value: 'cancelled', label: 'ملغى' },
+  { value: '', label: 'common.all' },
+  { value: 'new', label: 'status.new' },
+  { value: 'confirmed', label: 'status.confirmed' },
+  { value: 'processing', label: 'status.processing' },
+  { value: 'shipped', label: 'status.shipped' },
+  { value: 'delivered', label: 'status.delivered' },
+  { value: 'returned', label: 'status.returned' },
+  { value: 'cancelled', label: 'status.cancelled' },
 ]
 
 const STATUS_COLORS: Record<string, string> = {
@@ -32,6 +34,8 @@ const FRAUD_COLOR = (score: number) =>
 interface Props { orders: Order[]; total: number; page: number; pageSize: number }
 
 export default function OrdersTable({ orders, total, page, pageSize }: Props) {
+  const t = useT()
+  const raw = useRaw()
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -52,7 +56,7 @@ export default function OrdersTable({ orders, total, page, pageSize }: Props) {
         <input
           defaultValue={params.get('search') ?? ''}
           onChange={e => push('search', e.target.value)}
-          placeholder="بحث باسم، هاتف، رقم الطلب..."
+          placeholder={t('orders.search_simple_ph')}
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm flex-1 min-w-48 focus:ring-2 focus:ring-[#0D6EFD] outline-none"
         />
         <div className="flex flex-wrap gap-1.5">
@@ -66,7 +70,7 @@ export default function OrdersTable({ orders, total, page, pageSize }: Props) {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {opt.label}
+              {t(opt.label)}
             </button>
           ))}
         </div>
@@ -78,7 +82,7 @@ export default function OrdersTable({ orders, total, page, pageSize }: Props) {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                {['رقم الطلب', 'العميل', 'الولاية', 'المجموع', 'الحالة', 'تقييم الاحتيال', 'التاريخ', ''].map(h => (
+                {[...(raw('orders.cols_simple') as string[] ?? []), ''].map(h => (
                   <th key={h} className="px-4 py-3 text-right text-xs font-semibold text-gray-500">{h}</th>
                 ))}
               </tr>
@@ -104,14 +108,14 @@ export default function OrdersTable({ orders, total, page, pageSize }: Props) {
                   <td className="px-4 py-3 text-gray-500 text-xs">{formatDateShort(order.created_at)}</td>
                   <td className="px-4 py-3">
                     <Link href={`/orders/${order.id}`} className="text-[#0D6EFD] hover:underline text-xs font-medium">
-                      عرض
+                      {t('common.view')}
                     </Link>
                   </td>
                 </tr>
               ))}
               {orders.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-gray-400">لا توجد طلبات</td>
+                  <td colSpan={8} className="text-center py-12 text-gray-400">{t('orders.empty_simple')}</td>
                 </tr>
               )}
             </tbody>
@@ -121,14 +125,14 @@ export default function OrdersTable({ orders, total, page, pageSize }: Props) {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="border-t border-gray-100 px-4 py-3 flex items-center justify-between">
-            <p className="text-sm text-gray-500">صفحة {page} من {totalPages}</p>
+            <p className="text-sm text-gray-500">{t('common.page_of', { page, total: totalPages })}</p>
             <div className="flex gap-2">
               {page > 1 && (
                 <button
                   onClick={() => push('page', String(page - 1))}
                   className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
                 >
-                  السابق
+                  {t('common.previous')}
                 </button>
               )}
               {page < totalPages && (
@@ -136,7 +140,7 @@ export default function OrdersTable({ orders, total, page, pageSize }: Props) {
                   onClick={() => push('page', String(page + 1))}
                   className="px-3 py-1.5 text-sm bg-[#0D6EFD] text-white rounded-lg hover:bg-[#0B5ED7]"
                 >
-                  التالي
+                  {t('common.next')}
                 </button>
               )}
             </div>

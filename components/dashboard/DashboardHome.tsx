@@ -1,4 +1,5 @@
 'use client'
+import { useT, useRaw, useDir } from '@/lib/i18n/react'
 import { useState } from 'react'
 import Link from 'next/link'
 import {
@@ -36,6 +37,10 @@ interface Props {
 }
 
 export default function DashboardHome({ storeName, storeId, userName, todayStats }: Props) {
+  const t = useT()
+  const raw = useRaw()
+  const dir = useDir()
+  const DATE_LABELS: Record<string,string> = { 'اليوم': t('home.today'), 'الأمس': t('home.yesterday'), 'أسبوع': t('home.week'), 'شهر': t('home.month') }
   const [dateFilter, setDateFilter] = useState('اليوم')
   const [skuSearch,  setSkuSearch]  = useState('')
   const [perPage,    setPerPage]    = useState(10)
@@ -43,26 +48,26 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
   const chartData = generateHourlyData(todayStats.total)
 
   const KPI_CARDS = [
-    { label: 'طلبات اليوم',    value: todayStats.total,    iconBg: '#EBF5FF', iconColor: '#0D6EFD',
+    { label: t('home.stat_today'),    value: todayStats.total,    iconBg: '#EBF5FF', iconColor: '#0D6EFD',
       icon: () => <div className="w-5 h-5 rounded font-black text-white text-xs flex items-center justify-center" style={{background:'#0D6EFD'}}>C</div> },
-    { label: 'طلبات فيسبوك',   value: todayStats.facebook, iconBg: '#EBF5FF', iconColor: '#1877F2',
+    { label: t('home.stat_fb'),   value: todayStats.facebook, iconBg: '#EBF5FF', iconColor: '#1877F2',
       icon: () => <Facebook size={18} style={{color:'#1877F2'}} /> },
-    { label: 'طلبات تيك توك',  value: todayStats.tiktok,   iconBg: '#F1F3F5', iconColor: '#000',
+    { label: t('home.stat_tt'),  value: todayStats.tiktok,   iconBg: '#F1F3F5', iconColor: '#000',
       icon: () => <TikTokIcon /> },
-    { label: 'طلبات أخرى',     value: todayStats.other,    iconBg: '#F1F3F5', iconColor: '#868E96',
+    { label: t('home.stat_other'),     value: todayStats.other,    iconBg: '#F1F3F5', iconColor: '#868E96',
       icon: () => <Chrome size={18} style={{color:'#868E96'}} /> },
   ]
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-5" dir="rtl" style={{ fontFamily: 'var(--font-arabic)' }}>
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-5" dir={dir} style={{ fontFamily: 'var(--font-arabic)' }}>
       {/* Welcome Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-bold text-xl" style={{ color: 'var(--color-text-primary)' }}>
-            مرحباً {userName}! 👋
+            {t('home.hello', { name: userName })}
           </h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-            {storeName} · {new Date().toLocaleDateString('ar-DZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {storeName} · {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -74,7 +79,7 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
               className="input h-9 pr-8 pl-3 text-sm"
               style={{ minWidth: '120px' }}
             >
-              {['اليوم','الأمس','أسبوع','شهر'].map(d => <option key={d}>{d}</option>)}
+              {['اليوم','الأمس','أسبوع','شهر'].map(d => <option key={d} value={d}>{DATE_LABELS[d] ?? d}</option>)}
             </select>
           </div>
         </div>
@@ -109,12 +114,12 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
             ))}
           </div>
           <div>
-            <p className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>انضم لمجتمع Commerco</p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>+12,000 تاجر نشط</p>
+            <p className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{t('home.join_title')}</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{t('home.join_sub')}</p>
           </div>
         </div>
         <Link href="/products" className="btn btn-primary btn-sm flex-shrink-0">
-          ابدأ الآن
+          {t('home.start_now')}
         </Link>
       </div>
 
@@ -124,12 +129,12 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
         <div className="card p-4 lg:col-span-3">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div>
-              <h2 className="font-semibold text-base" style={{ color: 'var(--color-text-primary)' }}>نظرة عامة على الطلبات</h2>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>اليوم حسب الساعة</p>
+              <h2 className="font-semibold text-base" style={{ color: 'var(--color-text-primary)' }}>{t('home.overview')}</h2>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{t('home.by_hour')}</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="badge badge-blue">{todayStats.total} طلب</span>
-              <span className="badge badge-gray">0 طلب وهمي محجوب</span>
+              <span className="badge badge-blue">{t('home.orders_badge', { count: todayStats.total })}</span>
+              <span className="badge badge-gray">{t('home.fake_blocked')}</span>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={180}>
@@ -139,9 +144,9 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
               <YAxis tick={{ fontSize: 10, fill: '#868E96' }} allowDecimals={false} />
               <Tooltip
                 contentStyle={{ borderRadius: '8px', border: '1px solid #DEE2E6', fontSize: '12px' }}
-                formatter={(v: number) => [v, 'طلبات']}
+                formatter={(v: number) => [v, t('home.orders_unit')]}
               />
-              <Line type="monotone" dataKey="orders" stroke="#0D6EFD" strokeWidth={2} dot={false} name="الطلبات" />
+              <Line type="monotone" dataKey="orders" stroke="#0D6EFD" strokeWidth={2} dot={false} name={t('home.orders_series')} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -149,8 +154,8 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
         {/* Store Setup */}
         <div className="card p-4 lg:col-span-2 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>اعدّ متجرك للطلبات القادمة</h2>
-            <Link href="/products" className="btn btn-primary btn-sm">ابدأ</Link>
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{t('home.setup')}</h2>
+            <Link href="/products" className="btn btn-primary btn-sm">{t('home.start')}</Link>
           </div>
           {/* YouTube tutorial placeholder */}
           <div className="rounded-xl overflow-hidden flex-1 flex items-center justify-center" style={{ background: '#111', minHeight: '140px' }}>
@@ -158,7 +163,7 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
               <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-2">
                 <Play size={20} fill="white" className="text-white" />
               </div>
-              <p className="text-xs text-white/70">شاهد الشرح</p>
+              <p className="text-xs text-white/70">{t('home.watch')}</p>
             </div>
           </div>
         </div>
@@ -168,9 +173,9 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
       {todayStats.total > 0 && (
         <div className="card p-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>آخر الطلبات</h2>
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{t('home.latest')}</h2>
             <Link href="/orders" className="text-xs" style={{ color: 'var(--color-accent)', fontFamily: 'var(--font-arabic)' }}>
-              عرض الكل ←
+              {t('common.view_all')}
             </Link>
           </div>
           <RecentOrders storeId={storeId} />
@@ -180,13 +185,13 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
       {/* Products Table */}
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b flex-wrap gap-2" style={{ borderColor: 'var(--color-border)' }}>
-          <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>طلبات المنتجات</h2>
+          <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{t('home.product_orders')}</h2>
           <div className="relative">
             <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }} />
             <input
               value={skuSearch}
               onChange={e => setSkuSearch(e.target.value)}
-              placeholder="ابحث عن SKU أو المنتج..."
+              placeholder={t('home.sku_search')}
               className="input input-sm pr-8 w-56"
             />
           </div>
@@ -195,7 +200,7 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
           <table className="data-table">
             <thead>
               <tr>
-                {['SKU','اسم المنتج','اليوم','الأمس'].map(h => <th key={h}>{h}</th>)}
+                {(raw('home.cols') as string[] ?? []).map(h => <th key={h}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -203,14 +208,14 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
                 <tr>
                   <td colSpan={4} className="text-center py-10">
                     <Link href="/products/new" className="btn btn-primary btn-sm gap-1.5">
-                      <Plus size={13} />أضف منتجاً للبدء
+                      <Plus size={13} />{t('home.add_first')}
                     </Link>
                   </td>
                 </tr>
               ) : (
                 <tr>
                   <td colSpan={4} className="text-center py-10 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                    <Link href="/products" style={{ color: 'var(--color-accent)' }}>عرض المنتجات ←</Link>
+                    <Link href="/products" style={{ color: 'var(--color-accent)' }}>{t('home.view_products')}</Link>
                   </td>
                 </tr>
               )}
@@ -221,26 +226,26 @@ export default function DashboardHome({ storeName, storeId, userName, todayStats
           <select value={perPage} onChange={e => setPerPage(+e.target.value)} className="input h-7 text-xs px-2 w-16">
             {[5,10,20,30,50].map(n => <option key={n}>{n}</option>)}
           </select>
-          <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>لكل صفحة</span>
+          <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{t('common.per_page')}</span>
         </div>
       </div>
 
       {/* Sales Highlights */}
       <div className="card p-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>مبيعات اليوم</h2>
+          <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{t('home.today_sales')}</h2>
           <div>
             <span className="font-bold text-lg" style={{ color: 'var(--color-accent)', fontFamily: 'var(--font-primary)' }}>
               {formatDZD(todayStats.revenue)}
             </span>
-            <span className="text-xs mr-2" style={{ color: 'var(--color-text-muted)' }}>الكل: {formatDZD(todayStats.revenue)}</span>
+            <span className="text-xs mr-2" style={{ color: 'var(--color-text-muted)' }}>{t('home.all_label', { total: formatDZD(todayStats.revenue) })}</span>
           </div>
         </div>
         <div className="space-y-2">
           {[
-            { label: 'فيسبوك', value: todayStats.facebook, color: '#1877F2', pct: todayStats.total > 0 ? (todayStats.facebook/todayStats.total)*100 : 0 },
-            { label: 'تيك توك', value: todayStats.tiktok,  color: '#000',    pct: todayStats.total > 0 ? (todayStats.tiktok/todayStats.total)*100 : 0 },
-            { label: 'أخرى',    value: todayStats.other,   color: '#868E96', pct: todayStats.total > 0 ? (todayStats.other/todayStats.total)*100 : 0 },
+            { label: t('home.fb'), value: todayStats.facebook, color: '#1877F2', pct: todayStats.total > 0 ? (todayStats.facebook/todayStats.total)*100 : 0 },
+            { label: t('home.tt'), value: todayStats.tiktok,  color: '#000',    pct: todayStats.total > 0 ? (todayStats.tiktok/todayStats.total)*100 : 0 },
+            { label: t('home.other'),    value: todayStats.other,   color: '#868E96', pct: todayStats.total > 0 ? (todayStats.other/todayStats.total)*100 : 0 },
           ].map(row => (
             <div key={row.label} className="flex items-center gap-3">
               <span className="w-16 text-xs text-left flex-shrink-0" style={{ color: 'var(--color-text-secondary)' }}>{row.label}</span>

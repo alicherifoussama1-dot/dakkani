@@ -1,10 +1,25 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { createTranslator } from '@/lib/i18n/core'
+import { SITE_LANG_COOKIE, DASHBOARD_LANG_COOKIE, isLocale, type Locale } from '@/lib/i18n/config'
+import siteAr from '@/messages/site/ar.json'
+import siteEn from '@/messages/site/en.json'
+import siteFr from '@/messages/site/fr.json'
+
+const EMAIL_CATALOG: Record<Locale, any> = { ar: siteAr, en: siteEn, fr: siteFr }
+function emailT() {
+  const c = cookies()
+  const raw = c.get(SITE_LANG_COOKIE)?.value ?? c.get(DASHBOARD_LANG_COOKIE)?.value
+  const locale: Locale = isLocale(raw) ? raw : 'ar'
+  return { t: createTranslator(EMAIL_CATALOG[locale]), dir: locale === 'ar' ? 'rtl' : 'ltr' }
+}
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 
 const schema = z.object({ email: z.string().email() })
 
 export async function POST(req: Request) {
+  const { t: et, dir: edir } = emailT()
   try {
     const { email } = schema.parse(await req.json())
 
@@ -39,7 +54,7 @@ export async function POST(req: Request) {
       : (linkData as any)?.properties?.action_link
 
     if (!resetLink) {
-      return NextResponse.json({ error: 'فشل في إنشاء رابط الاسترداد' }, { status: 500 })
+      return NextResponse.json({ error: et('email_reset.link_fail') }, { status: 500 })
     }
 
     // Send via Resend
@@ -62,10 +77,10 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         from: 'Commerco <onboarding@resend.dev>',
         to: [email],
-        subject: 'إعادة تعيين كلمة المرور — Commerco',
+        subject: et('email_reset.subject'),
         html: `
 <!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html dir="${edir}" lang="ar">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#F3F4F6;font-family:Arial,sans-serif">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#F3F4F6;padding:40px 20px">
@@ -76,18 +91,18 @@ export async function POST(req: Request) {
         <tr>
           <td style="background:linear-gradient(135deg,#0D6EFD,#0B5ED7);padding:32px;text-align:center">
             <h1 style="color:white;margin:0;font-size:28px;font-weight:900">Commerco</h1>
-            <p style="color:rgba(255,255,255,0.75);margin:8px 0 0;font-size:14px">منصة التجارة الإلكترونية الجزائرية</p>
+            <p style="color:rgba(255,255,255,0.75);margin:8px 0 0;font-size:14px">${et('email_reset.tagline')}</p>
           </td>
         </tr>
 
         <!-- Body -->
         <tr>
           <td style="padding:36px 32px">
-            <h2 style="color:#111827;margin:0 0 12px;font-size:22px">إعادة تعيين كلمة المرور 🔐</h2>
+            <h2 style="color:#111827;margin:0 0 12px;font-size:22px">${et('email_reset.title')}</h2>
             <p style="color:#6B7280;font-size:15px;line-height:1.7;margin:0 0 24px">
-              مرحباً،<br>
-              طلبت إعادة تعيين كلمة المرور لحسابك في Commerco.<br>
-              اضغط على الزر أدناه للمتابعة:
+              
+              ${et('email_reset.body')}
+              
             </p>
 
             <!-- CTA Button -->
@@ -96,7 +111,7 @@ export async function POST(req: Request) {
                 <td align="center" style="padding:8px 0 32px">
                   <a href="${resetLink}"
                      style="background:linear-gradient(135deg,#0D6EFD,#0B5ED7);color:white;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:bold;font-size:16px;display:inline-block;letter-spacing:0.3px">
-                    إعادة تعيين كلمة المرور
+                    ${et('email_reset.button')}
                   </a>
                 </td>
               </tr>
@@ -107,15 +122,15 @@ export async function POST(req: Request) {
               <tr>
                 <td style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:10px;padding:14px 16px">
                   <p style="color:#92400E;font-size:13px;margin:0;line-height:1.6">
-                    ⏱️ الرابط صالح لمدة <strong>24 ساعة</strong> فقط.<br>
-                    🔒 إذا لم تطلب ذلك، تجاهل هذا الإيميل — حسابك آمن.
+                    ${et('email_reset.note')}
+                    
                   </p>
                 </td>
               </tr>
             </table>
 
             <p style="color:#9CA3AF;font-size:12px;margin:24px 0 0;line-height:1.6">
-              إذا لم يعمل الزر، انسخ هذا الرابط في المتصفح:<br>
+              ${et('email_reset.fallback')}<br>
               <a href="${resetLink}" style="color:#0D6EFD;word-break:break-all">${resetLink}</a>
             </p>
           </td>
@@ -125,7 +140,7 @@ export async function POST(req: Request) {
         <tr>
           <td style="background:#F9FAFB;padding:20px 32px;text-align:center;border-top:1px solid #E5E7EB">
             <p style="color:#9CA3AF;font-size:12px;margin:0">
-              Commerco © ${new Date().getFullYear()} · منصة التجارة الإلكترونية الجزائرية
+              Commerco © ${new Date().getFullYear()} · ${et('email_reset.tagline')}
             </p>
           </td>
         </tr>
@@ -142,7 +157,7 @@ export async function POST(req: Request) {
 
     if (!emailRes.ok) {
       console.error('Resend error:', emailResult)
-      return NextResponse.json({ error: 'فشل إرسال الإيميل: ' + (emailResult.message ?? 'خطأ في Resend') }, { status: 502 })
+      return NextResponse.json({ error: et('email_reset.send_fail') + (emailResult.message ?? 'Resend') }, { status: 502 })
     }
 
     return NextResponse.json({ success: true, id: emailResult.id })
@@ -150,7 +165,7 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error('Reset password error:', err)
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: 'البريد الإلكتروني غير صالح' }, { status: 400 })
+      return NextResponse.json({ error: et('email_reset.invalid_email') }, { status: 400 })
     }
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 })
   }
