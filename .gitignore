@@ -42,3 +42,8 @@ next-env.d.ts
 
 .vercel
 build.log
+
+# landing-v6 capture artifacts
+design/landing-v6/.chrome-tmp/
+design/landing-v6/shots/
+design/landing-v6/_seg-*.png

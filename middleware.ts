@@ -65,6 +65,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // ── Landing v6 (design gelé) : la racine sert le film statique ──
+  // public/landing/index.html — l'URL reste `/`. Les hôtes custom résolus
+  // ci-dessus ont déjà été réécrits vers leur boutique.
+  if (pathname === '/') {
+    return NextResponse.rewrite(new URL('/landing/index.html', request.url), { request: { headers: request.headers } })
+  }
+
   // Always allow API, webhooks, and storefront — they never consult `user`,
   // so skip the Supabase auth round-trip entirely.
   if (pathname.startsWith('/api/') || pathname.startsWith('/store/')) {

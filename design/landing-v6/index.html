@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Commerco — Le système d'exploitation du e-commerce algérien</title>
+<meta name="description" content="Boutique, confirmation, livraison 58 wilayas, analytique, IA : tout le e-commerce algérien dans un seul système.">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/scenes-1.css">
+<link rel="stylesheet" href="css/scenes-2.css">
+<link rel="stylesheet" href="css/scenes-3.css">
+<link rel="stylesheet" href="css/scenes-4.css">
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="nav" id="nav">
+  <img src="assets/logo-primary.svg" alt="Commerco">
+  <span class="nav-chapter" id="navChapter">Un OS, pas un logiciel</span>
+  <button class="nav-cta" data-href="/register">Ouvrir ma boutique</button>
+  <span class="nav-progress" id="navProgress"></span>
+</header>
+
+<nav class="rail" id="rail" aria-label="Chapitres"></nav>
+
+<!-- ═══ SVG defs ═══ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="rayGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F28B0C" stop-opacity=".85"/><stop offset="1" stop-color="#F28B0C" stop-opacity="0"/></linearGradient>
+  <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3D68F5" stop-opacity=".22"/><stop offset="1" stop-color="#3D68F5" stop-opacity="0"/></linearGradient>
+  <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3D68F5" stop-opacity="0"/><stop offset=".5" stop-color="#608AFC"/><stop offset="1" stop-color="#3D68F5" stop-opacity="0"/></linearGradient>
+  <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M5.5 3.2 19 11.5l-6.2 1.4-2.9 5.8z" fill="#0A0F1C" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  <symbol id="i-hero" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10"/></symbol>
+  <symbol id="i-band" viewBox="0 0 24 24"><path d="M3 8h18M3 12h12"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
+  <symbol id="i-quote" viewBox="0 0 24 24"><path d="M8 11c0-3 2-5 5-5M8 11v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Zm11 0c0-3 2-5 5-5m-5 5v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z" transform="scale(.82) translate(1.5 1)"/></symbol>
+  <symbol id="i-faq" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.2A2.7 2.7 0 0 1 12 7.5c1.5 0 2.7 1 2.7 2.4 0 1.8-2.7 2-2.7 3.6"/><circle cx="12" cy="16.8" r=".4"/></symbol>
+  <symbol id="i-cta" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4"/><path d="M9 12h6"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2 2h2l2.7 12.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6L22 7H5"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.9z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-3.6 8-10V5l-8-3-8 3v7c0 6.4 8 10 8 10z"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M9.9 15.5A2 2 0 0 0 8.5 14.1L2.4 12.5a.5.5 0 0 1 0-1L8.5 9.9A2 2 0 0 0 9.9 8.5l1.6-6.1a.5.5 0 0 1 1 0L14.1 8.5A2 2 0 0 0 15.5 9.9l6.1 1.6a.5.5 0 0 1 0 1L15.5 14.1a2 2 0 0 0-1.4 1.4l-1.6 6.1a.5.5 0 0 1-1 0z"/></symbol>
+  <symbol id="i-img" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.5-1.5 3-3.3 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3.4 1-4.5 2.5C10.9 4 9.3 3 7.5 3A5.5 5.5 0 0 0 2 8.5c0 2.2 1.5 4 3 5.5l7 7z"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.4c-1.5 0-3-.4-4.2-1.1L3 20l1.2-5.3A8.4 8.4 0 1 1 21 11.5z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="m13 5 9 7-9 7v-4.5C6 14.5 3.5 17 2 19.5 2.5 13 6 8.5 13 9.5z"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M1 6h14v11H1zM15 10h4l4 4v3h-8z"/><circle cx="6" cy="19.5" r="1.8"/><circle cx="18" cy="19.5" r="1.8"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.7 2.7 4 6 4 9s-1.3 6.3-4 9c-2.7-2.7-4-6-4-9s1.3-6.3 4-9z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20M16 15h2"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17.5" cy="9.5" r="2.6"/><path d="M15.5 15.2a5.4 5.4 0 0 1 6 4.8"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12 2H2v10l9.3 9.3a2 2 0 0 0 2.8 0l7.2-7.2a2 2 0 0 0 0-2.8L12 2z"/><circle cx="7.5" cy="7.5" r="1.4"/></symbol>
+  <symbol id="i-plane" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7z"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 3 5-7"/></symbol>
+</defs></svg>
+
+<!-- ══════════════════ SCÈNE 00 · HERO — boot de l'OS ══════════════════ -->
+<section class="sc" id="sc-hero" data-len="260" data-chapter="Un OS, pas un logiciel">
+  <div class="stage">
+    <div class="hero-boot" id="heroBoot">
+      <div class="hero-word"><span class="hw-caret"></span><b id="heroType"></b></div>
+      <small class="hero-boot-line" id="heroBootLine">initialisation des modules…</small>
+    </div>
+    <div class="hero-flash" aria-hidden="true"></div>
+    <div class="hero-os" id="heroOs">
+      <p class="hero-kicker">Commerco OS · Alger → 58 wilayas</p>
+      <h1 class="hero-title">
+        <span class="hl"><span>Le système d'exploitation</span></span>
+        <span class="hl"><span>du <em class="ac">e-commerce algérien.</em></span></span>
+      </h1>
+      <p class="hero-sub">Boutique, confirmation, livraison, analytique, IA — un seul système, découvert en scrollant.</p>
+      <div class="hero-ctas">
+        <button class="btn btn-primary" data-href="/register">Ouvrir ma boutique</button>
+        <button class="btn btn-ghost" data-goto="#ch-1">Découvrir l'OS ↓</button>
+      </div>
+      <div class="hero-dock" id="heroDock"></div>
+      <div class="hero-scrollcue" aria-hidden="true"><i></i>scroll</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CHAPITRE 1 · CONSTRUIRE ══════════════════ -->
+<div class="chapter" id="ch-1" data-no="01" data-chapter="Chapitre 1 · Construire">
+  <small>Chapitre 01</small>
+  <h2><span class="ch-reveal"><span>Construire une boutique</span></span><span class="ch-reveal"><span>qui vous ressemble.</span></span></h2>
+  <p>Quatre modules, zéro ligne de code. La caméra entre dans l'atelier.</p>
+</div>
+
+<!-- ─── Store Builder · over-the-shoulder ─── -->
+<section class="sc" id="sc-builder" data-len="300" data-chapter="Store Builder">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Store Builder · Plan over-the-shoulder</span>
+      <h2 class="slate-title">Composez votre boutique <span class="ac">comme sur une table.</span></h2>
+      <p class="slate-sub">Glissez les blocs, changez l'accent — la boutique répond en direct. Essayez les pastilles de couleur, elles sont réelles.</p>
+    </div>
+    <div class="sb-rig">
+      <div class="win sheen sb-win" id="sbWin">
+        <div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>Store Builder — Atlas &amp; Co</b><span class="win-chip">Brouillon enregistré</span></div>
+        <div class="sb-body">
+          <aside class="sb-palette">
+            <small class="pane-label">Blocs</small>
+            <div class="blk"><svg><use href="#i-hero"/></svg>Héro<span class="drag-dots"></span></div>
+            <div class="blk"><svg><use href="#i-band"/></svg>Bandeau annonces<span class="drag-dots"></span></div>
+            <div class="blk blk-grid"><svg><use href="#i-grid"/></svg>Grille produits<span class="drag-dots"></span></div>
+            <div class="blk"><svg><use href="#i-quote"/></svg>Témoignages<span class="drag-dots"></span></div>
+            <div class="blk"><svg><use href="#i-faq"/></svg>FAQ<span class="drag-dots"></span></div>
+            <div class="blk"><svg><use href="#i-cta"/></svg>Bandeau CTA<span class="drag-dots"></span></div>
+          </aside>
+          <div class="sb-canvas">
+            <div class="sf">
+              <div class="sf-nav"><span class="sf-logo"></span><b>Atlas &amp; Co</b><nav><span>Accueil</span><span>Boutique</span><span>Contact</span></nav><svg class="sf-cart"><use href="#i-cart"/></svg></div>
+              <div class="sf-announce">Livraison 58 wilayas — paiement à la livraison</div>
+              <div class="sf-hero"><h3>La montre qui raconte l'heure d'Alger</h3><p>Éditions limitées, assemblées à la main.</p><button class="sf-btn">Découvrir</button></div>
+              <div class="sf-drop"><span>Déposez un bloc ici</span></div>
+              <div class="sf-grid">
+                <div class="sf-card"><span class="sf-tile t-a"></span><b>Atlas Or Rose</b><i class="num">18 900 DA</i><button class="sf-mini">Ajouter</button></div>
+                <div class="sf-card"><span class="sf-tile t-b"></span><b>Atlas Acier</b><i class="num">14 500 DA</i><button class="sf-mini">Ajouter</button></div>
+                <div class="sf-card"><span class="sf-tile t-c"></span><b>Atlas Nuit</b><i class="num">16 200 DA</i><button class="sf-mini">Ajouter</button></div>
+              </div>
+            </div>
+          </div>
+          <aside class="sb-inspector">
+            <small class="pane-label">Inspecteur</small>
+            <div class="ins-group"><label>Couleur d'accent</label>
+              <div class="swatches" id="sbSwatches">
+                <button class="sw" data-c="#2952E3" style="--c:#2952E3" aria-label="Cobalt"></button>
+                <button class="sw" data-c="#0F8377" style="--c:#0F8377" aria-label="Teal"></button>
+                <button class="sw" data-c="#7C3AED" style="--c:#7C3AED" aria-label="Violet"></button>
+                <button class="sw" data-c="#C2410C" style="--c:#C2410C" aria-label="Terracotta"></button>
+                <button class="sw" data-c="#0A0F1C" style="--c:#0A0F1C" aria-label="Nuit"></button>
+              </div>
+            </div>
+            <div class="ins-group"><label>Coins</label><div class="seg" data-seg="radius"><button>Nets</button><button class="seg-on">Doux</button><button>Ronds</button></div></div>
+            <div class="ins-group"><label>Densité</label><div class="slider"><i></i><em></em></div></div>
+            <div class="ins-group"><label>Thème</label><div class="seg" data-seg="theme"><button class="seg-on">Clair</button><button>Sombre</button></div></div>
+          </aside>
+        </div>
+        <div class="ghost" id="sbGhost"><svg><use href="#i-grid"/></svg>Grille produits</div>
+        <svg class="cur" id="sbCur"><use href="#i-cursor"/></svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Product Management · cartes distribuées ─── -->
+<section class="sc" id="sc-products" data-len="260" data-chapter="Produits">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Gestion produits · Plan zénithal</span>
+      <h2 class="slate-title">Votre catalogue, distribué <span class="ac">comme un jeu de cartes.</span></h2>
+      <p class="slate-sub">Variantes, stocks, statuts — cliquez un statut pour le faire tourner.</p>
+    </div>
+    <div class="pm-rig">
+      <div class="win sheen pm-win">
+        <div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>Produits — 124 références</b><span class="win-chip">+ Nouveau produit</span></div>
+        <div class="pm-head"><span>Produit</span><span>Prix</span><span>Stock</span><span>Variantes</span><span>Statut</span></div>
+        <div class="pm-rows" id="pmRows"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Product Page Builder · split wipe ─── -->
+<section class="sc" id="sc-pagebuilder" data-len="260" data-chapter="Fiche produit">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Fiche produit · Travelling latéral</span>
+      <h2 class="slate-title">Ce que vous tapez à gauche <span class="ac">vit à droite.</span></h2>
+      <p class="slate-sub">Le titre est éditable — écrivez dedans, la page suit.</p>
+    </div>
+    <div class="pb-rig">
+      <div class="win sheen pb-win">
+        <div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>Éditeur de fiche — Atlas Or Rose</b><span class="win-chip chip-live"><i></i>Aperçu en direct</span></div>
+        <div class="pb-body">
+          <div class="pb-form">
+            <small class="pane-label">Édition</small>
+            <label class="pb-field"><span>Titre</span><b class="pb-input" id="pbTitle" contenteditable="true" spellcheck="false">Montre Atlas Or Rose</b></label>
+            <label class="pb-field"><span>Prix</span><b class="pb-input num" id="pbPrice" contenteditable="true" spellcheck="false">18 900</b></label>
+            <label class="pb-field"><span>Description</span><b class="pb-input pb-area" id="pbDesc">Boîtier acier brossé, verre saphir, bracelet cuir d'Alger. Assemblée à la main, garantie 2 ans.</b></label>
+            <div class="pb-field"><span>Galerie</span><div class="pb-gal"><i class="t-a"></i><i class="t-b"></i><i class="t-c"></i><i class="pb-up">+</i></div></div>
+            <div class="pb-field"><span>Options</span><div class="pb-opts"><em>3 coloris</em><em>Paiement à la livraison</em><em>Livraison 58 wilayas</em></div></div>
+          </div>
+          <div class="pb-preview">
+            <div class="pv-page">
+              <span class="pv-crumb">atlas-co.dz › montres › or-rose</span>
+              <div class="pv-grid">
+                <span class="pv-photo t-a"><i class="pv-badge">−12 %</i></span>
+                <div class="pv-info">
+                  <h3 id="pvTitle">Montre Atlas Or Rose</h3>
+                  <div class="pv-price"><b class="num" id="pvPrice">18 900 DA</b><s class="num">21 400 DA</s></div>
+                  <p id="pvDesc">Boîtier acier brossé, verre saphir, bracelet cuir d'Alger. Assemblée à la main, garantie 2 ans.</p>
+                  <div class="pv-dots"><i style="--c:#D9A063"></i><i style="--c:#98A5BD"></i><i style="--c:#22304F"></i><span>3 coloris</span></div>
+                  <button class="pv-cta">Ajouter au panier</button>
+                  <small class="pv-cod"><svg><use href="#i-check"/></svg>Paiement à la livraison · Yalidine 24–72 h</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Inventory · rayonnages ─── -->
+<section class="sc" id="sc-inventory" data-len="240" data-chapter="Inventaire">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Inventaire · Grue verticale</span>
+      <h2 class="slate-title">La caméra monte <span class="ac">le long des rayonnages.</span></h2>
+      <p class="slate-sub">Les jauges se remplissent, l'alerte stock se déclenche. Les steppers +/− sont réels.</p>
+    </div>
+    <div class="inv-rig">
+      <div class="win sheen inv-win">
+        <div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>Inventaire — Entrepôt Alger</b><span class="win-chip" id="invTotal">1 284 unités</span></div>
+        <div class="inv-shelves" id="invShelves"></div>
+      </div>
+      <div class="inv-alert" id="invAlert"><svg><use href="#i-bell"/></svg><div><b>Stock faible — Atlas Acier 38 mm</b><span>Seuil : 15 · Restant : <b class="num" id="invLowCount">12</b></span></div><button class="inv-reorder">Commander +50</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CHAPITRE 2 · VENDRE ══════════════════ -->
+<div class="chapter" id="ch-2" data-no="02" data-chapter="Chapitre 2 · Vendre">
+  <small>Chapitre 02</small>
+  <h2><span class="ch-reveal"><span>Chaque commande</span></span><span class="ch-reveal"><span>est une conversation.</span></span></h2>
+  <p>Le flux, la confirmation, le client — trois scènes, trois caméras.</p>
+</div>
+
+<!-- ─── Orders · convoyeur ─── -->
+<section class="sc" id="sc-orders" data-len="280" data-chapter="Commandes">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Commandes · Travelling convoyeur</span>
+      <h2 class="slate-title">Le flux passe devant la caméra, <span class="ac">une commande s'arrête.</span></h2>
+      <p class="slate-sub">Le scroll fait défiler le convoyeur ; la commande centrale s'ouvre.</p>
+    </div>
+    <div class="od-belt" id="odBelt"></div>
+    <div class="od-detail win sheen" id="odDetail">
+      <div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>#COM-2651 — Lina Hadj</b><span class="win-chip od-chip-new">Nouvelle</span></div>
+      <div class="od-detail-body">
+        <div class="od-col"><small class="pane-label">Panier</small>
+          <div class="od-line"><span class="od-thumb t-a"></span><div><b>Montre Atlas Or Rose</b><i>Or rose · 34 mm</i></div><b class="num">18 900 DA</b></div>
+          <div class="od-line"><span class="od-thumb t-b"></span><div><b>Bracelet cuir Casbah</b><i>Cognac</i></div><b class="num">2 400 DA</b></div>
+          <div class="od-sum"><span>Livraison Yalidine — Alger centre</span><b class="num">400 DA</b></div>
+          <div class="od-sum od-total"><span>Total à encaisser (COD)</span><b class="num">21 700 DA</b></div>
+        </div>
+        <div class="od-col"><small class="pane-label">Client &amp; risque</small>
+          <div class="od-client"><span class="q-av">LH</span><div><b>Lina Hadj</b><i>Alger · Kouba · 1<sup>re</sup> commande</i></div><span class="od-score">Risque faible · 92/100</span></div>
+          <div class="od-timeline" id="odTimeline">
+            <div class="od-step done"><i></i><span>Reçue <b class="num">14:21</b></span></div>
+            <div class="od-step" data-step="confirm"><i></i><span>Confirmation Confirmili</span></div>
+            <div class="od-step" data-step="ship"><i></i><span>Expédition Yalidine</span></div>
+            <div class="od-step" data-step="cash"><i></i><span>Encaissement COD</span></div>
+          </div>
+          <button class="od-push" id="odPush"><svg><use href="#i-phone"/></svg>Envoyer à Confirmili</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Confirmili · split-screen ─── -->
+<section class="sc" id="sc-confirmili" data-len="300" data-chapter="Confirmili">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker k-teal">Confirmili · Split-screen</span>
+      <h2 class="slate-title">La confirmation qui fait <span class="ac-teal">grimper vos taux.</span></h2>
+      <p class="slate-sub">L'écran agent et le téléphone client, face à face. Le bouton « Confirmée » est réel.</p>
+    </div>
+    <div class="cf-rig">
+      <div class="win cf-win" id="cfWin">
+        <div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>Confirmili — File de confirmation</b><span class="win-chip chip-live"><i></i><span id="cfQueueN">5</span> en attente</span></div>
+        <div class="cf-body">
+          <aside class="cf-queue">
+            <small class="pane-label">File d'attente</small>
+            <div class="q-item q-on"><span class="q-av">SM</span><span class="q-who"><b>Sarah Medjahed</b><i>#COM-2647 · <span class="num">4 900 DA</span></i></span><span class="q-time num">2 min</span></div>
+            <div class="q-item"><span class="q-av">YB</span><span class="q-who"><b>Yacine Brahimi</b><i>#COM-2646 · <span class="num">12 400 DA</span></i></span><span class="q-time num">7 min</span></div>
+            <div class="q-item"><span class="q-av">ML</span><span class="q-who"><b>Meriem Larbi</b><i>#COM-2645 · <span class="num">3 200 DA</span></i></span><span class="q-time num">11 min</span></div>
+            <div class="q-item"><span class="q-av">AK</span><span class="q-who"><b>Amine Kaci</b><i>#COM-2644 · <span class="num">8 700 DA</span></i></span><span class="q-time num">14 min</span></div>
+            <div class="q-item"><span class="q-av">RG</span><span class="q-who"><b>Rania Guendouz</b><i>#COM-2643 · <span class="num">5 600 DA</span></i></span><span class="q-time num">18 min</span></div>
+          </aside>
+          <div class="cf-main">
+            <div class="cf-client"><span class="cf-av">SM</span><div class="cf-id"><b>Sarah Medjahed</b><span>Alger · Hydra · 2<sup>e</sup> commande</span></div><span class="cf-tag">Fiable</span></div>
+            <div class="cf-order">
+              <div class="cf-line"><span>Commande</span><b>#COM-2647</b></div>
+              <div class="cf-line"><span>Panier</span><b>Montre Atlas Or Rose × 1</b></div>
+              <div class="cf-line"><span>Montant</span><b class="num">4 900 DA</b></div>
+              <div class="cf-line"><span>Livraison</span><b>Yalidine — domicile</b></div>
+            </div>
+            <div class="cf-call"><button class="cf-callbtn"><svg><use href="#i-phone"/></svg>En appel · <span class="num" id="cfTimer">00:42</span></button><div class="wave" id="cfWave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="cf-num num">+213 555 12 34 67</span></div>
+            <div class="cf-thread"><small class="pane-label"><img src="assets/whatsapp.svg" alt="">WhatsApp — modèle envoyé</small><div class="wa-mini">Bonjour Sarah, on confirme votre commande #COM-2647 à 4 900 DA, livraison à Alger ?</div></div>
+            <div class="cf-dispo">
+              <button class="dp dp-ok" id="cfConfirm"><svg><use href="#i-check"/></svg>Confirmée</button>
+              <button class="dp"><svg><use href="#i-redo"/></svg>À rappeler</button>
+              <button class="dp"><svg><use href="#i-x"/></svg>Annulée</button>
+              <button class="dp"><svg><use href="#i-shield"/></svg>Fraude</button>
+            </div>
+          </div>
+        </div>
+        <div class="toast" id="cfToast"><svg><use href="#i-check"/></svg>Commande confirmée — envoyée à <b>Yalidine</b></div>
+        <svg class="cur" id="cfCur"><use href="#i-cursor"/></svg>
+      </div>
+      <div class="iphone cf-phone" id="cfPhone">
+        <div class="ip-notch"></div>
+        <div class="ip-screen wa">
+          <div class="wa-head"><span class="wa-av">A</span><div><b>Atlas &amp; Co</b><i>compte entreprise vérifié</i></div></div>
+          <div class="wa-day">Aujourd'hui</div>
+          <div class="wa-bub wa-in">Bonjour Sarah, on confirme votre commande <b>#COM-2647</b> à <b class="num">4 900 DA</b>, livraison à Alger ?<span class="wa-time num">14:02</span></div>
+          <div class="wa-bub wa-out" id="cfReply">Oui c'est bon 🙌<span class="wa-time num">14:03 ✓✓</span></div>
+          <div class="wa-status" id="cfStatus"><svg><use href="#i-check"/></svg>Confirmée · prête à expédier</div>
+        </div>
+        <div class="ip-bar"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Customers · constellation ─── -->
+<section class="sc" id="sc-customers" data-len="240" data-chapter="Clients">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Clients · Orbite</span>
+      <h2 class="slate-title">Des visages dispersés <span class="ac">deviennent un CRM.</span></h2>
+      <p class="slate-sub">Survolez un avatar ; filtrez par segment.</p>
+    </div>
+    <div class="cs-rig">
+      <div class="cs-field" id="csField"><svg class="cs-links" id="csLinks"></svg></div>
+      <div class="win sheen cs-win" id="csWin">
+        <div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>Clients — 3 412 profils</b>
+          <span class="cs-segs" id="csSegs"><button class="on" data-seg="all">Tous</button><button data-seg="vip">Fidèles</button><button data-seg="new">Nouveaux</button><button data-seg="risk">À risque</button></span>
+        </div>
+        <div class="cs-rows" id="csRows"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CHAPITRE 3 · LIVRER ══════════════════ -->
+<div class="chapter" id="ch-3" data-no="03" data-chapter="Chapitre 3 · Livrer">
+  <small>Chapitre 03</small>
+  <h2><span class="ch-reveal"><span>D'Alger à Tamanrasset,</span></span><span class="ch-reveal"><span>sans perdre un colis.</span></span></h2>
+  <p>Le tableau d'expédition, les transporteurs, la carte. La logistique devient cinéma.</p>
+</div>
+
+<!-- ─── Shipping Dashboard · grue plongeante ─── -->
+<section class="sc" id="sc-shipping" data-len="260" data-chapter="Expédition">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Expédition · Grue plongeante</span>
+      <h2 class="slate-title">La caméra descend <span class="ac">sur le quai d'expédition.</span></h2>
+      <p class="slate-sub">Les colis sautent de colonne en colonne à mesure que vous scrollez.</p>
+    </div>
+    <div class="sh-rig">
+      <div class="win sh-win">
+        <div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>Expédition — aujourd'hui</b><span class="win-chip"><b class="num" id="shDone">46</b>&nbsp;colis traités</span></div>
+        <div class="sh-cols" id="shCols">
+          <div class="sh-col" data-col="0"><small>À expédier</small><div class="sh-list"></div></div>
+          <div class="sh-col" data-col="1"><small>Ramassage</small><div class="sh-list"></div></div>
+          <div class="sh-col" data-col="2"><small>En transit</small><div class="sh-list"></div></div>
+          <div class="sh-col" data-col="3"><small>Livré</small><div class="sh-list"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Courier Integrations · docking ─── -->
+<section class="sc" id="sc-couriers" data-len="220" data-chapter="Transporteurs">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Transporteurs · Amarrage</span>
+      <h2 class="slate-title">Chaque transporteur <span class="ac">s'amarre à l'OS.</span></h2>
+      <p class="slate-sub">Les interrupteurs sont réels — activez, le voyant passe au vert.</p>
+    </div>
+    <div class="co-rig">
+      <div class="co-hub"><img src="assets/logo-icon.svg" alt=""><b>Commerco<br>Shipping Hub</b><span class="co-pulse"></span></div>
+      <div class="co-slots" id="coSlots"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Algeria Map · zoom pays ─── -->
+<section class="sc" id="sc-map" data-len="300" data-chapter="Carte 58 wilayas">
+  <div class="stage stage-dark">
+    <div class="slate slate-dark">
+      <span class="slate-kicker">Couverture · Zoom satellite</span>
+      <h2 class="slate-title">58 wilayas. <span class="ac-amber">Une seule carte.</span></h2>
+      <p class="slate-sub">Survolez une ville — les chiffres sont vivants.</p>
+    </div>
+    <div class="mp-rig" id="mpRig">
+      <svg id="mpSvg" viewBox="0 0 1000 860" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="mp-tip" id="mpTip"><b id="mpTipCity">Alger</b><span id="mpTipN" class="num">842 colis / semaine</span></div>
+      <div class="mp-legend"><span><i class="l-hub"></i>Hub</span><span><i class="l-on"></i>Wilaya desservie</span><span><i class="l-arc"></i>Flux quotidien</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CHAPITRE 4 · PILOTER ══════════════════ -->
+<div class="chapter" id="ch-4" data-no="04" data-chapter="Chapitre 4 · Piloter">
+  <small>Chapitre 04</small>
+  <h2><span class="ch-reveal"><span>Des chiffres qui</span></span><span class="ch-reveal"><span>regardent devant.</span></span></h2>
+  <p>Analytique et trésorerie — la mise au point se fait sous vos yeux.</p>
+</div>
+
+<!-- ─── Analytics · rack focus ─── -->
+<section class="sc" id="sc-analytics" data-len="300" data-chapter="Analytique">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Analytique · Rack focus</span>
+      <h2 class="slate-title">Vos chiffres, <span class="ac">vivants.</span></h2>
+      <p class="slate-sub">La netteté voyage de zone en zone. Les périodes 7 j / 30 j / 90 j sont réelles.</p>
+    </div>
+    <div class="win sheen an-win" id="anWin">
+      <div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>Analytique — Atlas &amp; Co</b>
+        <span class="an-period" id="anPeriod"><button data-per="7">7 j</button><button class="on" data-per="30">30 j</button><button data-per="90">90 j</button></span>
+      </div>
+      <div class="an-body">
+        <div class="an-zone zA" data-zone="0">
+          <div class="an-kpi"><small>Revenus</small><b class="num" id="anRev">1,84 M DA</b><span class="up num">+18 %</span></div>
+          <div class="an-kpi"><small>Commandes</small><b class="num">2 647</b><span class="up num">+12 %</span></div>
+          <div class="an-kpi"><small>Taux de conversion</small><b class="num">3,8 %</b><span class="up num">+0,4 pt</span></div>
+          <div class="an-kpi"><small>Panier moyen</small><b class="num">5 240 DA</b><span class="up num">+6 %</span></div>
+          <div class="an-kpi"><small>Sessions</small><b class="num">69 400</b><span class="up num">+22 %</span></div>
+          <div class="an-kpi"><small>Taux d'abandon</small><b class="num">31 %</b><span class="up num">−4 pt</span></div>
+        </div>
+        <div class="an-mid">
+          <div class="an-zone zB" data-zone="1">
+            <div class="an-card-head"><b id="anCurveTitle">Revenus — 30 jours</b><span class="legend"><i class="l-cur"></i>Période courante<i class="l-prev"></i>Précédente</span></div>
+            <svg id="anCurve" viewBox="0 0 640 220" preserveAspectRatio="none"></svg>
+          </div>
+          <div class="an-zone zC" data-zone="2">
+            <div class="an-card-head"><b>Répartition</b></div>
+            <div class="an-donut-row">
+              <svg id="anDonut" viewBox="0 0 120 120"><g transform="rotate(-90 60 60)"></g><text x="60" y="57" class="don-big num">2 647</text><text x="60" y="73" class="don-small">commandes</text></svg>
+              <ul class="don-leg">
+                <li><i style="--c:#0F8377"></i>Livrées<b class="num">68 %</b></li>
+                <li><i style="--c:#2952E3"></i>Confirmées<b class="num">17 %</b></li>
+                <li><i style="--c:#8FA8F9"></i>En transit<b class="num">9 %</b></li>
+                <li><i style="--c:#99A2B4"></i>Annulées<b class="num">6 %</b></li>
+              </ul>
+            </div>
+            <div class="an-card-head"><b>Top wilayas</b></div>
+            <div class="wil" id="anWil"></div>
+          </div>
+        </div>
+        <div class="an-zone zD" data-zone="3">
+          <div class="an-heat-wrap"><div class="an-card-head"><b>Heures de commande</b><span class="legend">7 j × 24 h</span></div><div class="heat" id="anHeat"></div></div>
+          <div class="an-fun-wrap"><div class="an-card-head"><b>Funnel de conversion</b></div><div class="fun" id="anFun"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Finance · grand livre ─── -->
+<section class="sc" id="sc-finance" data-len="240" data-chapter="Finance">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker k-teal">Finance · Poussée avant</span>
+      <h2 class="slate-title">Le COD encaissé, <span class="ac-teal">réconcilié tout seul.</span></h2>
+      <p class="slate-sub">Chaque versement transporteur retrouve ses commandes. Cliquez la carte solde.</p>
+    </div>
+    <div class="fi-rig">
+      <div class="fi-balance" id="fiBalance">
+        <div class="fi-face fi-front"><small>Solde disponible</small><b class="num" id="fiTotal">0 DA</b><span class="fi-up num">+ 412 300 DA cette semaine</span><em>Cliquer pour le détail →</em></div>
+        <div class="fi-face fi-back"><small>Détail</small>
+          <div class="fi-mini"><span>COD encaissé</span><b class="num">1 402 700 DA</b></div>
+          <div class="fi-mini"><span>Frais transporteurs</span><b class="num">−86 400 DA</b></div>
+          <div class="fi-mini"><span>Retours</span><b class="num">−41 200 DA</b></div>
+          <div class="fi-mini fi-net"><span>Net</span><b class="num">1 275 100 DA</b></div>
+        </div>
+      </div>
+      <div class="win sheen fi-win">
+        <div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>Trésorerie — versements COD</b><span class="win-chip">Réconciliation auto</span></div>
+        <div class="fi-rows" id="fiRows"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CHAPITRE 5 · AMPLIFIER (dark) ══════════════════ -->
+<div class="chapter ch-dark" id="ch-5" data-no="05" data-chapter="Chapitre 5 · Amplifier" data-dark="1">
+  <small>Chapitre 05</small>
+  <h2><span class="ch-reveal"><span>Une phrase entre.</span></span><span class="ch-reveal"><span>Une marque sort.</span></span></h2>
+  <p>Le Studio IA et le marketing — la partie sombre du film.</p>
+</div>
+
+<!-- ─── AI Studio · radial burst ─── -->
+<section class="sc" id="sc-studio" data-len="320" data-chapter="Studio IA" data-dark="1">
+  <div class="stage stage-dark">
+    <div class="slate slate-dark">
+      <span class="slate-kicker k-amber">Studio IA · Explosion radiale</span>
+      <h2 class="slate-title">Écrivez une phrase. <span class="ac-amber">La boutique se construit.</span></h2>
+      <p class="slate-sub">Le prompt est un vrai champ — tapez votre produit, les six cartes suivent.</p>
+    </div>
+    <div class="ai-rig" id="aiRig">
+      <svg class="ai-rays" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g stroke="url(#rayGrad)" stroke-width="1.4"><line x1="600" y1="330" x2="180" y2="120"/><line x1="600" y1="330" x2="600" y2="70"/><line x1="600" y1="330" x2="1020" y2="120"/><line x1="600" y1="330" x2="150" y2="520"/><line x1="600" y1="330" x2="600" y2="600"/><line x1="600" y1="330" x2="1050" y2="520"/></g></svg>
+      <div class="ai-preview">
+        <div class="ai-pv-head"><b id="aiName">Montre Atlas Or Rose</b><span class="ai-pv-badge">Publié</span></div>
+        <div class="ai-pv-price num">18 900 DA <s class="num">21 400 DA</s></div>
+        <div class="ai-pv-dots"><i style="--c:#D9A063"></i><i style="--c:#98A5BD"></i><i style="--c:#22304F"></i><span>3 coloris</span></div>
+        <div class="ai-pv-tags"><em>Luxe</em><em>Unisexe</em><em>Édition limitée</em></div>
+        <button class="ai-pv-btn">Ajouter au panier</button>
+      </div>
+      <div class="ai-prompt"><svg class="ai-spark"><use href="#i-spark"/></svg><span id="aiType" contenteditable="true" spellcheck="false" data-ph="Je veux vendre une montre de luxe."></span><i class="caret"></i><kbd>⏎</kbd></div>
+      <div class="ai-card c1" style="--i:0"><small>Fiche produit</small><div class="acc-sheet"><span class="acc-tile t-a"></span><div><b class="ai-echo">Atlas Or Rose</b><i class="num">18 900 DA</i><em class="acc-cta">Acheter</em></div></div></div>
+      <div class="ai-card c2" style="--i:1"><small>Landing page</small><div class="acc-wire"><i class="w-nav"></i><i class="w-h1"></i><i class="w-h2"></i><i class="w-cta"></i><i class="w-g"></i><i class="w-g"></i><i class="w-g"></i></div></div>
+      <div class="ai-card c3" style="--i:2"><small>Publicité Meta</small><div class="acc-ad"><div class="ad-brand"><span></span>Atlas &amp; Co · Sponsorisé</div><span class="acc-tile t-b"></span><b>−12 % ce week-end seulement</b><em class="acc-cta">Acheter</em></div></div>
+      <div class="ai-card c4" style="--i:3"><small>Post TikTok</small><div class="acc-tt"><span class="acc-tile t-c"></span><div class="tt-rail"><svg><use href="#i-heart"/></svg><svg><use href="#i-msg"/></svg><svg><use href="#i-share"/></svg></div><b>« L'heure d'Alger au poignet »</b></div></div>
+      <div class="ai-card c5" style="--i:4"><small>Description SEO</small><div class="acc-seo"><b class="ai-echo-seo">Montre Atlas Or Rose — Atlas &amp; Co</b><i>atlas-co.dz › montres › or-rose</i><p>Montre de luxe assemblée à la main. Boîtier acier, verre saphir, livraison 58 wilayas, paiement à la livraison.</p></div></div>
+      <div class="ai-card c6" style="--i:5"><small>Visuels produit</small><div class="acc-gal"><span class="acc-tile t-a"></span><span class="acc-tile t-b"></span><span class="acc-tile t-c"></span><span class="acc-tile up"><i></i></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Marketing · éventail ─── -->
+<section class="sc" id="sc-marketing" data-len="240" data-chapter="Marketing" data-dark="1">
+  <div class="stage stage-dark">
+    <div class="slate slate-dark">
+      <span class="slate-kicker k-amber">Marketing · Éventail</span>
+      <h2 class="slate-title">Vos campagnes s'étalent <span class="ac-amber">comme des polaroïds.</span></h2>
+      <p class="slate-sub">Survolez une carte ; basculez la variante A/B.</p>
+    </div>
+    <div class="mk-rig" id="mkRig">
+      <div class="mk-card" style="--i:0"><small>Meta Ads · Prospection</small><span class="mk-visual t-a"></span><b>Montres Atlas — édition limitée</b><div class="mk-stats"><span>ROAS <b class="num">4,2×</b></span><span>CPA <b class="num">312 DA</b></span></div><div class="mk-ab" data-ab><button class="on">A</button><button>B</button></div></div>
+      <div class="mk-card" style="--i:1"><small>TikTok · Retargeting</small><span class="mk-visual t-c"></span><b>« L'heure d'Alger au poignet »</b><div class="mk-stats"><span>Vues <b class="num">212 k</b></span><span>CTR <b class="num">3,1 %</b></span><div class="mk-ab" data-ab><button class="on">A</button><button>B</button></div></div></div>
+      <div class="mk-card" style="--i:2"><small>Email · Panier abandonné</small><span class="mk-visual t-b"></span><b>« Votre Atlas vous attend »</b><div class="mk-stats"><span>Ouverture <b class="num">41 %</b></span><span>Récupérés <b class="num">86</b></span></div></div>
+      <div class="mk-card" style="--i:3"><small>SMS · Flash weekend</small><span class="mk-visual mk-sms">−12 % ce week-end sur toute la collection Atlas. atlas-co.dz/flash</span><b>1 200 envois · 9,4 % conversion</b></div>
+      <div class="mk-card" style="--i:4"><small>WhatsApp · Réachat</small><span class="mk-visual mk-wa">Sarah, le bracelet Casbah est de retour en stock 👋</span><b>Segments Confirmili · 28 % réponse</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CHAPITRE 6 · CONNECTER (dark→light) ══════════════════ -->
+<div class="chapter ch-dark" id="ch-6" data-no="06" data-chapter="Chapitre 6 · Connecter" data-dark="1">
+  <small>Chapitre 06</small>
+  <h2><span class="ch-reveal"><span>Votre pile existante</span></span><span class="ch-reveal"><span>se branche en une scène.</span></span></h2>
+  <p>Domaine, Analytics, Sheets, Pixel, WhatsApp — cinq caméras courtes.</p>
+</div>
+
+<!-- ─── Domain & DNS · terminal ─── -->
+<section class="sc" id="sc-domain" data-len="220" data-chapter="Domaine & DNS" data-dark="1">
+  <div class="stage stage-dark">
+    <div class="slate slate-dark">
+      <span class="slate-kicker k-amber">Domaine &amp; DNS · Contre-plongée</span>
+      <h2 class="slate-title">Votre domaine, <span class="ac-amber">vérifié en direct.</span></h2>
+      <p class="slate-sub">Les enregistrements se tapent seuls ; le cadenas se ferme.</p>
+    </div>
+    <div class="dm-rig">
+      <div class="win win-dark sheen dm-term">
+        <div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>dns — atlas-co.dz</b><span class="win-chip" id="dmState">vérification…</span></div>
+        <div class="dm-lines" id="dmLines"></div>
+      </div>
+      <div class="dm-url" id="dmUrl"><svg><use href="#i-lock"/></svg><span>https://<b>atlas-co.dz</b></span><em>Sécurisé · SSL auto</em></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Google Analytics · tiroir ─── -->
+<section class="sc" id="sc-ga" data-len="180" data-chapter="Google Analytics">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Google Analytics · Tiroir latéral</span>
+      <h2 class="slate-title">GA4 branché, <span class="ac">le temps réel coule.</span></h2>
+      <p class="slate-sub">Survolez la courbe pour lire les valeurs.</p>
+    </div>
+    <div class="ga-rig">
+      <div class="win sheen ga-win">
+        <div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>Google Analytics 4 — flux temps réel</b><span class="win-chip chip-live"><i></i>connecté</span></div>
+        <div class="ga-body">
+          <div class="ga-now"><small>Utilisateurs actifs · 30 min</small><b class="num" id="gaNow">128</b><svg id="gaSpark" viewBox="0 0 260 64" preserveAspectRatio="none"></svg></div>
+          <div class="ga-events" id="gaEvents"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Google Sheets · sync ─── -->
+<section class="sc" id="sc-sheets" data-len="180" data-chapter="Google Sheets">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker k-teal">Google Sheets · Panoramique interne</span>
+      <h2 class="slate-title">Chaque commande devient <span class="ac-teal">une ligne verte.</span></h2>
+      <p class="slate-sub">« Sync » rejoue l'export sous vos yeux.</p>
+    </div>
+    <div class="gs-rig">
+      <div class="win sheen gs-win">
+        <div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>commandes-atlas.gsheet</b><button class="win-chip gs-sync" id="gsSync">↻ Sync maintenant</button></div>
+        <div class="gs-grid" id="gsGrid"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Meta Pixel · fil d'événements ─── -->
+<section class="sc" id="sc-pixel" data-len="200" data-chapter="Meta Pixel">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Meta Pixel · Vue câblée</span>
+      <h2 class="slate-title">Chaque geste client <span class="ac">voyage jusqu'à Meta.</span></h2>
+      <p class="slate-sub">Cliquez un événement pour l'envoyer vous-même.</p>
+    </div>
+    <div class="px-rig">
+      <div class="px-store win"><div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>atlas-co.dz</b></div>
+        <div class="px-events"><button class="px-ev" data-ev="ViewContent">👁 ViewContent</button><button class="px-ev" data-ev="AddToCart">🛒 AddToCart</button><button class="px-ev" data-ev="Purchase">✓ Purchase</button></div>
+      </div>
+      <svg class="px-wire" id="pxWire" viewBox="0 0 400 120" preserveAspectRatio="none"><path id="pxPath" d="M10 60 C 130 10, 270 110, 390 60" fill="none"/></svg>
+      <div class="px-meta win"><div class="win-bar"><span class="tl"></span><span class="tl y"></span><span class="tl g"></span><b>Meta Events Manager</b><span class="win-chip chip-live"><i></i>Pixel actif</span></div>
+        <div class="px-counts"><div><small>ViewContent</small><b class="num" data-count="ViewContent">4 210</b></div><div><small>AddToCart</small><b class="num" data-count="AddToCart">618</b></div><div><small>Purchase</small><b class="num" data-count="Purchase">227</b></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── WhatsApp · gros plan ─── -->
+<section class="sc" id="sc-whatsapp" data-len="220" data-chapter="WhatsApp">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker k-teal">WhatsApp Business · Gros plan</span>
+      <h2 class="slate-title">Le canal que vos clients <span class="ac-teal">ouvrent vraiment.</span></h2>
+      <p class="slate-sub">Les réponses rapides sont cliquables.</p>
+    </div>
+    <div class="wp-rig">
+      <div class="iphone wp-phone" id="wpPhone">
+        <div class="ip-notch"></div>
+        <div class="ip-screen wa">
+          <div class="wa-head"><span class="wa-av">A</span><div><b>Atlas &amp; Co</b><i>compte entreprise vérifié</i></div></div>
+          <div class="wa-day">Aujourd'hui</div>
+          <div class="wa-thread" id="wpThread"></div>
+          <div class="wa-quick" id="wpQuick"><button data-reply="Suivre mon colis 📦">Suivre mon colis 📦</button><button data-reply="Voir le catalogue">Voir le catalogue</button></div>
+        </div>
+        <div class="ip-bar"></div>
+      </div>
+      <div class="wp-side">
+        <div class="wp-stat"><b class="num">94 %</b><span>taux d'ouverture</span></div>
+        <div class="wp-stat"><b class="num">×3</b><span>vs SMS sur la confirmation</span></div>
+        <div class="wp-stat"><b class="num">12 min</b><span>délai de réponse médian</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CHAPITRE 7 · EMPORTER ══════════════════ -->
+<div class="chapter" id="ch-7" data-no="07" data-chapter="Chapitre 7 · Emporter">
+  <small>Chapitre 07</small>
+  <h2><span class="ch-reveal"><span>Votre boutique</span></span><span class="ch-reveal"><span>tient dans la poche.</span></span></h2>
+  <p>L'app mobile et les notifications — l'OS vous suit.</p>
+</div>
+
+<!-- ─── Mobile App · rotation 3D ─── -->
+<section class="sc" id="sc-mobile" data-len="280" data-chapter="App mobile">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">App mobile · Redressement 3D</span>
+      <h2 class="slate-title">Le téléphone se redresse, <span class="ac">l'app prend vie.</span></h2>
+      <p class="slate-sub">Glissez horizontalement sur l'écran pour changer de vue.</p>
+    </div>
+    <div class="mb-rig">
+      <div class="mb-shadow" aria-hidden="true"></div>
+      <div class="iphone mb-phone" id="mbPhone">
+        <div class="ip-notch"></div>
+        <div class="ip-screen">
+          <div class="mb-screens" id="mbScreens">
+            <div class="mb-screen">
+              <div class="mb-head"><small>Aujourd'hui</small><b>Bonjour, Kamel 👋</b></div>
+              <div class="mb-kpis"><div><small>Ventes</small><b class="num">86 400 DA</b></div><div><small>Commandes</small><b class="num">23</b></div><div><small>À confirmer</small><b class="num">5</b></div></div>
+              <div class="mb-chart"><svg id="mbSpark" viewBox="0 0 220 70" preserveAspectRatio="none"></svg></div>
+              <div class="mb-list"><div class="mb-row"><span class="q-av">LH</span><div><b>Lina Hadj</b><i>#COM-2651 · il y a 4 min</i></div><b class="num">21 700 DA</b></div><div class="mb-row"><span class="q-av">SM</span><div><b>Sarah Medjahed</b><i>#COM-2647 · confirmée</i></div><b class="num">4 900 DA</b></div></div>
+            </div>
+            <div class="mb-screen">
+              <div class="mb-head"><small>Commandes</small><b>23 aujourd'hui</b></div>
+              <div class="mb-list">
+                <div class="mb-row"><span class="mb-st st-new"></span><div><b>#COM-2651 · Lina H.</b><i>Nouvelle · Alger</i></div><b class="num">21 700</b></div>
+                <div class="mb-row"><span class="mb-st st-ok"></span><div><b>#COM-2647 · Sarah M.</b><i>Confirmée · Hydra</i></div><b class="num">4 900</b></div>
+                <div class="mb-row"><span class="mb-st st-tr"></span><div><b>#COM-2644 · Amine K.</b><i>En transit · Oran</i></div><b class="num">8 700</b></div>
+                <div class="mb-row"><span class="mb-st st-ok"></span><div><b>#COM-2643 · Rania G.</b><i>Livrée · Sétif</i></div><b class="num">5 600</b></div>
+              </div>
+            </div>
+            <div class="mb-screen">
+              <div class="mb-head"><small>Notification</small><b>À l'instant</b></div>
+              <div class="mb-notif"><svg><use href="#i-bell"/></svg><div><b>Nouvelle commande — 21 700 DA</b><span>Lina Hadj · Alger Kouba · COD</span></div></div>
+              <div class="mb-actions"><button class="mb-act mb-ok">Confirmer</button><button class="mb-act">Voir</button></div>
+              <div class="mb-hint">Confirmée en 2 taps, depuis le canapé.</div>
+            </div>
+          </div>
+          <div class="mb-dots" id="mbDots"><i class="on"></i><i></i><i></i></div>
+        </div>
+        <div class="ip-bar"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Notifications · pluie ─── -->
+<section class="sc" id="sc-notifications" data-len="200" data-chapter="Notifications">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Notifications · Plan fixe rapproché</span>
+      <h2 class="slate-title">L'OS vous parle <span class="ac">au bon moment.</span></h2>
+      <p class="slate-sub">Balayez une notification pour la classer.</p>
+    </div>
+    <div class="nt-rig" id="ntRig"></div>
+  </div>
+</section>
+
+<!-- ══════════════════ CHAPITRE 8 · CONVAINCRE ══════════════════ -->
+<div class="chapter" id="ch-8" data-no="08" data-chapter="Chapitre 8 · Se lancer">
+  <small>Chapitre 08</small>
+  <h2><span class="ch-reveal"><span>Ils sont passés</span></span><span class="ch-reveal"><span>de l'autre côté.</span></span></h2>
+  <p>Les marchands, les prix, les réponses — puis la porte d'entrée.</p>
+</div>
+
+<!-- ─── Testimonials · profondeur ─── -->
+<section class="sc" id="sc-testimonials" data-len="260" data-chapter="Témoignages">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Témoignages · Travelling avant</span>
+      <h2 class="slate-title">La caméra traverse <span class="ac">trois boutiques réelles.</span></h2>
+    </div>
+    <div class="tm-rig" id="tmRig">
+      <figure class="tm-card" style="--z:0"><blockquote>« Confirmili a fait passer mon taux de confirmation de 54 % à 81 %. Je ne rappelle plus personne à la main. »</blockquote><figcaption><span class="q-av">NB</span><div><b>Nassim B.</b><i>Cosmétiques · Alger</i></div><em class="num">+81 % confirmation</em></figcaption></figure>
+      <figure class="tm-card" style="--z:1"><blockquote>« Je gère 1 200 commandes par mois seule. Le tableau d'expédition me sauve deux heures chaque matin. »</blockquote><figcaption><span class="q-av">AT</span><div><b>Amel T.</b><i>Prêt-à-porter · Oran</i></div><em class="num">1 200 cmd/mois</em></figcaption></figure>
+      <figure class="tm-card" style="--z:2"><blockquote>« Le Studio IA écrit mes fiches et mes pubs. Mon CPA Meta a baissé d'un tiers en six semaines. »</blockquote><figcaption><span class="q-av">KM</span><div><b>Karim M.</b><i>High-tech · Sétif</i></div><em class="num">CPA −33 %</em></figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Pricing · assemblage ─── -->
+<section class="sc" id="sc-pricing" data-len="260" data-chapter="Tarifs">
+  <div class="stage">
+    <div class="slate">
+      <span class="slate-kicker">Tarifs · Assemblage</span>
+      <h2 class="slate-title">Les briques s'assemblent <span class="ac">en trois plans.</span></h2>
+      <p class="slate-sub">Le sélecteur mensuel / annuel est réel.</p>
+    </div>
+    <div class="pr-rig">
+      <div class="pr-toggle" id="prToggle"><button class="on" data-cycle="m">Mensuel</button><button data-cycle="y">Annuel <em>−20 %</em></button></div>
+      <div class="pr-cards">
+        <div class="pr-card" style="--i:0"><small>Lancement</small><div class="pr-price"><b class="num" data-m="2 900" data-y="2 320">2 900</b><span>DA/mois</span></div>
+          <ul><li>Boutique + fiche produit</li><li>60 commandes/mois</li><li>1 transporteur</li><li>App mobile</li></ul>
+          <button class="pr-cta" data-href="/register">Commencer</button></div>
+        <div class="pr-card pr-hot" style="--i:1"><small>Croissance</small><div class="pr-price"><b class="num" data-m="6 900" data-y="5 520">6 900</b><span>DA/mois</span></div>
+          <ul><li>Confirmili inclus</li><li>Commandes illimitées</li><li>Tous les transporteurs + carte</li><li>Analytique + Finance</li><li>Studio IA (200 crédits)</li></ul>
+          <button class="pr-cta" data-href="/register">Essayer 14 jours</button><i class="pr-glow"></i></div>
+        <div class="pr-card" style="--i:2"><small>Échelle</small><div class="pr-price"><b class="num" data-m="14 900" data-y="11 920">14 900</b><span>DA/mois</span></div>
+          <ul><li>Multi-boutiques</li><li>API + webhooks</li><li>Studio IA illimité</li><li>Account manager</li></ul>
+          <button class="pr-cta" data-href="/register">Parler à l'équipe</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FAQ · respiration ─── -->
+<section class="faq-flow" id="sc-faq" data-chapter="FAQ">
+  <div class="faq-inner">
+    <small class="slate-kicker">Questions fréquentes</small>
+    <h2 class="faq-title">Ce qu'on nous demande <span class="ac">avant de se lancer.</span></h2>
+    <div class="faq-list" id="faqList">
+      <details><summary>Est-ce que je peux encaisser à la livraison (COD) ?<i></i></summary><p>Oui — le COD est le cœur du système : suivi de l'encaissement par colis, réconciliation automatique des versements transporteurs, et alertes sur les écarts.</p></details>
+      <details><summary>Confirmili remplace-t-il mon centre d'appel ?<i></i></summary><p>Il l'outille : file de priorité, scripts, WhatsApp intégré, scoring de risque. Vos agents confirment plus vite ; les commandes douteuses sont signalées avant l'expédition.</p></details>
+      <details><summary>Quels transporteurs sont intégrés ?<i></i></summary><p>Yalidine, ZR Express, Maystro, Guepex, DHD et EMS — génération d'étiquettes, suivi en temps réel et versements COD dans le même écran.</p></details>
+      <details><summary>Puis-je utiliser mon propre domaine ?<i></i></summary><p>Oui, en quelques minutes : ajoutez deux enregistrements DNS, le SSL est émis automatiquement.</p></details>
+      <details><summary>Mes données restent-elles à moi ?<i></i></summary><p>Toujours. Export complet en un clic (produits, commandes, clients) et synchronisation continue vers Google Sheets si vous le souhaitez.</p></details>
+      <details><summary>Y a-t-il un engagement ?<i></i></summary><p>Non — mensuel sans engagement, et l'essai Croissance de 14 jours n'exige pas de carte bancaire.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Final CTA · convergence ─── -->
+<section class="sc" id="sc-cta" data-len="240" data-chapter="Se lancer" data-dark="1">
+  <div class="stage stage-dark">
+    <div class="ct-rig" id="ctRig">
+      <div class="ct-orbit" id="ctOrbit"></div>
+      <p class="ct-kicker">Tout ce que vous venez de voir · un seul système</p>
+      <h2 class="ct-title">Votre boutique mérite<br><span class="ac-amber">un OS entier.</span></h2>
+      <button class="ct-btn" id="ctBtn"><span>Ouvrir ma boutique</span><em>gratuit 14 jours · sans carte</em></button>
+      <small class="ct-note">Déjà 2 300 marchands algériens à bord.</small>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <img src="assets/logo-primary.svg" alt="Commerco" height="22">
+  <nav><span>Produit</span><span>Tarifs</span><span>Transporteurs</span><span>Studio IA</span><span>Contact</span></nav>
+  <small>© 2026 Commerco · Alger — fait pour le e-commerce algérien.</small>
+</footer>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
