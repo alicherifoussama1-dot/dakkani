@@ -216,11 +216,13 @@ export default function OrdersPageClient({
                   <td>
                     {order.tracking_number
                       ? <span className="text-xs font-semibold" dir="ltr" style={{ color: 'var(--text-link)', fontVariantNumeric: 'tabular-nums' }}>{order.tracking_number}</span>
-                      : <button onClick={() => sendToDelivery(order.id)} disabled={shipping === order.id}
-                          className={`c-btn c-btn--secondary c-btn--sm ${shipping === order.id ? 'is-loading' : ''}`}
-                          title={t('orders.send_to_delivery')}>
-                          {shipping !== order.id && <Truck size={13} aria-hidden />} {t('orders.send')}
-                        </button>
+                      : order.status === 'abandoned'
+                        ? <span className="text-xs" style={{ color: 'var(--text-muted)' }}>N/A</span>
+                        : <button onClick={() => sendToDelivery(order.id)} disabled={shipping === order.id}
+                            className={`c-btn c-btn--secondary c-btn--sm ${shipping === order.id ? 'is-loading' : ''}`}
+                            title={t('orders.send_to_delivery')}>
+                            {shipping !== order.id && <Truck size={13} aria-hidden />} {t('orders.send')}
+                          </button>
                     }
                   </td>
                   <td>

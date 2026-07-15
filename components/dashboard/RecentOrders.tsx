@@ -27,7 +27,6 @@ export default function RecentOrders({ storeId }: { storeId: string }) {
       .from('orders')
       .select('id, order_number, customer_name, total, status, created_at')
       .eq('store_id', storeId)
-      .neq('status', 'abandoned') // drafts live under the مهجور filter only
       .order('created_at', { ascending: false })
       .limit(8)
       .then(({ data }) => setOrders((data ?? []) as unknown as Order[]))

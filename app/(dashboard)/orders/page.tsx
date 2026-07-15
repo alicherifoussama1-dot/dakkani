@@ -25,10 +25,10 @@ export default async function OrdersPage({
     .order('created_at', { ascending: false })
     .range(from, from + perPage - 1)
 
-  // Abandoned drafts stay out of the main list — they surface only through
-  // the explicit "مهجور" filter (?status=abandoned).
+  // Abandoned drafts appear INLINE in the main list (JustSell parity),
+  // rendered with the red "مهجور" status badge. Explicit filter still
+  // works: ?status=abandoned narrows to drafts only.
   if (searchParams.status)  q = q.eq('status', searchParams.status)
-  else                      q = q.neq('status', 'abandoned')
   if (searchParams.from)    q = q.gte('created_at', searchParams.from)
   if (searchParams.to)      q = q.lte('created_at', searchParams.to + 'T23:59:59')
   if (searchParams.search) {
