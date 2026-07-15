@@ -2,15 +2,14 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/onboarding',
-  '/auth/login', '/auth/register', '/discover']
+const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/onboarding', '/discover']
 
 // Routes that require auth (gate logged-out users to /login).
 const PROTECTED = ['/dashboard','/admin','/platform','/products','/orders','/settings','/categories',
   '/warehouses','/coupons','/customers','/analytics','/landing-pages','/tracking',
   '/apps','/billing','/confirmili','/justad','/learn','/reviews','/blacklist']
 // Auth pages that redirect already-logged-in users to /dashboard.
-const AUTH_PAGES = ['/login','/register','/auth/login','/auth/register']
+const AUTH_PAGES = ['/login','/register']
 
 // ── Custom-domain host → store slug resolution (cached) ─────
 // afnane.store/product/x  →  rewrite to  /{storeSlug}/product/x

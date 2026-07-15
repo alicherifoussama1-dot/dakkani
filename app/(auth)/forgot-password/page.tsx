@@ -1,17 +1,19 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { Mail, ArrowRight, CheckCircle, Loader2, AlertCircle } from 'lucide-react'
+import { Mail, ArrowRight, ArrowLeft, CheckCircle, Loader2, AlertCircle } from 'lucide-react'
 import { useT, useDir } from '@/lib/i18n/react'
-
 
 export default function ForgotPasswordPage() {
   const t = useT()
   const dir = useDir()
-  const [email, setEmail]   = useState('')
-  const [sent,  setSent]    = useState(false)
-  const [error, setError]   = useState('')
-  const [loading, setLoading] = useState(false)
+  const isRtl = dir === 'rtl'
+  const ArrowInline = isRtl ? ArrowLeft : ArrowRight
+
+  const [email,     setEmail]     = useState('')
+  const [sent,      setSent]      = useState(false)
+  const [error,     setError]     = useState('')
+  const [loading,   setLoading]   = useState(false)
   const [debugLink, setDebugLink] = useState('')
 
   const submit = async (e: React.FormEvent) => {
@@ -22,7 +24,7 @@ export default function ForgotPasswordPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     })
-    const data = await res.json()
+    const data = await res.json().catch(() => ({}))
     setLoading(false)
     if (!res.ok) { setError(data.error ?? t('forgot.error_generic')); return }
     if (data.debug_link) setDebugLink(data.debug_link)
@@ -31,87 +33,104 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="w-full max-w-md card p-8 text-center" dir={dir}>
-        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{background:'#D1E7DD'}}>
-          <CheckCircle size={28} style={{color:'#198754'}} />
+      <div className="auth-card" role="status" aria-live="polite">
+        <div className="text-center">
+          <div className="auth-success__icon"><CheckCircle size={28} aria-hidden /></div>
+          <h1 className="auth-title">{t('forgot.sent_title')}</h1>
+          <p className="auth-sub">
+            {t('forgot.sent_sub')}
+            <br />
+            <strong style={{ color: 'var(--text-primary)', fontVariantNumeric: 'var(--numeric-tabular)' }} dir="ltr">
+              {email}
+            </strong>
+          </p>
         </div>
-        <h2 className="font-black text-xl mb-2" style={{color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)'}}>{t('forgot.sent_title')}</h2>
-        <p className="text-sm mb-1" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
-          {t('forgot.sent_sub')}
-        </p>
-        <p className="font-bold text-sm px-4 py-2 rounded-lg mb-4" style={{color:'var(--color-text-primary)',background:'var(--color-bg-soft)',fontFamily:'var(--font-primary)'}}>
-          {email}
-        </p>
 
         {debugLink && (
-          <div className="rounded-xl p-3 text-sm text-right mb-4 border" style={{background:'#FFF3CD',borderColor:'#FFC107'}}>
-            <p className="font-bold text-yellow-800 mb-1.5">{t('forgot.dev_mode')}</p>
-            <a href={debugLink} className="text-xs break-all" style={{color:'var(--color-accent)'}}>{debugLink}</a>
+          <div className="auth-alert auth-alert--warn" style={{ marginBlockEnd: 'var(--space-4)' }}>
+            <AlertCircle size={16} className="mt-0.5 shrink-0" aria-hidden />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 'var(--font-semibold)', marginBlockEnd: 4 }}>{t('forgot.dev_mode')}</div>
+              <a href={debugLink} dir="ltr" style={{ fontSize: 'var(--text-xs)', wordBreak: 'break-all', color: 'var(--text-link)' }}>{debugLink}</a>
+            </div>
           </div>
         )}
 
-        <div className="rounded-xl p-3 text-sm text-right mb-4" style={{background:'#FFF3CD',fontFamily:'var(--font-arabic)'}}>
-          <p className="font-bold text-yellow-800 mb-1.5">{t('forgot.not_received')}</p>
-          <ul className="space-y-0.5 text-xs text-yellow-700">
-            <li>{t('forgot.check_spam')}</li>
-            <li>{t('forgot.wait_retry')}</li>
-          </ul>
+        <div className="auth-alert auth-alert--warn">
+          <AlertCircle size={16} className="mt-0.5 shrink-0" aria-hidden />
+          <div>
+            <div style={{ fontWeight: 'var(--font-semibold)', marginBlockEnd: 4 }}>{t('forgot.not_received')}</div>
+            <ul style={{ fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-loose)', paddingInlineStart: 'var(--space-4)', listStyle: 'disc' }}>
+              <li>{t('forgot.check_spam')}</li>
+              <li>{t('forgot.wait_retry')}</li>
+            </ul>
+          </div>
         </div>
 
-        <button onClick={() => { setSent(false); setError(''); setDebugLink('') }}
-          className="text-sm font-semibold mb-2" style={{color:'var(--color-accent)',fontFamily:'var(--font-arabic)'}}>
-          {t('forgot.resend')}
-        </button>
-        <br/>
-        <Link href="/login" className="text-sm" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
-          {t('forgot.back')}
-        </Link>
+        <div style={{ marginBlockStart: 'var(--space-6)', display: 'grid', gap: 'var(--space-2)' }}>
+          <button
+            onClick={() => { setSent(false); setError(''); setDebugLink('') }}
+            className="c-btn c-btn--secondary"
+          >
+            {t('forgot.resend')}
+          </button>
+          <Link href="/login" className="c-btn c-btn--ghost">
+            {t('forgot.back')}
+          </Link>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="w-full max-w-md card p-8" dir={dir}>
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style={{background:'var(--color-accent-soft)'}}>
-        <Mail size={20} style={{color:'var(--color-accent)'}} />
+    <div className="auth-card">
+      <div className="auth-mark">
+        <span className="auth-mark__badge">C</span>
+        <span className="auth-mark__name">Commerco</span>
       </div>
-      <h1 className="font-black text-xl mb-1" style={{color:'var(--color-text-primary)',fontFamily:'var(--font-arabic)'}}>
-        {t('forgot.title')}
-      </h1>
-      <p className="text-sm mb-6" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
-        {t('forgot.subtitle')}
-      </p>
 
-      <form onSubmit={submit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-medium mb-1.5" style={{color:'var(--color-text-secondary)',fontFamily:'var(--font-arabic)'}}>
-            {t('auth.email')}
-          </label>
-          <input
-            type="email" value={email} onChange={e=>setEmail(e.target.value)}
-            required placeholder="example@email.com" dir="ltr" autoComplete="email"
-            className="input text-sm"
-          />
+      <h1 className="auth-title">{t('forgot.title')}</h1>
+      <p className="auth-sub">{t('forgot.subtitle')}</p>
+
+      <form onSubmit={submit} className="auth-form" noValidate>
+        <div className="c-field">
+          <label htmlFor="email" className="c-label">{t('auth.email')}</label>
+          <div className="auth-input-wrap">
+            <input
+              id="email" type="email" required autoComplete="email" dir="ltr"
+              value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="example@email.com"
+              className="c-input"
+              style={{ paddingInlineStart: 44 }}
+            />
+            <span aria-hidden style={{
+              position: 'absolute', insetBlockStart: '50%', insetInlineStart: 14,
+              transform: 'translateY(-50%)', color: 'var(--text-muted)',
+              display: 'inline-flex', pointerEvents: 'none',
+            }}>
+              <Mail size={16} />
+            </span>
+          </div>
         </div>
 
         {error && (
-          <div className="text-sm p-3 rounded-lg flex items-start gap-2" style={{background:'var(--color-error-soft)',color:'var(--color-error)',fontFamily:'var(--font-arabic)'}}>
-            <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-            {error}
+          <div className="auth-alert" role="alert" aria-live="polite">
+            <AlertCircle size={16} className="mt-0.5 shrink-0" aria-hidden />
+            <span>{error}</span>
           </div>
         )}
 
-        <button type="submit" disabled={loading || !email} className="btn btn-primary w-full gap-2" style={{fontFamily:'var(--font-arabic)'}}>
+        <button type="submit" disabled={loading || !email} className={`c-btn c-btn--primary ${loading ? 'is-loading' : ''}`}>
           {loading
-            ? <><Loader2 size={15} className="animate-spin"/>{t('forgot.sending')}</>
-            : <>{t('forgot.send')}<ArrowRight size={14}/></>
+            ? <><Loader2 size={16} className="animate-spin" aria-hidden />{t('forgot.sending')}</>
+            : <>{t('forgot.send')}<ArrowInline size={16} aria-hidden /></>
           }
         </button>
-
-        <p className="text-center text-sm" style={{color:'var(--color-text-muted)',fontFamily:'var(--font-arabic)'}}>
-          <Link href="/login" style={{color:'var(--color-accent)',fontWeight:600}}>{t('forgot.back')}</Link>
-        </p>
       </form>
+
+      <p className="auth-foot">
+        <Link href="/login" className="auth-link">{t('forgot.back')}</Link>
+      </p>
     </div>
   )
 }
