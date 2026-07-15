@@ -32,21 +32,35 @@ function MerchantLoginInner() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (loading) return                       // guard against a double-submit
     setError(''); setLoading(true)
-    const { error: err } = await createClient().auth.signInWithPassword({ email, password })
-    setLoading(false)
-    if (err) {
-      // Map the common Supabase errors to Arabic; other messages fall through.
-      const msg = /Invalid login credentials/i.test(err.message)
-        ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
-        : /Email not confirmed/i.test(err.message)
-          ? 'يرجى تأكيد بريدك الإلكتروني أولاً'
-          : err.message
-      setError(msg)
+
+    const { data, error: err } = await createClient().auth.signInWithPassword({ email, password })
+
+    if (err || !data.session) {
+      setLoading(false)
+      const raw = err?.message ?? 'فشل تسجيل الدخول'
+      setError(
+        /Invalid login credentials/i.test(raw) ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
+        : /Email not confirmed/i.test(raw)     ? 'يرجى تأكيد بريدك الإلكتروني أولاً'
+        : /rate limit|Too many/i.test(raw)     ? 'محاولات كثيرة — انتظر دقيقة ثم أعد المحاولة'
+        : /Network|Failed to fetch/i.test(raw) ? 'تعذّر الاتصال — تحقّق من الشبكة'
+        : raw,
+      )
       return
     }
-    router.push(nextTarget)
-    router.refresh()
+
+    // Never loop back to an auth page even if the query param says so.
+    const target = /^\/(login|register|forgot-password|reset-password)(\/|$|\?)/.test(nextTarget)
+      ? '/dashboard'
+      : nextTarget
+
+    // Full-page navigation — the browser sends the freshly-set sb-* cookie
+    // with the next request, so middleware + the dashboard layout both see
+    // the session immediately. router.push+refresh has a race here where the
+    // RSC prefetch can run before the cookie is visible → redirect loop back
+    // to /login. window.location.assign sidesteps all of it.
+    window.location.assign(target)
   }
 
   const ArrowInline = isRtl ? ArrowLeft : ArrowRight

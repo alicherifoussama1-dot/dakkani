@@ -75,8 +75,9 @@ export default function RegisterPage() {
       return
     }
 
-    router.push('/dashboard')
-    router.refresh()
+    // Full-page nav so the sb-* cookie is on the very next request and
+    // the /dashboard middleware+layout both see the session (no push/refresh race).
+    window.location.assign('/dashboard')
   }
 
   const fields: { key: FieldKey; label: string; placeholder: string; type?: string; dir?: 'ltr' | 'rtl'; autocomplete?: string; minLength?: number }[] = [
