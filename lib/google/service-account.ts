@@ -29,12 +29,15 @@ export interface SheetOrderRow {
   sku: string; variant: string; qty: number
   price: number; delivery: number; total: number
   deliveryType: 'home' | 'stopdesk'; productName: string; createdAt?: string
+  /** Optional 14th column (e.g. "Abandonné"). Omitted when empty so existing
+   *  13-column sheets keep their exact historical shape. */
+  status?: string
 }
 
 /** Build a row in the exact SHEET_HEADERS order.
  *  City = baladia (commune), State = wilaya (province). */
 export function buildOrderRow(o: SheetOrderRow): (string | number)[] {
-  return [
+  const row: (string | number)[] = [
     o.name,        // Username
     o.phone,       // Phone
     o.baladia,     // City
@@ -49,6 +52,8 @@ export function buildOrderRow(o: SheetOrderRow): (string | number)[] {
     o.productName, // Product Name
     o.createdAt ?? '', // Created At
   ]
+  if (o.status) row.push(o.status) // Status (optional, not in required headers)
+  return row
 }
 
 // ── Credentials ──────────────────────────────────────────────

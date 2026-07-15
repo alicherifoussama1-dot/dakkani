@@ -1,9 +1,15 @@
 'use client'
+// COMMERCO ORDERS — design-system rebuild.
+// UX rethink: status filtering moved from a buried <select> to a
+// one-tap chip row (the merchant's core workflow); toolbar reduced
+// to one primary action; token table with proper empty state and
+// toasts. All data flow (URL params, debounce, ship-to-courier,
+// CSV export, pagination) preserved exactly.
 import { useT, useRaw, useDir } from '@/lib/i18n/react'
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { RefreshCw, Plus, Search, Filter, Calendar, ChevronDown, Edit2, Download, Truck, Loader2 } from 'lucide-react'
+import { RefreshCw, Plus, Search, Edit2, Download, Truck, Loader2, ShoppingCart } from 'lucide-react'
 import { formatDZD, formatDateShort } from '@/lib/utils/format'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -42,13 +48,12 @@ export default function OrdersPageClient({
   const [toast,    setToast]    = useState('')
   const debouncedSearch = useDebounce(search, 400)
 
-  // Send an order to the courier via the STORE delivery module (no Confirmili).
   const sendToDelivery = async (orderId: string) => {
     setShipping(orderId)
     try {
       const res = await fetch(`/api/delivery/ship/${orderId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
       const d = await res.json().catch(() => ({}))
-      if (!res.ok) { setToast(d.error ?? t('orders.send_fail')); }
+      if (!res.ok) { setToast(d.error ?? t('orders.send_fail')) }
       else { setToast(t('orders.send_ok', { provider: d.provider ?? t('orders.provider_fallback'), tracking: d.trackingNumber })); router.refresh() }
     } catch { setToast(t('orders.send_err')) }
     finally { setShipping(null); setTimeout(() => setToast(''), 3000) }
@@ -61,25 +66,28 @@ export default function OrdersPageClient({
     router.push(`${pathname}?${p}`)
   }
 
-  // Auto-search when debounced search changes
   useEffect(() => {
     push({ search: debouncedSearch || undefined })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch])
 
   const totalPages = Math.ceil(total / perPage)
+  const isEmpty = initialOrders.length === 0
+  const hasActiveFilters = Boolean(filters.search || filters.status || filters.from || filters.to)
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto" dir={dir} style={{ fontFamily: 'var(--font-arabic)' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
+      {/* ── Header: one primary action ── */}
+      <div className="flex items-end justify-between flex-wrap gap-3 mb-5">
         <div>
-          <h1 className="page-title">{t('orders.title')}</h1>
-          <p className="text-xs mt-0.5" style={{color:'var(--color-text-muted)'}}>{t('orders.total_count', { count: total.toLocaleString() })}</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>{t('orders.title')}</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
+            {t('orders.total_count', { count: total.toLocaleString() })}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => router.refresh()} className="btn btn-sm gap-1.5" style={{ background: '#FFC107', color: '#000', border: 'none' }}>
-            <RefreshCw size={13} />{t('common.refresh')}
+          <button onClick={() => router.refresh()} className="c-btn c-btn--ghost c-btn--sm" aria-label={t('common.refresh')} title={t('common.refresh')}>
+            <RefreshCw size={14} aria-hidden />
           </button>
           <button
             onClick={() => {
@@ -89,105 +97,116 @@ export default function OrdersPageClient({
               const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}))
               a.download = `orders-${new Date().toISOString().slice(0,10)}.csv`; a.click()
             }}
-            className="btn btn-sm gap-1.5" style={{ border: '1px solid var(--color-border)', background: '#fff', color: 'var(--color-text-secondary)' }}>
-            <Download size={13} />{t('common.export_csv')}
+            className="c-btn c-btn--secondary c-btn--sm">
+            <Download size={14} aria-hidden />{t('common.export_csv')}
           </button>
-          <Link href="/orders/new" className="btn btn-primary btn-sm gap-1.5">
-            <Plus size={13} />{t('orders.create')}
+          <Link href="/orders/new" className="c-btn c-btn--primary c-btn--sm">
+            <Plus size={14} aria-hidden />{t('orders.create')}
           </Link>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="card p-3 mb-4 flex flex-wrap gap-2">
-        {/* Search */}
-        <div className="relative flex-1 min-w-[180px]">
-          <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }} />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={t('orders.search_ph')}
-            className="input pr-8 text-sm"
-          />
-        </div>
-
-        {/* Products dropdown */}
-        <select className="input text-sm w-44" style={{ minWidth: '160px' }}>
-          <option>{t('orders.all_products')}</option>
-          {products.map(p => <option key={p.id} value={p.id}>{p.name_ar ?? p.name}</option>)}
-        </select>
-
-        {/* Date range */}
-        <div className="flex items-center gap-1">
-          <input type="date" onChange={e => push({ from: e.target.value || undefined })}
-            className="input text-xs h-8 w-36" dir="ltr" title={t('common.from')} />
-          <span className="text-xs" style={{color:'var(--color-text-muted)'}}>—</span>
-          <input type="date" onChange={e => push({ to: e.target.value || undefined })}
-            className="input text-xs h-8 w-36" dir="ltr" title={t('common.to')} />
-        </div>
-
-        {/* Type */}
-        <select value={type} onChange={e => setType(e.target.value)} className="input text-sm w-40">
-          {ORDER_TYPES.map(o => <option key={o} value={o}>{TYPE_LABELS[o] ?? o}</option>)}
-        </select>
-
-        {/* Status */}
-        <select value={sit} onChange={e => { setSit(e.target.value); push({ status: STATUS_VALUES[e.target.value] || undefined }) }} className="input text-sm w-44">
-          {ORDER_STATUSES.map(o => <option key={o} value={o}>{STATUS_LABELS[o] ?? o}</option>)}
-        </select>
+      {/* ── Status chips: the core workflow, one tap ── */}
+      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 mb-3" role="group" aria-label={t('orders.title')}>
+        {ORDER_STATUSES.map(s => (
+          <button key={s} onClick={() => { setSit(s); push({ status: STATUS_VALUES[s] || undefined }) }}
+            className="c-chip flex-shrink-0" aria-pressed={sit === s}>
+            {STATUS_LABELS[s] ?? s}
+          </button>
+        ))}
       </div>
 
-      {/* Table */}
-      <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="data-table">
+      {/* ── Secondary filters ── */}
+      <div className="c-card mb-4" style={{ padding: 'var(--space-3)' }}>
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={14} className="absolute top-1/2 -translate-y-1/2 start-3 pointer-events-none" style={{ color: 'var(--text-muted)' }} aria-hidden />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder={t('orders.search_ph')} className="c-input ps-9" aria-label={t('orders.search_ph')} />
+          </div>
+          <select className="c-select w-44" style={{ inlineSize: 176 }} aria-label={t('orders.all_products')}>
+            <option>{t('orders.all_products')}</option>
+            {products.map(p => <option key={p.id} value={p.id}>{p.name_ar ?? p.name}</option>)}
+          </select>
+          <div className="flex items-center gap-1.5">
+            <input type="date" onChange={e => push({ from: e.target.value || undefined })}
+              className="c-input" style={{ inlineSize: 148, blockSize: 'var(--control-h-sm)', fontSize: 'var(--text-xs)' }} dir="ltr" aria-label={t('common.from')} />
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>–</span>
+            <input type="date" onChange={e => push({ to: e.target.value || undefined })}
+              className="c-input" style={{ inlineSize: 148, blockSize: 'var(--control-h-sm)', fontSize: 'var(--text-xs)' }} dir="ltr" aria-label={t('common.to')} />
+          </div>
+          <select value={type}
+            onChange={e => {
+              const v = e.target.value
+              setType(v)
+              // "مهجور" surfaces abandoned-checkout drafts; "الكل" resets.
+              if (v === 'مهجور') { setSit('الكل'); push({ status: 'abandoned' }) }
+              else if (v === 'الكل') push({ status: undefined })
+            }}
+            className="c-select" style={{ inlineSize: 150 }} aria-label={TYPE_LABELS['الكل']}>
+            {ORDER_TYPES.map(o => <option key={o} value={o}>{TYPE_LABELS[o] ?? o}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* ── Table / empty state ── */}
+      {isEmpty ? (
+        <div className="c-card" style={{ padding: 0 }}>
+          <div className="c-empty">
+            <div className="c-empty__icon"><ShoppingCart size={24} aria-hidden /></div>
+            <div className="c-empty__title">{t('orders.empty')}</div>
+            {hasActiveFilters ? (
+              <button onClick={() => { setSearch(''); setSit('الكل'); router.push(pathname) }} className="c-btn c-btn--secondary" style={{ marginBlockStart: 'var(--space-3)' }}>
+                {t('common.all')}
+              </button>
+            ) : (
+              <Link href="/orders/new" className="c-btn c-btn--primary" style={{ marginBlockStart: 'var(--space-3)' }}>
+                <Plus size={15} aria-hidden />{t('orders.create')}
+              </Link>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="c-table-scroll">
+          <table className="c-table">
             <thead>
               <tr>
-                {(raw('orders.cols') as string[] ?? []).map(h => (
-                  <th key={h}>{h}</th>
-                ))}
+                {(raw('orders.cols') as string[] ?? []).map(h => <th key={h}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
-              {initialOrders.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="text-center py-12 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                    {t('orders.empty')}
-                  </td>
-                </tr>
-              ) : initialOrders.map(order => (
+              {initialOrders.map(order => (
                 <tr key={order.id}>
                   <td>
-                    <span className="font-mono text-xs font-semibold" style={{ color: 'var(--color-accent)' }}>
+                    <Link href={`/orders/${order.id}`} className="font-semibold text-xs hover:underline"
+                      style={{ color: 'var(--text-link)', fontVariantNumeric: 'tabular-nums' }}>
                       #{order.order_number}
-                    </span>
-                    <p className="text-[11px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-                      {formatDateShort(order.created_at)}
-                    </p>
+                    </Link>
+                    <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{formatDateShort(order.created_at)}</p>
                   </td>
                   <td>
-                    <p className="font-medium text-sm" style={{ color: 'var(--color-text-primary)' }}>{order.customer_name}</p>
-                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{order.customer_phone}</p>
+                    <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{order.customer_name}</p>
+                    <p className="text-xs" dir="ltr" style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', textAlign: 'inherit' }}>{order.customer_phone}</p>
                   </td>
-                  <td className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                  <td className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                     <p>{(order.wilaya as any)?.name_ar ?? '—'}</p>
                     <p>{(order.commune as any)?.name_ar ?? ''}</p>
                   </td>
                   <td>
-                    <p className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-primary)' }}>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', fontFamily: 'var(--font-primary)' }}>
                       {formatDZD(order.total)}
                     </p>
-                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                       {order.delivery_type === 'stopdesk' ? t('common.office') : t('common.home')}
                     </p>
                   </td>
                   <td>
                     {(order.items as any[])?.[0]?.product_name && (
                       <>
-                        <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                        <p className="text-sm font-medium max-w-[180px] truncate" style={{ color: 'var(--text-primary)' }}>
                           {(order.items as any[])[0].product_name}
                         </p>
-                        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
                           ×{(order.items as any[])[0].quantity}
                         </p>
                       </>
@@ -196,61 +215,64 @@ export default function OrdersPageClient({
                   <td><StatusBadge status={order.status} /></td>
                   <td>
                     {order.tracking_number
-                      ? <span className="font-mono text-xs" style={{ color: 'var(--color-accent)' }}>{order.tracking_number}</span>
+                      ? <span className="text-xs font-semibold" dir="ltr" style={{ color: 'var(--text-link)', fontVariantNumeric: 'tabular-nums' }}>{order.tracking_number}</span>
                       : <button onClick={() => sendToDelivery(order.id)} disabled={shipping === order.id}
-                          className="inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg disabled:opacity-60"
-                          style={{ background: '#E7F0FF', color: '#0D6EFD' }} title={t('orders.send_to_delivery')}>
-                          {shipping === order.id ? <Loader2 size={12} className="animate-spin" /> : <Truck size={12} />} {t('orders.send')}
+                          className={`c-btn c-btn--secondary c-btn--sm ${shipping === order.id ? 'is-loading' : ''}`}
+                          title={t('orders.send_to_delivery')}>
+                          {shipping !== order.id && <Truck size={13} aria-hidden />} {t('orders.send')}
                         </button>
                     }
                   </td>
                   <td>
-                    <Link href={`/orders/${order.id}`} className="p-1.5 rounded hover:bg-[#F8F9FA] transition-colors inline-flex">
-                      <Edit2 size={13} style={{ color: 'var(--color-text-muted)' }} />
+                    <Link href={`/orders/${order.id}`} aria-label={`${t('orders.title')} #${order.order_number}`}
+                      className="w-9 h-9 rounded-[var(--radius-md)] inline-flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)]">
+                      <Edit2 size={14} style={{ color: 'var(--text-muted)' }} aria-hidden />
                     </Link>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t flex-wrap gap-2" style={{ borderColor: 'var(--color-border)' }}>
-          <div className="flex items-center gap-2">
-            <select value={pp} onChange={e => { setPp(+e.target.value); push({ per_page: e.target.value }) }} className="input h-7 text-xs px-2 w-16">
-              {[5,10,20,30,50].map(n => <option key={n}>{n}</option>)}
-            </select>
-            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              {t('orders.range', { from: ((page-1)*perPage)+1, to: Math.min(page*perPage, total), total: total.toLocaleString() })}
-            </span>
-          </div>
-          {totalPages > 1 && (
-            <div className="flex items-center gap-1">
-              {[
-                { label: '«', p: 1, disabled: page <= 1 },
-                { label: '‹', p: page-1, disabled: page <= 1 },
-                { label: '›', p: page+1, disabled: page >= totalPages },
-                { label: '»', p: totalPages, disabled: page >= totalPages },
-              ].map(btn => (
-                <button
-                  key={btn.label}
-                  onClick={() => !btn.disabled && push({ page: String(btn.p) })}
-                  disabled={btn.disabled}
-                  className="w-7 h-7 flex items-center justify-center rounded text-xs border hover:bg-[#F8F9FA] disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ borderColor: 'var(--color-border)' }}
-                >
-                  {btn.label}
-                </button>
-              ))}
+          {/* Pagination */}
+          <div className="flex items-center justify-between px-4 py-3 flex-wrap gap-2 border-t" style={{ borderColor: 'var(--border-default)' }}>
+            <div className="flex items-center gap-2">
+              <select value={pp} onChange={e => { setPp(+e.target.value); push({ per_page: e.target.value }) }}
+                className="c-select" style={{ inlineSize: 72, blockSize: 'var(--control-h-sm)', fontSize: 'var(--text-xs)' }}
+                aria-label={t('common.per_page')}>
+                {[5,10,20,30,50].map(n => <option key={n}>{n}</option>)}
+              </select>
+              <span className="text-xs" style={{ color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                {t('orders.range', { from: ((page-1)*perPage)+1, to: Math.min(page*perPage, total), total: total.toLocaleString() })}
+              </span>
             </div>
-          )}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                {[
+                  { label: '«', p: 1, disabled: page <= 1 },
+                  { label: '‹', p: page-1, disabled: page <= 1 },
+                  { label: '›', p: page+1, disabled: page >= totalPages },
+                  { label: '»', p: totalPages, disabled: page >= totalPages },
+                ].map(btn => (
+                  <button key={btn.label} onClick={() => !btn.disabled && push({ page: String(btn.p) })} disabled={btn.disabled}
+                    className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-md)] text-sm border transition-colors hover:bg-[var(--surface-sunken)] disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
+                    aria-label={`page ${btn.p}`}>
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ── Toast ── */}
       {toast && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-lg max-w-[92vw] text-center"
-          style={{ background: toast.startsWith('✓') ? '#0D6EFD' : '#DC3545' }}>
-          {toast}
+        <div className="c-toast-stack">
+          <div className={`c-toast ${toast.startsWith('✓') ? 'c-toast--success' : 'c-toast--error'}`} role="status" aria-live="polite">
+            {toast}
+          </div>
         </div>
       )}
     </div>

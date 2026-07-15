@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { ChevronDown, Loader2, ShieldCheck, PhoneCall, Truck, AlertCircle, User, Phone, Home, Store, CheckCircle2 } from 'lucide-react'
 import OfficeDeliveryPicker from './OfficeDeliveryPicker'
 import { formatDZD } from '@/lib/utils/format'
-import { getBaladiasBilingualForWilaya } from '@/lib/algeria-baladias'
+import { getBaladiasBilingualForWilaya, resolveCommune } from '@/lib/algeria-baladias'
 import type { Product, Wilaya } from '@/types'
 import { translateStorefront, type Locale } from '@/lib/utils/translations'
 
@@ -140,6 +140,14 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           message: isAr ? 'اختر البلدية التابعة لعنوانك' : isFr ? 'Choisissez la commune' : 'Choose commune',
         })
       }
+      // Stopdesk: the office commune is mandatory — mirrors the server rule.
+      if (data.delivery_type === 'stopdesk' && (!data.baladia || data.baladia.trim() === '')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['baladia'],
+          message: isAr ? 'اختر بلدية مكتب الاستلام' : isFr ? 'Choisissez la commune du bureau' : 'Choose the pickup office commune',
+        })
+      }
     })
   }, [fieldsConfig, lang])
 
@@ -193,6 +201,82 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
     }
   }, [deliveryType, setValue])
 
+  // No offices in this wilaya → hide "المكتب" so the customer never dead-ends.
+  const stopdeskHidden = !!wilayaId && !loadingOffices && offices.length === 0
+  useEffect(() => {
+    if (stopdeskHidden && deliveryType === 'stopdesk') {
+      setValue('delivery_type', 'home', { shouldValidate: true })
+    }
+  }, [stopdeskHidden, deliveryType, setValue])
+
+  // ── Abandoned-checkout draft capture (debounced) ──────────
+  // Valid phone → snapshot the partial form server-side. Same phone+product
+  // updates the same draft; a completed order deletes it server-side.
+  const watchedName  = watch('customer_name')
+  const watchedPhone = watch('customer_phone')
+  const icFiredRef = useRef(false)
+  const draftIdRef = useRef<string | null>(null)
+  const completingRef = useRef(false)
+  // PER-PRODUCT toggle («تحتسب») wins; store setting is the legacy fallback.
+  const abandonedTrack = typeof (product as any)?.abandoned_count_conversion === 'boolean'
+    ? (product as any).abandoned_count_conversion
+    : !!(settings as any)?.abandoned_track_conversions
+  useEffect(() => {
+    if (submitted) return
+    if (!/^(05|06|07)\d{8}$/.test(watchedPhone ?? '')) return
+    const t = setTimeout(() => {
+      fetch('/api/orders/abandoned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_id: store.id,
+          product_id: product.id,
+          customer_name: watchedName || undefined,
+          customer_phone: watchedPhone,
+          wilaya_id: wilayaId || undefined,
+          baladia: baladia || undefined,
+          delivery_type: deliveryType,
+          quantity,
+          source: 'storefront',
+        }),
+      }).then(async res => {
+        const json = await res.json().catch(() => ({}))
+        if (res.ok && json.draft_id) draftIdRef.current = json.draft_id
+        // Product toggle «تحتسب»: count the abandoned lead as InitiateCheckout
+        // via the product's isolated pixels (<ProductTracking/> — never Purchase).
+        if (res.ok && abandonedTrack && !icFiredRef.current) {
+          icFiredRef.current = true
+          window.dispatchEvent(new CustomEvent('dakkani:ic'))
+        }
+      }).catch(() => {})
+    }, 1500)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedPhone, watchedName, wilayaId, baladia, deliveryType, quantity, submitted])
+
+  // ── INSTANT finalization: customer leaves → sendBeacon marks the draft
+  // abandoned right now (and the server pushes it to the sheet immediately).
+  useEffect(() => {
+    const finalize = () => {
+      const id = draftIdRef.current
+      if (!id || completingRef.current) return
+      draftIdRef.current = null // at most once per draft
+      try {
+        navigator.sendBeacon(
+          '/api/orders/abandoned/finalize',
+          new Blob([JSON.stringify({ draft_id: id, store_id: store.id })], { type: 'application/json' }),
+        )
+      } catch { /* beacon unsupported — the queue fallback covers it */ }
+    }
+    const onVisibility = () => { if (document.visibilityState === 'hidden') finalize() }
+    window.addEventListener('pagehide', finalize)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('pagehide', finalize)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [store.id])
+
   // Move focus to the confirmation so customers (and screen readers) know it worked.
   useEffect(() => {
     if (submitted) successRef.current?.focus()
@@ -206,6 +290,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   const onSubmit = async (data: FormData) => {
     if (isSubmitting) return // extra guard against a double submit
     setSubmitError('')
+    completingRef.current = true // suppress the abandonment beacon while submitting
     // Tracking bridge (isolated pixels live in <ProductTracking/>). Fire-and-forget;
     // no pixel logic here so order/business logic stays untouched.
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('dakkani:ic'))
@@ -216,6 +301,10 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         ? 'Échec de l\'envoi de la commande. Vérifiez votre connexion et réessayez.'
         : 'Could not submit your order. Check your connection and try again.'
     try {
+      // Stopdesk snapshot: resolve the office commune to BOTH languages via
+      // the shared commune table (office lists may carry FR or AR spellings).
+      const resolved = isStopdesk ? resolveCommune(data.wilaya_id, data.baladia) : null
+      const chosenOffice = isStopdesk ? offices.find(o => o.id === data.stopdesk_code) : undefined
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -225,12 +314,16 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           baladia: data.baladia, // commune name for both; stopdesk = office commune
           address: isStopdesk ? undefined : data.address,
           stopdesk_code: isStopdesk ? data.stopdesk_code : undefined,
+          stopdesk_commune_ar: isStopdesk ? (resolved?.name_ar ?? data.baladia) : undefined,
+          stopdesk_commune_fr: isStopdesk ? (resolved?.name_fr ?? undefined) : undefined,
+          stopdesk_office_name: chosenOffice?.name,
           items: [{ product_id: product.id, quantity: data.quantity, variant_key: variantKey ?? 'default' }],
           source: 'storefront',
         }),
       })
       const json = await res.json().catch(() => ({}))
       if (res.ok && json.success) {
+        draftIdRef.current = null // completed — the server deleted the draft
         setOrderId(json.order_number)
         setSubmitted(true)
         // Tracking bridge → <ProductTracking/> fires Purchase to this product's pixels only.
@@ -239,11 +332,13 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           window.dispatchEvent(new CustomEvent('dakkani:purchase', { detail: { orderId: json.order_number, value } }))
         }
       } else {
+        completingRef.current = false // failed — abandonment tracking resumes
         setSubmitError(json.error || genericErr)
         formRef.current?.querySelector<HTMLElement>('[data-submit-error="true"]')
           ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
     } catch {
+      completingRef.current = false // failed — abandonment tracking resumes
       setSubmitError(genericErr)
       formRef.current?.querySelector<HTMLElement>('[data-submit-error="true"]')
         ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -277,9 +372,9 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       className="space-y-5 p-6 sm:p-7 rounded-3xl" style={{ background: DK.surface, border: `0.5px solid ${DK.line}`, borderTop: `3px solid ${DK.accent}` }}>
       <h3 className="font-bold text-lg mb-1" style={{ color: DK.ink }}>{completeLabel}</h3>
 
-      {/* Delivery type */}
-      <div className="grid grid-cols-2 gap-2.5">
-        {([['home', translateStorefront('home_delivery', lang), <Home key="h" className="w-4 h-4" />], ['stopdesk', translateStorefront('stopdesk_delivery', lang), <Store key="s" className="w-4 h-4" />]] as const).map(([val, label, icon]) => {
+      {/* Delivery type — "المكتب" disappears when the wilaya has no offices */}
+      <div className={`grid ${stopdeskHidden ? 'grid-cols-1' : 'grid-cols-2'} gap-2.5`}>
+        {([['home', translateStorefront('home_delivery', lang), <Home key="h" className="w-4 h-4" />], ['stopdesk', translateStorefront('stopdesk_delivery', lang), <Store key="s" className="w-4 h-4" />]] as const).filter(([val]) => !(val === 'stopdesk' && stopdeskHidden)).map(([val, label, icon]) => {
           const isActive = deliveryType === val
           return (
             <button key={val} type="button" onClick={() => setValue('delivery_type', val)}

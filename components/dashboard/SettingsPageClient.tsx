@@ -67,6 +67,29 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
   })
   const [notifSaved, setNotifSaved] = useState(false)
 
+  // ── Abandoned-checkout window (migration 028/029). The Pixel/Sheet
+  // toggles are PER PRODUCT (product editor → وجهة الطلبات); only the
+  // abandonment window stays store-wide here.
+  const [abandonedWindow, setAbandonedWindow] = useState<number>(storeSettings?.abandoned_window_minutes ?? 5)
+  const [abandonedSaved, setAbandonedSaved] = useState(false)
+
+  const saveAbandoned = async () => {
+    setLoading(true)
+    const sb = createClient()
+    const { error } = await sb.from('store_settings').upsert({
+      store_id: store.id,
+      abandoned_window_minutes: Math.min(1440, Math.max(1, Number(abandonedWindow) || 5)),
+    }, { onConflict: 'store_id' })
+    setLoading(false)
+    if (error) {
+      alert('خطأ في حفظ إعدادات الطلبات المتروكة — تأكد من تشغيل الهجرة 028.\n\n' + error.message)
+      return
+    }
+    setAbandonedSaved(true)
+    setTimeout(() => setAbandonedSaved(false), 3000)
+    router.refresh()
+  }
+
   // Language settings state
   const [storeLanguages, setStoreLanguages] = useState<string[]>(storeSettings?.languages ?? ['ar'])
   const [defaultLanguage, setDefaultLanguage] = useState<string>(storeSettings?.default_language ?? 'ar')
@@ -596,6 +619,34 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
               the ONE global design system (--pt-* tokens). `checkout_theme` is
               kept in store_settings for backward compatibility, but is no longer
               merchant-configurable and will be ignored by the forms in Phase 2. */}
+
+          {/* Abandoned checkout (الطلبات المتروكة) — window only; the Pixel
+              and Sheet options are configured PER PRODUCT (migration 029) */}
+          <div className="card p-5 space-y-3">
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>الطلبات المتروكة 🛒</h2>
+            <p className="text-xs -mt-1" style={{ color: 'var(--color-text-muted)' }}>
+              عندما يُدخل الزبون رقم هاتفه ثم يغادر دون إتمام الطلب، يُسجَّل الطلب فوراً بحالة &quot;مهجور&quot; مع كل المعلومات التي أدخلها
+            </p>
+            <div className="rounded-xl p-3 text-xs" style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}>
+              خيارا «احتساب التحويلات» و«الإرسال إلى قوقل شيت» أصبحا لكل منتج على حدة —
+              تجدهما في محرر المنتج ← تبويب «وجهة الطلبات» 📬
+            </div>
+            <div className="flex items-center justify-between py-2.5">
+              <div>
+                <span className="text-sm block" style={{ color: 'var(--color-text-secondary)' }}>مهلة اعتبار الطلب متروكاً (بالدقائق)</span>
+                <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>احتياط فقط — مغادرة الصفحة تُنهي الطلب المتروك فوراً</span>
+              </div>
+              <input
+                type="number" min={1} max={1440} dir="ltr"
+                value={abandonedWindow}
+                onChange={e => setAbandonedWindow(parseInt(e.target.value) || 5)}
+                className="input text-sm w-24 text-center"
+              />
+            </div>
+            <button onClick={saveAbandoned} disabled={loading} className="btn btn-primary btn-sm" style={{ fontFamily: 'var(--font-arabic)' }}>
+              {loading ? 'جارٍ الحفظ...' : abandonedSaved ? '✓ تم الحفظ' : 'حفظ إعدادات الطلبات المتروكة'}
+            </button>
+          </div>
 
           {/* Section Ordering */}
           <div className="card p-5 space-y-4">

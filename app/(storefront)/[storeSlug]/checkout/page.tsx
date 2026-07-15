@@ -30,9 +30,11 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
   // Load product if provided
   let product = null
   if (searchParams.product_id) {
+    // '*' keeps this tolerant of not-yet-applied migrations (029 adds
+    // abandoned_count_conversion, read by CheckoutForm for the pixel gate).
     const { data } = await supabase
       .from('products')
-      .select('id, name, name_ar, slug, price, compare_price, images, variants, use_store_pixel, meta_pixel_id, tiktok_pixel_id')
+      .select('*')
       .eq('id', searchParams.product_id)
       .eq('store_id', store.id)
       .eq('is_active', true)

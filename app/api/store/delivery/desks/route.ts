@@ -44,22 +44,57 @@ export async function GET(req: Request) {
 
     let offices: { id: string; name: string; address: string; wilaya: string; commune: string }[] = []
 
-    // Fetch from local store_delivery_offices table
-    const { data: manual } = await supabase.from('store_delivery_offices')
-      .select('id, name, address').eq('store_id', storeId).eq('wilaya_code', wilayaCode).eq('is_active', true)
-      .or(`provider_id.eq.${provider.id},provider_id.is.null`).order('name')
-
-    offices = (manual ?? []).map((o: any) => {
-      let commune = ''
-      let name = o.name
-      if (o.name.includes('|')) {
-        const parts = o.name.split('|')
-        commune = parts[0].trim()
-        name = parts[1].trim()
+    // 1) Live carrier desks API when the provider has one (Yalidine centers).
+    //    Credentials are decrypted server-side; failures fall through to the
+    //    merchant-managed list so the picker never breaks.
+    if (provider.provider_type === 'yalidine') {
+      try {
+        const creds = decryptCredentials<Record<string, string>>(provider.credentials as string)
+        const flat: Record<string, string> = {}
+        for (const [k, v] of Object.entries(creds ?? {})) flat[k.toLowerCase().replace(/[-_\s]/g, '')] = String(v ?? '')
+        const apiId = flat.apiid ?? flat.id ?? ''
+        const apiToken = flat.apitoken ?? flat.token ?? ''
+        if (apiId && apiToken) {
+          const res = await fetch(`https://api.yalidine.app/v1/centers/?wilaya_id=${wilayaId}&page_size=100`, {
+            headers: { 'X-API-ID': apiId, 'X-API-TOKEN': apiToken },
+            signal: AbortSignal.timeout(8000),
+          })
+          if (res.ok) {
+            const json = await res.json().catch(() => null)
+            offices = (json?.data ?? []).map((c: any) => ({
+              id: String(c.center_id ?? c.id),
+              name: String(c.name ?? ''),
+              address: String(c.address ?? ''),
+              wilaya: wilayaCode,
+              commune: String(c.commune_name ?? ''),
+            })).filter((o: any) => o.id && o.name)
+            console.log(`[desks] yalidine live centers wilaya=${wilayaCode} → ${offices.length}`)
+          }
+        }
+      } catch (e) {
+        console.error(`[desks] yalidine centers fetch failed (falling back to DB):`, (e as Error).message)
       }
-      return { id: String(o.id), name, address: o.address ?? '', wilaya: wilayaCode, commune }
-    })
-    console.log(`[desks] ${provider.provider_type} wilaya=${wilayaCode} → ${offices.length} offices from DB`)
+    }
+
+    // 2) Merchant-managed list (store_delivery_offices) — the fallback for
+    //    carriers without a desks API, and for Yalidine when the live call fails.
+    if (offices.length === 0) {
+      const { data: manual } = await supabase.from('store_delivery_offices')
+        .select('id, name, address').eq('store_id', storeId).eq('wilaya_code', wilayaCode).eq('is_active', true)
+        .or(`provider_id.eq.${provider.id},provider_id.is.null`).order('name')
+
+      offices = (manual ?? []).map((o: any) => {
+        let commune = ''
+        let name = o.name
+        if (o.name.includes('|')) {
+          const parts = o.name.split('|')
+          commune = parts[0].trim()
+          name = parts[1].trim()
+        }
+        return { id: String(o.id), name, address: o.address ?? '', wilaya: wilayaCode, commune }
+      })
+      console.log(`[desks] ${provider.provider_type} wilaya=${wilayaCode} → ${offices.length} offices from DB`)
+    }
 
     cache.set(key, { at: Date.now(), offices })
     return NextResponse.json({ offices, hasProvider: true, providerType: provider.provider_type })

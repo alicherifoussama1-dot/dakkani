@@ -72,6 +72,9 @@ export async function pushOrderToSheet(opts: {
     notes?: string | null
     status: string
     source?: string | null
+    /** Optional human label written to the sheet's Status column
+     *  (e.g. "Abandonné"). Empty → column omitted (legacy 13-col shape). */
+    status_label?: string
   }
   items: { product_name: string; sku?: string | null; variant_key?: string; quantity: number; unit_price: number }[]
 }): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -111,6 +114,7 @@ export async function pushOrderToSheet(opts: {
         ? new Date((o as any).created_at)
         : new Date()
       ).toISOString().slice(0, 19).replace('T', ' '),
+      status: o.status_label || undefined,
     })
 
     const res = await writeRow(sheet.sheet_id, sheet.sheet_page_name || 'Sheet1', row)

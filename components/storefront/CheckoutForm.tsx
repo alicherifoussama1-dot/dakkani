@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -14,6 +14,7 @@ import { Truck, Store, CreditCard, Banknote, CheckCircle, AlertTriangle, Loader2
 import OfficeDeliveryPicker from './OfficeDeliveryPicker'
 import type { Wilaya } from '@/types'
 import { translateStorefront, type Locale } from '@/lib/utils/translations'
+import { resolveCommune } from '@/lib/algeria-baladias'
 
 // ── Validation schema (Static fallback type) ─────────────────
 const schema = z.object({
@@ -131,8 +132,10 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const [offices, setOffices] = useState<{ id: string; name: string; commune: string }[]>([])
   const [loadingOffices, setLoadingOffices] = useState(false)
   const [hasProvider, setHasProvider] = useState(false)
+  // Specific server-provided failure message (Arabic) shown under the CTA.
+  const [serverError, setServerError] = useState('')
 
-  const { pixelId, tiktokId, trackPurchase } = useOrderPixels(store, product)
+  const { pixelId, tiktokId, trackPurchase, trackInitiateCheckout } = useOrderPixels(store, product)
 
    const dynamicSchema = useMemo(() => {
     const isAr = lang === 'ar'
@@ -159,6 +162,14 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           code: z.ZodIssueCode.custom,
           path: ['baladia'],
           message: isAr ? 'اختر البلدية التابعة لعنوانك' : isFr ? 'Choisissez la commune' : 'Choose commune',
+        })
+      }
+      // Stopdesk: the office commune is mandatory — mirrors the server rule.
+      if (data.delivery_type === 'stopdesk' && (!data.baladia || data.baladia.trim() === '')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['baladia'],
+          message: isAr ? 'اختر بلدية مكتب الاستلام' : isFr ? 'Choisissez la commune du bureau' : 'Choose the pickup office commune',
         })
       }
     })
@@ -217,6 +228,88 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       setValue('stopdesk_code', '')
     }
   }, [watchedDeliveryType, setValue])
+
+  // No offices in this wilaya → the "المكتب" option is hidden entirely so the
+  // customer can never dead-end; anyone who had picked it is moved back home.
+  const stopdeskHidden = !!watchedWilayaId && !loadingOffices && offices.length === 0
+  useEffect(() => {
+    if (stopdeskHidden && watchedDeliveryType === 'stopdesk') {
+      setValue('delivery_type', 'home', { shouldValidate: true })
+    }
+  }, [stopdeskHidden, watchedDeliveryType, setValue])
+
+  // ── Abandoned-checkout draft capture ──────────────────────
+  // Once the phone is valid, snapshot the partial form server-side
+  // (debounced). Same phone+product updates the same draft; completing
+  // the order deletes it (handled by /api/orders).
+  const watchedName    = useWatch({ control, name: 'customer_name' })
+  const watchedPhone   = useWatch({ control, name: 'phone' })
+  const watchedBaladia = useWatch({ control, name: 'baladia' })
+  const icFiredRef = useRef(false)
+  const draftIdRef = useRef<string | null>(null)
+  const completingRef = useRef(false)
+  // PER-PRODUCT toggle («تحتسب») wins; store setting is the legacy fallback.
+  const abandonedTrack = typeof (product as any)?.abandoned_count_conversion === 'boolean'
+    ? (product as any).abandoned_count_conversion
+    : !!(settings as any)?.abandoned_track_conversions
+  useEffect(() => {
+    if (submitState !== 'idle') return
+    if (!/^(05|06|07)\d{8}$/.test(watchedPhone ?? '')) return
+    const t = setTimeout(() => {
+      fetch('/api/orders/abandoned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_id: store.id,
+          product_id: product?.id,
+          customer_name: watchedName || undefined,
+          customer_phone: watchedPhone,
+          wilaya_id: watchedWilayaId || undefined,
+          baladia: watchedBaladia || undefined,
+          delivery_type: watchedDeliveryType,
+          quantity: watchedQty,
+          source: 'storefront',
+        }),
+      }).then(async res => {
+        const json = await res.json().catch(() => ({}))
+        if (res.ok && json.draft_id) draftIdRef.current = json.draft_id
+        // Product toggle «تحتسب»: count the abandoned lead as
+        // InitiateCheckout (NEVER Purchase) — browser pixel + CAPI, once.
+        if (res.ok && abandonedTrack && !icFiredRef.current) {
+          icFiredRef.current = true
+          trackInitiateCheckout(product ? [product.id] : [], unitPrice * watchedQty, watchedQty, {
+            phone: watchedPhone, firstName: (watchedName ?? '').split(' ')[0] || undefined,
+          })
+        }
+      }).catch(() => {})
+    }, 1500)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedPhone, watchedName, watchedWilayaId, watchedBaladia, watchedDeliveryType, watchedQty, submitState])
+
+  // ── INSTANT finalization: the customer leaves → sendBeacon marks the
+  // draft abandoned right now (and pushes it to the sheet server-side).
+  // Never fires while an order submit is in flight or after success.
+  useEffect(() => {
+    const finalize = () => {
+      const id = draftIdRef.current
+      if (!id || completingRef.current) return
+      draftIdRef.current = null // at most once per draft
+      try {
+        navigator.sendBeacon(
+          '/api/orders/abandoned/finalize',
+          new Blob([JSON.stringify({ draft_id: id, store_id: store.id })], { type: 'application/json' }),
+        )
+      } catch { /* beacon unsupported — the queue fallback covers it */ }
+    }
+    const onVisibility = () => { if (document.visibilityState === 'hidden') finalize() }
+    window.addEventListener('pagehide', finalize)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('pagehide', finalize)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [store.id])
 
   // ── Calculate totals ────────────────────────────────────────
   const unitPrice    = product?.price ?? 0
@@ -317,6 +410,14 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   // ── Submit handler ────────────────────────────────────────────
   const onSubmit = async (data: FormData) => {
     setSubmitState('submitting')
+    setServerError('')
+    completingRef.current = true // suppress the abandonment beacon while submitting
+
+    // Stopdesk snapshot: resolve the office commune to BOTH languages via the
+    // shared commune table (office lists may carry FR or AR spellings).
+    const isStopdeskOrder = data.delivery_type === 'stopdesk'
+    const resolved = isStopdeskOrder ? resolveCommune(data.wilaya_id, data.baladia) : null
+    const chosenOffice = isStopdeskOrder ? offices.find(o => o.id === data.stopdesk_code) : undefined
 
     try {
       // 1. Create order
@@ -336,6 +437,9 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           baladia: data.baladia,
           address: data.delivery_type === 'home' ? data.address : undefined,
           stopdesk_code: data.delivery_type === 'stopdesk' ? data.stopdesk_code : undefined,
+          stopdesk_commune_ar: isStopdeskOrder ? (resolved?.name_ar ?? data.baladia) : undefined,
+          stopdesk_commune_fr: isStopdeskOrder ? (resolved?.name_fr ?? undefined) : undefined,
+          stopdesk_office_name: chosenOffice?.name,
           payment_method: data.payment_method,
           coupon_code: data.coupon_code,
           notes: data.notes,
@@ -347,8 +451,12 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
         }),
       })
 
-      const orderData = await orderRes.json()
-      if (!orderRes.ok || !orderData.success) throw new Error(orderData.error ?? 'فشل في إنشاء الطلب')
+      const orderData = await orderRes.json().catch(() => ({}))
+      if (!orderRes.ok || !orderData.success) {
+        throw new Error(orderData.error ?? (lang === 'ar' ? 'حدث خطأ، أعد المحاولة' : lang === 'fr' ? 'Une erreur est survenue, réessayez' : 'An error occurred, please retry'))
+      }
+
+      draftIdRef.current = null // completed — the server deleted the draft
 
       const newOrderId = orderData.order_id
       const newOrderNumber = orderData.order_number
@@ -436,6 +544,8 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       setSubmitState('success')
     } catch (err) {
       console.error(err)
+      completingRef.current = false // failed — abandonment tracking resumes
+      setServerError((err as Error)?.message ?? '')
       setSubmitState('error')
     }
   }
@@ -587,12 +697,13 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                       معلومات الطلب
                     </h2>
 
-                    {/* Delivery type toggle — always first */}
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* Delivery type toggle — always first. "المكتب" disappears
+                        when the selected wilaya has no pickup offices. */}
+                    <div className={`grid ${stopdeskHidden ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
                       {([
                         ['home', 'توصيل للمنزل', Truck],
                         ['stopdesk', 'التوصيل للمكتب', Store],
-                      ] as const).map(([val, label, Icon]) => (
+                      ] as const).filter(([val]) => !(val === 'stopdesk' && stopdeskHidden)).map(([val, label, Icon]) => (
                         <label
                           key={val}
                           className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${
@@ -955,8 +1066,8 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
             </button>
 
             {submitState === 'error' && (
-              <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-3 text-sm text-center">
-                {lang === 'ar' ? 'حدث خطأ، يرجى المحاولة مرة أخرى' : lang === 'fr' ? 'Une erreur est survenue, veuillez réessayer' : 'An error occurred, please try again'}
+              <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-3 text-sm text-center" role="alert">
+                {serverError || (lang === 'ar' ? 'حدث خطأ، يرجى المحاولة مرة أخرى' : lang === 'fr' ? 'Une erreur est survenue, veuillez réessayer' : 'An error occurred, please try again')}
               </div>
             )}
 

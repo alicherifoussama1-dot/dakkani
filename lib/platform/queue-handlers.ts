@@ -46,6 +46,12 @@ export function initPlatformRuntime(): void {
       return
     }
 
+    // Sheets receive FRENCH names only — same rule as the synchronous push.
+    const { formatCommuneFrench } = await import('@/lib/algeria-baladias')
+    const frCommune = order.delivery_type === 'stopdesk'
+      ? (order.stopdesk_commune_fr ?? formatCommuneFrench(order.wilaya_id, order.baladia))
+      : formatCommuneFrench(order.wilaya_id, order.baladia)
+
     const res = await pushOrderToSheet({
       storeId: order.store_id,
       sheetId,
@@ -55,7 +61,7 @@ export function initPlatformRuntime(): void {
         customer_name: order.customer_name,
         customer_phone: order.customer_phone,
         wilaya_name: order.wilaya_name ?? order.wilaya ?? '',
-        baladia: order.baladia ?? null,
+        baladia: frCommune ?? null,
         address: order.address ?? null,
         delivery_type: order.delivery_type ?? null,
         delivery_fee: order.delivery_fee ?? 0,
@@ -79,6 +85,36 @@ export function initPlatformRuntime(): void {
       sheet_status: 'sent',
       sheet_error: null,
     })
+  })
+
+  // ── abandoned.sheet: FALLBACK/RETRY only. The instant path is the
+  // /api/orders/abandoned/finalize beacon (customer leaves → immediate push).
+  // This job covers browsers where the beacon never fired: it waits for the
+  // short abandonment window, then delegates to the same shared push
+  // (per-PRODUCT «ترسل» toggle + sheet_status claim → never a double push).
+  registerHandler('abandoned.sheet', async (job: Job) => {
+    const orderId = job.payload.orderId as string
+    if (!orderId) throw new Error('abandoned.sheet: missing orderId')
+
+    const client = createServiceClient()
+    const { data: order } = await client.from('orders')
+      .select('id, store_id, status, created_at, abandoned_last_activity')
+      .eq('id', orderId).maybeSingle()
+    if (!order) return                       // converted → draft deleted → done
+    if (order.status !== 'abandoned') return // converted/handled → done
+
+    const { data: settings } = await client.from('store_settings')
+      .select('abandoned_window_minutes')
+      .eq('store_id', order.store_id).maybeSingle()
+    const windowMin = settings?.abandoned_window_minutes ?? 5
+    const lastActivity = new Date(order.abandoned_last_activity ?? order.created_at).getTime()
+    if (Date.now() - lastActivity < windowMin * 60_000) {
+      throw new Error('abandoned draft not matured yet — retry later')
+    }
+
+    const { pushAbandonedDraftToSheet } = await import('@/lib/orders/abandoned-sheet')
+    const res = await pushAbandonedDraftToSheet(orderId)
+    if (!res.ok) throw new Error(res.error) // → queue retries with backoff
   })
 
   // ── webhook.deliver: merchant webhook with SSRF guard ──

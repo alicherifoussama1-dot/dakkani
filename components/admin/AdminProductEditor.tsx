@@ -53,6 +53,8 @@ const schema = z.object({
   description_image_url: z.string().optional(),
   order_routing:    z.enum(['inherit', 'sheet_only', 'confirmili_only', 'both']).default('inherit'),
   google_sheet_id:  z.string().optional(),
+  abandoned_count_conversion: z.boolean().default(false),
+  abandoned_send_to_sheet:    z.boolean().default(false),
 })
 type FormData = z.infer<typeof schema>
 
@@ -82,7 +84,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'checkout',    label: 'الدفع',        icon: '🛒' },
   { id: 'tracking',    label: 'التتبع والدومين', icon: '🎯' },
   { id: 'seo',         label: 'SEO',          icon: '🔍' },
-  { id: 'advanced',    label: 'متقدّم',       icon: '⚙️' },
+  { id: 'advanced',    label: 'وجهة الطلبات والمتروكة', icon: '📬' },
 ]
 const IC = 'input text-sm'
 const LC = 'block text-xs font-medium mb-1.5'
@@ -469,14 +471,17 @@ const ROUTING_CHOICES = [
 ] as const
 
 const OrderRoutingSection = memo(function OrderRoutingSection({
-  control, register, googleSheets,
+  control, register, setValue, googleSheets,
 }: {
   control: Control<FormData>
   register: UseFormRegister<FormData>
+  setValue: UseFormSetValue<FormData>
   googleSheets: { id: string; spreadsheet_name: string; worksheet_name: string; is_default: boolean }[]
 }) {
   const routing = useWatch({ control, name: 'order_routing' })
   const needsSheet = routing === 'sheet_only' || routing === 'both'
+  const abandonedCount = useWatch({ control, name: 'abandoned_count_conversion' }) ?? false
+  const abandonedSheet = useWatch({ control, name: 'abandoned_send_to_sheet' }) ?? false
   return (
     <div className={CC}>
       <h3 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>وجهة الطلبات 📬</h3>
@@ -505,6 +510,44 @@ const OrderRoutingSection = memo(function OrderRoutingSection({
               ⚠️ لا توجد شيتات — أضف واحداً من صفحة «قوقل شيت» وإلا سيذهب الطلب لـ Confirmili
             </p>
           )}
+        </div>
+      </div>
+
+      {/* ── Abandoned orders — per-product (migration 029) ── */}
+      <div className="border-t border-[#DEE2E6] pt-4 mt-1 space-y-3">
+        <h3 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>الطلبات المتروكة 🛒</h3>
+        <p className="text-xs -mt-1" style={{ color: 'var(--color-text-muted)' }}>
+          عندما يُدخل الزبون رقم هاتفه في صفحة هذا المنتج ثم يغادر دون إتمام الطلب
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={LC}>احتساب الطلبات المتروكة في التحويلات؟</label>
+            <select
+              value={abandonedCount ? 'yes' : 'no'}
+              onChange={e => setValue('abandoned_count_conversion', e.target.value === 'yes', { shouldDirty: true })}
+              className={IC}
+            >
+              <option value="no">لا تحتسب</option>
+              <option value="yes">تحتسب</option>
+            </select>
+            <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-muted)' }}>
+              «تحتسب»: يُرسل حدث InitiateCheckout إلى Pixel/CAPI — وليس Purchase أبداً
+            </p>
+          </div>
+          <div>
+            <label className={LC}>إرسال الطلبات المتروكة إلى قوقل شيت؟</label>
+            <select
+              value={abandonedSheet ? 'yes' : 'no'}
+              onChange={e => setValue('abandoned_send_to_sheet', e.target.value === 'yes', { shouldDirty: true })}
+              className={IC}
+            >
+              <option value="no">لا ترسل</option>
+              <option value="yes">ترسل</option>
+            </select>
+            <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-muted)' }}>
+              «ترسل»: تُسجَّل في شيت هذا المنتج بحالة Abandonné فور مغادرة الزبون
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -568,6 +611,8 @@ export default function AdminProductEditor({
       description_image_url: product?.description_image_url ?? product?.attributes?.description_image_url ?? '',
       order_routing:      product?.order_routing ?? 'inherit',
       google_sheet_id:    product?.google_sheet_id ?? '',
+      abandoned_count_conversion: product?.abandoned_count_conversion ?? false,
+      abandoned_send_to_sheet:    product?.abandoned_send_to_sheet ?? false,
     },
   })
 
@@ -773,6 +818,9 @@ export default function AdminProductEditor({
     }
 
     // Routing & description_image_url columns fallback check — retries saving by moving missing fields to attributes or removing them
+    // When the abandoned columns (migration 029) are missing we still save the
+    // rest, but the merchant gets an explicit warning instead of a silent drop.
+    let abandonedColsMissing = false
     const saveProduct = async (p: Record<string, any>) =>
       isEdit
         ? await supabase.from('products').update(p).eq('id', product.id).select('id').single()
@@ -801,6 +849,14 @@ export default function AdminProductEditor({
           modified = true
         }
 
+        // Fallback 2b: abandoned per-product columns missing (migration 029)
+        if (/abandoned_count_conversion|abandoned_send_to_sheet/i.test(res.error.message)) {
+          delete nextPayload.abandoned_count_conversion
+          delete nextPayload.abandoned_send_to_sheet
+          abandonedColsMissing = true
+          modified = true
+        }
+
         // Fallback 3: track_inventory column missing
         if (/track_inventory/i.test(res.error.message)) {
           delete nextPayload.track_inventory
@@ -814,7 +870,7 @@ export default function AdminProductEditor({
         if (modified) {
           res = await saveProduct(nextPayload)
           // Double check if it still fails due to the other unhandled fallback
-          if (res.error && (/description_image_url/i.test(res.error.message) || /order_routing|google_sheet_id/i.test(res.error.message) || /track_inventory/i.test(res.error.message))) {
+          if (res.error && (/description_image_url/i.test(res.error.message) || /order_routing|google_sheet_id/i.test(res.error.message) || /track_inventory/i.test(res.error.message) || /abandoned_count_conversion|abandoned_send_to_sheet/i.test(res.error.message))) {
             const cleanPayload = { ...nextPayload }
             if (/description_image_url/i.test(res.error.message)) {
               delete cleanPayload.description_image_url
@@ -826,6 +882,11 @@ export default function AdminProductEditor({
             if (/order_routing|google_sheet_id/i.test(res.error.message)) {
               delete cleanPayload.order_routing
               delete cleanPayload.google_sheet_id
+            }
+            if (/abandoned_count_conversion|abandoned_send_to_sheet/i.test(res.error.message)) {
+              delete cleanPayload.abandoned_count_conversion
+              delete cleanPayload.abandoned_send_to_sheet
+              abandonedColsMissing = true
             }
             if (/track_inventory/i.test(res.error.message)) {
               delete cleanPayload.track_inventory
@@ -876,6 +937,12 @@ export default function AdminProductEditor({
     }
 
     setSaved(true)
+    if (abandonedColsMissing) {
+      // Product saved, abandoned toggles were NOT — stay on the page so the
+      // merchant actually sees why (no silent drop + navigate).
+      setError('حُفظ المنتج، لكن إعدادات «الطلبات المتروكة 🛒» لم تُحفَظ — نفّذ migration 029 في Supabase أولاً')
+      return
+    }
     setTimeout(() => router.push('/products'), 800)
   }
 
@@ -1202,7 +1269,7 @@ export default function AdminProductEditor({
 
       {/* ── ADVANCED TAB ── (order routing + Google Sheet) */}
       {tab === 'advanced' && (
-        <OrderRoutingSection control={control} register={register} googleSheets={googleSheets} />
+        <OrderRoutingSection control={control} register={register} setValue={setValue} googleSheets={googleSheets} />
       )}
 
       {/* Error */}

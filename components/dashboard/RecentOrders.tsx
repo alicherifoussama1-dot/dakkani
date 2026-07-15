@@ -1,23 +1,25 @@
 'use client'
+// Recent orders list — design-system rebuild: token badges, skeleton
+// loading (no layout shift), tabular numerals. Data contract unchanged.
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { formatDZD } from '@/lib/utils/format'
 import type { Order } from '@/types'
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  new:        { label: 'جديد',    color: 'bg-blue-100 text-blue-700' },
-  confirmed:  { label: 'مؤكد',   color: 'bg-green-100 text-green-700' },
-  processing: { label: 'يُعالج', color: 'bg-yellow-100 text-yellow-700' },
-  shipped:    { label: 'شُحن',   color: 'bg-purple-100 text-purple-700' },
-  delivered:  { label: 'سُلّم',  color: 'bg-emerald-100 text-emerald-700' },
-  returned:   { label: 'مُرجع',  color: 'bg-red-100 text-red-700' },
-  cancelled:  { label: 'ملغى',   color: 'bg-[#F8F9FA] text-[#495057]' },
-  failed:     { label: 'فاشل',   color: 'bg-red-100 text-red-700' },
+const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
+  new:        { label: 'جديد',   cls: 'c-badge--info' },
+  confirmed:  { label: 'مؤكد',   cls: 'c-badge--success' },
+  processing: { label: 'يُعالج', cls: 'c-badge--warning' },
+  shipped:    { label: 'شُحن',   cls: 'c-badge--info' },
+  delivered:  { label: 'سُلّم',  cls: 'c-badge--success' },
+  returned:   { label: 'مُرجع',  cls: 'c-badge--error' },
+  cancelled:  { label: 'ملغى',   cls: 'c-badge--neutral' },
+  failed:     { label: 'فاشل',   cls: 'c-badge--error' },
 }
 
 export default function RecentOrders({ storeId }: { storeId: string }) {
-  const [orders, setOrders] = useState<Order[]>([])
+  const [orders, setOrders] = useState<Order[] | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -25,36 +27,54 @@ export default function RecentOrders({ storeId }: { storeId: string }) {
       .from('orders')
       .select('id, order_number, customer_name, total, status, created_at')
       .eq('store_id', storeId)
+      .neq('status', 'abandoned') // drafts live under the مهجور filter only
       .order('created_at', { ascending: false })
       .limit(8)
       .then(({ data }) => setOrders((data ?? []) as unknown as Order[]))
   }, [storeId])
 
+  // Skeleton mirrors the final layout — zero shift when data lands
+  if (orders === null) {
+    return (
+      <div className="space-y-2" aria-busy="true">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="flex items-center justify-between p-2.5">
+            <div className="space-y-1.5">
+              <div className="c-skeleton" style={{ blockSize: 14, inlineSize: 120 }} />
+              <div className="c-skeleton" style={{ blockSize: 11, inlineSize: 80 }} />
+            </div>
+            <div className="c-skeleton" style={{ blockSize: 16, inlineSize: 72 }} />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {orders.map(o => {
-        const s = STATUS_LABELS[o.status] ?? { label: o.status, color: 'bg-[#F8F9FA] text-[#495057]' }
+        const s = STATUS_BADGE[o.status] ?? { label: o.status, cls: 'c-badge--neutral' }
         return (
-          <Link
-            key={o.id}
-            href={`/orders/${o.id}`}
-            className="flex items-center justify-between p-2.5 hover:bg-[#F8F9FA] rounded-lg transition group"
-          >
-            <div>
-              <p className="text-sm font-semibold text-[#212529] group-hover:text-[#0D6EFD]">
+          <Link key={o.id} href={`/orders/${o.id}`}
+            className="flex items-center justify-between gap-3 p-2.5 rounded-[var(--radius-md)] transition-colors hover:bg-[var(--surface-sunken)]">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
                 {o.order_number}
               </p>
-              <p className="text-xs text-[#868E96]">{o.customer_name}</p>
+              <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{o.customer_name}</p>
             </div>
-            <div className="text-left">
-              <p className="text-sm font-bold text-[#212529]">{formatDZD(o.total)}</p>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.color}`}>{s.label}</span>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <span className={`c-badge ${s.cls}`}>{s.label}</span>
+              <p className="text-sm font-bold w-24 text-end"
+                style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                {formatDZD(o.total)}
+              </p>
             </div>
           </Link>
         )
       })}
       {orders.length === 0 && (
-        <p className="text-sm text-gray-400 text-center py-6">لا توجد طلبات بعد</p>
+        <p className="text-sm text-center py-6" style={{ color: 'var(--text-muted)' }}>لا توجد طلبات بعد</p>
       )}
     </div>
   )

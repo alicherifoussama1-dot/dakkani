@@ -15,16 +15,20 @@ import { formatCommuneFrench } from '@/lib/algeria-baladias'
 import { resolveDeclaredFee } from '@/lib/delivery/pricing'
 
 const orderSchema = z.object({
-  store_id: z.string().uuid(),
-  customer_name: z.string().min(2),
-  customer_phone: z.string().regex(/^(05|06|07)\d{8}$/),
+  store_id: z.string().uuid({ message: 'المتجر غير صحيح' }),
+  customer_name: z.string().min(2, 'الاسم يجب أن يكون حرفين على الأقل'),
+  customer_phone: z.string().regex(/^(05|06|07)\d{8}$/, 'رقم الهاتف غير صحيح — مثال: 0555123456'),
   customer_phone2: z.string().optional(),
   delivery_type: z.enum(['home', 'stopdesk']),
-  wilaya_id: z.number().int().min(1).max(58),
+  wilaya_id: z.number({ invalid_type_error: 'اختر الولاية', required_error: 'اختر الولاية' }).int().min(1, 'اختر الولاية').max(58, 'اختر الولاية'),
   commune_id: z.number().int().optional(),
   baladia: z.string().optional(),
   address: z.string().optional(),
   stopdesk_code: z.string().optional(),
+  // Stopdesk commune snapshot (AR + FR) — migration 028
+  stopdesk_commune_ar: z.string().optional(),
+  stopdesk_commune_fr: z.string().optional(),
+  stopdesk_office_name: z.string().optional(),
   payment_method: z.enum(['cod', 'baridimob', 'ccp', 'card', 'chargily_cib', 'chargily_edahabia']).default('cod'),
   coupon_code: z.string().optional(),
   notes: z.string().optional(),
@@ -36,8 +40,35 @@ const orderSchema = z.object({
     product_id: z.string().uuid(),
     variant_key: z.string().default('default'),
     quantity: z.number().int().min(1),
-  })).min(1),
+  })).min(1, 'لا يوجد منتج في الطلب'),
+}).superRefine((data, ctx) => {
+  // Mirror the client rules so the API rejects exactly what the form rejects.
+  if (data.delivery_type === 'home' && !(data.baladia ?? '').trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['baladia'], message: 'اختر البلدية التابعة لعنوانك' })
+  }
+  if (data.delivery_type === 'stopdesk' && !(data.baladia ?? data.stopdesk_commune_ar ?? '').trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['baladia'], message: 'اختر بلدية مكتب الاستلام' })
+  }
 })
+
+// First Zod issue → one specific Arabic message the customer can act on.
+function zodArabicError(err: z.ZodError): string {
+  const first = err.errors[0]
+  if (!first) return 'بيانات غير صالحة'
+  if (typeof first.message === 'string' && /[؀-ۿ]/.test(first.message)) return first.message
+  const path = String(first.path[0] ?? '')
+  const MAP: Record<string, string> = {
+    customer_phone: 'رقم الهاتف غير صحيح — مثال: 0555123456',
+    customer_name: 'الاسم يجب أن يكون حرفين على الأقل',
+    wilaya_id: 'اختر الولاية',
+    baladia: 'اختر البلدية',
+    items: 'لا يوجد منتج في الطلب',
+  }
+  return MAP[path] ?? 'بيانات غير صالحة، تحقق من الحقول وأعد المحاولة'
+}
+
+// Mask a phone for server logs: 0555123456 → 0555•••456
+const maskPhone = (p?: string) => (p && p.length >= 7 ? `${p.slice(0, 4)}•••${p.slice(-3)}` : '•••')
 
 export async function POST(req: Request) {
   try {
@@ -104,7 +135,8 @@ export async function POST(req: Request) {
       .in('id', productIds)
 
     if (!products || products.length !== productIds.length) {
-      return NextResponse.json({ error: 'بعض المنتجات غير متوفرة' }, { status: 400 })
+      console.error('[orders] product lookup failed', { store: data.store_id, requested: productIds.length, found: products?.length ?? 0 })
+      return NextResponse.json({ error: 'المنتج غير متوفر حالياً' }, { status: 400 })
     }
 
     const productMap = Object.fromEntries(products.map(p => [p.id, p]))
@@ -126,7 +158,8 @@ export async function POST(req: Request) {
       }
     })
 
-    // 4. Apply coupon
+    // 4. Apply coupon — full SERVER-side validation (expiry, min order,
+    // max uses). The client check is advisory only.
     let discountAmount = 0
     let couponId = null
     if (data.coupon_code) {
@@ -136,14 +169,20 @@ export async function POST(req: Request) {
         .eq('store_id', data.store_id)
         .eq('code', data.coupon_code.toUpperCase())
         .eq('is_active', true)
-        .single()
+        .maybeSingle()
 
-      if (coupon && (!coupon.expires_at || new Date(coupon.expires_at) > new Date())) {
+      const couponValid = !!coupon
+        && (!coupon.expires_at || new Date(coupon.expires_at) > new Date())
+        && (!coupon.min_order_amount || subtotal >= coupon.min_order_amount)
+        && (!coupon.max_uses || (coupon.used_count ?? 0) < coupon.max_uses)
+
+      if (couponValid && coupon) {
         if (coupon.type === 'percentage') discountAmount = (subtotal * coupon.value) / 100
         else if (coupon.type === 'fixed') discountAmount = coupon.value
         else if (coupon.type === 'free_shipping') discountAmount = deliveryFee
         couponId = coupon.id
       }
+      // Invalid coupon never blocks the order — it simply doesn't discount.
     }
 
     const total = Math.max(0, subtotal + deliveryFee - discountAmount)
@@ -158,13 +197,16 @@ export async function POST(req: Request) {
       orderTotal: total,
     }, settings?.fraud_auto_block_score ?? 80)
 
-    // 5b. Duplicate detection: same phone in last 24h → status "duplicate"
+    // 5b. Duplicate detection: same phone in last 24h → status "duplicate".
+    // Abandoned drafts are checkout leftovers, NOT prior orders — excluded,
+    // otherwise every recovered abandoned checkout would be flagged duplicate.
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     const { data: recentOrders } = await supabase
       .from('orders')
       .select('id')
       .eq('store_id', data.store_id)
       .eq('customer_phone', data.customer_phone)
+      .neq('status', 'abandoned')
       .gte('created_at', oneDayAgo)
       .limit(1)
     const isDuplicate = (recentOrders?.length ?? 0) > 0
@@ -181,8 +223,11 @@ export async function POST(req: Request) {
       autoDeliveryCompanyId = wilayaMap?.company_id ?? null
     } catch {}
 
-    // 6. Generate order number
-    const { data: orderNum } = await supabase.rpc('generate_order_number', { p_store_id: data.store_id })
+    // 6. Generate order number — RPC with fallback so a missing function can
+    // never produce a NOT NULL violation (previously an opaque failure).
+    const { data: orderNum, error: orderNumErr } = await supabase.rpc('generate_order_number', { p_store_id: data.store_id })
+    const orderNumber = orderNum ?? `ORD-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`
+    if (orderNumErr) console.error('[orders] generate_order_number failed, using fallback:', orderNumErr.message)
 
     // 7. Determine final status
     // Note: 'duplicate' status requires migration 009 to be run
@@ -191,98 +236,97 @@ export async function POST(req: Request) {
     if (fraudResult.shouldBlock) finalStatus = 'failed'
     else if (isDuplicate) finalStatus = 'duplicate'
 
-    // 7b. Create order
-    const { data: order, error: orderErr } = await supabase
-      .from('orders')
-      .insert({
-        store_id: data.store_id,
-        order_number: orderNum,
-        customer_name: data.customer_name,
-        customer_phone: data.customer_phone,
-        customer_phone2: data.customer_phone2,
-        delivery_type: data.delivery_type,
-        wilaya_id: data.wilaya_id,
-        commune_id: data.commune_id,
-        baladia: data.baladia,
-        address: data.address,
-        stopdesk_code: data.stopdesk_code,
-        delivery_fee: deliveryFee,
-        declared_delivery_fee: deliveryFee,
-        real_delivery_fee: realDeliveryFee,
-        subtotal,
-        discount_amount: discountAmount,
-        coupon_id: couponId,
-        coupon_code: data.coupon_code?.toUpperCase(),
-        total,
-        payment_method: data.payment_method,
-        fraud_score: fraudResult.score,
-        is_blacklisted: fraudResult.isBlacklisted,
-        status: finalStatus,
-        delivery_company_id: autoDeliveryCompanyId,
-        delivery_provider_id: unifiedProviderId,
-        source: data.source ?? 'storefront',
-        utm_source: data.utm_source,
-        utm_medium: data.utm_medium,
-        utm_campaign: data.utm_campaign,
-        notes: data.notes,
-      })
-      .select()
-      .single()
+    // Stopdesk commune snapshot in both languages (migration 028). The client
+    // sends both; the server re-derives whatever is missing from the shared
+    // commune table so the Sheets export always has a French name.
+    const isStopdesk = data.delivery_type === 'stopdesk'
+    const stopdeskCommuneAr = isStopdesk
+      ? (data.stopdesk_commune_ar || data.baladia || null)
+      : null
+    const stopdeskCommuneFr = isStopdesk
+      ? (data.stopdesk_commune_fr || formatCommuneFrench(data.wilaya_id, stopdeskCommuneAr) || null)
+      : null
 
-    if (orderErr || !order) {
-      // If constraint violation on 'duplicate' status, retry with 'new'
-      if (orderErr?.message?.includes('check') && finalStatus === 'duplicate') {
-        const { data: order2, error: orderErr2 } = await supabase
-          .from('orders')
-          .insert({
-            store_id: data.store_id,
-            order_number: orderNum,
-            customer_name: data.customer_name,
-            customer_phone: data.customer_phone,
-            customer_phone2: data.customer_phone2,
-            delivery_type: data.delivery_type,
-            wilaya_id: data.wilaya_id,
-            commune_id: data.commune_id,
-            address: data.address,
-            stopdesk_code: data.stopdesk_code,
-            delivery_fee: deliveryFee,
-            declared_delivery_fee: deliveryFee,
-            real_delivery_fee: realDeliveryFee,
-            subtotal,
-            discount_amount: discountAmount,
-            coupon_id: couponId,
-            coupon_code: data.coupon_code?.toUpperCase(),
-            total,
-            payment_method: data.payment_method,
-            fraud_score: fraudResult.score,
-            is_blacklisted: fraudResult.isBlacklisted,
-            status: 'new', // fallback
-            delivery_company_id: autoDeliveryCompanyId,
-            delivery_provider_id: unifiedProviderId,
-            source: data.source ?? 'storefront',
-            utm_source: data.utm_source,
-            utm_medium: data.utm_medium,
-            utm_campaign: data.utm_campaign,
-            notes: data.notes ? `${data.notes} [مكرر]` : '[مكرر]',
-          })
-          .select()
-          .single()
-        if (orderErr2 || !order2) {
-          return NextResponse.json({ error: 'فشل في إنشاء الطلب' }, { status: 500 })
-        }
-        // Use order2 for rest of flow
-        return NextResponse.json({
-          success: true,
-          order_id: order2.id,
-          order_number: order2.order_number,
-          total: order2.total,
-          fraud_score: fraudResult.score,
-          fraud_blocked: fraudResult.shouldBlock,
-          is_duplicate: true,
-        })
-      }
-      return NextResponse.json({ error: 'فشل في إنشاء الطلب' }, { status: 500 })
+    // 7b. Create order — ONE shared row for the initial insert AND the
+    // constraint-fallback retry, so no field (baladia…) can be dropped again.
+    const orderRow = {
+      store_id: data.store_id,
+      order_number: orderNumber,
+      customer_name: data.customer_name,
+      customer_phone: data.customer_phone,
+      customer_phone2: data.customer_phone2,
+      delivery_type: data.delivery_type,
+      wilaya_id: data.wilaya_id,
+      commune_id: data.commune_id,
+      baladia: data.baladia,
+      address: data.address,
+      stopdesk_code: data.stopdesk_code,
+      stopdesk_commune_ar: stopdeskCommuneAr,
+      stopdesk_commune_fr: stopdeskCommuneFr,
+      stopdesk_office_name: isStopdesk ? (data.stopdesk_office_name ?? null) : null,
+      delivery_fee: deliveryFee,
+      declared_delivery_fee: deliveryFee,
+      real_delivery_fee: realDeliveryFee,
+      subtotal,
+      discount_amount: discountAmount,
+      coupon_id: couponId,
+      coupon_code: data.coupon_code?.toUpperCase(),
+      total,
+      payment_method: data.payment_method,
+      fraud_score: fraudResult.score,
+      is_blacklisted: fraudResult.isBlacklisted,
+      status: finalStatus,
+      delivery_company_id: autoDeliveryCompanyId,
+      delivery_provider_id: unifiedProviderId,
+      source: data.source ?? 'storefront',
+      utm_source: data.utm_source,
+      utm_medium: data.utm_medium,
+      utm_campaign: data.utm_campaign,
+      notes: data.notes,
     }
+
+    let insertRes = await supabase.from('orders').insert(orderRow).select().single()
+
+    // Migration-028/013 not applied → unknown columns: retry without the
+    // stopdesk snapshot so orders never fail on older databases.
+    if (insertRes.error && /column .*stopdesk_commune|column .*stopdesk_office/i.test(insertRes.error.message)) {
+      const { stopdesk_commune_ar: _a, stopdesk_commune_fr: _f, stopdesk_office_name: _n, ...legacyRow } = orderRow
+      insertRes = await supabase.from('orders').insert(legacyRow).select().single()
+    }
+    // Constraint rejection of 'duplicate' (migration 009 missing) → same row,
+    // status 'new', duplicate flagged in the notes. Nothing else changes.
+    if (insertRes.error && finalStatus === 'duplicate' && insertRes.error.message?.includes('check')) {
+      insertRes = await supabase.from('orders').insert({
+        ...orderRow,
+        status: 'new',
+        notes: data.notes ? `${data.notes} [مكرر]` : '[مكرر]',
+      }).select().single()
+    }
+
+    const order = insertRes.data
+    if (insertRes.error || !order) {
+      console.error('[orders] insert failed', {
+        store: data.store_id,
+        phone: maskPhone(data.customer_phone),
+        wilaya: data.wilaya_id,
+        delivery_type: data.delivery_type,
+        cause: insertRes.error?.message ?? 'no row returned',
+      })
+      return NextResponse.json({ error: 'حدث خطأ أثناء تسجيل الطلب، أعد المحاولة بعد لحظات' }, { status: 500 })
+    }
+
+    // 7c. The completed order supersedes any abandoned draft for the same
+    // customer/product (last 24h) — delete it so no duplicate مهجور remains.
+    try {
+      let draftQ = supabase.from('orders').delete()
+        .eq('store_id', data.store_id)
+        .eq('customer_phone', data.customer_phone)
+        .eq('status', 'abandoned')
+        .gte('created_at', oneDayAgo)
+      const firstProduct = data.items[0]?.product_id
+      if (firstProduct) draftQ = draftQ.or(`abandoned_product_id.eq.${firstProduct},abandoned_product_id.is.null`)
+      await draftQ
+    } catch { /* draft cleanup is best-effort */ }
 
     // 8. Insert order items
     await supabase.from('order_items').insert(
@@ -367,9 +411,12 @@ export async function POST(req: Request) {
             customer_name: data.customer_name,
             customer_phone: data.customer_phone,
             // Google Sheets receives FRENCH names only (the bilingual labels are
-            // for the customer UI). IDs/calc/DB row are untouched.
+            // for the customer UI). IDs/calc/DB row are untouched. Stopdesk
+            // orders use the FR commune snapshot captured at order time.
             wilaya_name: (wilaya as any)?.name_fr ?? (wilaya as any)?.name_ar ?? String(data.wilaya_id),
-            baladia: formatCommuneFrench(data.wilaya_id, data.baladia),
+            baladia: isStopdesk
+              ? (stopdeskCommuneFr ?? formatCommuneFrench(data.wilaya_id, data.baladia))
+              : formatCommuneFrench(data.wilaya_id, data.baladia),
             address: data.address,
             delivery_type: data.delivery_type,
             delivery_fee: deliveryFee,
@@ -418,11 +465,19 @@ export async function POST(req: Request) {
       source: data.source ?? 'storefront',
     })
 
-    // 9. Update coupon usage
+    // 9. Update coupon usage — atomic RPC (migration 028), with a guarded
+    // read-then-update fallback for databases that don't have it yet.
+    // Never blocks the order.
     if (couponId) {
-      await supabase.from('coupons')
-        .update({ used_count: supabase.rpc('increment' as any, { x: 1 }) as any })
-        .eq('id', couponId)
+      try {
+        const { error: rpcErr } = await supabase.rpc('increment_coupon_usage', { p_coupon_id: couponId })
+        if (rpcErr) {
+          const { data: c } = await supabase.from('coupons').select('used_count').eq('id', couponId).single()
+          await supabase.from('coupons').update({ used_count: (c?.used_count ?? 0) + 1 }).eq('id', couponId)
+        }
+      } catch (e) {
+        console.error('[orders] coupon usage increment failed (non-blocking):', (e as Error).message)
+      }
     }
 
     // 10. Chargily payment — create checkout URL
@@ -463,8 +518,10 @@ export async function POST(req: Request) {
     })
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: 'بيانات غير صالحة', details: err.errors }, { status: 400 })
+      console.error('[orders] validation failed:', err.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(' | '))
+      return NextResponse.json({ error: zodArabicError(err), details: err.errors }, { status: 400 })
     }
-    return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
+    console.error('[orders] unexpected failure:', (err as Error)?.message ?? err)
+    return NextResponse.json({ error: 'حدث خطأ، أعد المحاولة' }, { status: 500 })
   }
 }
