@@ -15,8 +15,8 @@ const COLS = [
   {
     title: 'روابط سريعة',
     links: [
-      { label: 'ابدأ مجاناً',     href: '/auth/register' },
-      { label: 'تسجيل الدخول',   href: '/auth/login' },
+      { label: 'ابدأ مجاناً',     href: '/register' },
+      { label: 'تسجيل الدخول',   href: '/login' },
       { label: 'لوحة التحكم',    href: '/dashboard' },
       { label: 'المنتجات',       href: '/products' },
     ],
