@@ -80,18 +80,42 @@ export default function InfiniteProducts({
     return () => observer.current?.disconnect()
   }, [hasMore, loading, page, fetchPage])
 
+  // Skeleton on first load — content-shaped, not a spinner
+  if (loading && products.length === 0) {
+    return (
+      <div>
+        <div className="h-4 w-16 mb-3 rounded" style={{ background: 'var(--pt-surface-soft)' }} />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="overflow-hidden" style={{ background: 'var(--pt-surface)', borderRadius: 16, border: '1px solid var(--pt-border)' }}>
+              <div className="aspect-square" style={{ background: 'var(--pt-surface-soft)' }} />
+              <div className="p-3">
+                <div className="h-3 w-full mb-2 rounded" style={{ background: 'var(--pt-surface-soft)' }} />
+                <div className="h-3 w-2/3 rounded" style={{ background: 'var(--pt-surface-soft)' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   if (!loading && products.length === 0) {
     return (
-      <div className="text-center py-16 text-gray-400">
-        <p className="text-4xl mb-3">🔍</p>
-        <p className="font-semibold">لا توجد منتجات مطابقة</p>
+      <div className="text-center py-20" style={{ color: 'var(--pt-text-muted)' }}>
+        <div className="mx-auto mb-4 rounded-full flex items-center justify-center"
+          style={{ inlineSize: 56, blockSize: 56, background: 'var(--pt-surface-soft)' }}>
+          <span style={{ fontSize: 22 }}>🔍</span>
+        </div>
+        <p className="font-bold text-base" style={{ color: 'var(--pt-text)' }}>لا توجد منتجات مطابقة</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--pt-text-muted)' }}>غيّر البحث أو الفلاتر ثم أعد المحاولة</p>
       </div>
     )
   }
 
   return (
     <div>
-      <p className="text-sm text-gray-500 mb-3">{total} منتج</p>
+      <p className="text-sm mb-3 tabular-nums" style={{ color: 'var(--pt-text-muted)' }}>{total} منتج</p>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {products.map(p => {
           const img     = p.images?.[0]?.url
@@ -117,10 +141,10 @@ export default function InfiniteProducts({
                 )}
               </div>
               <div className="p-3">
-                <p className="font-semibold text-sm line-clamp-2" style={{ color: 'var(--pt-text,#111827)' }}>{p.name_ar ?? p.name}</p>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <span className="font-black" style={{ color: 'var(--pt-accent,#0D6EFD)' }}>{formatDZD(p.price)}</span>
-                  {hasDisc && <span className="text-xs line-through" style={{ color: 'var(--pt-text-muted,#9CA3AF)' }}>{formatDZD(p.compare_price!)}</span>}
+                <p className="font-semibold text-sm line-clamp-2" style={{ color: 'var(--pt-text)' }}>{p.name_ar ?? p.name}</p>
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <span className="font-black tabular-nums" style={{ color: 'var(--pt-accent)' }}>{formatDZD(p.price)}</span>
+                  {hasDisc && <span className="text-xs line-through tabular-nums" style={{ color: 'var(--pt-text-muted)' }}>{formatDZD(p.compare_price!)}</span>}
                 </div>
               </div>
             </Link>
@@ -129,10 +153,10 @@ export default function InfiniteProducts({
       </div>
 
       {/* Infinite scroll sentinel */}
-      <div ref={bottomRef} className="h-8 flex items-center justify-center mt-6">
-        {loading && <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--pt-accent,#0D6EFD)' }} />}
+      <div ref={bottomRef} className="h-10 flex items-center justify-center mt-6">
+        {loading && <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--pt-accent)' }} />}
         {!hasMore && products.length > 0 && (
-          <p className="text-sm text-gray-400">تم عرض جميع المنتجات</p>
+          <p className="text-sm" style={{ color: 'var(--pt-text-muted)' }}>تم عرض جميع المنتجات</p>
         )}
       </div>
     </div>

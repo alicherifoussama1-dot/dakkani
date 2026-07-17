@@ -31,7 +31,7 @@ export default function ImageTextBlock({ title, body, image_url, reverse, cta_la
           {body && <p className="text-base leading-8" style={{ color: 'var(--pt-text-soft,#475569)' }}>{body}</p>}
           {cta_label && cta_href && (
             <Link href={cta_href} className="inline-flex items-center mt-5 px-6 h-11 rounded-[var(--pt-btn-radius,12px)] font-bold"
-              style={{ background: 'var(--pt-btn-primary-bg,#0D6EFD)', color: 'var(--pt-btn-primary-text,#fff)' }}>
+              style={{ background: 'var(--pt-accent)', color: 'var(--pt-accent-text-on,#fff)' }}>
               {cta_label}
             </Link>
           )}

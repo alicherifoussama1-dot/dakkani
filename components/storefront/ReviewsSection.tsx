@@ -14,7 +14,7 @@ export default function ReviewsSection({ reviews }: { reviews: Review[] }) {
               style={{ background: 'var(--pt-surface,#fff)', borderRadius: 'var(--pt-radius-lg,16px)', boxShadow: 'var(--pt-shadow-sm)' }}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center font-black"
-                  style={{ background: 'var(--pt-btn-primary-bg,#0D6EFD)', color: 'var(--pt-btn-primary-text,#fff)' }}>
+                  style={{ background: 'var(--pt-accent)', color: 'var(--pt-accent-text-on,#fff)' }}>
                   {review.customer_name?.[0] ?? 'ع'}
                 </div>
                 <div>
