@@ -2,67 +2,96 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingCart, Search, Menu, X } from 'lucide-react'
+import { Search, Menu, X } from 'lucide-react'
 import type { Store } from '@/types'
 
 interface Props { store: Store & { store_settings?: any } }
 
+// Compact storefront header used inside pages that don't opt into the
+// full StorefrontLayout (rare — most pages use StorefrontLayout).
+// Tokened to --pt-*, 44px touch targets, RTL.
 export default function StorefrontHeader({ store }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [query,    setQuery]    = useState('')
+  const storeUrl = `/store/${store.slug}`
 
   return (
-    <header className="bg-white border-b border-gray-100 sticky top-0 z-20 shadow-sm">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+    <header
+      className="sticky top-0 z-30"
+      style={{ background: 'var(--pt-surface)', borderBlockEnd: '1px solid var(--pt-border)' }}
+    >
+      <div className="max-w-6xl mx-auto px-4 flex items-center gap-3" style={{ blockSize: 60 }}>
         {/* Logo */}
-        <Link href={`/store/${store.slug}`} className="flex items-center gap-2.5 flex-shrink-0">
+        <Link href={storeUrl} className="flex items-center gap-2.5 flex-shrink-0" aria-label={store.name_ar ?? store.name}>
           {store.logo_url ? (
-            <Image src={store.logo_url} alt={store.name} width={36} height={36} className="w-9 h-9 rounded-xl object-cover" />
+            <Image src={store.logo_url} alt="" width={36} height={36}
+              className="w-9 h-9 rounded-xl object-cover"
+              style={{ border: '1px solid var(--pt-border)' }} />
           ) : (
-            <div className="w-9 h-9 bg-[#0D6EFD] rounded-xl flex items-center justify-center text-white font-black text-lg">
-              {store.name[0]}
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-base"
+              style={{ background: 'var(--pt-accent)', color: 'var(--pt-accent-text-on,#fff)' }}>
+              {(store.name[0] ?? 'C').toUpperCase()}
             </div>
           )}
-          <span className="font-black text-gray-900 text-lg hidden sm:block">{store.name_ar ?? store.name}</span>
+          <span className="font-bold text-base hidden sm:block truncate"
+            style={{ color: 'var(--pt-text)', letterSpacing: '-0.01em' }}>
+            {store.name_ar ?? store.name}
+          </span>
         </Link>
 
         {/* Search */}
         <div className="flex-1 max-w-md mx-auto">
           <form
-            onSubmit={e => { e.preventDefault(); window.location.href = `/store/${store.slug}/products?q=${encodeURIComponent(query)}` }}
+            role="search"
+            onSubmit={e => { e.preventDefault(); window.location.href = `${storeUrl}/products?q=${encodeURIComponent(query)}` }}
             className="relative"
           >
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+              style={{ insetInlineStart: 12, color: 'var(--pt-text-muted)' }} />
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="ابحث عن منتج..."
-              className="w-full border border-gray-200 rounded-xl pr-9 pl-4 py-2 text-sm focus:ring-2 focus:ring-[#0D6EFD] outline-none"
+              placeholder="ابحث عن منتج…"
+              aria-label="بحث"
+              className="w-full outline-none text-sm"
+              style={{
+                background: 'var(--pt-surface-soft)',
+                color: 'var(--pt-text)',
+                border: '1px solid var(--pt-border)',
+                borderRadius: 12,
+                paddingInlineStart: 36, paddingInlineEnd: 12, blockSize: 40,
+              }}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--pt-accent)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--pt-border)')}
             />
           </form>
         </div>
 
-        {/* Cart & Nav */}
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/store/${store.slug}/products`}
-            className="hidden md:flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-[#0D6EFD] transition px-3 py-2 rounded-lg hover:bg-[#EBF5FF]"
-          >
+        {/* Actions */}
+        <div className="flex items-center gap-1">
+          <Link href={`${storeUrl}/products`}
+            className="hidden md:inline-flex items-center h-10 px-3.5 rounded-xl text-sm font-semibold transition-colors"
+            style={{ color: 'var(--pt-text-soft)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--pt-surface-soft)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
             المنتجات
           </Link>
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden p-2 text-gray-500 hover:text-gray-700"
-          >
+          <button type="button" onClick={() => setMenuOpen(o => !o)}
+            aria-label={menuOpen ? 'إغلاق القائمة' : 'فتح القائمة'} aria-expanded={menuOpen}
+            className="md:hidden w-11 h-11 rounded-xl inline-flex items-center justify-center"
+            style={{ color: 'var(--pt-text)' }}>
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white px-4 py-3 space-y-1">
-          <Link href={`/store/${store.slug}/products`} className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
+        <div className="md:hidden px-4 py-3 grid gap-1"
+          style={{ background: 'var(--pt-surface)', borderBlockStart: '1px solid var(--pt-border)' }}>
+          <Link href={`${storeUrl}/products`}
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center h-12 px-4 rounded-xl text-sm font-semibold"
+            style={{ color: 'var(--pt-text)', background: 'var(--pt-surface-soft)' }}>
             المنتجات
           </Link>
         </div>

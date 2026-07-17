@@ -4,15 +4,18 @@ import { ArrowLeft } from 'lucide-react'
 
 interface Category { id: string; name: string; name_ar?: string; image_url?: string; slug: string }
 
-const BENTO_COLORS = [
-  'from-[#0D6EFD] to-[#0B5ED7]',
-  'from-[#D97706] to-[#F59E0B]',
-  'from-[#1e293b] to-[#334155]',
-  'from-[#7C3AED] to-[#A78BFA]',
-  'from-[#DC2626] to-[#EF4444]',
-  'from-[#0891B2] to-[#22D3EE]',
-  'from-[#059669] to-[#34D399]',
-  'from-[#DB2777] to-[#F472B6]',
+// Bento gradients — kept as a diverse palette (category tiles are decorative,
+// each category benefits from its own colour to be scannable). Not a brand
+// hue commitment; the accent still owns actions.
+const BENTO_GRADIENTS = [
+  'linear-gradient(135deg, #2952E3, #1F40C7)', // cobalt
+  'linear-gradient(135deg, #D97706, #F59E0B)', // amber
+  'linear-gradient(135deg, #1E293B, #334155)', // slate
+  'linear-gradient(135deg, #7C3AED, #A78BFA)', // violet
+  'linear-gradient(135deg, #DC2626, #EF4444)', // red
+  'linear-gradient(135deg, #0891B2, #22D3EE)', // teal
+  'linear-gradient(135deg, #059669, #34D399)', // emerald
+  'linear-gradient(135deg, #DB2777, #F472B6)', // rose
 ]
 
 export default function CategoriesBento({ categories, storeSlug }: { categories: Category[]; storeSlug: string }) {
@@ -39,7 +42,7 @@ export default function CategoriesBento({ categories, storeSlug }: { categories:
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                   </div>
                 ) : (
-                  <div className={`absolute inset-0 bg-gradient-to-br ${BENTO_COLORS[i % BENTO_COLORS.length]}`} />
+                  <div className="absolute inset-0" style={{ background: BENTO_GRADIENTS[i % BENTO_GRADIENTS.length] }} />
                 )}
 
                 <div className="absolute inset-0 flex flex-col justify-end p-4">

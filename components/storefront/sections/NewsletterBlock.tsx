@@ -38,7 +38,7 @@ export default function NewsletterBlock({ storeId, title, placeholder, cta_label
               style={{ borderColor: 'var(--pt-border,#E2E8F0)', background: 'var(--pt-surface,#fff)', color: 'var(--pt-text,#0F172A)' }} />
             <button type="submit" disabled={state === 'loading'}
               className="h-12 px-6 rounded-[var(--pt-btn-radius,12px)] font-bold disabled:opacity-60"
-              style={{ background: 'var(--pt-btn-primary-bg,#0D6EFD)', color: 'var(--pt-btn-primary-text,#fff)' }}>
+              style={{ background: 'var(--pt-accent)', color: 'var(--pt-accent-text-on,#fff)' }}>
               {state === 'loading' ? '...' : (cta_label ?? 'اشتراك')}
             </button>
           </form>
