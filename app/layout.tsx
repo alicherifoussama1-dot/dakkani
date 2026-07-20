@@ -1,6 +1,11 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Tajawal, Montserrat, Cairo, Reem_Kufi, Amiri, El_Messiri } from 'next/font/google'
+import { Inter, Tajawal, Montserrat, Cairo, Reem_Kufi, Amiri, El_Messiri, IBM_Plex_Sans_Arabic } from 'next/font/google'
+// Commerco design system: tokens load BEFORE globals so the legacy :root
+// values keep winning global collisions (storefront stays pixel-identical);
+// the dashboard opts into the new system via the scoped .commerco-ds layer.
+import '../design/tokens.css'
 import './globals.css'
+import '../design/components.css'
 import ScrollProgress from '@/components/layout/ScrollProgress'
 
 // ── Storefront theme display fonts (lazy: preload:false so non-storefront
@@ -30,6 +35,15 @@ const montserrat = Montserrat({
   variable: '--font-montserrat',
   display: 'swap',
 })
+// Commerco dashboard Arabic UI font (design system §Typography).
+// preload:false — only the dashboard applies it, storefront never downloads it.
+const plexArabic = IBM_Plex_Sans_Arabic({
+  subsets: ['arabic', 'latin'],
+  weight: ['400','500','600','700'],
+  variable: '--font-plex-arabic',
+  display: 'swap',
+  preload: false,
+})
 
 export const metadata: Metadata = {
   title: { default: 'Commerco | منصة التجارة الإلكترونية الجزائرية', template: '%s | Commerco' },
@@ -48,7 +62,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={`${inter.variable} ${tajawal.variable} ${montserrat.variable} ${cairo.variable} ${reemKufi.variable} ${amiri.variable} ${elMessiri.variable}`} style={{ colorScheme: 'light' }}>
+    <html lang="ar" dir="rtl" className={`${inter.variable} ${tajawal.variable} ${montserrat.variable} ${plexArabic.variable} ${cairo.variable} ${reemKufi.variable} ${amiri.variable} ${elMessiri.variable}`} style={{ colorScheme: 'light' }}>
       <head>
         {/* Preconnect to Supabase storage for fast image loading (LCP) */}
         <link rel="preconnect" href="https://airbzyeircmhzhwenxqb.supabase.co" />
