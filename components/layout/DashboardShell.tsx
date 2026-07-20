@@ -360,8 +360,9 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
 
       {/* ── Main column ── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Topbar — iOS frosted surface */}
-        <header className="ios-frost flex-shrink-0 flex items-center justify-between gap-2 px-3 sm:px-4 border-b z-30"
+        {/* Topbar — iOS frosted surface. overflow-hidden guards against any
+            chrome element accidentally pushing the row past 375px on mobile. */}
+        <header className="ios-frost flex-shrink-0 flex items-center justify-between gap-1.5 sm:gap-2 px-2 sm:px-4 border-b z-30 overflow-hidden"
           style={{ blockSize: 56 }}>
           <div className="flex items-center gap-1.5 min-w-0">
             <button onClick={() => setSidebarOpen(o => !o)} aria-label="Toggle sidebar"
@@ -386,18 +387,19 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
             )}
           </div>
 
-          <div className="flex items-center gap-1">
-            <LanguageSwitcher />
-            {/* Dark mode */}
+          <div className="flex items-center gap-0.5 sm:gap-1">
+            {/* Language switcher — mobile hides it (available in the avatar menu) */}
+            <div className="hidden md:block"><LanguageSwitcher /></div>
+            {/* Dark mode — 36x36 on mobile so the topbar fits inside 375px */}
             <button onClick={() => applyTheme(!dark)} aria-label={t('shell.dark_mode')} title={t('shell.dark_mode')}
-              className="ios-tap w-10 h-10 rounded-full flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)]"
+              className="ios-tap w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)]"
               style={{ color: 'var(--text-secondary)' }}>
               {dark ? <Sun size={17} aria-hidden /> : <Moon size={17} aria-hidden />}
             </button>
             {/* Notifications */}
             <div className="relative">
               <button onClick={() => setNotifOpen(o => !o)} aria-label={t('shell.notifications')} aria-expanded={notifOpen}
-                className="ios-tap w-10 h-10 rounded-full flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)] relative"
+                className="ios-tap w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)] relative"
                 style={{ color: 'var(--text-secondary)' }}>
                 <Bell size={17} aria-hidden />
                 {newOrdersCount > 0 && (
@@ -468,6 +470,12 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
                         style={{ color: 'var(--text-secondary)' }}>
                         <Settings size={15} aria-hidden /> {t('shell.settings')}
                       </Link>
+                      {/* Language switcher — mobile-only row (desktop uses the topbar chip) */}
+                      <div className="md:hidden flex items-center justify-between px-3 py-2 text-sm rounded-[var(--radius-sm)]"
+                        style={{ color: 'var(--text-secondary)' }}>
+                        <span className="flex items-center gap-2.5"><Globe size={15} aria-hidden />{t('shell.language') || 'اللغة'}</span>
+                        <LanguageSwitcher />
+                      </div>
                       <button onClick={() => applyTheme(!dark)}
                         className="flex items-center justify-between w-full px-3 py-2.5 text-sm rounded-[var(--radius-sm)] transition-colors hover:bg-[var(--surface-sunken)]"
                         style={{ color: 'var(--text-secondary)' }}>
