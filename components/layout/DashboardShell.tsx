@@ -178,10 +178,11 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
     const active = isActive(item.href)
     return (
       <Link href={item.href} aria-current={active ? 'page' : undefined}
-        className="flex items-center gap-3 h-10 px-3 rounded-[var(--radius-md)] text-sm font-medium transition-colors"
+        className="ios-tap flex items-center gap-3 h-11 px-3 rounded-[var(--ios-radius-md)] text-[15px] font-medium"
         style={{
-          background: active ? 'var(--nav-item-bg-active)' : 'transparent',
-          color: active ? 'var(--nav-item-fg-active)' : 'var(--text-secondary)',
+          background: active ? 'var(--color-primary-50)' : 'transparent',
+          color: active ? 'var(--color-primary-700)' : 'var(--text-secondary)',
+          transition: 'background 160ms cubic-bezier(0.32,0.72,0,1), color 160ms cubic-bezier(0.32,0.72,0,1), transform 120ms cubic-bezier(0.32,0.72,0,1)',
         }}
         onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'var(--surface-sunken)' }}
         onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
@@ -336,9 +337,12 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
 
   return (
     <div dir={dir} lang={locale} className="commerco-ds c-ui flex h-screen overflow-hidden" style={{ background: 'var(--surface-page)' }}>
-      {/* ── Desktop sidebar ── */}
-      <aside className="hidden lg:flex flex-col flex-shrink-0 h-full overflow-hidden transition-all duration-200 border-e"
-        style={{ width: sidebarOpen ? 248 : 0, background: 'var(--sidebar-bg)', borderColor: 'var(--border-default)' }}>
+      {/* ── Desktop sidebar — iOS frosted panel ── */}
+      <aside className="ios-frost hidden lg:flex flex-col flex-shrink-0 h-full overflow-hidden border-e"
+        style={{
+          width: sidebarOpen ? 260 : 0,
+          transition: 'width 320ms cubic-bezier(0.32, 0.72, 0, 1)',
+        }}>
         <SidebarContent />
       </aside>
 
@@ -346,8 +350,8 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
       {mobileOpen && (
         <>
           <div className="fixed inset-0 z-40 lg:hidden" style={{ background: 'var(--overlay-scrim)' }} onClick={() => setMobileOpen(false)} />
-          <aside className="fixed top-0 bottom-0 start-0 z-50 w-[280px] max-w-[85vw] flex flex-col lg:hidden border-e animate-fade-in"
-            style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--border-default)' }}
+          <aside className="ios-frost fixed top-0 bottom-0 start-0 z-50 w-[280px] max-w-[85vw] flex flex-col lg:hidden border-e"
+            style={{ animation: 'ios-sheet-up 320ms cubic-bezier(0.32, 0.72, 0, 1)' }}
             role="dialog" aria-label={t('shell.settings')}>
             <SidebarContent />
           </aside>
@@ -356,9 +360,9 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
 
       {/* ── Main column ── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Topbar */}
-        <header className="flex-shrink-0 flex items-center justify-between gap-2 px-3 sm:px-4 border-b z-30 h-14"
-          style={{ background: 'var(--surface-raised)', borderColor: 'var(--border-default)' }}>
+        {/* Topbar — iOS frosted surface */}
+        <header className="ios-frost flex-shrink-0 flex items-center justify-between gap-2 px-3 sm:px-4 border-b z-30"
+          style={{ blockSize: 56 }}>
           <div className="flex items-center gap-1.5 min-w-0">
             <button onClick={() => setSidebarOpen(o => !o)} aria-label="Toggle sidebar"
               className="w-10 h-10 rounded-[var(--radius-md)] hidden lg:flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)]"
@@ -386,14 +390,14 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
             <LanguageSwitcher />
             {/* Dark mode */}
             <button onClick={() => applyTheme(!dark)} aria-label={t('shell.dark_mode')} title={t('shell.dark_mode')}
-              className="w-10 h-10 rounded-[var(--radius-md)] flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)]"
+              className="ios-tap w-10 h-10 rounded-full flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)]"
               style={{ color: 'var(--text-secondary)' }}>
               {dark ? <Sun size={17} aria-hidden /> : <Moon size={17} aria-hidden />}
             </button>
             {/* Notifications */}
             <div className="relative">
               <button onClick={() => setNotifOpen(o => !o)} aria-label={t('shell.notifications')} aria-expanded={notifOpen}
-                className="w-10 h-10 rounded-[var(--radius-md)] flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)] relative"
+                className="ios-tap w-10 h-10 rounded-full flex items-center justify-center transition-colors hover:bg-[var(--surface-sunken)] relative"
                 style={{ color: 'var(--text-secondary)' }}>
                 <Bell size={17} aria-hidden />
                 {newOrdersCount > 0 && (
