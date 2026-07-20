@@ -587,7 +587,9 @@
 }
 
 /* ── Frosted surface (topbar / sidebar / floating pills) ─────
-   Solid fallback under prefers-reduced-transparency. */
+   Solid fallback under prefers-reduced-transparency. Mobile uses a
+   lighter blur (12px) since backdrop-filter is expensive on mobile
+   GPUs and causes scroll jank on iOS Safari. */
 .ios-frost {
   background: color-mix(in srgb, var(--surface-raised) 78%, transparent);
   backdrop-filter: saturate(180%) blur(20px);
@@ -597,11 +599,26 @@
 [data-theme="dark"] .ios-frost {
   background: color-mix(in srgb, var(--surface-raised) 68%, transparent);
 }
+@media (max-width: 767px) {
+  .ios-frost {
+    /* Higher opacity + lighter blur = same premium look, no scroll jank */
+    background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+    backdrop-filter: saturate(150%) blur(10px);
+    -webkit-backdrop-filter: saturate(150%) blur(10px);
+  }
+}
 @media (prefers-reduced-transparency: reduce) {
   .ios-frost {
     background: var(--surface-raised);
     backdrop-filter: none; -webkit-backdrop-filter: none;
   }
+}
+
+/* Touch devices: disable hover:bg feedback so tap-and-hold does not
+   leave a lingering highlight (Chrome mobile bug), and remove tap-scale
+   over-fire. Tap-scale on real click still works. */
+@media (hover: none) {
+  .ios-tap:active { transform: scale(0.96); }
 }
 
 /* ── Large title (iOS navigation pattern) ───────────────────
