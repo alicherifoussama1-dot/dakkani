@@ -1,262 +1,201 @@
 'use client'
-import { useT, useRaw, useDir } from '@/lib/i18n/react'
+// COMMERCO HOME — design-system rebuild.
+// UX rethink: one composed "today" overview (revenue is the hero,
+// sources as integrated bars) replaces four identical KPI boxes;
+// the fake video block became real quick-actions; the dead stub
+// table was removed. All data contracts and i18n keys unchanged.
+import { useT, useDir } from '@/lib/i18n/react'
 import { useState } from 'react'
 import Link from 'next/link'
+import { Calendar, Plus, Facebook, Chrome, Store, Truck, Navigation2, Package } from 'lucide-react'
 import {
-  Calendar, RefreshCw, Plus, ShoppingCart, Facebook,
-  Chrome, ExternalLink, Play, Search,
-} from 'lucide-react'
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { formatDZD } from '@/lib/utils/format'
 import RecentOrders from '@/components/dashboard/RecentOrders'
 
 // TikTok icon (not in lucide)
-const TikTokIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+const TikTokIcon = ({ size = 14 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
     <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.31a8.16 8.16 0 004.77 1.52V7.39a4.85 4.85 0 01-1-.7z"/>
   </svg>
 )
 
-// Demo hourly data
+// Demo hourly data (unchanged behavior)
 const generateHourlyData = (total: number) => {
   const hours = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00']
-  return hours.map((h, i) => ({
-    hour: h,
-    orders: Math.floor(Math.random() * (total / hours.length * 2)),
-  }))
+  return hours.map(h => ({ hour: h, orders: Math.floor(Math.random() * (total / hours.length * 2)) }))
 }
 
 interface Props {
-  storeName:  string
-  storeId:    string
-  userName:   string
+  storeName: string
+  storeId: string
+  userName: string
   todayStats: { total: number; facebook: number; tiktok: number; other: number; revenue: number; productCount?: number }
 }
 
 export default function DashboardHome({ storeName, storeId, userName, todayStats }: Props) {
   const t = useT()
-  const raw = useRaw()
   const dir = useDir()
-  const DATE_LABELS: Record<string,string> = { 'اليوم': t('home.today'), 'الأمس': t('home.yesterday'), 'أسبوع': t('home.week'), 'شهر': t('home.month') }
+  const DATE_LABELS: Record<string, string> = { 'اليوم': t('home.today'), 'الأمس': t('home.yesterday'), 'أسبوع': t('home.week'), 'شهر': t('home.month') }
   const [dateFilter, setDateFilter] = useState('اليوم')
-  const [skuSearch,  setSkuSearch]  = useState('')
-  const [perPage,    setPerPage]    = useState(10)
 
   const chartData = generateHourlyData(todayStats.total)
+  const noProducts = (todayStats.productCount ?? 0) === 0
 
-  const KPI_CARDS = [
-    { label: t('home.stat_today'),    value: todayStats.total,    iconBg: '#EBF5FF', iconColor: '#0D6EFD',
-      icon: () => <div className="w-5 h-5 rounded font-black text-white text-xs flex items-center justify-center" style={{background:'#0D6EFD'}}>C</div> },
-    { label: t('home.stat_fb'),   value: todayStats.facebook, iconBg: '#EBF5FF', iconColor: '#1877F2',
-      icon: () => <Facebook size={18} style={{color:'#1877F2'}} /> },
-    { label: t('home.stat_tt'),  value: todayStats.tiktok,   iconBg: '#F1F3F5', iconColor: '#000',
-      icon: () => <TikTokIcon /> },
-    { label: t('home.stat_other'),     value: todayStats.other,    iconBg: '#F1F3F5', iconColor: '#868E96',
-      icon: () => <Chrome size={18} style={{color:'#868E96'}} /> },
+  const SOURCES = [
+    { label: t('home.fb'),    value: todayStats.facebook, icon: <Facebook size={13} aria-hidden />, bar: 'var(--chart-1)' },
+    { label: t('home.tt'),    value: todayStats.tiktok,   icon: <TikTokIcon size={12} />,           bar: 'var(--chart-4)' },
+    { label: t('home.other'), value: todayStats.other,    icon: <Chrome size={13} aria-hidden />,   bar: 'var(--chart-6)' },
+  ]
+
+  const QUICK_ACTIONS = [
+    { href: '/products/new',              label: t('home.add_first'),          icon: Plus },
+    { href: '/store-builder',             label: t('nav.store_builder'),       icon: Store },
+    { href: '/store/delivery',            label: t('nav.delivery'),            icon: Truck },
+    { href: '/settings/tracking-domains', label: t('nav.tracking_domains'),    icon: Navigation2 },
   ]
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-5" dir={dir} style={{ fontFamily: 'var(--font-arabic)' }}>
-      {/* Welcome Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      {/* ── Page header ── */}
+      <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-bold text-xl" style={{ color: 'var(--color-text-primary)' }}>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
             {t('home.hello', { name: userName })}
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-            {storeName} · {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+            {storeName} · {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="c-field" style={{ minWidth: 130 }}>
+          <label className="sr-only" htmlFor="home-range">{t('home.today')}</label>
           <div className="relative">
-            <Calendar size={14} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }} />
-            <select
-              value={dateFilter}
-              onChange={e => setDateFilter(e.target.value)}
-              className="input h-9 pr-8 pl-3 text-sm"
-              style={{ minWidth: '120px' }}
-            >
+            <Calendar size={14} className="absolute top-1/2 -translate-y-1/2 start-3 pointer-events-none" style={{ color: 'var(--text-muted)' }} aria-hidden />
+            <select id="home-range" value={dateFilter} onChange={e => setDateFilter(e.target.value)}
+              className="c-select ps-9" style={{ blockSize: 'var(--control-h-sm)', fontSize: 'var(--text-sm)' }}>
               {['اليوم','الأمس','أسبوع','شهر'].map(d => <option key={d} value={d}>{DATE_LABELS[d] ?? d}</option>)}
             </select>
           </div>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {KPI_CARDS.map(card => (
-          <div key={card.label} className="card p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: card.iconBg }}>
-                <card.icon />
-              </div>
+      {/* ── Today overview: revenue hero + orders + integrated source split ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="c-card lg:col-span-3">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('home.today_sales')}</p>
+              <p className="mt-1 text-3xl font-extrabold leading-tight"
+                style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', fontFamily: 'var(--font-primary)' }}>
+                {formatDZD(todayStats.revenue)}
+              </p>
             </div>
-            <p className="stat-value">{card.value.toLocaleString('ar-DZ')}</p>
-            <p className="stat-label mt-0.5">{card.label}</p>
+            <div className="text-end">
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('home.stat_today')}</p>
+              <p className="mt-1 text-3xl font-extrabold leading-tight"
+                style={{ color: 'var(--color-primary-700)', fontVariantNumeric: 'tabular-nums', fontFamily: 'var(--font-primary)' }}>
+                {todayStats.total.toLocaleString()}
+              </p>
+            </div>
           </div>
-        ))}
-      </div>
+          {/* source split — integrated, not four boxes */}
+          <div className="mt-5 space-y-2.5">
+            {SOURCES.map(row => {
+              const pct = todayStats.total > 0 ? (row.value / todayStats.total) * 100 : 0
+              return (
+                <div key={row.label} className="flex items-center gap-3">
+                  <span className="flex items-center gap-1.5 w-24 flex-shrink-0 text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    {row.icon}{row.label}
+                  </span>
+                  <div className="c-progress flex-1" aria-hidden>
+                    <div className="c-progress__fill" style={{ inlineSize: `${pct}%`, background: row.bar }} />
+                  </div>
+                  <span className="w-8 flex-shrink-0 text-xs text-end font-semibold"
+                    style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                    {row.value}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
 
-      {/* Community Banner */}
-      <div className="card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-        style={{ background: 'linear-gradient(135deg,#EBF5FF 0%,#F8F9FA 100%)' }}>
-        <div className="flex items-center gap-3">
-          {/* Avatars */}
-          <div className="flex -space-x-1 flex-row-reverse">
-            {['م','أ','ك','س','ف','ع'].map((l, i) => (
-              <div key={i} className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                style={{ background: ['#0D6EFD','#198754','#DC3545','#FFC107','#7B2FBE','#0DCAF0'][i] }}>
-                {l}
-              </div>
+        {/* Quick actions — replaces the fake video block */}
+        <div className="c-card lg:col-span-2">
+          <div className="c-card__title" style={{ fontSize: 'var(--text-base)' }}>{t('home.setup')}</div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {QUICK_ACTIONS.map(a => (
+              <Link key={a.href} href={a.href}
+                className="flex flex-col items-center justify-center gap-2 rounded-[var(--radius-md)] border p-4 text-center transition-colors hover:bg-[var(--surface-sunken)]"
+                style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)', minHeight: 84 }}>
+                <span className="w-9 h-9 rounded-full flex items-center justify-center"
+                  style={{ background: 'var(--color-primary-50)', color: 'var(--color-primary-600)' }}>
+                  <a.icon size={17} aria-hidden />
+                </span>
+                <span className="text-xs font-semibold leading-tight" style={{ color: 'var(--text-primary)' }}>{a.label}</span>
+              </Link>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* ── First-run empty state ── */}
+      {noProducts && (
+        <div className="c-card" style={{ padding: 0 }}>
+          <div className="c-empty">
+            <div className="c-empty__icon"><Package size={24} aria-hidden /></div>
+            <div className="c-empty__title">{t('home.product_orders')}</div>
+            <div className="c-empty__sub">{t('home.join_sub')}</div>
+            <Link href="/products/new" className="c-btn c-btn--primary" style={{ marginBlockStart: 'var(--space-3)' }}>
+              <Plus size={15} aria-hidden />{t('home.add_first')}
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* ── Orders by hour ── */}
+      <div className="c-card">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div>
-            <p className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{t('home.join_title')}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{t('home.join_sub')}</p>
+            <h2 className="font-bold" style={{ color: 'var(--text-primary)', fontSize: 'var(--text-lg)' }}>{t('home.overview')}</h2>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{t('home.by_hour')}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="c-badge c-badge--info">{t('home.orders_badge', { count: todayStats.total })}</span>
+            <span className="c-badge c-badge--neutral">{t('home.fake_blocked')}</span>
           </div>
         </div>
-        <Link href="/products" className="btn btn-primary btn-sm flex-shrink-0">
-          {t('home.start_now')}
-        </Link>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={chartData} margin={{ top: 4, left: 0, right: 8, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
+            <XAxis dataKey="hour" tick={{ fontSize: 10, fill: 'var(--chart-axis)' }} tickLine={false} axisLine={{ stroke: 'var(--chart-grid)' }} />
+            <YAxis tick={{ fontSize: 10, fill: 'var(--chart-axis)' }} allowDecimals={false} tickLine={false} axisLine={false} width={28} />
+            <Tooltip
+              contentStyle={{
+                borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)',
+                background: 'var(--surface-raised)', color: 'var(--text-primary)', fontSize: 12,
+                boxShadow: 'var(--shadow-md)',
+              }}
+              formatter={(v: number) => [v, t('home.orders_unit')]}
+            />
+            <Line type="monotone" dataKey="orders" stroke="var(--chart-1)" strokeWidth={2} dot={false} name={t('home.orders_series')} />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
 
-      {/* Chart + Store Setup */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Orders Chart */}
-        <div className="card p-4 lg:col-span-3">
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <div>
-              <h2 className="font-semibold text-base" style={{ color: 'var(--color-text-primary)' }}>{t('home.overview')}</h2>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{t('home.by_hour')}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="badge badge-blue">{t('home.orders_badge', { count: todayStats.total })}</span>
-              <span className="badge badge-gray">{t('home.fake_blocked')}</span>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5" />
-              <XAxis dataKey="hour" tick={{ fontSize: 10, fill: '#868E96' }} />
-              <YAxis tick={{ fontSize: 10, fill: '#868E96' }} allowDecimals={false} />
-              <Tooltip
-                contentStyle={{ borderRadius: '8px', border: '1px solid #DEE2E6', fontSize: '12px' }}
-                formatter={(v: number) => [v, t('home.orders_unit')]}
-              />
-              <Line type="monotone" dataKey="orders" stroke="#0D6EFD" strokeWidth={2} dot={false} name={t('home.orders_series')} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Store Setup */}
-        <div className="card p-4 lg:col-span-2 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{t('home.setup')}</h2>
-            <Link href="/products" className="btn btn-primary btn-sm">{t('home.start')}</Link>
-          </div>
-          {/* YouTube tutorial placeholder */}
-          <div className="rounded-xl overflow-hidden flex-1 flex items-center justify-center" style={{ background: '#111', minHeight: '140px' }}>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Play size={20} fill="white" className="text-white" />
-              </div>
-              <p className="text-xs text-white/70">{t('home.watch')}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Orders */}
+      {/* ── Recent orders ── */}
       {todayStats.total > 0 && (
-        <div className="card p-4">
+        <div className="c-card">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{t('home.latest')}</h2>
-            <Link href="/orders" className="text-xs" style={{ color: 'var(--color-accent)', fontFamily: 'var(--font-arabic)' }}>
+            <h2 className="font-bold" style={{ color: 'var(--text-primary)', fontSize: 'var(--text-lg)' }}>{t('home.latest')}</h2>
+            <Link href="/orders" className="text-sm font-semibold" style={{ color: 'var(--text-link)' }}>
               {t('common.view_all')}
             </Link>
           </div>
           <RecentOrders storeId={storeId} />
         </div>
       )}
-
-      {/* Products Table */}
-      <div className="card overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b flex-wrap gap-2" style={{ borderColor: 'var(--color-border)' }}>
-          <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{t('home.product_orders')}</h2>
-          <div className="relative">
-            <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }} />
-            <input
-              value={skuSearch}
-              onChange={e => setSkuSearch(e.target.value)}
-              placeholder={t('home.sku_search')}
-              className="input input-sm pr-8 w-56"
-            />
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="data-table">
-            <thead>
-              <tr>
-                {(raw('home.cols') as string[] ?? []).map(h => <th key={h}>{h}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {todayStats.total === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-center py-10">
-                    <Link href="/products/new" className="btn btn-primary btn-sm gap-1.5">
-                      <Plus size={13} />{t('home.add_first')}
-                    </Link>
-                  </td>
-                </tr>
-              ) : (
-                <tr>
-                  <td colSpan={4} className="text-center py-10 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                    <Link href="/products" style={{ color: 'var(--color-accent)' }}>{t('home.view_products')}</Link>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="flex items-center gap-2 px-4 py-2 border-t" style={{ borderColor: 'var(--color-border)' }}>
-          <select value={perPage} onChange={e => setPerPage(+e.target.value)} className="input h-7 text-xs px-2 w-16">
-            {[5,10,20,30,50].map(n => <option key={n}>{n}</option>)}
-          </select>
-          <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{t('common.per_page')}</span>
-        </div>
-      </div>
-
-      {/* Sales Highlights */}
-      <div className="card p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{t('home.today_sales')}</h2>
-          <div>
-            <span className="font-bold text-lg" style={{ color: 'var(--color-accent)', fontFamily: 'var(--font-primary)' }}>
-              {formatDZD(todayStats.revenue)}
-            </span>
-            <span className="text-xs mr-2" style={{ color: 'var(--color-text-muted)' }}>{t('home.all_label', { total: formatDZD(todayStats.revenue) })}</span>
-          </div>
-        </div>
-        <div className="space-y-2">
-          {[
-            { label: t('home.fb'), value: todayStats.facebook, color: '#1877F2', pct: todayStats.total > 0 ? (todayStats.facebook/todayStats.total)*100 : 0 },
-            { label: t('home.tt'), value: todayStats.tiktok,  color: '#000',    pct: todayStats.total > 0 ? (todayStats.tiktok/todayStats.total)*100 : 0 },
-            { label: t('home.other'),    value: todayStats.other,   color: '#868E96', pct: todayStats.total > 0 ? (todayStats.other/todayStats.total)*100 : 0 },
-          ].map(row => (
-            <div key={row.label} className="flex items-center gap-3">
-              <span className="w-16 text-xs text-left flex-shrink-0" style={{ color: 'var(--color-text-secondary)' }}>{row.label}</span>
-              <div className="flex-1 h-2 rounded-full" style={{ background: 'var(--color-bg-muted)' }}>
-                <div className="h-2 rounded-full transition-all duration-500" style={{ width: `${row.pct}%`, background: row.color }} />
-              </div>
-              <span className="w-8 text-xs text-left flex-shrink-0" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-primary)' }}>{row.value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }
