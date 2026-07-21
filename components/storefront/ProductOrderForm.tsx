@@ -331,6 +331,12 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           const value = ((product as any)?.price ?? 0) * (data.quantity ?? 1)
           window.dispatchEvent(new CustomEvent('dakkani:purchase', { detail: { orderId: json.order_number, value } }))
         }
+        // Set short-lived same-site browser access gate cookie (1 hour)
+        document.cookie = `ty_order=${json.order_id}; path=/; max-age=3600; SameSite=Lax`
+        // Redirect with a tiny delay to allow trackers to execute
+        setTimeout(() => {
+          window.location.href = `/${store.slug}/order-confirmation?order=${json.order_id}`
+        }, 150)
       } else {
         completingRef.current = false // failed — abandonment tracking resumes
         setSubmitError(json.error || genericErr)
