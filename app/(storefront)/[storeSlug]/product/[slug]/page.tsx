@@ -13,15 +13,17 @@ import Image               from 'next/image'
 import { formatDZD } from '@/lib/utils/format'
 import { applyStoreDeliveryPrices } from '@/lib/delivery/pricing'
 import { getProductTheme, themeToCSSVars, normalizeProductOrder } from '@/lib/product-themes'
+import { getStoreBySlug, getProductBySlug } from '@/lib/storefront/product-data'
 import Link from 'next/link'
 
 interface Props { params: { storeSlug: string; slug: string } }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const supabase = createPublicClient()
-  const { data: store } = await supabase.from('stores').select('id,name').eq('slug', params.storeSlug).single()
+  // Cached fetchers: this store/product read is DEDUPED with the page body
+  // below (React cache, per-request) so no extra DB round-trips happen.
+  const store = await getStoreBySlug(params.storeSlug)
   if (!store) return { title: 'منتج' }
-  const { data: p } = await supabase.from('products').select('name,name_ar,description_ar,meta_title,meta_description,images').eq('store_id', store.id).eq('slug', params.slug).single()
+  const p = await getProductBySlug(store.id, params.slug)
   if (!p) return { title: 'منتج غير موجود' }
   return {
     title: p.meta_title ?? `${p.name_ar ?? p.name} | ${store.name}`,
@@ -33,21 +35,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductPage({ params }: Props) {
   const supabase = createPublicClient()
 
-  // Use service role — bypasses RLS completely
-  const { data: store } = await supabase
-    .from('stores')
-    .select('*,store_settings(*)')
-    .eq('slug', params.storeSlug)
-    .single()
+  // Cached (deduped with generateMetadata). Service role bypasses RLS.
+  const store = await getStoreBySlug(params.storeSlug)
   if (!store || !store.is_active) notFound()
 
   // Allow viewing even inactive products (for admin preview)
-  const { data: product } = await supabase
-    .from('products')
-    .select('*')
-    .eq('store_id', store.id)
-    .eq('slug', params.slug)
-    .single()
+  const product = await getProductBySlug(store.id, params.slug)
   if (!product) notFound()
 
   let relatedQuery = supabase
