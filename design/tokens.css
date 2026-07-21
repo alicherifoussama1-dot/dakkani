@@ -131,7 +131,7 @@
      AR/FR/EN strings (constant in Algerian commerce)
      render consistently. Same optical size, same voice.
      ────────────────────────────────────────────── */
-  --font-sans: 'Inter', 'IBM Plex Sans Arabic',
+  --font-sans: var(--font-inter), var(--font-plex-arabic), var(--font-tajawal),
                system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', monospace;
 

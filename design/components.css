@@ -484,8 +484,9 @@
   color: rgb(255 255 255 / 0.55); font-variant-numeric: var(--numeric-tabular); }
 
 .auth-main {
-  flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
-  padding: var(--space-6); position: relative;
+  flex: 1 1 auto; display: flex; flex-direction: column;
+  padding: var(--space-12) var(--space-6); position: relative;
+  min-block-size: 100dvh;
 }
 .auth-lang { position: absolute; inset-block-start: var(--space-4); inset-inline-end: var(--space-4); z-index: var(--z-sticky); }
 
@@ -497,6 +498,7 @@
   box-shadow: var(--shadow-lg);
   padding: var(--space-8) var(--space-6);
   animation: c-fade-up var(--duration-slow) var(--ease-standard) both;
+  margin: auto;
 }
 @media (min-width: 640px) { .auth-card { padding: var(--space-10) var(--space-8); } }
 

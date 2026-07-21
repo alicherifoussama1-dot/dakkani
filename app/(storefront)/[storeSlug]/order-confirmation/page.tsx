@@ -2,9 +2,10 @@ export const dynamic = 'force-dynamic'
 
 import { createPublicClient } from '@/lib/supabase/public'
 import { notFound } from 'next/navigation'
-import { formatDZD, formatDate } from '@/lib/utils/format'
-import { CheckCircle, Package, Clock } from 'lucide-react'
+import { formatDZD } from '@/lib/utils/format'
+import { CheckCircle, User, Phone, MapPin, DollarSign } from 'lucide-react'
 import type { Metadata } from 'next'
+import ConfirmationActions from './ConfirmationActions'
 
 interface Props {
   params: { storeSlug: string }
@@ -18,7 +19,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
 
   const { data: store } = await supabase
     .from('stores')
-    .select('id, name, name_ar, slug, logo_url')
+    .select('id, name, name_ar, slug, logo_url, phone, store_settings(*)')
     .eq('slug', params.storeSlug)
     .single()
   if (!store) notFound()
@@ -36,6 +37,8 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
     order = data
   }
 
+  const storePhone = (store as any).whatsapp ?? store.phone
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
       <div className="w-full max-w-md space-y-5">
@@ -44,74 +47,69 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-10 h-10 text-green-500" />
           </div>
-          <h1 className="text-2xl font-black text-gray-900">تم تسجيل طلبك! 🎉</h1>
-          <p className="text-gray-500 mt-2">سنتصل بك قريباً لتأكيد التوصيل</p>
+          <h1 className="text-2xl font-black text-gray-900">قد تم طلبك بنجاح! 🎉</h1>
+          <p className="text-gray-500 mt-2">يرجى تأكيد طلبك أدناه لتسريع عملية الشحن والتوصيل</p>
         </div>
 
-        {/* Order card */}
+        {/* Customer Information Card */}
         {order && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="bg-[#0D6EFD] px-5 py-3 flex items-center justify-between">
-              <span className="text-white font-bold">رقم الطلب</span>
-              <span className="font-mono text-white font-black text-lg">{order.order_number}</span>
-            </div>
-            <div className="p-5 space-y-4">
-              {/* Items */}
-              <div className="space-y-2">
-                {order.items?.map((item: any) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-gray-700">{item.product_name} ×{item.quantity}</span>
-                    <span className="font-semibold">{formatDZD(item.total_price)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t border-gray-100 pt-3 space-y-2 text-sm">
-                <div className="flex justify-between text-gray-500">
-                  <span>رسوم التوصيل</span>
-                  <span>{formatDZD(order.delivery_fee)}</span>
-                </div>
-                <div className="flex justify-between font-black text-gray-900 text-base">
-                  <span>المجموع الكلي</span>
-                  <span className="text-[#0D6EFD]">{formatDZD(order.total)}</span>
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">
+            <h2 className="text-base font-black text-gray-900 border-b border-gray-100 pb-2">معلومات المشتري</h2>
+            
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <User className="w-5 h-5 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-xs text-gray-400">الاسم الكامل</p>
+                  <p className="font-semibold text-gray-900 text-sm mt-0.5">{order.customer_name}</p>
                 </div>
               </div>
 
-              {/* Details */}
-              <div className="bg-gray-50 rounded-xl p-3 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">الولاية</span>
-                  <span className="font-medium">{order.wilaya?.name_ar}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">نوع التوصيل</span>
-                  <span className="font-medium">{order.delivery_type === 'home' ? 'توصيل للمنزل' : 'نقطة توزيع'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">طريقة الدفع</span>
-                  <span className="font-medium">الدفع عند الاستلام</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">تاريخ الطلب</span>
-                  <span className="font-medium">{formatDate(order.created_at)}</span>
+              <div className="flex items-start gap-3">
+                <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-xs text-gray-400">رقم الهاتف</p>
+                  <p className="font-semibold text-gray-900 text-sm mt-0.5" dir="ltr">{order.customer_phone}</p>
                 </div>
               </div>
 
-              {/* Status info */}
-              <div className="flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-xl p-3">
-                <Clock className="w-5 h-5 text-blue-500 flex-shrink-0" />
-                <p className="text-sm text-blue-700">
-                  طلبك قيد المعالجة، سيتصل بك فريقنا خلال ساعات لتأكيد الموعد
-                </p>
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-xs text-gray-400">عنوان التوصيل</p>
+                  <p className="font-semibold text-gray-900 text-sm mt-0.5">
+                    {order.address} {order.wilaya?.name_ar ? ` - ${order.wilaya.name_ar}` : ''}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <DollarSign className="w-5 h-5 text-[#0D6EFD] mt-0.5" />
+                <div>
+                  <p className="text-xs text-gray-400">السعر الكلي</p>
+                  <p className="font-black text-xl text-[#0D6EFD] mt-0.5">{formatDZD(order.total)}</p>
+                </div>
               </div>
             </div>
           </div>
         )}
 
+        {/* Action Buttons */}
+        {storePhone && order && (
+          <ConfirmationActions
+            storePhone={storePhone}
+            orderNumber={order.order_number}
+            storeName={store.name_ar ?? store.name}
+            customerName={order.customer_name}
+            customerPhone={order.customer_phone}
+            totalAmount={formatDZD(order.total)}
+          />
+        )}
+
         {/* Back to store */}
         <a
           href={`/store/${store.slug}`}
-          className="block w-full text-center bg-[#0D6EFD] hover:bg-[#0B5ED7] text-white font-bold py-3.5 rounded-2xl transition"
+          className="block w-full text-center bg-gray-900 hover:bg-gray-800 text-white font-bold py-3.5 rounded-2xl transition"
         >
           العودة للمتجر
         </a>

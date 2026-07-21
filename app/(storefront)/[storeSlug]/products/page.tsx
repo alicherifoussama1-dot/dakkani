@@ -7,6 +7,7 @@ import StorefrontLayout from '@/components/storefront/StorefrontLayout'
 import WhatsAppFloat    from '@/components/storefront/WhatsAppFloat'
 import InfiniteProducts from '@/components/storefront/InfiniteProducts'
 import { FadeUp }       from '@/components/ui/animations'
+import SortSelect       from '@/components/storefront/SortSelect'
 
 interface Props {
   params: { storeSlug: string }
@@ -101,17 +102,9 @@ export default async function CataloguePage({ params, searchParams }: Props) {
                 {searchParams.q && (
                   <p className="text-sm text-gray-600">نتائج: <strong>&quot;{searchParams.q}&quot;</strong></p>
                 )}
-                <form method="GET" action={`/store/${store.slug}/products`} className="mr-auto">
-                  {searchParams.category && <input type="hidden" name="category" value={searchParams.category} />}
-                  {searchParams.q && <input type="hidden" name="q" value={searchParams.q} />}
-                  <select name="sort" defaultValue={searchParams.sort ?? 'newest'}
-                    onChange={e => e.target.form?.submit()}
-                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-primary/30 outline-none font-medium">
-                    <option value="newest">الأحدث</option>
-                    <option value="price_asc">السعر: الأقل</option>
-                    <option value="price_desc">السعر: الأعلى</option>
-                  </select>
-                </form>
+                <div className="mr-auto">
+                  <SortSelect defaultValue={searchParams.sort ?? 'newest'} />
+                </div>
               </div>
 
               <InfiniteProducts
