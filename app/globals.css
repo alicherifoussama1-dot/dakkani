@@ -607,7 +607,7 @@
 [data-pt-root], [data-pt-root] * { touch-action: manipulation; }
 
 .dk-field { width:100%; height:52px; border:1.5px solid #D6D1C5; border-radius:14px; padding:0 18px; font-size:16px; background:#fff; color:#1B1B1F; outline:none; transition:border-color .15s, box-shadow .15s; }
-.dk-field::placeholder { color:#8A8780; }
+.dk-field::placeholder { color:#5C594F; }
 .dk-field:focus { border-color: var(--pt-accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--pt-accent) 14%, transparent); }
 textarea.dk-field { height:auto; min-height:56px; padding:15px 18px; resize:none; }
 .dk-field-icon { padding-inline-start:46px; }
@@ -615,5 +615,5 @@ textarea.dk-field { height:auto; min-height:56px; padding:15px 18px; resize:none
 
 /* Stronger Wilaya / Municipality / Office selectors — darker border + dark text */
 .dk-field-strong { border-width:1.5px; border-color:#B0AA9C; color:#111111; }
-.dk-field-strong::placeholder { color:#5C594F; }
+.dk-field-strong::placeholder { color:#4A4740; }
 .dk-field-strong:focus { border-color: var(--pt-accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--pt-accent) 14%, transparent); }

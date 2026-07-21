@@ -58,7 +58,9 @@ function BaladiaField({ wilayaId, value, onChange, error, lang }: {
       <label className="dk-label">{translateStorefront('baladia', lang)} *</label>
       <div className="relative">
         <button type="button" onClick={() => setOpen(o => !o)} className="dk-field dk-field-strong flex items-center justify-between text-start rtl:text-right">
-          <span style={{ color: value ? '#111111' : '#5C594F' }}>{selectedLabel || value || translateStorefront('select_commune', lang)}</span>
+          <span style={{ color: value ? '#111111' : '#5C594F' }}>
+            {selectedLabel || value || (lang === 'ar' ? 'اضغط هنا لاختيار البلدية' : lang === 'fr' ? 'Cliquez pour choisir la commune' : 'Click to choose commune')}
+          </span>
           <ChevronDown size={16} style={{ color: '#57564F', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
         </button>
         {open && (
@@ -369,7 +371,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
 
   return (
     <form ref={formRef} onSubmit={handleSubmit(onSubmit, onInvalid)} dir={isRtl ? 'rtl' : 'ltr'}
-      className="space-y-5 p-6 sm:p-7 rounded-3xl" style={{ background: DK.surface, border: `0.5px solid ${DK.line}`, borderTop: `3px solid ${DK.accent}` }}>
+      className="space-y-3.5 p-6 sm:p-7 rounded-3xl" style={{ background: DK.surface, border: `0.5px solid ${DK.line}`, borderTop: `3px solid ${DK.accent}` }}>
       <h3 className="font-bold text-lg mb-1" style={{ color: DK.ink }}>{completeLabel}</h3>
 
       {/* Delivery type — "المكتب" disappears when the wilaya has no offices */}
@@ -400,10 +402,15 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
               <div key="field-name">
                 <label className="dk-label">{translateStorefront('full_name', lang)} <span style={{ color: '#D85A30' }}>*</span></label>
                 <div className="relative">
-                  <User className="w-[18px] h-[18px] absolute top-1/2 -translate-y-1/2 pointer-events-none" style={{ insetInlineStart: 15, color: DK.muted }} aria-hidden="true" />
+                  <User className="w-[18px] h-[18px] absolute top-1/2 -translate-y-1/2 pointer-events-none"
+                    style={{ right: isRtl ? 15 : 'auto', left: isRtl ? 'auto' : 15, color: DK.muted }} aria-hidden="true" />
                   <input {...register('customer_name')} autoComplete="name"
-                    placeholder={lang === 'ar' ? 'يرجى إدخال الاسم الكامل' : lang === 'fr' ? 'Entrez votre nom complet' : 'Please enter your full name'}
-                    className="dk-field dk-field-icon" />
+                    placeholder={lang === 'ar' ? 'اكتب اسمك الكامل هنا (مثال: محمد أحمد)' : lang === 'fr' ? 'Entrez votre nom complet' : 'Please enter your full name'}
+                    className="dk-field"
+                    style={{
+                      paddingRight: isRtl ? 46 : 18,
+                      paddingLeft: isRtl ? 18 : 46
+                    }} />
                 </div>
                 {errors.customer_name && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.customer_name.message}</p>}
               </div>
@@ -417,7 +424,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                   <select {...register('wilaya_id', { valueAsNumber: true })}
                     onChange={e => { const id = parseInt(e.target.value); setValue('wilaya_id', id); setSelectedWilaya(wilayas.find(w => w.id === id) ?? null) }}
                     className="dk-field dk-field-strong appearance-none">
-                    <option value="">{lang === 'ar' ? 'اختر الولاية' : lang === 'fr' ? 'Choisissez la wilaya' : 'Choose wilaya'}</option>
+                    <option value="">{lang === 'ar' ? 'اضغط هنا لاختيار الولاية' : lang === 'fr' ? 'Cliquez pour choisir la wilaya' : 'Click to choose wilaya'}</option>
                     {wilayas.map(w => (
                       <option key={w.id} value={w.id}>{[w.id, w.name_fr, w.name_ar].filter(Boolean).join(' - ')}</option>
                     ))}
@@ -482,10 +489,16 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
               <div key="field-phone">
                 <label className="dk-label">{translateStorefront('phone_number', lang)} <span style={{ color: '#D85A30' }}>*</span></label>
                 <div className="relative">
-                  <Phone className="w-[18px] h-[18px] absolute top-1/2 -translate-y-1/2 pointer-events-none" style={{ insetInlineStart: 15, color: DK.muted }} aria-hidden="true" />
+                  <Phone className="w-[18px] h-[18px] absolute top-1/2 -translate-y-1/2 pointer-events-none"
+                    style={{ right: isRtl ? 15 : 'auto', left: isRtl ? 'auto' : 15, color: DK.muted }} aria-hidden="true" />
                   <input {...register('customer_phone')} type="tel" inputMode="numeric" autoComplete="tel"
-                    placeholder={lang === 'ar' ? 'يرجى إدخال رقم الهاتف' : lang === 'fr' ? 'Entrez votre numéro de téléphone' : 'Please enter your phone number'}
-                    className="dk-field dk-field-icon" dir="ltr" style={{ textAlign: isRtl ? 'right' : 'left' }} />
+                    placeholder={lang === 'ar' ? 'اكتب رقم هاتفك هنا (مثال: 0612345678)' : lang === 'fr' ? 'Entrez votre numéro de téléphone (ex: 0612345678)' : 'Please enter your phone number'}
+                    className="dk-field" dir="ltr"
+                    style={{
+                      textAlign: isRtl ? 'right' : 'left',
+                      paddingRight: isRtl ? 46 : 18,
+                      paddingLeft: isRtl ? 18 : 46
+                    }} />
                 </div>
                 {errors.customer_phone && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.customer_phone.message}</p>}
               </div>
