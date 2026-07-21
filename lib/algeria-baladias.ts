@@ -1702,7 +1702,7 @@ export function getBaladiasBilingualForWilaya(wilayaId: number | string | null |
 }
 
 function normalizeCommuneName(s: string): string {
-  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase().replace(/\s+/g, ' ')
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase().replace(/\s+/g, ' ').replace(/-/g, ' ')
 }
 
 // Resolve a raw commune string — which may come from a delivery provider (office
