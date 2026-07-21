@@ -22,43 +22,43 @@ export const ZR_OFFICES: ZrOffice[] = [
     "phone": "+213660565382"
   },
   {
-    "wilaya": "11",
+    "wilaya": "54",
     "name": "Hub In Guezzam 54",
-    "commune": "In Guezzam",
+    "commune": "Ain Guezzam",
     "phone": "+213770994606"
   },
   {
     "wilaya": "53",
     "name": "Hub In Salah 53",
-    "commune": "In Salah",
+    "commune": "Ain Salah",
     "phone": "+213770994803"
   },
   {
-    "wilaya": "47",
+    "wilaya": "58",
     "name": "Hub Menea 58",
-    "commune": "Menea",
+    "commune": "El Meniaa",
     "phone": "+213652778396"
   },
   {
     "wilaya": "25",
     "name": "Hub Zouaghi 25",
-    "commune": "Zouaghi",
+    "commune": "Constantine",
     "phone": "+213770777159"
   },
   {
-    "wilaya": "30",
+    "wilaya": "55",
     "name": "Hub Touggourt 55",
     "commune": "Touggourt",
     "phone": "+213795815886"
   },
   {
-    "wilaya": "08",
+    "wilaya": "52",
     "name": "Hub Beni Abbes 52",
     "commune": "Beni Abbes",
     "phone": "+213662566702"
   },
   {
-    "wilaya": "07",
+    "wilaya": "51",
     "name": "Hub Ouled Djellal 51",
     "commune": "Ouled Djellal",
     "phone": "+213770764905"
@@ -162,7 +162,7 @@ export const ZR_OFFICES: ZrOffice[] = [
   {
     "wilaya": "34",
     "name": "Hub Bordj bouareridj",
-    "commune": "Bordj bouareridj",
+    "commune": "B. B. Arreridj",
     "phone": "+213770709166"
   },
   {
@@ -174,19 +174,19 @@ export const ZR_OFFICES: ZrOffice[] = [
   {
     "wilaya": "31",
     "name": "Hub Maraval 31",
-    "commune": "Maraval",
+    "commune": "Oran",
     "phone": "+213770169659"
   },
   {
     "wilaya": "31",
     "name": "Hub El Morchid 31",
-    "commune": "El Morchid",
+    "commune": "Oran",
     "phone": "+213770395200"
   },
   {
     "wilaya": "31",
     "name": "Hub Canastel 31",
-    "commune": "Canastel",
+    "commune": "Oran",
     "phone": "+213770601317"
   },
   {
@@ -234,13 +234,13 @@ export const ZR_OFFICES: ZrOffice[] = [
   {
     "wilaya": "25",
     "name": "Hub Belle vue 25",
-    "commune": "Belle vue",
+    "commune": "Constantine",
     "phone": "+213770777159"
   },
   {
     "wilaya": "25",
     "name": "Hub NOUVELLE",
-    "commune": "NOUVELLE",
+    "commune": "Constantine",
     "phone": "+213770777159"
   },
   {
@@ -264,7 +264,7 @@ export const ZR_OFFICES: ZrOffice[] = [
   {
     "wilaya": "22",
     "name": "Hub Sidi Belabes 22",
-    "commune": "Sidi Belabes",
+    "commune": "Sidi Bel-Abbes",
     "phone": "+213773981287"
   },
   {
@@ -312,7 +312,7 @@ export const ZR_OFFICES: ZrOffice[] = [
   {
     "wilaya": "16",
     "name": "Hub El Jomhoria 16",
-    "commune": "El Jomhoria",
+    "commune": "Les Eucalyptus",
     "phone": "+213560270437"
   },
   {
@@ -324,7 +324,7 @@ export const ZR_OFFICES: ZrOffice[] = [
   {
     "wilaya": "16",
     "name": "Hub Lidou 16",
-    "commune": "Lidou",
+    "commune": "Mohammadia",
     "phone": "+213770363902"
   },
   {
@@ -348,7 +348,7 @@ export const ZR_OFFICES: ZrOffice[] = [
   {
     "wilaya": "16",
     "name": "Hub Birtouta 16",
-    "commune": "Birtouta",
+    "commune": "Bir Touta",
     "phone": "+213770934922"
   },
   {
@@ -437,14 +437,14 @@ export const ZR_OFFICES: ZrOffice[] = [
   },
   {
     "wilaya": "04",
-    "name": "Hub Ain El",
-    "commune": "Ain El",
+    "name": "Hub Ain Beida",
+    "commune": "Ain Beida",
     "phone": "+213698631234"
   },
   {
     "wilaya": "04",
-    "name": "Oum El",
-    "commune": "Oum El",
+    "name": "Oum El Bouaghi",
+    "commune": "Oum El Bouaghi",
     "phone": "+213698631234"
   },
   {
