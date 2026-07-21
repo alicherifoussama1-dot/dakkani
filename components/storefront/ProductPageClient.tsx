@@ -280,14 +280,14 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
     gallery: (
       <div>
         {/* Main image */}
-        <div className="relative group w-full aspect-[4/5] overflow-hidden rounded-3xl" style={{ background: IMG, border: `0.5px solid ${LINE}` }}>
+        <div className="relative group w-full aspect-[2/3] overflow-hidden rounded-3xl" style={{ background: IMG, border: `0.5px solid ${LINE}` }}>
           <div ref={galleryRef} onScroll={handleScroll}
             className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide" style={{ scrollBehavior: 'smooth' }}>
             {images.length > 0 ? images.map((img: any, idx: number) => (
               <div key={idx} data-gallery-item className="w-full h-full flex-shrink-0 snap-center relative">
                 {img?.url ? (
                   <Image src={img.url} alt={`${displayName} - ${idx + 1}`} fill priority={idx === 0}
-                    sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover select-none" draggable="false" />
+                    unoptimized={true} className="object-cover select-none" draggable="false" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-7xl select-none" style={{ color: LINE }}>{displayName[0] || ''}</div>
                 )}
@@ -337,7 +337,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
                 aria-label={`${lang === 'ar' ? 'صورة' : 'Image'} ${i + 1}`} aria-current={i === activeImg}
                 className="w-[68px] h-[68px] shrink-0 rounded-2xl overflow-hidden relative transition-all"
                 style={{ background: IMG, boxShadow: i === activeImg ? `0 0 0 2px ${A}` : `0 0 0 0.5px ${LINE}` }}>
-                {img?.url && <Image src={img.url} alt="" fill sizes="68px" className="object-cover" />}
+                {img?.url && <Image src={img.url} alt="" fill unoptimized={true} className="object-cover" />}
               </button>
             ))}
           </div>

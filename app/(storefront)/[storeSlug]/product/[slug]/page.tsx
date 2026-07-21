@@ -282,11 +282,11 @@ export default async function ProductPage({ params }: Props) {
         product={{ id: product.id, name: product.name_ar ?? product.name, price: product.price }}
       />
 
-      <div className="pt-16 min-h-screen" dir="rtl"
+      <div className="pt-[60px] min-h-screen" dir="rtl"
         data-theme={productTheme.key}
         style={{ ...dkVars, background: '#FAF8F5', color: '#1B1B1F' }}>
         {/* Breadcrumb */}
-        <div className="max-w-6xl mx-auto px-4 pt-6 pb-2">
+        <div className="max-w-6xl mx-auto px-4 pt-2.5 pb-1">
           <nav className="flex text-sm gap-2 items-center" style={{ color: 'var(--pt-text-muted)' }}>
             <Link href={`/store/${store.slug}`} className="hover:opacity-70 transition-opacity">الرئيسية</Link>
             <span style={{ color: 'var(--pt-border)' }}>/</span>
