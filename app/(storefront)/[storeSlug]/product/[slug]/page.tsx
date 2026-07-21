@@ -282,7 +282,7 @@ export default async function ProductPage({ params }: Props) {
         product={{ id: product.id, name: product.name_ar ?? product.name, price: product.price }}
       />
 
-      <div className="pt-[60px] min-h-screen" dir="rtl"
+      <div className="min-h-screen" dir="rtl"
         data-theme={productTheme.key}
         style={{ ...dkVars, background: '#FAF8F5', color: '#1B1B1F' }}>
         {/* Breadcrumb */}

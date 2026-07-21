@@ -34,7 +34,7 @@ export default async function CataloguePage({ params, searchParams }: Props) {
 
   return (
     <StorefrontLayout store={store as any}>
-      <div className="pt-16 min-h-screen" style={{ background: 'var(--pt-bg,#FAFAF8)' }}>
+      <div className="min-h-screen" style={{ background: 'var(--pt-bg,#FAFAF8)' }}>
         {/* Header */}
         <div className="py-10 px-4 mb-0" style={{ background: 'linear-gradient(135deg, rgba(0,0,0,0.82), rgba(0,0,0,0.5)), var(--pt-accent,#0D6EFD)' }}>
           <div className="max-w-6xl mx-auto" dir="rtl">
