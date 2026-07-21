@@ -9,8 +9,20 @@
 // It never references a specific provider; it only groups the normalized list.
 import { useMemo, useState } from 'react'
 import { ChevronDown, Building2 } from 'lucide-react'
-import { formatCommuneBilingual } from '@/lib/algeria-baladias'
+import { formatCommuneBilingual, getBaladiasBilingualForWilaya } from '@/lib/algeria-baladias'
 import { translateStorefront, type Locale } from '@/lib/utils/translations'
+
+// DISPLAY-ONLY Arabic fold: hamza (أإآ→ا), teh-marbuta (ة→ه), alef-maksura
+// (ى→ي), strip diacritics + collapse spaces. Lets an office commune whose
+// Arabic spelling differs from the canonical dataset still render the SAME full
+// "French - Arabic" label Home Delivery shows. It never changes the stored /
+// submitted commune value — used purely to pick which label to write.
+function foldAr(s: string): string {
+  return s
+    .normalize('NFD').replace(/[̀-ͯٓ-ٕ]/g, '')
+    .replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
+    .replace(/\s+/g, ' ').trim().toLowerCase()
+}
 
 export type Office = { id: string; name: string; commune: string; address?: string }
 
@@ -46,8 +58,22 @@ export default function OfficeDeliveryPicker({ offices, wilayaId, lang, baladia,
   const officesInCommune = selectedCommune ? (groups.get(selectedCommune) ?? []) : []
   const selectedOffice = officesInCommune.find(o => o.id === stopdeskCode)
 
-  // Bilingual "French - Arabic" municipality label (falls back to the raw value).
-  const labelFor = (key: string) => formatCommuneBilingual(wilayaId, key) || key
+  // Bilingual "French - Arabic" municipality label — rendered EXACTLY like the
+  // Home-Delivery commune field. First the standard resolver; if it can't match
+  // (office Arabic spelling differs from the canonical dataset), fall back to an
+  // Arabic-tolerant lookup against the SAME canonical list Home Delivery uses,
+  // and only when it matches EXACTLY ONE commune (never guesses a wrong one).
+  // Display-only: the stored/submitted commune value is unchanged.
+  const labelFor = (key: string) => {
+    const resolved = formatCommuneBilingual(wilayaId, key)
+    if (resolved && resolved !== key) return resolved
+    const target = foldAr(key)
+    if (target.length >= 2) {
+      const matches = getBaladiasBilingualForWilaya(wilayaId).filter(o => foldAr(o.value) === target)
+      if (matches.length === 1) return matches[0].label
+    }
+    return key
+  }
 
   const pickCommune = (key: string) => {
     setOpenM(false)
