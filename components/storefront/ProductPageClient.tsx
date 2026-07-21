@@ -1,7 +1,12 @@
 'use client'
 import { useEffect, useMemo, useState, useRef, type ReactNode } from 'react'
+import dynamic from 'next/dynamic'
 import { formatDZD } from '@/lib/utils/format'
-import ProductOrderForm from './ProductOrderForm'
+// Code-split the order form into its own JS chunk. ssr:true keeps it
+// server-rendered (identical HTML, no layout shift, no visual change); it
+// simply loads/parses in parallel instead of inside the hero chunk, so the
+// gallery + variants hydrate sooner. All props + behavior are unchanged.
+const ProductOrderForm = dynamic(() => import('./ProductOrderForm'), { ssr: true })
 import { Shield, Truck, Package, ChevronLeft, ChevronRight, ZoomIn, X, ShoppingBag } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'

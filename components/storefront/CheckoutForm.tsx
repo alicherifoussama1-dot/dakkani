@@ -542,6 +542,12 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       }
 
       setSubmitState('success')
+      // Set short-lived same-site browser access gate cookie (1 hour)
+      document.cookie = `ty_order=${orderData.order_id}; path=/; max-age=3600; SameSite=Lax`
+      // Redirect with a tiny delay to allow trackers/notifications to execute
+      setTimeout(() => {
+        window.location.href = `/${store.slug}/order-confirmation?order=${orderData.order_id}`
+      }, 150)
     } catch (err) {
       console.error(err)
       completingRef.current = false // failed — abandonment tracking resumes
