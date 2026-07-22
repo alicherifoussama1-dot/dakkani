@@ -807,7 +807,9 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
                                       <option value="">{translateStorefront('select_commune', lang)}...</option>
                                       {communes.map(c => (
                                         <option key={c.id} value={c.id} style={{ background: theme === 'glassmorphism' ? '#0f172a' : '#fff' }}>
-                                          {lang === 'ar' ? c.name_ar : (c.name_fr || c.name_ar)}
+                                          {/* DISPLAY-ONLY: bilingual "French - Arabic", same as product page
+                                              + stopdesk picker. value stays commune_id; baladia derive unchanged. */}
+                                          {c.name_fr ? `${c.name_fr} - ${c.name_ar}` : c.name_ar}
                                         </option>
                                       ))}
                                     </select>
