@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { decryptCredentials } from '@/lib/delivery'
+import { resolveCommune } from '@/lib/algeria-baladias'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +16,7 @@ export const dynamic = 'force-dynamic'
 // CACHE_VERSION is baked into every key so a deploy that changes how the office
 // commune is derived (see parts[0] split below) never serves a stale entry that
 // a warm serverless instance computed under older code.
-const CACHE_VERSION = 'v2-commune-parts0'
+const CACHE_VERSION = 'v3-commune-canonical'
 const cache = new Map<string, { at: number; offices: any[] }>()
 const TTL = 10 * 60 * 1000
 
@@ -95,6 +96,12 @@ export async function GET(req: Request) {
           commune = parts[0].trim()
           name = parts[1].trim()
         }
+        // Normalize the commune to its canonical name_ar so the storefront picker
+        // always renders the full bilingual "French - Arabic" label, even if the
+        // stored value is an abbreviated/variant spelling. Display-only: falls back
+        // to the raw string when nothing matches; the office id is untouched.
+        const canonical = resolveCommune(wilayaCode, commune)
+        if (canonical) commune = canonical.name_ar
         return { id: String(o.id), name, address: o.address ?? '', wilaya: wilayaCode, commune }
       })
       console.log(`[desks] ${provider.provider_type} wilaya=${wilayaCode} → ${offices.length} offices from DB`)
