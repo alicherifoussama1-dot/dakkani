@@ -13,6 +13,10 @@ import { initPlatformRuntime } from '@/lib/platform/queue-handlers'
 initPlatformRuntime()
 import { formatCommuneFrench } from '@/lib/algeria-baladias'
 import { resolveDeclaredFee } from '@/lib/delivery/pricing'
+import { sendMetaPurchase } from '@/lib/tracking/meta-capi'
+import { reportError } from '@/lib/monitoring/report'
+import { fetchStoreIntegrations, fetchProductAssignments } from '@/lib/tracking/service'
+import { resolveProductTracking } from '@/lib/tracking/resolve'
 
 const orderSchema = z.object({
   store_id: z.string().uuid({ message: 'المتجر غير صحيح' }),
@@ -305,12 +309,9 @@ export async function POST(req: Request) {
 
     const order = insertRes.data
     if (insertRes.error || !order) {
-      console.error('[orders] insert failed', {
-        store: data.store_id,
-        phone: maskPhone(data.customer_phone),
-        wilaya: data.wilaya_id,
-        delivery_type: data.delivery_type,
-        cause: insertRes.error?.message ?? 'no row returned',
+      reportError(insertRes.error ?? new Error('order insert returned no row'), {
+        route: 'POST /api/orders', level: 'fatal',
+        tags: { kind: 'order_insert_failure', store: data.store_id, wilaya: data.wilaya_id, delivery_type: data.delivery_type },
       })
       return NextResponse.json({ error: 'حدث خطأ أثناء تسجيل الطلب، أعد المحاولة بعد لحظات' }, { status: 500 })
     }
@@ -332,6 +333,37 @@ export async function POST(req: Request) {
     await supabase.from('order_items').insert(
       orderItems.map(i => ({ ...i, order_id: order.id, store_id: data.store_id }))
     )
+
+    // Server-side Meta Purchase (CAPI). Deduplicated against the browser pixel
+    // via event_id = order.id. Started here so it runs CONCURRENTLY with the
+    // stock/notification/sheet work below; awaited (with its failure already
+    // swallowed) just before the response, so it never blocks or breaks the
+    // order. Skips fraud-blocked orders (not real conversions).
+    const metaPurchasePromise = finalStatus === 'failed' ? null : (async () => {
+      try {
+        const firstProductId = data.items[0]?.product_id
+        const [integrations, assignments] = await Promise.all([
+          fetchStoreIntegrations(supabase, data.store_id),
+          firstProductId ? fetchProductAssignments(supabase, firstProductId) : Promise.resolve([]),
+        ])
+        const metaR = resolveProductTracking(integrations, assignments).meta
+        const integ = metaR?.enabled ? metaR.integration : null
+        const pixelId = integ?.pixel_id
+        const token = (integ?.credentials as any)?.accessToken ?? process.env.META_ACCESS_TOKEN
+        if (!pixelId || !token) return
+        const cookie = req.headers.get('cookie') ?? ''
+        await sendMetaPurchase({
+          pixelId, accessToken: token, eventId: order.id,
+          value: subtotal, currency: 'DZD', contentIds: productIds, orderId: order.id,
+          phone: data.customer_phone, name: data.customer_name, city: wilaya?.name_fr ?? undefined,
+          clientIp: client.ip, userAgent: req.headers.get('user-agent') ?? undefined,
+          fbc: cookie.match(/_fbc=([^;]+)/)?.[1], fbp: cookie.match(/_fbp=([^;]+)/)?.[1],
+          sourceUrl: req.headers.get('referer') ?? undefined,
+        })
+      } catch (e) {
+        console.error('[orders] meta CAPI purchase failed (non-blocking):', (e as Error).message)
+      }
+    })()
 
     // 8b. Decrement product stock + stock alert notifications
     for (const item of data.items) {
@@ -506,6 +538,11 @@ export async function POST(req: Request) {
       }
     }
 
+    // Await the concurrently-started server Purchase before returning so it
+    // completes on serverless, but its failure is already swallowed (caught
+    // inside) and it never affects the order result.
+    if (metaPurchasePromise) await metaPurchasePromise
+
     return NextResponse.json({
       success: true,
       order_id: order.id,
@@ -521,7 +558,7 @@ export async function POST(req: Request) {
       console.error('[orders] validation failed:', err.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(' | '))
       return NextResponse.json({ error: zodArabicError(err), details: err.errors }, { status: 400 })
     }
-    console.error('[orders] unexpected failure:', (err as Error)?.message ?? err)
+    reportError(err, { route: 'POST /api/orders', tags: { kind: 'order_create_failure' } })
     return NextResponse.json({ error: 'حدث خطأ، أعد المحاولة' }, { status: 500 })
   }
 }

@@ -55,11 +55,14 @@ export default async function ProductPage({ params }: Props) {
     relatedQuery = relatedQuery.eq('category_id', product.category_id)
   }
 
-  const [wilayasRes, reviewsRes, relatedRes, stockRes] = await Promise.all([
+  // Tracking resolution is independent of the rows below, so run it in the SAME
+  // parallel batch to remove one serial Supabase round-trip from TTFB.
+  const [wilayasRes, reviewsRes, relatedRes, stockRes, trackingBundle] = await Promise.all([
     supabase.from('wilayas').select('*').eq('is_active', true).order('id'),
     supabase.from('reviews').select('customer_name,rating,comment,created_at').eq('product_id', product.id).eq('is_approved', true).order('created_at', { ascending: false }).limit(6),
     relatedQuery,
     supabase.from('warehouse_stock').select('quantity,reserved,variant_key').eq('product_id', product.id).eq('store_id', store.id),
+    getProductTracking(supabase, product as any, store.slug),
   ])
 
   // Store declared prices override the static wilaya fees. Read server-side
@@ -92,11 +95,9 @@ export default async function ProductPage({ params }: Props) {
     const key = r.variant_key || 'default'
     stockMap[key] = (stockMap[key] ?? 0) + (r.quantity - r.reserved)
   }
-  // ── Per-product ISOLATED tracking. Resolves ONLY the pixels assigned to
-  // this product (new tracking library) with graceful fallback to the store
-  // default. Falls back to the legacy store/product pixel columns only when
-  // the tracking library has no config yet. ──
-  const trackingBundle = await getProductTracking(supabase, product as any, store.slug)
+  // ── Per-product ISOLATED tracking (resolved above in the parallel batch).
+  // ONLY this product's pixels, with graceful fallback to the store default,
+  // then to the legacy store/product pixel columns. ──
   const legacyMeta   = product.use_store_pixel ? store.meta_pixel_id   : product.meta_pixel_id
   const legacyTiktok = product.use_store_pixel ? store.tiktok_pixel_id : product.tiktok_pixel_id
   const pixelIds = {

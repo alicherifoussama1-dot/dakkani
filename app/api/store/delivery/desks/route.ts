@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { decryptCredentials } from '@/lib/delivery'
 import { resolveCommune } from '@/lib/algeria-baladias'
+import { reportError } from '@/lib/monitoring/report'
 
 export const dynamic = 'force-dynamic'
 
@@ -110,6 +111,7 @@ export async function GET(req: Request) {
     cache.set(key, { at: Date.now(), offices })
     return NextResponse.json({ offices, hasProvider: true, providerType: provider.provider_type })
   } catch (e: any) {
+    reportError(e, { route: 'GET /api/store/delivery/desks', tags: { kind: 'desks_failure' } })
     return NextResponse.json({ error: e?.message ?? 'خطأ غير متوقع', hasProvider: false }, { status: 500 })
   }
 }

@@ -331,7 +331,8 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         // Tracking bridge → <ProductTracking/> fires Purchase to this product's pixels only.
         if (typeof window !== 'undefined') {
           const value = ((product as any)?.price ?? 0) * (data.quantity ?? 1)
-          window.dispatchEvent(new CustomEvent('dakkani:purchase', { detail: { orderId: json.order_number, value } }))
+          // eventId = order UUID → same event_id the server CAPI uses, so Meta deduplicates.
+          window.dispatchEvent(new CustomEvent('dakkani:purchase', { detail: { orderId: json.order_number, eventId: json.order_id, value } }))
         }
         // Set short-lived same-site browser access gate cookie (1 hour)
         document.cookie = `ty_order=${json.order_id}; path=/; max-age=3600; SameSite=Lax`

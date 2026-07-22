@@ -65,8 +65,11 @@ export default function ProductTracking({ pixelIds, product, currency = 'DZD' }:
     const onPurchase = (e: Event) => {
       const detail = (e as CustomEvent).detail ?? {}
       const orderId: string = detail.orderId ?? ''
+      // eventId (order UUID) is shared with the server CAPI so Meta deduplicates
+      // the browser + server Purchase into one conversion.
+      const eventId: string = detail.eventId ?? orderId
       const value: number = typeof detail.value === 'number' ? detail.value : product.price
-      if (meta) window.fbq?.('track', 'Purchase', { content_ids: [product.id], content_type: 'product', value, currency, order_id: orderId })
+      if (meta) window.fbq?.('track', 'Purchase', { content_ids: [product.id], content_type: 'product', value, currency, order_id: orderId }, { eventID: eventId })
       if (tiktok) window.ttq?.track('CompletePayment', { content_id: product.id, value, currency, order_id: orderId })
       if (google) window.gtag?.('event', 'purchase', { transaction_id: orderId, currency, value, items: [{ item_id: product.id, item_name: product.name }] })
       if (snapchat) window.snaptr?.('track', 'PURCHASE', { item_ids: [product.id], price: value, currency, transaction_id: orderId })
