@@ -337,7 +337,11 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         document.cookie = `ty_order=${json.order_id}; path=/; max-age=3600; SameSite=Lax`
         // Redirect with a tiny delay to allow trackers to execute
         setTimeout(() => {
-          window.location.href = `/${store.slug}/order-confirmation?order=${json.order_id}`
+          const isPlatform = window.location.hostname.includes('vercel.app') || window.location.hostname.includes('localhost') || window.location.hostname.includes('dakkani.com')
+          const redirectPath = isPlatform
+            ? `/store/${store.slug}/order-confirmation?order=${json.order_id}`
+            : `/order-confirmation?order=${json.order_id}`
+          window.location.href = redirectPath
         }, 150)
       } else {
         completingRef.current = false // failed — abandonment tracking resumes
@@ -377,19 +381,30 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
 
   return (
     <form ref={formRef} onSubmit={handleSubmit(onSubmit, onInvalid)} dir={isRtl ? 'rtl' : 'ltr'}
-      className="space-y-3.5 p-6 sm:p-7 rounded-3xl" style={{ background: DK.surface, border: `0.5px solid ${DK.line}`, borderTop: `3px solid ${DK.accent}` }}>
-      <h3 className="font-bold text-lg mb-1" style={{ color: DK.ink }}>{completeLabel}</h3>
+      className="dk-tight space-y-3 px-5 sm:px-6 pb-5 sm:pb-6 rounded-3xl" style={{ background: DK.surface, border: `2px solid color-mix(in srgb, var(--pt-accent) 32%, ${DK.line})`, boxShadow: '0 12px 36px rgba(20,18,15,0.10)' }}>
+      {/* Compact rhythm + attention-grabbing CTA glow — scoped to this form only */}
+      <style>{`.dk-tight .dk-label{margin-bottom:4px;font-size:12.5px}.dk-tight .dk-field{min-height:46px}
+@keyframes dkGlow{0%,100%{box-shadow:0 6px 18px color-mix(in srgb,var(--pt-accent) 32%,transparent)}50%{box-shadow:0 12px 32px color-mix(in srgb,var(--pt-accent) 62%,transparent),0 0 0 4px color-mix(in srgb,var(--pt-accent) 20%,transparent)}}
+.dk-cta{animation:dkGlow 1.8s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.dk-cta{animation:none}}`}</style>
 
-      {/* Delivery type — "المكتب" disappears when the wilaya has no offices */}
-      <div className={`grid ${stopdeskHidden ? 'grid-cols-1' : 'grid-cols-2'} gap-2.5`}>
+      {/* Bold header — the gradient follows the product's theme accent (var(--pt-accent)) */}
+      <div className="-mx-5 sm:-mx-6 rounded-t-3xl px-5 sm:px-6 py-3 flex items-center justify-between"
+        style={{ background: 'linear-gradient(105deg, color-mix(in srgb, var(--pt-accent) 82%, #000), var(--pt-accent))', color: '#fff' }}>
+        <span className="font-bold text-base flex items-center gap-2">🛒 {completeLabel}</span>
+        <span className="text-[10.5px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap" style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.28)' }}>🔥 {lang === 'ar' ? 'عرض اليوم' : lang === 'fr' ? 'Offre du jour' : 'Today'}</span>
+      </div>
+
+      {/* Delivery type — compact segmented control; active fill = product accent */}
+      <div className={`flex gap-1 p-1 rounded-2xl ${stopdeskHidden ? '' : ''}`} style={{ background: DK.paper, border: `0.5px solid ${DK.line}` }}>
         {([['home', translateStorefront('home_delivery', lang), <Home key="h" className="w-4 h-4" />], ['stopdesk', translateStorefront('stopdesk_delivery', lang), <Store key="s" className="w-4 h-4" />]] as const).filter(([val]) => !(val === 'stopdesk' && stopdeskHidden)).map(([val, label, icon]) => {
           const isActive = deliveryType === val
           return (
             <button key={val} type="button" onClick={() => setValue('delivery_type', val)}
-              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-lg font-semibold transition"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[15px] font-bold transition"
               style={isActive
-                ? { background: 'color-mix(in srgb, var(--pt-accent) 12%, transparent)', color: DK.accent, border: `1px solid var(--pt-accent)` }
-                : { background: DK.surface, color: DK.ink, border: `0.5px solid ${DK.line}` }}>
+                ? { background: DK.accent, color: '#fff', boxShadow: '0 3px 10px color-mix(in srgb, var(--pt-accent) 38%, transparent)' }
+                : { background: 'transparent', color: DK.muted }}>
               {icon}{label}
             </button>
           )
@@ -423,38 +438,47 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
             )
 
           case 'wilaya':
-            return (
-              <div key="field-wilaya">
-                <label className="dk-label">{translateStorefront('wilaya', lang)} <span style={{ color: '#D85A30' }}>*</span></label>
-                <div className="relative">
-                  <select {...register('wilaya_id', { valueAsNumber: true })}
-                    onChange={e => { const id = parseInt(e.target.value); setValue('wilaya_id', id); setSelectedWilaya(wilayas.find(w => w.id === id) ?? null) }}
-                    className="dk-field dk-field-strong appearance-none">
-                    <option value="">{lang === 'ar' ? 'اضغط هنا لاختيار الولاية' : lang === 'fr' ? 'Cliquez pour choisir la wilaya' : 'Click to choose wilaya'}</option>
-                    {wilayas.map(w => (
-                      <option key={w.id} value={w.id}>{[w.id, w.name_fr, w.name_ar].filter(Boolean).join(' - ')}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className={`absolute ${isRtl ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none`} style={{ color: '#57564F' }} />
-                </div>
-                {errors.wilaya_id && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.wilaya_id.message}</p>}
-                {selectedWilaya && (
-                  <p className="text-base mt-1.5 font-medium" style={{ color: DK.accent }}>
-                    {lang === 'ar' ? 'رسوم التوصيل: ' : lang === 'fr' ? 'Frais de livraison: ' : 'Delivery fee: '}{formatDZD(deliveryFee)} · {deliveryType === 'home' ? selectedWilaya.delivery_days_home : selectedWilaya.delivery_days_stopdesk}
-                  </p>
-                )}
-              </div>
-            )
-
-          case 'baladia':
-            // Home delivery → municipality from the full list.
-            if (deliveryType === 'home') {
-              return (
-                <div key="field-baladia">
-                  <BaladiaField wilayaId={wilayaId ?? null} value={baladia ?? ''} onChange={v => setValue('baladia', v, { shouldValidate: true })} error={errors.baladia?.message} lang={lang} />
+            {
+              const wilayaSelect = (
+                <div>
+                  <label className="dk-label">{translateStorefront('wilaya', lang)} <span style={{ color: '#D85A30' }}>*</span></label>
+                  <div className="relative">
+                    <select {...register('wilaya_id', { valueAsNumber: true })}
+                      onChange={e => { const id = parseInt(e.target.value); setValue('wilaya_id', id); setSelectedWilaya(wilayas.find(w => w.id === id) ?? null) }}
+                      className="dk-field dk-field-strong appearance-none">
+                      <option value="">{lang === 'ar' ? 'اختر الولاية' : lang === 'fr' ? 'Choisir la wilaya' : 'Choose wilaya'}</option>
+                      {wilayas.map(w => (
+                        <option key={w.id} value={w.id}>{[w.id, w.name_fr, w.name_ar].filter(Boolean).join(' - ')}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className={`absolute ${isRtl ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none`} style={{ color: '#57564F' }} />
+                  </div>
+                  {errors.wilaya_id && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.wilaya_id.message}</p>}
                 </div>
               )
+              const feeNote = selectedWilaya ? (
+                <p className="text-sm mt-1 font-semibold" style={{ color: DK.accent }}>
+                  {lang === 'ar' ? 'رسوم التوصيل: ' : lang === 'fr' ? 'Frais de livraison: ' : 'Delivery fee: '}{formatDZD(deliveryFee)} · {deliveryType === 'home' ? selectedWilaya.delivery_days_home : selectedWilaya.delivery_days_stopdesk}
+                </p>
+              ) : null
+              // Home delivery → pair Wilaya + Baladia on one compact row.
+              if (deliveryType === 'home') {
+                return (
+                  <div key="field-wilaya" className="space-y-1">
+                    <div className="grid grid-cols-2 gap-2.5 items-start">
+                      {wilayaSelect}
+                      <BaladiaField wilayaId={wilayaId ?? null} value={baladia ?? ''} onChange={v => setValue('baladia', v, { shouldValidate: true })} error={errors.baladia?.message} lang={lang} />
+                    </div>
+                    {feeNote}
+                  </div>
+                )
+              }
+              return <div key="field-wilaya">{wilayaSelect}{feeNote}</div>
             }
+
+          case 'baladia':
+            // Home delivery → the municipality is rendered beside the wilaya above.
+            if (deliveryType === 'home') return null
             // Office delivery → provider-agnostic two-step flow: municipalities that
             // have offices → office selector. The municipality field is ALWAYS present
             // for office delivery (never disappears) — it just shows nothing to pick
@@ -564,7 +588,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       </div>
 
       {/* Order summary */}
-      <div className="p-5 space-y-3 text-lg rounded-2xl" style={{ background: DK.paper }}>
+      <div className="p-4 space-y-2 text-base rounded-2xl" style={{ background: DK.paper }}>
         <div className="flex justify-between" style={{ color: DK.muted }}>
           <span>{lang === 'ar' ? 'المنتج' : lang === 'fr' ? 'Produit' : 'Product'}{variantLabel ? ` (${variantLabel})` : ''} × {quantity}</span>
           <span className="tabular-nums">{formatDZD(product.price * quantity)}</span>
@@ -588,11 +612,14 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       )}
 
       <button type="submit" id="original-submit-btn" disabled={isSubmitting}
-        className="w-full h-14 rounded-2xl text-white font-bold text-lg flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-60"
-        style={{ background: DK.accent }}>
+        className="dk-cta w-full rounded-2xl text-white font-bold py-3 flex flex-col items-center justify-center gap-0.5 transition-transform active:scale-95 disabled:opacity-60 disabled:animate-none"
+        style={{ background: `linear-gradient(100deg, color-mix(in srgb, var(--pt-accent) 82%, #000), var(--pt-accent) 52%, color-mix(in srgb, var(--pt-accent) 84%, #fff))` }}>
         {isSubmitting
-          ? <><Loader2 className="w-4 h-4 animate-spin" /> {translateStorefront('saving', lang)}</>
-          : <span className="tabular-nums">{translateStorefront('order_now', lang).replace(' 🛒', '')} — {formatDZD(total)}</span>}
+          ? <span className="flex items-center gap-2 text-lg"><Loader2 className="w-4 h-4 animate-spin" /> {translateStorefront('saving', lang)}</span>
+          : <>
+              <span className="flex items-center gap-2 text-lg tabular-nums">🛒 {translateStorefront('order_now', lang).replace(' 🛒', '')} — {formatDZD(total)}</span>
+              <span className="text-[11px] font-medium opacity-90">{lang === 'ar' ? 'الدفع عند الاستلام' : lang === 'fr' ? 'Paiement à la livraison' : 'Cash on delivery'}</span>
+            </>}
       </button>
 
       {/* Trust indicators near the CTA */}
