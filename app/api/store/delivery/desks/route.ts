@@ -11,7 +11,11 @@ import { decryptCredentials } from '@/lib/delivery'
 
 export const dynamic = 'force-dynamic'
 
-// brief in-memory cache (per server instance) to respect carrier rate limits
+// brief in-memory cache (per server instance) to respect carrier rate limits.
+// CACHE_VERSION is baked into every key so a deploy that changes how the office
+// commune is derived (see parts[0] split below) never serves a stale entry that
+// a warm serverless instance computed under older code.
+const CACHE_VERSION = 'v2-commune-parts0'
 const cache = new Map<string, { at: number; offices: any[] }>()
 const TTL = 10 * 60 * 1000
 
@@ -38,7 +42,7 @@ export async function GET(req: Request) {
     }
     if (!provider) return NextResponse.json({ offices: [], hasProvider: false })
 
-    const key = `${provider.id}:${wilayaCode}`
+    const key = `${CACHE_VERSION}:${provider.id}:${wilayaCode}`
     const hit = cache.get(key)
     if (hit && Date.now() - hit.at < TTL) return NextResponse.json({ offices: hit.offices, hasProvider: true, providerType: provider.provider_type, cached: true })
 
