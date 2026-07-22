@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createPublicClient } from '@/lib/supabase/public'
 import { notFound } from 'next/navigation'
 import { formatDZD } from '@/lib/utils/format'
-import { CheckCircle, Package, Clock, MapPin, XCircle, AlertCircle, ShoppingBag } from 'lucide-react'
+import { CheckCircle, Package, PackageOpen, Clock, MapPin, XCircle, AlertCircle, ShoppingBag } from 'lucide-react'
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import StorefrontLayout from '@/components/storefront/StorefrontLayout'
@@ -50,6 +50,8 @@ const LOCAL_TRANSLATIONS = {
     step_shipped: 'مشحون',
     step_delivered: 'مسلّم',
     back_to_store: 'العودة إلى المتجر',
+    open_before_pay_title: 'يمكنك فتح ومعاينة طلبك قبل الدفع',
+    open_before_pay_desc: 'افحص المنتج عند الاستلام، وادفع فقط إذا أعجبك.',
     order_not_found: 'الطلب غير موجود أو انتهت صلاحية الجلسة',
     order_not_found_desc: 'لم يتم العثور على تفاصيل الطلب، أو قد تكون انتهت صلاحية جلسة الوصول (صلاحيتها ساعة واحدة).',
   },
@@ -85,6 +87,8 @@ const LOCAL_TRANSLATIONS = {
     step_shipped: 'Expédié',
     step_delivered: 'Livré',
     back_to_store: 'Retour à la boutique',
+    open_before_pay_title: 'Ouvrez et vérifiez votre commande avant de payer',
+    open_before_pay_desc: 'Inspectez le produit à la livraison, payez seulement s\'il vous convient.',
     order_not_found: 'Commande introuvable ou session expirée',
     order_not_found_desc: 'La commande n\'a pas pu être trouvée, ou la session d\'accès (valide 1 heure) a expiré.',
   },
@@ -120,6 +124,8 @@ const LOCAL_TRANSLATIONS = {
     step_shipped: 'Shipped',
     step_delivered: 'Delivered',
     back_to_store: 'Back to Store',
+    open_before_pay_title: 'You can open and inspect your order before paying',
+    open_before_pay_desc: 'Check the product on delivery, pay only if you are satisfied.',
     order_not_found: 'Order not found or session expired',
     order_not_found_desc: 'The order details could not be found, or the 1-hour access session has expired.',
   },
@@ -308,6 +314,19 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
             </div>
           )}
         </div>
+
+        {/* 1b. OPEN-BEFORE-PAY REASSURANCE */}
+        {!isCancelled && (
+          <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+              <PackageOpen className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div className="text-start min-w-0">
+              <p className="text-sm font-bold text-emerald-900">{t.open_before_pay_title}</p>
+              <p className="text-xs text-emerald-700 leading-relaxed">{t.open_before_pay_desc}</p>
+            </div>
+          </div>
+        )}
 
         {/* 2. WHATSAPP & PHONE ACTION CONTROLS */}
         {!isCancelled && (
