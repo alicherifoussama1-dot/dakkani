@@ -171,19 +171,25 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
   const isRtl = lang === 'ar'
   const isFr = lang === 'fr'
 
-  // 3. Security verification via Cookie SameSite access gate (1 hour expiry)
-  const tyOrderCookie = cookieStore.get('ty_order')?.value
+  // 3. Access gate — the order id in the URL is an unguessable UUID (the
+  // customer's own confirmation link), so possessing it is the proof of access,
+  // exactly like a Shopify/most-carriers order-status link. The ty_order cookie
+  // is only a best-effort hint and must NOT be *required*: it is routinely lost
+  // across the platform redirect/rewrite, custom domains, in-app webviews and
+  // Safari ITP, which previously showed a false "order not found" immediately
+  // after a perfectly valid order.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   const orderId = searchParams.order
 
   let order: any = null
 
-  if (orderId && tyOrderCookie === orderId) {
+  if (orderId && UUID_RE.test(orderId)) {
     const { data } = await supabase
       .from('orders')
       .select('*, wilaya:wilayas(*), items:order_items(*), provider:delivery_providers(display_name, provider_type)')
       .eq('id', orderId)
       .eq('store_id', store.id)
-      .single()
+      .maybeSingle()
     order = data
   }
 
