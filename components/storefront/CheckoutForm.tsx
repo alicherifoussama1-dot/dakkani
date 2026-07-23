@@ -200,7 +200,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       return
     }
     setLoadingOffices(true)
-    fetch(`/api/store/delivery/desks?store_id=${store.id}&wilaya_id=${watchedWilayaId}`)
+    fetch(`/api/store/delivery/office-list?store_id=${store.id}&wilaya_id=${watchedWilayaId}`)
       .then(res => res.json())
       .then(data => {
         // Keep commune separately: the stopdesk picker shows the commune

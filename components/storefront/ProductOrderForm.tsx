@@ -185,7 +185,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       return
     }
     setLoadingOffices(true)
-    fetch(`/api/store/delivery/desks?store_id=${store.id}&wilaya_id=${wilayaId}`)
+    fetch(`/api/store/delivery/office-list?store_id=${store.id}&wilaya_id=${wilayaId}`)
       .then(res => res.json())
       .then(data => {
         setOffices((data.offices || []).map((o: any) => ({ id: String(o.id), name: o.name, commune: o.commune || '', address: o.address || '' })))
