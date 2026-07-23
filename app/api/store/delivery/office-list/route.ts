@@ -13,6 +13,7 @@ import { createClient } from '@supabase/supabase-js'
 import { decryptCredentials } from '@/lib/delivery'
 import { resolveCommune } from '@/lib/algeria-baladias'
 import { reportError } from '@/lib/monitoring/report'
+import { ZR_OFFICES } from '@/lib/delivery/zr-offices'
 
 export const dynamic = 'force-dynamic'
 
@@ -105,7 +106,17 @@ export async function GET(req: Request) {
         // stored value is an abbreviated/variant spelling. Display-only: falls back
         // to the raw string when nothing matches; the office id is untouched.
         const canonical = resolveCommune(wilayaCode, commune)
-        if (canonical) commune = canonical.name_ar
+        if (canonical) {
+          commune = canonical.name_ar
+        } else {
+          // Un-normalized office row (Latin/variant parts[0] that doesn't match a
+          // real commune, seen on databases whose office list was imported before
+          // normalization). Recover the true commune from the bundled ZR office
+          // list by matching the office name, then resolve to canonical name_ar.
+          const bundled = ZR_OFFICES.find(z => z.wilaya === wilayaCode && z.name.trim().toLowerCase() === name.trim().toLowerCase())
+          const fromBundle = bundled ? resolveCommune(wilayaCode, bundled.commune) : null
+          if (fromBundle) commune = fromBundle.name_ar
+        }
         return { id: String(o.id), name, address: o.address ?? '', wilaya: wilayaCode, commune }
       })
       console.log(`[desks] ${provider.provider_type} wilaya=${wilayaCode} → ${offices.length} offices from DB`)
