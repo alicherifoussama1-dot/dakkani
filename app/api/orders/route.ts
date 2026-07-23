@@ -191,6 +191,40 @@ export async function POST(req: Request) {
 
     const total = Math.max(0, subtotal + deliveryFee - discountAmount)
 
+    // 4b. Idempotency — collapse ACCIDENTAL duplicate submissions (double-click,
+    // network/browser retry, timeout-after-success, two tabs). An identical
+    // submission = same store + phone + delivery_type + total in the last 90s.
+    // We return the EXISTING order instead of inserting a second one, so the
+    // client's retry still gets a success + the same order id/number. This never
+    // blocks a genuine new order: a different product, quantity, total, or a gap
+    // beyond 90s all pass through. The separate 24h "duplicate" STATUS flag below
+    // is unchanged (that one still creates the order, for merchant review).
+    const idemSince = new Date(Date.now() - 90_000).toISOString()
+    const { data: idemHit } = await supabase
+      .from('orders')
+      .select('id, order_number, total')
+      .eq('store_id', data.store_id)
+      .eq('customer_phone', data.customer_phone)
+      .eq('delivery_type', data.delivery_type)
+      .eq('total', total)
+      .neq('status', 'abandoned')
+      .gte('created_at', idemSince)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (idemHit) {
+      console.warn(`[orders] idempotent replay → returning existing ${idemHit.order_number}`)
+      return NextResponse.json({
+        success: true,
+        order_id: idemHit.id,
+        order_number: idemHit.order_number,
+        total: idemHit.total,
+        is_duplicate: false,
+        idempotent_replay: true,
+        chargily_url: null,
+      })
+    }
+
     // 5. Fraud check
     const settings = (store.store_settings as any)
     const fraudResult = await checkFraud(supabase, {
