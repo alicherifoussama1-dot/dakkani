@@ -1,3 +1,4 @@
+// build-tag: office-commune-normalization-2026-07 (force fresh chunk hash)
 // Official Algeria administrative divisions: 58 wilayas -> 1541 communes (baladiyat).
 // Source: compiled from the official Algerian territorial division (commune-level dataset).
 // Each wilaya carries its official 2-digit code, Arabic + French (Latin) names,

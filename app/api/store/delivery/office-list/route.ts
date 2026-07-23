@@ -49,7 +49,7 @@ export async function GET(req: Request) {
 
     const key = `${CACHE_VERSION}:${provider.id}:${wilayaCode}`
     const hit = cache.get(key)
-    if (hit && Date.now() - hit.at < TTL) return NextResponse.json({ offices: hit.offices, hasProvider: true, providerType: provider.provider_type, cached: true, codeVersion: 'ol-parts0-v1' })
+    if (hit && Date.now() - hit.at < TTL) return NextResponse.json({ offices: hit.offices, hasProvider: true, providerType: provider.provider_type, cached: true })
 
     let offices: { id: string; name: string; address: string; wilaya: string; commune: string }[] = []
 
@@ -112,10 +112,7 @@ export async function GET(req: Request) {
     }
 
     cache.set(key, { at: Date.now(), offices })
-    const debug = new URL(req.url).searchParams.get('debug') === '1'
-      ? { _rawSample: offices.slice(0, 4).map(o => `${o.commune} :: ${o.name}`), _providerId: provider.id }
-      : {}
-    return NextResponse.json({ offices, hasProvider: true, providerType: provider.provider_type, codeVersion: 'ol-parts0-v1', ...debug })
+    return NextResponse.json({ offices, hasProvider: true, providerType: provider.provider_type })
   } catch (e: any) {
     reportError(e, { route: 'GET /api/store/delivery/desks', tags: { kind: 'desks_failure' } })
     return NextResponse.json({ error: e?.message ?? 'خطأ غير متوقع', hasProvider: false }, { status: 500 })
