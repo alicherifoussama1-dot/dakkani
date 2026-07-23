@@ -9,7 +9,7 @@
 // It never references a specific provider; it only groups the normalized list.
 import { useMemo, useState } from 'react'
 import { ChevronDown, Building2 } from 'lucide-react'
-import { formatCommuneBilingual, getBaladiasBilingualForWilaya } from '@/lib/algeria-baladias'
+import { formatCommuneBilingual, getBaladiasBilingualForWilaya, formatCommuneBilingualAnywhere } from '@/lib/algeria-baladias'
 import { translateStorefront, type Locale } from '@/lib/utils/translations'
 
 // DISPLAY-ONLY Arabic fold: hamza (أإآ→ا), teh-marbuta (ة→ه), alef-maksura
@@ -72,6 +72,11 @@ export default function OfficeDeliveryPicker({ offices, wilayaId, lang, baladia,
       const matches = getBaladiasBilingualForWilaya(wilayaId).filter(o => foldAr(o.value) === target)
       if (matches.length === 1) return matches[0].label
     }
+    // Cross-wilaya fallback: a delegated commune (e.g. بني عباس served from an
+    // office grouped under its parent wilaya) is not in this wilaya's list, so
+    // bilingual-ize it against the full national table.
+    const anywhere = formatCommuneBilingualAnywhere(key)
+    if (anywhere && anywhere !== key) return anywhere
     return key
   }
 

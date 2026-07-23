@@ -11,9 +11,32 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { decryptCredentials } from '@/lib/delivery'
-import { resolveCommune } from '@/lib/algeria-baladias'
+import { resolveCommune, resolveCommuneAnywhere } from '@/lib/algeria-baladias'
 import { reportError } from '@/lib/monitoring/report'
 import { ZR_OFFICES } from '@/lib/delivery/zr-offices'
+
+// Tokenize an office name for fuzzy matching: drop "hub" + trailing wilaya
+// numbers, keep distinctive locality words.
+function officeTokens(s: string): string[] {
+  return s.toLowerCase().replace(/\d+/g, ' ').replace(/\bhub\b/g, ' ').split(/\s+/).filter(t => t.length > 1)
+}
+// Best ZR bundle office (same wilaya) for a possibly-truncated office name,
+// e.g. "Hub Ain El" → "Hub Ain Beida". Requires the first distinctive token to
+// match and picks the highest token overlap, so it never guesses wildly.
+function bestZrMatch(wilaya: string, name: string) {
+  const nt = officeTokens(name)
+  if (!nt.length) return null
+  let best: (typeof ZR_OFFICES)[number] | null = null
+  let bestScore = 0
+  for (const z of ZR_OFFICES) {
+    if (z.wilaya !== wilaya) continue
+    const zt = officeTokens(z.name)
+    if (!zt.length || zt[0] !== nt[0]) continue
+    const shared = nt.filter(t => zt.includes(t)).length
+    if (shared > bestScore) { best = z; bestScore = shared }
+  }
+  return best
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -105,18 +128,23 @@ export async function GET(req: Request) {
         // always renders the full bilingual "French - Arabic" label, even if the
         // stored value is an abbreviated/variant spelling. Display-only: falls back
         // to the raw string when nothing matches; the office id is untouched.
-        const canonical = resolveCommune(wilayaCode, commune)
-        if (canonical) {
-          commune = canonical.name_ar
-        } else {
-          // Un-normalized office row (Latin/variant parts[0] that doesn't match a
-          // real commune, seen on databases whose office list was imported before
-          // normalization). Recover the true commune from the bundled ZR office
-          // list by matching the office name, then resolve to canonical name_ar.
-          const bundled = ZR_OFFICES.find(z => z.wilaya === wilayaCode && z.name.trim().toLowerCase() === name.trim().toLowerCase())
-          const fromBundle = bundled ? resolveCommune(wilayaCode, bundled.commune) : null
-          if (fromBundle) commune = fromBundle.name_ar
+        // Resolve the commune to its canonical name_ar so the picker renders the
+        // full "French - Arabic" label. Layered fallbacks recover un-normalized /
+        // truncated office rows (Latin parts[0], commune of a delegated wilaya,
+        // clipped office name) without ever guessing wildly:
+        //   1. same-wilaya match  2. any-wilaya exact match (delegated communes)
+        //   3. ZR bundle by exact office name  4. ZR bundle by fuzzy office name
+        let canon = resolveCommune(wilayaCode, commune) ?? resolveCommuneAnywhere(commune)
+        if (!canon) {
+          const nn = name.trim().toLowerCase()
+          const exact = ZR_OFFICES.find(z => z.name.trim().toLowerCase() === nn)
+          if (exact) canon = resolveCommune(exact.wilaya, exact.commune) ?? resolveCommuneAnywhere(exact.commune)
         }
+        if (!canon) {
+          const fuzzy = bestZrMatch(wilayaCode, name)
+          if (fuzzy) canon = resolveCommune(fuzzy.wilaya, fuzzy.commune) ?? resolveCommuneAnywhere(fuzzy.commune)
+        }
+        if (canon) commune = canon.name_ar
         return { id: String(o.id), name, address: o.address ?? '', wilaya: wilayaCode, commune }
       })
       console.log(`[desks] ${provider.provider_type} wilaya=${wilayaCode} → ${offices.length} offices from DB`)

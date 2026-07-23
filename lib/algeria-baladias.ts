@@ -1755,3 +1755,25 @@ export function formatCommuneFrench(wilayaId: number | string | null | undefined
   const c = resolveCommune(wilayaId, commune)
   return c ? c.name_fr : commune
 }
+
+// Resolve a commune across ALL 58 wilayas (EXACT ar/fr match only, so it never
+// guesses). Needed for stopdesk offices whose commune belongs to a different
+// wilaya than the one they are grouped under — e.g. a delegated new wilaya
+// (Beni Abbes=52, In Guezzam=54) served from a parent wilaya's office list.
+export function resolveCommuneAnywhere(commune: string | null | undefined): AlgeriaCommune | null {
+  if (!commune) return null
+  const raw = normalizeCommuneName(commune)
+  if (raw.length < 3) return null
+  for (let w = 1; w <= 58; w++) {
+    const hit = getCommunesByWilaya(w).find(c => normalizeCommuneName(c.name_ar) === raw || normalizeCommuneName(c.name_fr) === raw)
+    if (hit) return hit
+  }
+  return null
+}
+
+// Bilingual "French - Arabic" for a commune resolved across all wilayas.
+export function formatCommuneBilingualAnywhere(commune: string | null | undefined): string {
+  if (!commune) return commune ?? ''
+  const c = resolveCommuneAnywhere(commune)
+  return c ? `${c.name_fr} - ${c.name_ar}` : commune
+}
