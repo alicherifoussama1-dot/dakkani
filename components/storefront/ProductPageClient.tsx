@@ -292,7 +292,8 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
               <div key={idx} data-gallery-item className="w-full h-full flex-shrink-0 snap-center relative">
                 {img?.url ? (
                   <Image src={img.url} alt={`${displayName} - ${idx + 1}`} fill priority={idx === 0}
-                    unoptimized={true} className="object-cover select-none" draggable="false" />
+                    loading={idx === 0 ? undefined : 'lazy'} sizes="(min-width: 1024px) 42vw, 100vw"
+                    className="object-cover select-none" draggable="false" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-7xl select-none" style={{ color: LINE }}>{displayName[0] || ''}</div>
                 )}
@@ -342,7 +343,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
                 aria-label={`${lang === 'ar' ? 'صورة' : 'Image'} ${i + 1}`} aria-current={i === activeImg}
                 className="w-[68px] h-[68px] shrink-0 rounded-2xl overflow-hidden relative transition-all"
                 style={{ background: IMG, boxShadow: i === activeImg ? `0 0 0 2px ${A}` : `0 0 0 0.5px ${LINE}` }}>
-                {img?.url && <Image src={img.url} alt="" fill unoptimized={true} className="object-cover" />}
+                {img?.url && <Image src={img.url} alt="" fill sizes="68px" loading="lazy" className="object-cover" />}
               </button>
             ))}
           </div>
