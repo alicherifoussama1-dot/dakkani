@@ -100,6 +100,11 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   // served by /api/store/delivery/desks which abstracts every provider).
   const [offices, setOffices] = useState<{ id: string; name: string; commune: string; address: string }[]>([])
   const [loadingOffices, setLoadingOffices] = useState(false)
+  // The wilaya the current `offices` result actually belongs to. Until it equals
+  // the selected wilaya, the office list is stale/loading — so we must NOT treat
+  // "0 offices" as "this wilaya has no stopdesk" (that false positive was flipping
+  // a customer off "المكتب" back to "المنزل" the instant they picked a wilaya).
+  const [officesWilaya, setOfficesWilaya] = useState<number | null>(null)
   const [hasProvider, setHasProvider] = useState(false)
 
   // Load checkout settings
@@ -181,6 +186,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
     if (!wilayaId) {
       setOffices([])
       setHasProvider(false)
+      setOfficesWilaya(null)
       setValue('stopdesk_code', undefined)
       return
     }
@@ -192,7 +198,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         setHasProvider(!!data.hasProvider)
       })
       .catch(() => { setOffices([]); setHasProvider(false) })
-      .finally(() => setLoadingOffices(false))
+      .finally(() => { setLoadingOffices(false); setOfficesWilaya(wilayaId) })
   }, [wilayaId, store.id, setValue])
 
   useEffect(() => {
@@ -204,7 +210,10 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   }, [deliveryType, setValue])
 
   // No offices in this wilaya → hide "المكتب" so the customer never dead-ends.
-  const stopdeskHidden = !!wilayaId && !loadingOffices && offices.length === 0
+  // Only decide this once the office list for THIS wilaya has actually loaded
+  // (officesWilaya === wilayaId), never during the load window — otherwise a
+  // freshly-picked wilaya briefly looks empty and wrongly forces "المنزل".
+  const stopdeskHidden = !!wilayaId && officesWilaya === wilayaId && !loadingOffices && offices.length === 0
   useEffect(() => {
     if (stopdeskHidden && deliveryType === 'stopdesk') {
       setValue('delivery_type', 'home', { shouldValidate: true })

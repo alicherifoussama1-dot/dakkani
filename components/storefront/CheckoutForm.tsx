@@ -131,6 +131,10 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const [orderId, setOrderId] = useState('')
   const [offices, setOffices] = useState<{ id: string; name: string; commune: string }[]>([])
   const [loadingOffices, setLoadingOffices] = useState(false)
+  // Wilaya the current `offices` belong to — see ProductOrderForm: prevents a
+  // freshly-picked wilaya (offices not loaded yet) from wrongly reading as
+  // "no stopdesk" and flipping the customer off "المكتب".
+  const [officesWilaya, setOfficesWilaya] = useState<number | null>(null)
   const [hasProvider, setHasProvider] = useState(false)
   // Specific server-provided failure message (Arabic) shown under the CTA.
   const [serverError, setServerError] = useState('')
@@ -196,6 +200,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
     if (!watchedWilayaId) {
       setOffices([])
       setHasProvider(false)
+      setOfficesWilaya(null)
       setValue('stopdesk_code', undefined)
       return
     }
@@ -218,6 +223,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       })
       .finally(() => {
         setLoadingOffices(false)
+        setOfficesWilaya(watchedWilayaId)
       })
   }, [watchedWilayaId, store.id, setValue])
 
@@ -231,7 +237,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
 
   // No offices in this wilaya → the "المكتب" option is hidden entirely so the
   // customer can never dead-end; anyone who had picked it is moved back home.
-  const stopdeskHidden = !!watchedWilayaId && !loadingOffices && offices.length === 0
+  const stopdeskHidden = !!watchedWilayaId && officesWilaya === watchedWilayaId && !loadingOffices && offices.length === 0
   useEffect(() => {
     if (stopdeskHidden && watchedDeliveryType === 'stopdesk') {
       setValue('delivery_type', 'home', { shouldValidate: true })
