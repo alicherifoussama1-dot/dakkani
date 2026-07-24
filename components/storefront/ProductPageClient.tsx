@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useState, useRef, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, useRef, useCallback, type ReactNode } from 'react'
 import dynamic from 'next/dynamic'
 import { formatDZD } from '@/lib/utils/format'
 // Code-split the order form into its own JS chunk. ssr:true keeps it
@@ -55,37 +55,23 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
   const [selected,  setSelected]  = useState<Record<string, string>>({})
   const [showSticky, setShowSticky] = useState(true)
 
-  useEffect(() => {
-    let observer: IntersectionObserver | null = null
-    let rafId: number | null = null
-    let cancelled = false
-
-    const attach = (target: Element) => {
-      observer = new IntersectionObserver(([entry]) => {
-        setShowSticky(!entry.isIntersecting)
-      }, { root: null, rootMargin: '0px 0px -84px 0px', threshold: 0 })
-      observer.observe(target)
-    }
-
-    // rAF-based polling: retry every frame until the real submit button (or the
-    // order-form anchor) is found in the live DOM. This is robust against any
-    // hydration/SSR timing: we never assume a fixed delay; we simply wait for
-    // the actual DOM node to appear, then attach exactly once.
-    const poll = () => {
-      if (cancelled) return
-      const target =
-        document.getElementById('original-submit-btn') ??
-        document.getElementById('order-form')
-      if (target) { attach(target); return }
-      rafId = requestAnimationFrame(poll)
-    }
-    poll()
-
-    return () => {
-      cancelled = true
-      if (rafId !== null) cancelAnimationFrame(rafId)
-      if (observer) observer.disconnect()
-    }
+  // Sticky buy bar visibility, driven by whether the order-form section is in
+  // view. Uses a CALLBACK REF so the IntersectionObserver RE-ATTACHES every time
+  // React (re)mounts the section node — a one-time useEffect observer silently
+  // died whenever the node was re-created on a re-render, leaving the bar stuck
+  // visible. Bar hides while the order section is on screen, reappears when it
+  // scrolls out of view.
+  const stickyObserverRef = useRef<IntersectionObserver | null>(null)
+  const orderFormRef = useCallback((node: HTMLElement | null) => {
+    stickyObserverRef.current?.disconnect()
+    stickyObserverRef.current = null
+    if (!node) return
+    const io = new IntersectionObserver(
+      ([entry]) => setShowSticky(!entry.isIntersecting),
+      { root: null, rootMargin: '0px 0px -84px 0px', threshold: 0 },
+    )
+    io.observe(node)
+    stickyObserverRef.current = io
   }, [])
 
   // Load checkout settings and language defaults
@@ -460,7 +446,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
     gallery:     <section key="gallery" className={wrapCls}>{heroNodes.gallery}</section>,
     info:        <section key="info" className={wrapCls}>{heroNodes.info}</section>,
     variants:    heroNodes.variants ? <section key="variants" className={wrapCls}>{heroNodes.variants}</section> : null,
-    buybox:      <section key="buybox" id="order-form" className={wrapCls} style={{ scrollMarginTop: 24 }}>{heroNodes.buybox}</section>,
+    buybox:      <section key="buybox" id="order-form" ref={orderFormRef} className={wrapCls} style={{ scrollMarginTop: 24 }}>{heroNodes.buybox}</section>,
     trust:       <section key="trust" className={wrapCls}>{heroNodes.trust}</section>,
     description: heroNodes.description ? <section key="description" className="pt-6">{heroNodes.description}</section> : null,
     ...(extraSections ?? {}),

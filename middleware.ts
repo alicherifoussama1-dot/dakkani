@@ -54,12 +54,19 @@ export async function middleware(request: NextRequest) {
       const m = path.match(/^\/store\/[^/]+(\/.*)?$/)
       if (m) path = m[1] ?? '/'
       // Avoid double-prefixing if the path already targets this store.
+      // IMPORTANT: carry the original query string across the rewrite — otherwise
+      // params like ?order=<uuid> (thank-you page) are dropped and the page can't
+      // find the order.
       if (!path.startsWith(`/${slug}/`) && path !== `/${slug}`) {
         const target = path === '/' ? `/${slug}` : `/${slug}${path}`
-        return NextResponse.rewrite(new URL(target, request.url), { request: { headers: request.headers } })
+        const rewriteUrl = new URL(target, request.url)
+        rewriteUrl.search = request.nextUrl.search
+        return NextResponse.rewrite(rewriteUrl, { request: { headers: request.headers } })
       }
       if (path !== pathname) {
-        return NextResponse.rewrite(new URL(path, request.url), { request: { headers: request.headers } })
+        const rewriteUrl = new URL(path, request.url)
+        rewriteUrl.search = request.nextUrl.search
+        return NextResponse.rewrite(rewriteUrl, { request: { headers: request.headers } })
       }
     }
   }
