@@ -49,14 +49,14 @@ export default function ProductTracking({ pixelIds, product, currency = 'DZD' }:
     if (!anyEnabled) return
 
     const fireViewContent = () => {
-      if (meta) window.fbq?.('track', 'ViewContent', { content_ids: [product.id], content_name: product.name, content_type: 'product', value: product.price, currency })
+      if (meta) window.fbq?.('trackSingle', meta, 'ViewContent', { content_ids: [product.id], content_name: product.name, content_type: 'product', value: product.price, currency })
       if (tiktok) window.ttq?.track('ViewContent', { content_id: product.id, content_name: product.name, content_type: 'product', value: product.price, currency })
       if (google) window.gtag?.('event', 'view_item', { currency, value: product.price, items: [{ item_id: product.id, item_name: product.name }] })
       if (snapchat) window.snaptr?.('track', 'VIEW_CONTENT', { item_ids: [product.id], price: product.price, currency })
     }
 
     const onInitiateCheckout = () => {
-      if (meta) window.fbq?.('track', 'InitiateCheckout', { content_ids: [product.id], content_type: 'product', value: product.price, currency, num_items: 1 })
+      if (meta) window.fbq?.('trackSingle', meta, 'InitiateCheckout', { content_ids: [product.id], content_type: 'product', value: product.price, currency, num_items: 1 })
       if (tiktok) window.ttq?.track('InitiateCheckout', { content_id: product.id, value: product.price, currency })
       if (google) window.gtag?.('event', 'begin_checkout', { currency, value: product.price, items: [{ item_id: product.id, item_name: product.name }] })
       if (snapchat) window.snaptr?.('track', 'START_CHECKOUT', { item_ids: [product.id], price: product.price, currency })
@@ -69,7 +69,7 @@ export default function ProductTracking({ pixelIds, product, currency = 'DZD' }:
       // the browser + server Purchase into one conversion.
       const eventId: string = detail.eventId ?? orderId
       const value: number = typeof detail.value === 'number' ? detail.value : product.price
-      if (meta) window.fbq?.('track', 'Purchase', { content_ids: [product.id], content_type: 'product', value, currency, order_id: orderId }, { eventID: eventId })
+      if (meta) window.fbq?.('trackSingle', meta, 'Purchase', { content_ids: [product.id], content_type: 'product', value, currency, order_id: orderId }, { eventID: eventId })
       if (tiktok) window.ttq?.track('CompletePayment', { content_id: product.id, value, currency, order_id: orderId })
       if (google) window.gtag?.('event', 'purchase', { transaction_id: orderId, currency, value, items: [{ item_id: product.id, item_name: product.name }] })
       if (snapchat) window.snaptr?.('track', 'PURCHASE', { item_ids: [product.id], price: value, currency, transaction_id: orderId })

@@ -72,7 +72,11 @@ export function MetaPixel({ pixelId, onEventId }: MetaPixelProps) {
     if (!pixelId) return
     window.fbq?.('init', pixelId)
     const eventId = generateEventId('PageView', pixelId)
-    window.fbq?.('track', 'PageView', {}, { eventID: eventId })
+    // trackSingle → deliver ONLY to this pixel. Plain `track` broadcasts to every
+    // pixel init'd in the page (fbq is a global singleton that persists across
+    // soft navigations), which would leak one product's events into another
+    // product's pixel. Scoping by pixelId guarantees per-product isolation.
+    window.fbq?.('trackSingle', pixelId, 'PageView', {}, { eventID: eventId })
     onEventId?.(eventId)
   }, [pixelId, onEventId])
 
@@ -91,7 +95,9 @@ export function useMetaPixel(pixelId: string | null | undefined) {
     (event: MetaEventName, params?: MetaEventParams): string => {
       if (!pixelId || !window.fbq) return ''
       const eventId = generateEventId(event, pixelId)
-      window.fbq?.('track', event, params ?? {}, { eventID: eventId })
+      // trackSingle → scope to this pixel only (see PageView note above); never
+      // broadcast to other products' pixels sharing the global fbq.
+      window.fbq?.('trackSingle', pixelId, event, params ?? {}, { eventID: eventId })
       return eventId
     },
     [pixelId]
