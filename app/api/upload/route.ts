@@ -2,6 +2,7 @@
 // File Upload API — stores to Supabase Storage
 // ============================================================
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
@@ -44,16 +45,22 @@ export async function POST(req: Request) {
     const ext      = file.name.split('.').pop() ?? 'jpg'
     const fileName = `${folder}/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
-    const { data, error } = await supabase.storage
+    // Use service role admin client when available to bypass storage RLS on server-side upload
+    const storageClient = process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY)
+      : supabase
+
+    const { data, error } = await storageClient.storage
       .from(BUCKET)
       .upload(fileName, file, { contentType: file.type, upsert: false })
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(data.path)
+    const { data: { publicUrl } } = storageClient.storage.from(BUCKET).getPublicUrl(data.path)
 
     return NextResponse.json({ url: publicUrl, path: data.path })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }
 }
+

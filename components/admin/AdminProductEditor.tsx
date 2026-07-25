@@ -698,11 +698,11 @@ export default function AdminProductEditor({
       form.append('file', file)
       form.append('folder', `products/${storeId}`)
       const res = await fetch('/api/upload', { method: 'POST', body: form })
-      if (res.ok) {
-        const data = await res.json()
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.url) {
         setImages(prev => [...prev, { url: data.url, path: data.path }])
       } else {
-        setError('فشل رفع الصورة — تأكد من إعداد Supabase Storage')
+        setError(data.error || 'فشل رفع الصورة — تأكد من إعداد Supabase Storage')
       }
     }
     setUploading(false)
@@ -725,11 +725,11 @@ export default function AdminProductEditor({
     form.append('kind', 'banner') // raises the server limit to 20MB for the banner only
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: form })
-      if (res.ok) {
-        const data = await res.json()
-        setValue('description_image_url', data.url, { shouldDirty: true })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.url) {
+        setValue('description_image_url', data.url, { shouldDirty: true, shouldValidate: true })
       } else {
-        setError('فشل رفع صورة الوصف — تأكد من إعداد Supabase Storage')
+        setError(data.error || 'فشل رفع صورة الوصف — تأكد من إعداد Supabase Storage')
       }
     } catch (err) {
       setError('حدث خطأ أثناء رفع الصورة')
