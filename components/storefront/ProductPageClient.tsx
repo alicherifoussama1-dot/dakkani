@@ -404,15 +404,17 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
           </div>
         )}
         {(product.description_image_url || product.attributes?.description_image_url) && (
-          // Full-bleed, edge-to-edge description banner. `unoptimized` serves the
-          // original uploaded file untouched (no Next resizing/compression), so it
-          // stays sharp on high-DPI/Retina screens at any viewport width.
+          // Full-bleed, edge-to-edge description banner. The ORIGINAL upload stays
+          // full-quality in storage; here we let Next/Image serve a light,
+          // responsive WebP resized to the viewport (quality 90 keeps banner text
+          // crisp). It sits below the fold → lazy-loaded, so it never blocks LCP or
+          // the initial product-page load on slow 3G/4G devices.
           <div className={displayDescription ? 'mt-6' : ''}>
             <Image
               src={product.description_image_url ?? product.attributes?.description_image_url}
               alt={lang === 'ar' ? 'وصف المنتج' : 'Description du produit'}
               width={1200} height={1200} sizes="100vw"
-              unoptimized
+              quality={90}
               className="block w-full h-auto m-0 p-0" style={{ borderRadius: 0, border: 'none', boxShadow: 'none' }} loading="lazy" />
           </div>
         )}

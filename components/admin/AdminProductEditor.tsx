@@ -714,14 +714,15 @@ export default function AdminProductEditor({
     if (!file) return
     setDescUploading(true)
     setError('')
-    if (file.size > 5 * 1024 * 1024) {
-      setError('صورة الوصف أكبر من 5MB')
+    if (file.size > 20 * 1024 * 1024) {
+      setError('صورة الوصف أكبر من 20MB')
       setDescUploading(false)
       return
     }
     const form = new FormData()
     form.append('file', file)
     form.append('folder', `products/${storeId}`)
+    form.append('kind', 'banner') // raises the server limit to 20MB for the banner only
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: form })
       if (res.ok) {

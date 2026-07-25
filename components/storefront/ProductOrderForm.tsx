@@ -128,7 +128,10 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         ? z.string().regex(/^(05|06|07)\d{8}$/, isAr ? 'رقم الهاتف البديل غير صالح' : isFr ? 'Numéro alternatif invalide' : 'Invalid alternative phone number')
         : z.string().regex(/^(05|06|07)\d{8}$/, isAr ? 'رقم الهاتف البديل غير صالح' : isFr ? 'Numéro alternatif invalide' : 'Invalid alternative phone number').optional().or(z.literal('')),
       delivery_type: z.enum(['home', 'stopdesk']),
-      wilaya_id: z.number({ required_error: isAr ? 'اختر الولاية' : isFr ? 'Sélectionnez la Wilaya' : 'Choose province' }).int().min(1),
+      wilaya_id: z.number({
+        required_error: isAr ? 'اختر الولاية' : isFr ? 'Sélectionnez la Wilaya' : 'Choose province',
+        invalid_type_error: isAr ? 'اختر الولاية' : isFr ? 'Sélectionnez la Wilaya' : 'Choose province',
+      }).int().min(1, isAr ? 'اختر الولاية' : isFr ? 'Sélectionnez la Wilaya' : 'Choose province'),
       baladia: z.string().optional(),
       address: fieldsConfig.address?.required
         ? z.string().min(5, isAr ? 'العنوان التفصيلي مطلوب ومهم للتوصيل للمنزل' : isFr ? 'L\'adresse est requise' : 'Address is required')
@@ -153,6 +156,16 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           code: z.ZodIssueCode.custom,
           path: ['baladia'],
           message: isAr ? 'اختر بلدية مكتب الاستلام' : isFr ? 'Choisissez la commune du bureau' : 'Choose the pickup office commune',
+        })
+      }
+      // Stopdesk: once a commune is chosen, the pickup office itself is mandatory
+      // (multi-office communes leave stopdesk_code empty until the customer picks).
+      // Gated on baladia so the two-step UI shows one error at a time.
+      if (data.delivery_type === 'stopdesk' && data.baladia && data.baladia.trim() !== '' && (!data.stopdesk_code || data.stopdesk_code.trim() === '')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['stopdesk_code'],
+          message: isAr ? 'اختر مكتب الاستلام' : isFr ? 'Choisissez le bureau de retrait' : 'Choose the pickup office',
         })
       }
     })
@@ -519,6 +532,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
                     }}
                   />
                   {errors.baladia && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.baladia.message}</p>}
+                  {errors.stopdesk_code && <p data-error="true" className="text-xs mt-1.5" style={{ color: '#A32D2D' }}>{errors.stopdesk_code.message}</p>}
                 </div>
               )
             }
