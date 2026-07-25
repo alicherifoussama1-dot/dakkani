@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import CheckoutForm from '@/components/storefront/CheckoutForm'
 import { applyStoreDeliveryPrices } from '@/lib/delivery/pricing'
+import { getProductTracking } from '@/lib/tracking/service'
 
 interface Props {
   params: { storeSlug: string }
@@ -40,6 +41,16 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
       .eq('is_active', true)
       .single()
     product = data
+  }
+
+  // Resolve the product's Meta pixel through the SAME integration system the
+  // product page and order API use, so /checkout targets the correct isolated
+  // pixel instead of the legacy columns. Null when no product/integration →
+  // CheckoutForm falls back to the legacy columns.
+  let resolvedMetaPixelId: string | null = null
+  if (product) {
+    const bundle = await getProductTracking(supabase, product as any, params.storeSlug)
+    resolvedMetaPixelId = bundle.pixelIds.meta
   }
 
   // Load all 58 wilayas, then override fees with the store's declared prices
@@ -104,6 +115,7 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
         <CheckoutForm
           store={store as any}
           product={product as any}
+          resolvedMetaPixelId={resolvedMetaPixelId}
           wilayas={wilayas ?? []}
           initialQty={parseInt(searchParams.qty ?? '1')}
           initialVariant={searchParams.variant ?? 'default'}

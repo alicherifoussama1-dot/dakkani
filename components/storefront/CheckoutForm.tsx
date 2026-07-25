@@ -58,6 +58,10 @@ interface ProductData {
 interface Props {
   store: StoreData; product: ProductData | null
   wilayas: Wilaya[]; initialQty: number; initialVariant: string
+  // Meta pixel resolved by the shared integration system (product page + order
+  // API). When present it wins over the legacy columns so /checkout targets the
+  // same correct, isolated pixel as the rest of the customer journey.
+  resolvedMetaPixelId?: string | null
 }
 
 // ── Status badge helpers ─────────────────────────────────────
@@ -67,18 +71,24 @@ const FRAUD_BADGE = (score: number) =>
   null
 
 // ── Pixel hook wrapper ────────────────────────────────────────
-function useOrderPixels(store: StoreData, product: ProductData | null) {
-  const pixelId = product
+function useOrderPixels(store: StoreData, product: ProductData | null, resolvedMetaPixelId?: string | null) {
+  // Meta pixel: the shared integration system wins (same as product page + order
+  // API); legacy columns are only a fallback when no integration is configured.
+  const legacyMeta = product
     ? (product.use_store_pixel ? store.meta_pixel_id : product.meta_pixel_id)
     : store.meta_pixel_id
+  const pixelId = resolvedMetaPixelId ?? legacyMeta
   const tiktokId = product
     ? (product.use_store_pixel ? store.tiktok_pixel_id : product.tiktok_pixel_id)
     : store.tiktok_pixel_id
 
-  return { pixelId, tiktokId, ...usePixels({ metaPixelId: pixelId, tiktokPixelId: tiktokId }) }
+  // metaPixelId:null → usePixels handles ONLY TikTok (unchanged). Meta events are
+  // fired explicitly below with eventID = order UUID, so the browser Purchase
+  // deduplicates with the server CAPI (one conversion, correct pixel).
+  return { pixelId, tiktokId, ...usePixels({ metaPixelId: null, tiktokPixelId: tiktokId }) }
 }
 
-export default function CheckoutForm({ store, product, wilayas, initialQty, initialVariant }: Props) {
+export default function CheckoutForm({ store, product, wilayas, initialQty, initialVariant, resolvedMetaPixelId }: Props) {
   const router = useRouter()
   const settings = Array.isArray(store.store_settings) ? store.store_settings[0] : store.store_settings
   const theme = settings?.checkout_theme ?? 'default'
@@ -139,7 +149,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   // Specific server-provided failure message (Arabic) shown under the CTA.
   const [serverError, setServerError] = useState('')
 
-  const { pixelId, tiktokId, trackPurchase, trackInitiateCheckout } = useOrderPixels(store, product)
+  const { pixelId, tiktokId, trackPurchase, trackInitiateCheckout } = useOrderPixels(store, product, resolvedMetaPixelId)
 
    const dynamicSchema = useMemo(() => {
     const isAr = lang === 'ar'
@@ -285,6 +295,12 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           icFiredRef.current = true
           trackInitiateCheckout(product ? [product.id] : [], unitPrice * watchedQty, watchedQty, {
             phone: watchedPhone, firstName: (watchedName ?? '').split(' ')[0] || undefined,
+          }) // TikTok only (metaPixelId:null)
+          // Meta IC scoped to this product's pixel (browser-only, same as the
+          // product-page flow — the server never sends an IC CAPI event).
+          if (pixelId) window.fbq?.('trackSingle', pixelId, 'InitiateCheckout', {
+            content_ids: product ? [product.id] : [], content_type: 'product',
+            value: unitPrice * watchedQty, currency: 'DZD', num_items: watchedQty,
           })
         }
       }).catch(() => {})
@@ -471,35 +487,24 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       setFraudScore(orderData.fraud_score)
 
       // 2. Fire pixels (browser-side)
+      //  • TikTok CompletePayment via usePixels (unchanged).
+      //  • Meta Purchase fired explicitly with eventID = order UUID (order.id) so
+      //    it deduplicates against the server CAPI, which app/api/orders sends with
+      //    the SAME event_id = order.id to the SAME integration-resolved pixel.
+      //    This replaces the old trackPurchase(meta) + manual /api/meta-events
+      //    calls, which used two extra event_ids and double/triple-counted the
+      //    conversion. Result: exactly one Purchase conversion, correct pixel.
       if (product) {
-        trackPurchase(newOrderNumber, product.id, orderData.total)
+        trackPurchase(newOrderNumber, product.id, orderData.total) // TikTok only (metaPixelId:null)
+        if (pixelId) {
+          window.fbq?.('trackSingle', pixelId, 'Purchase', {
+            content_ids: [product.id], content_type: 'product',
+            value: orderData.total, currency: 'DZD', order_id: newOrderNumber,
+          }, { eventID: newOrderId })
+        }
       }
 
-      // 3. CAPI server-side (fire-and-forget)
-      if (pixelId) {
-        fetch('/api/meta-events', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            pixelId,
-            eventName: 'Purchase',
-            eventId: `purchase-${newOrderNumber}`,
-            eventSourceUrl: window.location.href,
-            userData: {
-              phone: data.phone,
-              firstName: data.customer_name.split(' ')[0],
-              userAgent: navigator.userAgent,
-            },
-            customData: {
-              value: orderData.total,
-              currency: 'DZD',
-              contentIds: product ? [product.id] : [],
-              orderId: newOrderId,
-            },
-          }),
-        }).catch(() => {})
-      }
-
+      // 3. TikTok Events API (server-side, fire-and-forget) — unchanged.
       if (tiktokId) {
         fetch('/api/tiktok-events', {
           method: 'POST',
