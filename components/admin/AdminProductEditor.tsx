@@ -687,6 +687,53 @@ export default function AdminProductEditor({
   }
 
   // ── Stable callbacks (useCallback prevents recreation) ────
+  const uploadFileToStorage = useCallback(async (file: File, folder: string, kind?: string): Promise<{ url: string; path: string }> => {
+    // If file > 3.5MB (or for banners), request a presigned upload URL to bypass Vercel 4.5MB serverless limits
+    if (file.size > 3.5 * 1024 * 1024) {
+      const resSign = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          folder,
+          kind,
+        }),
+      })
+      const signData = await resSign.json().catch(() => ({}))
+      if (!resSign.ok || !signData.signedUrl) {
+        throw new Error(signData.error || 'فشل إنشاء رابط التخزين المباشر')
+      }
+
+      // Direct HTTP PUT to Supabase Storage signed URL
+      const uploadRes = await fetch(signData.signedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      })
+
+      if (!uploadRes.ok) {
+        throw new Error('فشل رفع الملف إلى سوباباز ستورج')
+      }
+
+      return { url: signData.publicUrl, path: signData.path }
+    }
+
+    // Files <= 3.5MB: try standard form upload first
+    const form = new FormData()
+    form.append('file', file)
+    form.append('folder', folder)
+    if (kind) form.append('kind', kind)
+
+    const res = await fetch('/api/upload', { method: 'POST', body: form })
+    const data = await res.json().catch(() => ({}))
+    if (res.ok && data.url) {
+      return { url: data.url, path: data.path }
+    }
+    throw new Error(data.error || 'فشل رفع الصورة — تأكد من إعداد Supabase Storage')
+  }, [])
+
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     if (!files.length) return
@@ -694,20 +741,16 @@ export default function AdminProductEditor({
     setError('')
     for (const file of files) {
       if (file.size > 5 * 1024 * 1024) { setError(`الصورة ${file.name} أكبر من 5MB`); continue }
-      const form = new FormData()
-      form.append('file', file)
-      form.append('folder', `products/${storeId}`)
-      const res = await fetch('/api/upload', { method: 'POST', body: form })
-      const data = await res.json().catch(() => ({}))
-      if (res.ok && data.url) {
-        setImages(prev => [...prev, { url: data.url, path: data.path }])
-      } else {
-        setError(data.error || 'فشل رفع الصورة — تأكد من إعداد Supabase Storage')
+      try {
+        const uploaded = await uploadFileToStorage(file, `products/${storeId}`)
+        setImages(prev => [...prev, { url: uploaded.url, path: uploaded.path }])
+      } catch (err) {
+        setError((err as Error).message)
       }
     }
     setUploading(false)
     e.target.value = ''
-  }, [storeId])
+  }, [storeId, uploadFileToStorage])
 
   const handleDescriptionImageChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -719,25 +762,16 @@ export default function AdminProductEditor({
       setDescUploading(false)
       return
     }
-    const form = new FormData()
-    form.append('file', file)
-    form.append('folder', `products/${storeId}`)
-    form.append('kind', 'banner') // raises the server limit to 20MB for the banner only
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: form })
-      const data = await res.json().catch(() => ({}))
-      if (res.ok && data.url) {
-        setValue('description_image_url', data.url, { shouldDirty: true, shouldValidate: true })
-      } else {
-        setError(data.error || 'فشل رفع صورة الوصف — تأكد من إعداد Supabase Storage')
-      }
+      const uploaded = await uploadFileToStorage(file, `products/${storeId}`, 'banner')
+      setValue('description_image_url', uploaded.url, { shouldDirty: true, shouldValidate: true })
     } catch (err) {
-      setError('حدث خطأ أثناء رفع الصورة')
+      setError((err as Error).message || 'فشل رفع صورة الوصف — تأكد من إعداد Supabase Storage')
     } finally {
       setDescUploading(false)
       e.target.value = ''
     }
-  }, [storeId, setValue])
+  }, [storeId, setValue, uploadFileToStorage])
 
   const handleRemoveImage = useCallback((idx: number) => {
     setImages(prev => prev.filter((_, i) => i !== idx))

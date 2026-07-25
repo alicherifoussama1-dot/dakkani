@@ -1,5 +1,5 @@
 // ============================================================
-// File Upload API — stores to Supabase Storage
+// File Upload API — stores to Supabase Storage (supports signed URLs & direct upload)
 // ============================================================
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
@@ -28,13 +28,61 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   const userId = user?.id ?? 'public'
 
+  const storageClient = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY)
+    : supabase
+
+  const contentTypeHeader = req.headers.get('content-type') ?? ''
+
+  // ── Mode A: JSON payload requesting a presigned direct-to-storage upload URL ──
+  if (contentTypeHeader.includes('application/json')) {
+    try {
+      const body = await req.json()
+      const { fileName: origName, fileType, fileSize, folder = 'products', kind = '' } = body
+      const maxSize = kind === 'banner' ? MAX_SIZE_BANNER : MAX_SIZE
+
+      if (!origName || !fileType) {
+        return NextResponse.json({ error: 'لم يتم تحديد معلومات الملف' }, { status: 400 })
+      }
+      if (fileSize && fileSize > maxSize) {
+        const mbLimit = Math.round(maxSize / (1024 * 1024))
+        return NextResponse.json({ error: `حجم الملف كبير جداً (الحد الأقصى ${mbLimit} ميغابايت)` }, { status: 400 })
+      }
+      if (!ALLOWED_TYPES.includes(fileType)) {
+        return NextResponse.json({ error: 'نوع الملف غير مدعوم. يرجى رفع صورة بصيغة JPG أو PNG أو WebP' }, { status: 400 })
+      }
+
+      const ext = origName.split('.').pop() ?? 'jpg'
+      const filePath = `${folder}/${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+
+      const { data, error } = await storageClient.storage
+        .from(BUCKET)
+        .createSignedUploadUrl(filePath)
+
+      if (error || !data?.signedUrl) {
+        console.error('[presigned-url-error]', error)
+        return NextResponse.json({ error: error?.message || 'فشل إنشاء رابط الرفع المباشر' }, { status: 500 })
+      }
+
+      const { data: { publicUrl } } = storageClient.storage.from(BUCKET).getPublicUrl(filePath)
+
+      return NextResponse.json({
+        signedUrl: data.signedUrl,
+        publicUrl,
+        path: filePath,
+        token: data.token,
+      })
+    } catch (err) {
+      console.error('[presigned-url-exception]', err)
+      return NextResponse.json({ error: (err as Error).message || 'خطأ في خادم رفع الملفات' }, { status: 500 })
+    }
+  }
+
+  // ── Mode B: Multipart Form Data upload (direct server relay for small files) ──
   try {
     const formData = await req.formData()
     const file     = formData.get('file') as File | null
     const folder   = (formData.get('folder') as string) ?? 'products'
-    // `kind=banner` raises the limit to 20MB (description banner is stored at
-    // full quality; the storefront serves an optimized WebP for display). Every
-    // other upload keeps the 5MB product-image limit.
     const kind     = (formData.get('kind') as string) ?? ''
     const maxSize  = kind === 'banner' ? MAX_SIZE_BANNER : MAX_SIZE
 
@@ -52,13 +100,7 @@ export async function POST(req: Request) {
     const ext      = file.name.split('.').pop() ?? 'jpg'
     const fileName = `${folder}/${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
-    // Convert Web File to Node Buffer for 100% reliable Supabase Storage SDK upload in Node.js
     const fileBuffer = Buffer.from(await file.arrayBuffer())
-
-    // Use service role admin client when available to bypass storage RLS on server-side upload
-    const storageClient = process.env.SUPABASE_SERVICE_ROLE_KEY
-      ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY)
-      : supabase
 
     const { data, error } = await storageClient.storage
       .from(BUCKET)
