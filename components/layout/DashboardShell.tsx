@@ -69,7 +69,7 @@ const NAV_MOBILE: NavEntry[] = [
 
 interface Props {
   children: React.ReactNode
-  store?: { id: string; name: string; slug?: string; plan?: string; logo_url?: string } | null
+  store?: { id: string; name: string; slug?: string; plan?: string; logo_url?: string; hostname?: string } | null
   user?: { name?: string; email?: string; avatar?: string } | null
   newOrdersCount?: number
   allStores?: Array<{ id: string; name: string; slug: string; plan: string; logo_url?: string }>
@@ -378,8 +378,8 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
             <Link href="/dashboard" className="lg:hidden flex items-center">
               <img src={dark ? '/brand/logo-dark.svg' : '/brand/logo-primary.svg'} alt="Commerco" className="h-5 w-auto" />
             </Link>
-            {store?.slug && (
-              <a href={`/store/${store.slug}`} target="_blank" rel="noopener noreferrer" title={t('shell.visit_store')}
+            {(store?.hostname || store?.slug) && (
+              <a href={store?.hostname ? `https://${store.hostname}/` : `/store/${store.slug}`} target="_blank" rel="noopener noreferrer" title={t('shell.visit_store')}
                 className="hidden sm:flex items-center gap-1.5 px-3 h-9 rounded-full border text-xs font-semibold transition-colors hover:bg-[var(--surface-sunken)]"
                 style={{ borderColor: 'var(--border-strong)', color: 'var(--text-secondary)' }}>
                 <ExternalLink size={13} aria-hidden /><span>{t('shell.store')}</span>

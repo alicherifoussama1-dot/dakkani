@@ -38,9 +38,9 @@ const ALL_CHECKOUT_FIELDS = [
   { id: 'notes',   label: 'ملاحظات الطلب',    icon: '📝', deletable: true  },
 ]
 
-interface Props { store: any; user: any; wilayas: { id: number; name_ar: string }[] }
+interface Props { store: any; user: any; wilayas: { id: number; name_ar: string }[]; storeHostname?: string | null }
 
-export default function SettingsPageClient({ store, user, wilayas }: Props) {
+export default function SettingsPageClient({ store, user, wilayas, storeHostname }: Props) {
   const router  = useRouter()
   const searchParams = useSearchParams()
   const tabParam = searchParams.get('tab')
@@ -238,7 +238,10 @@ export default function SettingsPageClient({ store, user, wilayas }: Props) {
     } catch { setLoading(false); toast.error('حدث خطأ أثناء الاتصال بالخادم') }
   }
 
-  const storeUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://dakkani.vercel.app'}/store/${store.slug}`
+  // Prefer the store's active custom domain; fall back to the internal platform URL.
+  const storeUrl = storeHostname
+    ? `https://${storeHostname}/`
+    : `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://dakkani.vercel.app'}/store/${store.slug}`
   const copyStoreUrl = () => { navigator.clipboard.writeText(storeUrl); toast.success('نُسخ الرابط') }
 
   // ── shared UI atoms ─────────────────────────────────────────

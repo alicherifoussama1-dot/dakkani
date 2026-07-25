@@ -30,3 +30,15 @@ export function productPublicUrl(opts: { hostname: string | null; storeSlug: str
 export function storePublicUrl(opts: { hostname: string | null; storeSlug: string }): string {
   return opts.hostname ? `https://${opts.hostname}/` : `${PLATFORM_BASE}/store/${opts.storeSlug}`
 }
+
+/**
+ * The store's primary public hostname for dashboard display: its default active
+ * custom domain, else any active one, else null (→ platform URL). Same usability
+ * rule as product links (ssl_active | verified), so what the dashboard shows
+ * matches what the storefront actually serves.
+ */
+export function pickStoreHostname(domains: DomainLite[]): string | null {
+  const active = domains.filter(usable)
+  if (!active.length) return null
+  return (active.find(d => d.is_default) ?? active[0]).hostname
+}
