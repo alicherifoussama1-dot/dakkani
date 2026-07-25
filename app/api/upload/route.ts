@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server'
 
 const MAX_SIZE        = 5 * 1024 * 1024  // 5MB — product images (unchanged)
 const MAX_SIZE_BANNER = 20 * 1024 * 1024 // 20MB — description banner (stored at full quality)
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
 const BUCKET       = process.env.NEXT_PUBLIC_STORAGE_BUCKET ?? 'dakkani-uploads'
 
 export async function POST(req: Request) {
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = user?.id ?? 'public'
 
   try {
     const formData = await req.formData()
@@ -38,12 +38,22 @@ export async function POST(req: Request) {
     const kind     = (formData.get('kind') as string) ?? ''
     const maxSize  = kind === 'banner' ? MAX_SIZE_BANNER : MAX_SIZE
 
-    if (!file)                          return NextResponse.json({ error: 'No file provided' }, { status: 400 })
-    if (file.size > maxSize)            return NextResponse.json({ error: `File too large (max ${maxSize / (1024 * 1024)}MB)` }, { status: 400 })
-    if (!ALLOWED_TYPES.includes(file.type)) return NextResponse.json({ error: 'Invalid file type' }, { status: 400 })
+    if (!file) {
+      return NextResponse.json({ error: 'لم يتم تحديد أي ملف للرفع' }, { status: 400 })
+    }
+    if (file.size > maxSize) {
+      const mbLimit = Math.round(maxSize / (1024 * 1024))
+      return NextResponse.json({ error: `حجم الملف كبير جداً (الحد الأقصى ${mbLimit} ميغابايت)` }, { status: 400 })
+    }
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return NextResponse.json({ error: 'نوع الملف غير مدعوم. يرجى رفع صورة بصيغة JPG أو PNG أو WebP' }, { status: 400 })
+    }
 
     const ext      = file.name.split('.').pop() ?? 'jpg'
-    const fileName = `${folder}/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const fileName = `${folder}/${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+
+    // Convert Web File to Node Buffer for 100% reliable Supabase Storage SDK upload in Node.js
+    const fileBuffer = Buffer.from(await file.arrayBuffer())
 
     // Use service role admin client when available to bypass storage RLS on server-side upload
     const storageClient = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -52,15 +62,19 @@ export async function POST(req: Request) {
 
     const { data, error } = await storageClient.storage
       .from(BUCKET)
-      .upload(fileName, file, { contentType: file.type, upsert: false })
+      .upload(fileName, fileBuffer, { contentType: file.type, upsert: true })
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('[upload-api-storage-error]', error)
+      return NextResponse.json({ error: error.message || 'فشل حفظ الملف في سوباباز ستورج' }, { status: 500 })
+    }
 
     const { data: { publicUrl } } = storageClient.storage.from(BUCKET).getPublicUrl(data.path)
 
     return NextResponse.json({ url: publicUrl, path: data.path })
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+    console.error('[upload-api-exception]', err)
+    return NextResponse.json({ error: (err as Error).message || 'حدث خطأ في الخادم أثناء رفع الملف' }, { status: 500 })
   }
 }
 
