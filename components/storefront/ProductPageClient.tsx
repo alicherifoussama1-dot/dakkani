@@ -360,16 +360,21 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
           </div>
         )}
 
-        {/* Price */}
-        <div className="flex items-end gap-3 flex-wrap mt-1">
-          <span className="font-bold tabular-nums leading-none" style={{ color: A, fontSize: 46, letterSpacing: '-1.5px' }}>{formatDZD(product.price)}</span>
+        {/* Price — current price is the visual hero; old price + discount are secondary */}
+        <div className="mt-1">
+          <div className="flex items-end gap-2.5 flex-wrap">
+            <span className="font-bold tabular-nums leading-none" style={{ color: A, fontSize: 46, letterSpacing: '-1.5px' }}>{formatDZD(product.price)}</span>
+            {hasDisc && (
+              <div className="flex items-center gap-2 pb-1.5">
+                <span className="text-sm sm:text-base line-through tabular-nums leading-none" style={{ color: MUTED }}>{formatDZD(product.compare_price)}</span>
+                <span className="text-[13px] font-extrabold text-white px-2 py-0.5 rounded-md tabular-nums leading-none" style={{ background: '#E0492E' }}>-{discPct}%</span>
+              </div>
+            )}
+          </div>
           {hasDisc && (
-            <>
-              <span className="text-base line-through pb-1.5" style={{ color: MUTED }}>{formatDZD(product.compare_price)}</span>
-              <span className="text-xs font-bold text-white px-2.5 py-1 rounded-lg mb-1.5" style={{ background: INK }}>
-                {lang === 'ar' ? 'وفّر ' : lang === 'fr' ? 'Économisez ' : 'Save '}{formatDZD(product.compare_price - product.price)}
-              </span>
-            </>
+            <span className="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-lg mt-2 tabular-nums" style={{ background: 'color-mix(in srgb, var(--pt-accent) 12%, transparent)', color: A }}>
+              {lang === 'ar' ? 'وفّري ' : lang === 'fr' ? 'Économisez ' : 'Save '}{formatDZD(product.compare_price - product.price)}
+            </span>
           )}
         </div>
         <p className="text-sm mt-3" style={{ color: MUTED }}>
