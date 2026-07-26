@@ -12,7 +12,9 @@ import { toast } from '@/lib/ui/toast'
 import {
   Store, Shield, Truck, Bell, CreditCard, Loader2, Eye, EyeOff, Camera,
   ShoppingCart, Globe, Copy, Share2, ChevronDown, GripVertical, Plus, X, Check,
+  MessageSquare, RotateCcw,
 } from 'lucide-react'
+import { DEFAULT_WHATSAPP_TEMPLATE, buildWhatsAppMessage } from '@/lib/utils/whatsapp'
 
 // ── Tab identity — icons carry meaning, labels lead ─────────
 const TABS = [
@@ -20,11 +22,28 @@ const TABS = [
   { id: 'languages',  label: 'اللغات',            icon: Globe },
   { id: 'security',   label: 'الأمان',            icon: Shield },
   { id: 'delivery',   label: 'التوصيل',           icon: Truck },
+  { id: 'whatsapp',   label: 'صفحة الشكر',       icon: MessageSquare },
   { id: 'notifs',     label: 'الإشعارات',         icon: Bell },
   { id: 'checkout',   label: 'صفحة الدفع',        icon: ShoppingCart },
   { id: 'billing',    label: 'الاشتراك',          icon: CreditCard },
 ] as const
 type TabId = typeof TABS[number]['id']
+
+const WHATSAPP_VARIABLES = [
+  { varName: '{store_name}',      label: 'اسم المتجر' },
+  { varName: '{order_number}',    label: 'رقم الطلب' },
+  { varName: '{customer_name}',   label: 'اسم العميل' },
+  { varName: '{phone}',           label: 'رقم الهاتف' },
+  { varName: '{product_name}',    label: 'اسم المنتج' },
+  { varName: '{variant}',         label: 'خيار/متغير المنتج' },
+  { varName: '{quantity}',        label: 'الكمية' },
+  { varName: '{total}',           label: 'المبلغ الإجمالي' },
+  { varName: '{wilaya}',          label: 'الولاية' },
+  { varName: '{commune}',         label: 'البلدية' },
+  { varName: '{delivery_method}', label: 'طريقة التوصيل' },
+  { varName: '{address}',         label: 'العنوان التفصيلي' },
+  { varName: '{stopdesk}',        label: 'اسم مكتب التوصيل' },
+]
 
 const DAYS_AR = ['الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت','الأحد']
 
@@ -87,6 +106,54 @@ export default function SettingsPageClient({ store, user, wilayas, storeHostname
     ? (savedFieldOrder.includes('baladia') ? savedFieldOrder : [...savedFieldOrder, 'baladia'])
     : defaultFieldOrder
   const [checkoutFieldOrder, setCheckoutFieldOrder] = useState<string[]>(mergedFieldOrder)
+
+  const [whatsappTemplate, setWhatsappTemplate] = useState<string>(
+    storeSettings?.whatsapp_template ?? DEFAULT_WHATSAPP_TEMPLATE
+  )
+  const [whatsappNumber, setWhatsappNumber] = useState<string>(storeSettings?.whatsapp_number ?? '')
+  const [callNumber, setCallNumber] = useState<string>(storeSettings?.call_number ?? '')
+  const [thankyouWaEnabled, setThankyouWaEnabled] = useState<boolean>(storeSettings?.thankyou_wa_enabled ?? true)
+  const [thankyouCallEnabled, setThankyouCallEnabled] = useState<boolean>(storeSettings?.thankyou_call_enabled ?? true)
+
+  const waTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+
+  const saveWhatsAppTemplate = async () => {
+    setLoading(true)
+    const { error } = await createClient().from('store_settings').upsert({
+      store_id: store.id,
+      whatsapp_number: whatsappNumber,
+      call_number: callNumber,
+      whatsapp_template: whatsappTemplate,
+      thankyou_wa_enabled: thankyouWaEnabled,
+      thankyou_call_enabled: thankyouCallEnabled,
+    }, { onConflict: 'store_id' })
+    setLoading(false)
+    if (error) return toast.error(`فشل حفظ إعدادات صفحة الشكر: ${error.message}`)
+    toast.success('تم حفظ إعدادات صفحة الشكر الافتراضية بنجاح')
+    router.refresh()
+  }
+
+  const restoreDefaultWhatsAppTemplate = () => {
+    setWhatsappTemplate(DEFAULT_WHATSAPP_TEMPLATE)
+    toast.success('تم استعادة الرسالة الافتراضية')
+  }
+
+  const insertWhatsAppVariable = (varName: string) => {
+    if (waTextareaRef.current) {
+      const el = waTextareaRef.current
+      const start = el.selectionStart
+      const end = el.selectionEnd
+      const text = whatsappTemplate
+      const newText = text.substring(0, start) + varName + text.substring(end)
+      setWhatsappTemplate(newText)
+      setTimeout(() => {
+        el.focus()
+        el.setSelectionRange(start + varName.length, start + varName.length)
+      }, 0)
+    } else {
+      setWhatsappTemplate(prev => prev + ' ' + varName)
+    }
+  }
 
   // ── Drag refs (identical) ───────────────────────────────────
   const dragSectionItem = useRef<number | null>(null)
@@ -697,6 +764,148 @@ export default function SettingsPageClient({ store, user, wilayas, storeHostname
           </div>
 
           <SaveBar onSave={saveCheckout} loading={loading} label="حفظ صفحة الدفع" />
+        </div>
+      )}
+
+      {/* ── THANK YOU PAGE STORE DEFAULTS ─────────────────────── */}
+      {tab === 'whatsapp' && (
+        <div className="space-y-4">
+          <div className="c-card">
+            <SectionTitle
+              title="إعدادات صفحة الشكر الافتراضية للمتجر (Thank You Page)"
+              hint="هذه الإعدادات تعمل كخيار افتراضي لجميع منتجات المتجر التي ليس لها إعدادات خاصة"
+            />
+
+            <div className="space-y-5 mt-4">
+              {/* Default Phone & WhatsApp Numbers */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50/70 p-4 rounded-2xl border border-gray-150">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-800 mb-1.5">
+                    رقم WhatsApp الافتراضي للمتجر
+                  </label>
+                  <input
+                    type="text"
+                    value={whatsappNumber}
+                    onChange={(e) => setWhatsappNumber(e.target.value)}
+                    placeholder={store.whatsapp || store.phone || 'مثال: 0555123456'}
+                    className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm font-mono bg-white focus:outline-none focus:border-[#0D6EFD]"
+                    dir="ltr"
+                  />
+                  <span className="text-[11px] text-gray-500 block mt-1">
+                    يستخدم هذا الرقم في زر تأكيد WhatsApp عند عدم تخصيص رقم خاص للمنتج.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-800 mb-1.5">
+                    رقم الهاتف الافتراضي للمتجر (للاتصال)
+                  </label>
+                  <input
+                    type="text"
+                    value={callNumber}
+                    onChange={(e) => setCallNumber(e.target.value)}
+                    placeholder={store.phone || 'مثال: 0550123456'}
+                    className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm font-mono bg-white focus:outline-none focus:border-[#0D6EFD]"
+                    dir="ltr"
+                  />
+                  <span className="text-[11px] text-gray-500 block mt-1">
+                    يستخدم هذا الرقم في زر الاتصال الهاتفي عند عدم تخصيص رقم خاص للمنتج.
+                  </span>
+                </div>
+              </div>
+
+              {/* Default Button Toggles */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ToggleRow
+                  label="تفعيل زر تأكيد WhatsApp افتراضياً"
+                  checked={thankyouWaEnabled}
+                  onChange={() => setThankyouWaEnabled(!thankyouWaEnabled)}
+                />
+                <ToggleRow
+                  label="تفعيل زر الاتصال الهاتفي افتراضياً"
+                  checked={thankyouCallEnabled}
+                  onChange={() => setThankyouCallEnabled(!thankyouCallEnabled)}
+                />
+              </div>
+
+              {/* Default Template Editor */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  قالب رسالة تأكيد WhatsApp الافتراضي للمتجر:
+                </label>
+                <textarea
+                  ref={waTextareaRef}
+                  value={whatsappTemplate}
+                  onChange={(e) => setWhatsappTemplate(e.target.value)}
+                  rows={10}
+                  className="w-full p-4 border border-gray-200 rounded-2xl font-mono text-sm leading-relaxed text-gray-900 bg-gray-50 focus:bg-white focus:border-[#0D6EFD] focus:ring-2 focus:ring-[#0D6EFD]/20 transition outline-none"
+                  placeholder={DEFAULT_WHATSAPP_TEMPLATE}
+                  dir="rtl"
+                />
+              </div>
+
+              {/* Available variables helper grid */}
+              <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 space-y-2">
+                <p className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                  <span>💡 المتغيرات المتاحة لاستخدامها في الرسالة:</span>
+                </p>
+                <p className="text-xs text-blue-700">
+                  اضغط على أي متغير لإدراجه تلقائياً في نص الرسالة عند موضع المؤشر:
+                </p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {WHATSAPP_VARIABLES.map((item) => (
+                    <button
+                      key={item.varName}
+                      type="button"
+                      onClick={() => insertWhatsAppVariable(item.varName)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-blue-200 hover:border-blue-400 hover:bg-blue-50 text-blue-900 font-mono text-xs font-semibold shadow-xs transition active:scale-95 cursor-pointer"
+                      title={`إدراج ${item.label}`}
+                    >
+                      <span className="text-[#0D6EFD] font-bold">{item.varName}</span>
+                      <span className="text-gray-500 font-sans text-[11px]">({item.label})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Live Preview Section */}
+              <div className="border border-gray-200 rounded-2xl p-4 bg-gray-50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-700">👁️ معاينة فورية لرسالة المتجر الافتراضية:</span>
+                  <span className="text-[11px] text-gray-400">عينة تجريبية</span>
+                </div>
+                <div className="bg-[#E7F8EE] border border-[#25D366]/30 rounded-2xl p-4 text-xs font-sans text-gray-800 leading-relaxed whitespace-pre-wrap shadow-xs" dir="rtl">
+                  {buildWhatsAppMessage(whatsappTemplate, {
+                    storeName: store.name_ar || store.name || 'متجر التجربة',
+                    orderNumber: 'ORD-260726-1080',
+                    customerName: 'محمد بن علي',
+                    phone: '0550123456',
+                    items: [{ product_name: 'عطر الملكي', variant_label: 'حجم كبير (100ml)', quantity: 1 }],
+                    total: 4500,
+                    deliveryType: 'home',
+                    wilayaName: 'عين الدفلى',
+                    communeName: 'عين الدفلى',
+                    address: 'حي الشهداء عمارة 5',
+                    stopdeskOfficeName: 'مكتب البوسطة المركزية',
+                    lang: 'ar',
+                  })}
+                </div>
+              </div>
+
+              {/* Actions Footer */}
+              <div className="flex items-center justify-between gap-3 pt-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={restoreDefaultWhatsAppTemplate}
+                  className="c-btn c-btn--secondary c-btn--sm flex items-center gap-1.5 text-gray-600 hover:text-gray-900"
+                >
+                  <RotateCcw size={14} aria-hidden />
+                  <span>إعادة ضبط الرسالة الافتراضية</span>
+                </button>
+                <SaveBar onSave={saveWhatsAppTemplate} loading={loading} label="حفظ إعدادات صفحة الشكر" />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

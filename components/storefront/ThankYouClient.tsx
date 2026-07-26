@@ -2,6 +2,7 @@
 
 import { MessageCircle, Phone } from 'lucide-react'
 import { formatDZD } from '@/lib/utils/format'
+import { buildWhatsAppMessage } from '@/lib/utils/whatsapp'
 import type { Locale } from '@/lib/utils/translations'
 
 interface ItemProp {
@@ -16,6 +17,8 @@ interface ItemProp {
 interface ThankYouClientProps {
   orderNumber: string
   customerName: string
+  customerPhone?: string
+  customerAddress?: string | null
   items: ItemProp[]
   total: number
   deliveryType: 'home' | 'stopdesk'
@@ -26,12 +29,19 @@ interface ThankYouClientProps {
   merchantPhone: string
   merchantWhatsapp: string
   storeName: string
+  resolvedWaNumber?: string
+  resolvedCallNumber?: string
+  whatsappTemplate?: string | null
+  waEnabled?: boolean
+  callEnabled?: boolean
   lang: Locale
 }
 
 export default function ThankYouClient({
   orderNumber,
   customerName,
+  customerPhone = '',
+  customerAddress = null,
   items,
   total,
   deliveryType,
@@ -42,6 +52,11 @@ export default function ThankYouClient({
   merchantPhone,
   merchantWhatsapp,
   storeName,
+  resolvedWaNumber,
+  resolvedCallNumber,
+  whatsappTemplate,
+  waEnabled = true,
+  callEnabled = true,
   lang,
 }: ThankYouClientProps) {
   const isAr = lang === 'ar'
@@ -53,88 +68,77 @@ export default function ThankYouClient({
     return clean.startsWith('0') ? '213' + clean.slice(1) : clean
   }
 
-  const waNumber = normalizeWaPhone(merchantWhatsapp || merchantPhone)
-  const cleanMerchantPhone = merchantPhone.replace(/\s+/g, '')
+  const waTargetNumber = normalizeWaPhone(resolvedWaNumber || merchantWhatsapp || merchantPhone)
+  const cleanCallNumber = (resolvedCallNumber || merchantPhone).replace(/\s+/g, '')
 
-  // Build items text for WhatsApp
-  const itemsText = items
-    .map((item) => {
-      const variantText = item.variant_label
-        ? ` (${item.variant_label})`
-        : item.variant_key && item.variant_key !== 'default'
-        ? ` (${item.variant_key})`
-        : ''
-      return `${item.product_name}${variantText} × ${item.quantity}`
-    })
-    .join('\n📦 ')
+  // Dynamic WhatsApp Message Generation
+  const waText = buildWhatsAppMessage(whatsappTemplate, {
+    storeName,
+    orderNumber,
+    customerName,
+    phone: customerPhone,
+    items,
+    total,
+    deliveryType,
+    wilayaName,
+    communeName,
+    address: customerAddress,
+    stopdeskOfficeName,
+    lang,
+  })
 
-  const deliveryLabel = deliveryType === 'stopdesk'
-    ? (isAr ? 'توصيل للمكتب' : isFr ? 'Livraison Bureau' : 'Stopdesk Delivery')
-    : (isAr ? 'توصيل للمنزل' : isFr ? 'Livraison à domicile' : 'Home Delivery')
-
-  const officeText = stopdeskOfficeName
-    ? `\n🏢 المكتب: ${stopdeskOfficeName}`
-    : ''
-
-  // Build Arabic Algerian-friendly message
-  const waText = `السلام عليكم ✋
-أريد تأكيد طلبي من متجر ${storeName}:
-
-🛒 رقم الطلب: #${orderNumber}
-📦 ${itemsText}
-💰 المبلغ الإجمالي: ${formatDZD(total)}
-🚚 ${deliveryLabel}: ${wilayaName} — ${communeName}${officeText}
-
-شكراً 🙏`
-
-  const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(waText)}`
+  const waUrl = `https://wa.me/${waTargetNumber}?text=${encodeURIComponent(waText)}`
 
   return (
     <div className="space-y-4">
       {/* Primary WhatsApp Confirmation CTA */}
-      <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-5 text-center">
-        <h4 className="text-base font-bold text-emerald-900 mb-1">
-          {isAr ? 'خطوة مهمة جداً ⚠️' : isFr ? 'Étape Importante ⚠️' : 'Important Step ⚠️'}
-        </h4>
-        <p className="text-xs text-emerald-700 mb-4 leading-relaxed">
-          {isAr
-            ? 'يرجى تأكيد طلبك الآن عبر واتساب لتسريع معالجة الشحنة وتفادي الإلغاء.'
-            : isFr
-            ? 'Veuillez confirmer votre commande via WhatsApp pour accélérer le traitement.'
-            : 'Please confirm your order via WhatsApp to speed up processing.'}
-        </p>
-        <a
-          href={waUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20BD5C] text-white font-black py-4 px-6 rounded-2xl shadow-md transition transform hover:scale-[1.01] active:scale-[0.99] text-base"
-        >
-          <MessageCircle className="w-5 h-5 fill-white text-[#25D366]" />
-          <span>
+      {waEnabled && (
+        <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-5 text-center">
+          <h4 className="text-base font-bold text-emerald-900 mb-1">
+            {isAr ? 'خطوة مهمة جداً ⚠️' : isFr ? 'Étape Importante ⚠️' : 'Important Step ⚠️'}
+          </h4>
+          <p className="text-xs text-emerald-700 mb-4 leading-relaxed">
             {isAr
-              ? 'تأكيد الطلب عبر WhatsApp'
+              ? 'يرجى تأكيد طلبك الآن عبر واتساب لتسريع معالجة الشحنة وتفادي الإلغاء.'
               : isFr
-              ? 'Confirmer via WhatsApp'
-              : 'Confirm via WhatsApp'}
-          </span>
-        </a>
-      </div>
+              ? 'Veuillez confirmer votre commande via WhatsApp pour accélérer le traitement.'
+              : 'Please confirm your order via WhatsApp to speed up processing.'}
+          </p>
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20BD5C] text-white font-black py-4 px-6 rounded-2xl shadow-md transition transform hover:scale-[1.01] active:scale-[0.99] text-base"
+          >
+            <MessageCircle className="w-5 h-5 fill-white text-[#25D366]" />
+            <span>
+              {isAr
+                ? 'تأكيد الطلب عبر WhatsApp'
+                : isFr
+                ? 'Confirmer via WhatsApp'
+                : 'Confirm via WhatsApp'}
+            </span>
+          </a>
+        </div>
+      )}
 
       {/* Secondary Phone call confirmation */}
-      <div className="text-center">
-        <p className="text-xs text-gray-500 mb-2">
-          {isAr ? 'أو يمكنك تأكيد طلبك عبر الهاتف' : isFr ? 'Ou vous pouvez confirmer par téléphone' : 'Or confirm by phone'}
-        </p>
-        <a
-          href={`tel:${cleanMerchantPhone}`}
-          className="flex items-center justify-center gap-2 w-full border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-3 px-6 rounded-2xl transition text-sm"
-        >
-          <Phone className="w-4 h-4 text-gray-500" />
-          <span>
-            {isAr ? 'اتصل بنا لتأكيد الطلب' : isFr ? 'Appelez-nous pour confirmer' : 'Call us to confirm'}
-          </span>
-        </a>
-      </div>
+      {callEnabled && (
+        <div className="text-center">
+          <p className="text-xs text-gray-500 mb-2">
+            {isAr ? 'أو يمكنك تأكيد طلبك عبر الهاتف' : isFr ? 'Ou vous pouvez confirmer par téléphone' : 'Or confirm by phone'}
+          </p>
+          <a
+            href={`tel:${cleanCallNumber}`}
+            className="flex items-center justify-center gap-2 w-full border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-3 px-6 rounded-2xl transition text-sm"
+          >
+            <Phone className="w-4 h-4 text-gray-500" />
+            <span>
+              {isAr ? 'اتصل بنا لتأكيد الطلب' : isFr ? 'Appelez-nous pour confirmer' : 'Call us to confirm'}
+            </span>
+          </a>
+        </div>
+      )}
 
       {/* Stopdesk office call CTA (if phone available) */}
       {deliveryType === 'stopdesk' && officePhone && (

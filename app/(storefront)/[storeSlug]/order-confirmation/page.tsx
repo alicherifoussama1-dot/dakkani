@@ -8,6 +8,7 @@ import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import StorefrontLayout from '@/components/storefront/StorefrontLayout'
 import ThankYouClient from '@/components/storefront/ThankYouClient'
+import { resolveThankYouConfig } from '@/lib/utils/whatsapp'
 import { ZR_OFFICES } from '@/lib/delivery/zr-offices'
 
 interface Props {
@@ -224,6 +225,22 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
     )
   }
 
+  // 3b. Resolve Product-Specific vs Store-Default Thank You Page Settings
+  const productIds = (order.items ?? []).map((i: any) => i.product_id).filter(Boolean)
+  let orderedProducts: any[] = []
+  if (productIds.length > 0) {
+    const { data: prods } = await supabase
+      .from('products')
+      .select('id, thankyou_whatsapp, thankyou_phone, thankyou_whatsapp_template, thankyou_wa_enabled, thankyou_call_enabled')
+      .in('id', productIds)
+    orderedProducts = prods ?? []
+  }
+
+  const resolvedThankYou = resolveThankYouConfig({
+    store: store as any,
+    products: orderedProducts,
+  })
+
   // 4. Resolve Stopdesk Office Phone and Address (ZR Express lookup or best-effort)
   let officePhone: string | null = null
   let officeAddress: string | null = null
@@ -334,6 +351,8 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
             <ThankYouClient
               orderNumber={order.order_number}
               customerName={order.customer_name}
+              customerPhone={order.customer_phone ?? ''}
+              customerAddress={order.address}
               items={order.items ?? []}
               total={order.total}
               deliveryType={order.delivery_type}
@@ -344,6 +363,11 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
               merchantPhone={store.phone || ''}
               merchantWhatsapp={store.whatsapp || ''}
               storeName={store.name_ar ?? store.name}
+              resolvedWaNumber={resolvedThankYou.waNumber}
+              resolvedCallNumber={resolvedThankYou.callNumber}
+              whatsappTemplate={resolvedThankYou.whatsappTemplate}
+              waEnabled={resolvedThankYou.waEnabled}
+              callEnabled={resolvedThankYou.callEnabled}
               lang={lang as any}
             />
           </div>

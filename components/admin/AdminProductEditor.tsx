@@ -15,6 +15,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type D
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import ProductTrackingTab from '@/components/admin/ProductTrackingTab'
+import { buildWhatsAppMessage } from '@/lib/utils/whatsapp'
 
 // ── Schema ────────────────────────────────────────────────
 const variantGroupSchema = z.object({
@@ -55,6 +56,11 @@ const schema = z.object({
   google_sheet_id:  z.string().optional(),
   abandoned_count_conversion: z.boolean().default(false),
   abandoned_send_to_sheet:    z.boolean().default(false),
+  thankyou_whatsapp:          z.string().optional(),
+  thankyou_phone:             z.string().optional(),
+  thankyou_whatsapp_template: z.string().optional(),
+  thankyou_wa_enabled:        z.boolean().default(true),
+  thankyou_call_enabled:      z.boolean().default(true),
 })
 type FormData = z.infer<typeof schema>
 
@@ -69,7 +75,7 @@ interface Props {
   stockData?:  StockRow[]
   googleSheets?: { id: string; spreadsheet_name: string; worksheet_name: string; is_default: boolean }[]
 }
-type Tab = 'general' | 'pricing' | 'media' | 'variants' | 'inventory' | 'productpage' | 'checkout' | 'pixels' | 'tracking' | 'seo' | 'advanced'
+type Tab = 'general' | 'pricing' | 'media' | 'variants' | 'inventory' | 'productpage' | 'checkout' | 'thankyou' | 'pixels' | 'tracking' | 'seo' | 'advanced'
 
 // ═══════════════════════════════════════════════════════════
 // STATIC CONSTANTS — outside component, never recreated
@@ -82,6 +88,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'inventory',   label: 'المخزون',      icon: '📦' },
   { id: 'productpage', label: 'صفحة المنتج',  icon: '📄' },
   { id: 'checkout',    label: 'الدفع',        icon: '🛒' },
+  { id: 'thankyou',    label: 'صفحة الشكر',   icon: '🌷' },
   { id: 'tracking',    label: 'التتبع والدومين', icon: '🎯' },
   { id: 'seo',         label: 'SEO',          icon: '🔍' },
   { id: 'advanced',    label: 'وجهة الطلبات والمتروكة', icon: '📬' },
@@ -613,6 +620,11 @@ export default function AdminProductEditor({
       google_sheet_id:    product?.google_sheet_id ?? '',
       abandoned_count_conversion: product?.abandoned_count_conversion ?? false,
       abandoned_send_to_sheet:    product?.abandoned_send_to_sheet ?? false,
+      thankyou_whatsapp:          product?.thankyou_whatsapp ?? '',
+      thankyou_phone:             product?.thankyou_phone ?? '',
+      thankyou_whatsapp_template: product?.thankyou_whatsapp_template ?? '',
+      thankyou_wa_enabled:        product?.thankyou_wa_enabled ?? true,
+      thankyou_call_enabled:      product?.thankyou_call_enabled ?? true,
     },
   })
 
@@ -899,6 +911,16 @@ export default function AdminProductEditor({
             ...(p.attributes ?? product?.attributes ?? {}),
             track_inventory: p.track_inventory
           }
+          modified = true
+        }
+
+        // Fallback 4: thankyou columns missing (migration 031)
+        if (/thankyou_/i.test(res.error.message)) {
+          delete nextPayload.thankyou_whatsapp
+          delete nextPayload.thankyou_phone
+          delete nextPayload.thankyou_whatsapp_template
+          delete nextPayload.thankyou_wa_enabled
+          delete nextPayload.thankyou_call_enabled
           modified = true
         }
         
@@ -1302,6 +1324,17 @@ export default function AdminProductEditor({
         </div>
       )}
 
+      {/* ── THANK YOU PAGE TAB ── */}
+      {tab === 'thankyou' && (
+        <ThankYouTabSection
+          control={control}
+          register={register}
+          setValue={setValue}
+          getValues={getValues}
+          storeId={storeId}
+        />
+      )}
+
       {/* ── ADVANCED TAB ── (order routing + Google Sheet) */}
       {tab === 'advanced' && (
         <OrderRoutingSection control={control} register={register} setValue={setValue} googleSheets={googleSheets} />
@@ -1327,5 +1360,175 @@ export default function AdminProductEditor({
         </button>
       </div>
     </form>
+  )
+}
+
+function ThankYouTabSection({
+  control,
+  register,
+  setValue,
+  getValues,
+  storeId,
+}: {
+  control: Control<FormData>
+  register: UseFormRegister<FormData>
+  setValue: UseFormSetValue<FormData>
+  getValues: UseFormGetValues<FormData>
+  storeId: string
+}) {
+  const whatsappTemplate = useWatch({ control, name: 'thankyou_whatsapp_template' }) ?? ''
+
+  const insertVariable = (varName: string) => {
+    const current = getValues('thankyou_whatsapp_template') || ''
+    setValue('thankyou_whatsapp_template', current ? `${current} ${varName}` : varName, { shouldDirty: true })
+  }
+
+  return (
+    <div className="card p-6 space-y-6 bg-white rounded-2xl border border-gray-200">
+      <div>
+        <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+          <span>🌷</span> إعدادات صفحة الشكر لهذا المنتج (Thank You Page)
+        </h3>
+        <p className="text-xs text-gray-500 mt-1">
+          تخصيص رقم WhatsApp، رقم الاتصال، ورسالة التأكيد الخاصة بهذا المنتج. إذا تركت أي حقل فارغاً، يتم استخدام الإعداد الافتراضي للمتجر تلقائياً.
+        </p>
+      </div>
+
+      {/* WhatsApp Settings Card */}
+      <div className="border border-emerald-100 bg-emerald-50/40 rounded-2xl p-5 space-y-4">
+        <h4 className="text-sm font-bold text-emerald-900 flex items-center gap-2">
+          <span>💬</span> إعدادات WhatsApp للمنتج
+        </h4>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-800 mb-1.5">
+              رقم WhatsApp الخاص بهذا المنتج
+            </label>
+            <input
+              type="text"
+              {...register('thankyou_whatsapp')}
+              placeholder="مثال: 0555123456"
+              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm font-mono focus:outline-none focus:border-[#0D6EFD]"
+              dir="ltr"
+            />
+            <span className="text-[11px] text-gray-500 block mt-1">
+              💡 اتركه فارغاً لاستخدام رقم WhatsApp الافتراضي للمتجر.
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between bg-white border border-emerald-200 rounded-xl p-3.5 self-end">
+            <span className="text-xs font-bold text-gray-800">تفعيل زر تأكيد WhatsApp</span>
+            <input
+              type="checkbox"
+              {...register('thankyou_wa_enabled')}
+              className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-800 mb-1.5">
+            رسالة تأكيد WhatsApp الخاصة بهذا المنتج
+          </label>
+          <textarea
+            {...register('thankyou_whatsapp_template')}
+            rows={6}
+            placeholder="اتركها فارغة لاستخدام الرسالة الافتراضية للمتجر..."
+            className="w-full p-3.5 border border-gray-300 rounded-xl text-sm font-mono leading-relaxed bg-white focus:outline-none focus:border-[#0D6EFD]"
+            dir="rtl"
+          />
+          <span className="text-[11px] text-gray-500 block mt-1">
+            💡 اتركها فارغة لاستخدام قالب الرسالة الافتراضي المعتمد في إعدادات المتجر.
+          </span>
+        </div>
+
+        {/* Dynamic Variable Badges */}
+        <div className="bg-white border border-emerald-200 rounded-xl p-3.5 space-y-2">
+          <p className="text-xs font-bold text-emerald-900">
+            ✨ المتغيرات المتاحة للاستخدام في الرسالة (اضغط لإدراج المتغير):
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { varName: '{store_name}', label: 'اسم المتجر' },
+              { varName: '{order_number}', label: 'رقم الطلب' },
+              { varName: '{customer_name}', label: 'اسم العميل' },
+              { varName: '{phone}', label: 'رقم الهاتف' },
+              { varName: '{product_name}', label: 'اسم المنتج' },
+              { varName: '{variant}', label: 'الخيار/المتغير' },
+              { varName: '{quantity}', label: 'الكمية' },
+              { varName: '{total}', label: 'الإجمالي' },
+              { varName: '{wilaya}', label: 'الولاية' },
+              { varName: '{commune}', label: 'البلدية' },
+              { varName: '{delivery_method}', label: 'طريقة التوصيل' },
+              { varName: '{address}', label: 'العنوان' },
+              { varName: '{stopdesk}', label: 'مكتب التوصيل' },
+            ].map((v) => (
+              <button
+                key={v.varName}
+                type="button"
+                onClick={() => insertVariable(v.varName)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-900 font-mono text-xs transition cursor-pointer"
+              >
+                <span className="font-bold text-emerald-700">{v.varName}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Live Preview */}
+        <div className="bg-white border border-emerald-200 rounded-xl p-3.5 space-y-1.5">
+          <span className="text-xs font-bold text-gray-700">👁️ معاينة الرسالة لهذا المنتج:</span>
+          <div className="bg-[#E7F8EE] p-3 rounded-lg text-xs font-sans text-gray-800 leading-relaxed whitespace-pre-wrap" dir="rtl">
+            {buildWhatsAppMessage(whatsappTemplate, {
+              storeName: 'اسم المتجر',
+              orderNumber: 'ORD-260726-1080',
+              customerName: 'محمد بن علي',
+              phone: '0550123456',
+              items: [{ product_name: getValues('name_ar') || getValues('name') || 'اسم المنتج', quantity: 1 }],
+              total: Number(getValues('price')) || 4500,
+              deliveryType: 'home',
+              wilayaName: 'الجزائر',
+              communeName: 'الجزائر الوسطى',
+              lang: 'ar',
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Call Settings Section */}
+      <div className="border border-blue-100 bg-blue-50/40 rounded-2xl p-5 space-y-4">
+        <h4 className="text-sm font-bold text-blue-900 flex items-center gap-2">
+          <span>📞</span> إعدادات الاتصال الهاتفي للمنتج
+        </h4>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-800 mb-1.5">
+              رقم الهاتف الخاص بهذا المنتج (للاتصال)
+            </label>
+            <input
+              type="text"
+              {...register('thankyou_phone')}
+              placeholder="مثال: 0550123456"
+              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm font-mono focus:outline-none focus:border-[#0D6EFD]"
+              dir="ltr"
+            />
+            <span className="text-[11px] text-gray-500 block mt-1">
+              💡 اتركه فارغاً لاستخدام رقم الهاتف الافتراضي للمتجر.
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between bg-white border border-blue-200 rounded-xl p-3.5 self-end">
+            <span className="text-xs font-bold text-gray-800">تفعيل زر الاتصال الهاتفي</span>
+            <input
+              type="checkbox"
+              {...register('thankyou_call_enabled')}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
