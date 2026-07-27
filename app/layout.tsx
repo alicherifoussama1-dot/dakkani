@@ -49,7 +49,15 @@ export const metadata: Metadata = {
   title: { default: 'Commerco | منصة التجارة الإلكترونية الجزائرية', template: '%s | Commerco' },
   description: 'أنشئ متجرك الإلكتروني الجزائري في دقائق.',
   manifest: '/manifest.json',
-  icons: { icon: '/api/icons/192', apple: '/api/icons/152' },
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/api/icons/192', sizes: '192x192', type: 'image/svg+xml' },
+    ],
+    shortcut: '/favicon.svg',
+    apple: '/api/icons/180',
+  },
 }
 
 export const viewport: Viewport = {
