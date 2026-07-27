@@ -3,10 +3,8 @@ export const metadata = { title: 'الرئيسية — Commerco' }
 
 import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import DashboardHome from '@/components/dashboard/DashboardHome'
+import { getAlgiersDateRange, getAlgiersHour, getAlgiersDateString, formatAlgiersChartDate } from '@/lib/utils/timezone'
 
-// Mirocho-parity dashboard data. All values are REAL (no random/mock).
-// Panels fed: 5 status cards + %change vs yesterday, gross orders value,
-// estimated (delivered) revenue, funnel, wilaya distribution, 7-day series.
 export default async function DashboardPage() {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -15,106 +13,200 @@ export default async function DashboardPage() {
   const { activeStore: store } = await getActiveStore(supabase, user.id)
   const storeId = store?.id ?? ''
 
-  const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const startOfYesterday = new Date(startOfToday.getTime() - 86400000)
-  const sevenDaysAgo = new Date(startOfToday.getTime() - 6 * 86400000)
+  // Initial Algiers Date Range ('today')
+  const dateRange = getAlgiersDateRange('today')
 
-  const [todayRes, yesterdayRes, weekRes, productsRes, storeReadyRes] = await Promise.all([
-    supabase.from('orders')
+  const [currentOrdersRes, prevOrdersRes, wilayasRes] = await Promise.all([
+    supabase
+      .from('orders')
       .select('id, total, status, utm_source, wilaya_id, created_at')
       .eq('store_id', storeId)
-      .gte('created_at', startOfToday.toISOString()),
-    supabase.from('orders')
-      .select('id, status, total')
+      .gte('created_at', dateRange.startISO)
+      .lte('created_at', dateRange.endISO),
+
+    supabase
+      .from('orders')
+      .select('id, total, status, utm_source, created_at')
       .eq('store_id', storeId)
-      .gte('created_at', startOfYesterday.toISOString())
-      .lt('created_at', startOfToday.toISOString()),
-    supabase.from('orders')
-      .select('id, status, total, created_at, wilaya_id')
-      .eq('store_id', storeId)
-      .gte('created_at', sevenDaysAgo.toISOString()),
-    supabase.from('products')
-      .select('id', { count: 'exact', head: true })
-      .eq('store_id', storeId).eq('is_active', true),
-    supabase.from('products')
-      .select('id', { count: 'exact', head: true })
-      .eq('store_id', storeId),
+      .gte('created_at', dateRange.prevStartISO)
+      .lte('created_at', dateRange.prevEndISO),
+
+    supabase
+      .from('wilayas')
+      .select('id, name, name_ar, code'),
   ])
 
-  const today = todayRes.data ?? []
-  const yesterday = yesterdayRes.data ?? []
-  const week = weekRes.data ?? []
+  const currentOrders = currentOrdersRes.data ?? []
+  const prevOrders = prevOrdersRes.data ?? []
+  const wilayasList = wilayasRes.data ?? []
 
-  const isNew        = (s: string) => ['new', 'duplicate'].includes(s)
-  const isConfirmed  = (s: string) => ['confirmed', 'processing'].includes(s)
-  const isShipped    = (s: string) => ['shipped', 'in_transit', 'out_for_delivery', 'with_driver', 'at_stopdesk'].includes(s)
-  const isCompleted  = (s: string) => s === 'delivered'
-  const isAbandoned  = (s: string) => s === 'abandoned'
-  const countBy = (rows: any[], test: (s: string) => boolean) => rows.filter(r => test(r.status)).length
-  const pct = (t: number, y: number) => (y === 0 ? (t > 0 ? 100 : 0) : Math.round(((t - y) / y) * 100))
+  const wilayaMap: Record<number, string> = {}
+  wilayasList.forEach((w) => {
+    wilayaMap[w.id] = w.name_ar || w.name || `ولاية ${w.id}`
+  })
 
-  const statusCards = {
-    new:        { today: countBy(today, isNew),       change: pct(countBy(today, isNew),       countBy(yesterday, isNew)) },
-    confirmed:  { today: countBy(today, isConfirmed), change: pct(countBy(today, isConfirmed), countBy(yesterday, isConfirmed)) },
-    shipped:    { today: countBy(today, isShipped),   change: pct(countBy(today, isShipped),   countBy(yesterday, isShipped)) },
-    completed:  { today: countBy(today, isCompleted), change: pct(countBy(today, isCompleted), countBy(yesterday, isCompleted)) },
-    abandoned:  { today: countBy(today, isAbandoned), change: pct(countBy(today, isAbandoned), countBy(yesterday, isAbandoned)) },
+  const isAbandoned = (s: string) => s === 'abandoned'
+  const isFacebook = (src?: string | null) => (src ?? '').toLowerCase().includes('facebook') || (src ?? '').toLowerCase().includes('fb') || (src ?? '').toLowerCase().includes('meta')
+  const isTikTok = (src?: string | null) => (src ?? '').toLowerCase().includes('tiktok') || (src ?? '').toLowerCase().includes('tt')
+
+  const calcKpis = (rows: any[]) => {
+    const totalOrders = rows.length
+    const abandonedOrders = rows.filter(r => isAbandoned(r.status)).length
+    const normalOrders = totalOrders - abandonedOrders
+    const facebookOrders = rows.filter(r => isFacebook(r.utm_source)).length
+    const tiktokOrders = rows.filter(r => isTikTok(r.utm_source)).length
+    const otherOrders = totalOrders - (facebookOrders + tiktokOrders)
+    const revenue = rows.filter(r => !isAbandoned(r.status)).reduce((acc, r) => acc + (r.total ?? 0), 0)
+
+    return {
+      totalOrders,
+      abandonedOrders,
+      normalOrders,
+      facebookOrders,
+      tiktokOrders,
+      otherOrders,
+      revenue,
+    }
   }
 
-  const grossValue = today.filter(o => !isAbandoned(o.status)).reduce((s, o) => s + (o.total ?? 0), 0)
-  const grossCount = today.filter(o => !isAbandoned(o.status)).length
-  const deliveredRevenue = today.filter(o => isCompleted(o.status)).reduce((s, o) => s + (o.total ?? 0), 0)
-  const yesterdayRevenue = yesterday.filter(o => isCompleted(o.status)).reduce((s, o) => s + (o.total ?? 0), 0)
-  const revenueChange = pct(deliveredRevenue, yesterdayRevenue)
+  const curKpis = calcKpis(currentOrders)
+  const prevKpis = calcKpis(prevOrders)
 
-  const funnel = {
-    orders:    grossCount,
-    confirmed: today.filter(o => isConfirmed(o.status) || isShipped(o.status) || isCompleted(o.status)).length,
-    shipped:   today.filter(o => isShipped(o.status) || isCompleted(o.status)).length,
-    delivered: today.filter(o => isCompleted(o.status)).length,
-    sources: {
-      facebook: today.filter(o => o.utm_source === 'facebook').length,
-      tiktok:   today.filter(o => o.utm_source === 'tiktok').length,
-      other:    today.filter(o => !['facebook', 'tiktok'].includes(o.utm_source ?? '')).length,
-    },
+  const calcPct = (cur: number, prev: number) => {
+    if (prev === 0) return cur > 0 ? 100 : 0
+    return Math.round(((cur - prev) / prev) * 100 * 10) / 10
   }
+
+  const generateSparklines = (rows: any[]) => {
+    const totalPoints = 7
+    const sparklines = {
+      totalOrders: Array(totalPoints).fill(0),
+      abandonedOrders: Array(totalPoints).fill(0),
+      normalOrders: Array(totalPoints).fill(0),
+      facebookOrders: Array(totalPoints).fill(0),
+      tiktokOrders: Array(totalPoints).fill(0),
+      otherOrders: Array(totalPoints).fill(0),
+    }
+
+    if (rows.length === 0) return sparklines
+
+    const startTime = new Date(dateRange.startISO).getTime()
+    const endTime = new Date(dateRange.endISO).getTime()
+    const step = Math.max(1, (endTime - startTime) / totalPoints)
+
+    rows.forEach(r => {
+      const t = new Date(r.created_at).getTime()
+      let idx = Math.floor((t - startTime) / step)
+      if (idx >= totalPoints) idx = totalPoints - 1
+      if (idx < 0) idx = 0
+
+      sparklines.totalOrders[idx] += 1
+      if (isAbandoned(r.status)) {
+        sparklines.abandonedOrders[idx] += 1
+      } else {
+        sparklines.normalOrders[idx] += 1
+      }
+
+      if (isFacebook(r.utm_source)) {
+        sparklines.facebookOrders[idx] += 1
+      } else if (isTikTok(r.utm_source)) {
+        sparklines.tiktokOrders[idx] += 1
+      } else {
+        sparklines.otherOrders[idx] += 1
+      }
+    })
+
+    return sparklines
+  }
+
+  const sparklines = generateSparklines(currentOrders)
+
+  const kpis = {
+    totalOrders: { value: curKpis.totalOrders, change: calcPct(curKpis.totalOrders, prevKpis.totalOrders), sparkline: sparklines.totalOrders },
+    abandonedOrders: { value: curKpis.abandonedOrders, change: calcPct(curKpis.abandonedOrders, prevKpis.abandonedOrders), sparkline: sparklines.abandonedOrders },
+    normalOrders: { value: curKpis.normalOrders, change: calcPct(curKpis.normalOrders, prevKpis.normalOrders), sparkline: sparklines.normalOrders },
+    facebookOrders: { value: curKpis.facebookOrders, change: calcPct(curKpis.facebookOrders, prevKpis.facebookOrders), sparkline: sparklines.facebookOrders },
+    tiktokOrders: { value: curKpis.tiktokOrders, change: calcPct(curKpis.tiktokOrders, prevKpis.tiktokOrders), sparkline: sparklines.tiktokOrders },
+    otherOrders: { value: curKpis.otherOrders, change: calcPct(curKpis.otherOrders, prevKpis.otherOrders), sparkline: sparklines.otherOrders },
+    revenue: { value: curKpis.revenue, change: calcPct(curKpis.revenue, prevKpis.revenue) },
+  }
+
+  const hourlyData = Array.from({ length: 24 }, (_, h) => ({
+    hour: `${String(h).padStart(2, '0')}:00`,
+    hourNum: h,
+    orders: 0,
+    abandoned: 0,
+    normal: 0,
+  }))
+
+  currentOrders.forEach(o => {
+    const h = getAlgiersHour(o.created_at)
+    if (h >= 0 && h < 24) {
+      hourlyData[h].orders += 1
+      if (isAbandoned(o.status)) {
+        hourlyData[h].abandoned += 1
+      } else {
+        hourlyData[h].normal += 1
+      }
+    }
+  })
 
   const wilayaCounts: Record<number, number> = {}
-  for (const o of week) {
-    if (o.wilaya_id && !isAbandoned(o.status)) wilayaCounts[o.wilaya_id] = (wilayaCounts[o.wilaya_id] ?? 0) + 1
-  }
+  currentOrders.forEach(o => {
+    if (o.wilaya_id && !isAbandoned(o.status)) {
+      wilayaCounts[o.wilaya_id] = (wilayaCounts[o.wilaya_id] || 0) + 1
+    }
+  })
 
-  const period: { date: string; label: string; orders: number; revenue: number }[] = []
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(startOfToday.getTime() - i * 86400000)
-    const next = new Date(d.getTime() + 86400000)
-    const dayRows = week.filter(o => { const t = new Date(o.created_at).getTime(); return t >= d.getTime() && t < next.getTime() })
-    period.push({
-      date: d.toISOString().slice(0, 10),
-      label: d.toLocaleDateString('en', { month: 'short', day: 'numeric' }),
-      orders: dayRows.filter(o => !isAbandoned(o.status)).length,
-      revenue: dayRows.filter(o => isCompleted(o.status)).reduce((s, o) => s + (o.total ?? 0), 0),
+  const totalWilayaOrders = Object.values(wilayaCounts).reduce((a, b) => a + b, 0)
+  const sortedWilayas = Object.entries(wilayaCounts)
+    .map(([wId, count]) => {
+      const id = Number(wId)
+      return {
+        id,
+        name: wilayaMap[id] || `ولاية ${id}`,
+        count,
+        pct: totalWilayaOrders > 0 ? Math.round((count / totalWilayaOrders) * 100 * 10) / 10 : 0,
+      }
     })
+    .sort((a, b) => b.count - a.count)
+
+  const periodSeries = hourlyData.map(h => ({
+    label: h.hour,
+    total_orders: h.orders,
+    normal_orders: h.normal,
+    abandoned_orders: h.abandoned,
+    revenue: 0,
+  }))
+
+  currentOrders.forEach(o => {
+    if (!isAbandoned(o.status)) {
+      const h = getAlgiersHour(o.created_at)
+      if (h >= 0 && h < 24) {
+        periodSeries[h].revenue += o.total ?? 0
+      }
+    }
+  })
+
+  const initialData = {
+    dateRange,
+    kpis,
+    hourlyData,
+    wilayaDistribution: {
+      totalOrders: totalWilayaOrders,
+      wilayaCounts,
+      sortedWilayas,
+    },
+    periodSeries,
+    productPerformance: [],
   }
-  const periodRevenue = period.reduce((s, p) => s + p.revenue, 0)
-  const periodOrders = period.reduce((s, p) => s + p.orders, 0)
 
   return (
     <DashboardHome
-      storeName={store?.name ?? 'متجري'}
+      storeName={store?.name ?? 'CPMMERCO'}
       userName={user.email?.split('@')[0] ?? 'التاجر'}
       plan={store?.plan ?? 'free'}
-      data={{
-        statusCards,
-        grossValue, grossCount,
-        deliveredRevenue, revenueChange,
-        funnel,
-        wilayaCounts,
-        period, periodRevenue, periodOrders,
-        productCount: productsRes.count ?? 0,
-        storeReady: (storeReadyRes.count ?? 0) > 0,
-      }}
+      initialData={initialData}
     />
   )
 }

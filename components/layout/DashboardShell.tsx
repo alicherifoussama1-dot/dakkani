@@ -178,25 +178,22 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
     const active = isActive(item.href)
     return (
       <Link href={item.href} aria-current={active ? 'page' : undefined}
-        className="ios-tap flex items-center gap-3 h-11 px-3 rounded-[var(--ios-radius-md)] text-[15px] font-medium"
+        className="ios-tap flex items-center gap-3 h-10 px-3 rounded-xl text-sm font-semibold transition-all duration-150"
         style={{
-          background: active ? 'var(--color-primary-50)' : 'transparent',
-          color: active ? 'var(--color-primary-700)' : 'var(--text-secondary)',
-          transition: 'background 160ms cubic-bezier(0.32,0.72,0,1), color 160ms cubic-bezier(0.32,0.72,0,1), transform 120ms cubic-bezier(0.32,0.72,0,1)',
+          background: active ? '#EFF6FF' : 'transparent',
+          color: active ? '#0D6EFD' : 'var(--text-secondary)',
         }}
-        onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'var(--surface-sunken)' }}
+        onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = '#F1F5F9' }}
         onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
       >
-        <item.icon size={18} strokeWidth={active ? 2.1 : 1.8} className="flex-shrink-0" aria-hidden />
+        <item.icon size={18} strokeWidth={active ? 2.2 : 1.8} className={`flex-shrink-0 ${active ? 'text-[#0D6EFD]' : 'text-gray-400'}`} aria-hidden />
         <span className="flex-1 truncate">{t(`nav.${item.key}`)}</span>
         {count && count > 0 ? (
-          <span className="min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center"
-            style={{ background: 'var(--interactive-primary)', color: '#fff' }}>
+          <span className="min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center bg-[#0D6EFD] text-white">
             {count > 99 ? '99+' : count}
           </span>
         ) : item.badge ? (
-          <span className="h-[18px] px-1.5 rounded-full text-[10px] font-semibold flex items-center"
-            style={{ background: 'var(--color-accent-100)', color: 'var(--color-accent-700)' }}>
+          <span className="h-[18px] px-1.5 rounded-full text-[10px] font-semibold flex items-center bg-blue-50 text-blue-700">
             {t('section.new')}
           </span>
         ) : null}
@@ -337,8 +334,8 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
 
   return (
     <div dir={dir} lang={locale} className="commerco-ds c-ui flex h-screen overflow-hidden" style={{ background: 'var(--surface-page)' }}>
-      {/* ── Desktop sidebar — iOS frosted panel ── */}
-      <aside className="ios-frost hidden lg:flex flex-col flex-shrink-0 h-full overflow-hidden border-e"
+      {/* ── Desktop sidebar — light clean panel ── */}
+      <aside className="bg-[#F8FAFC] hidden lg:flex flex-col flex-shrink-0 h-full overflow-hidden border-e border-gray-200"
         style={{
           width: sidebarOpen ? 260 : 0,
           transition: 'width 320ms cubic-bezier(0.32, 0.72, 0, 1)',
@@ -350,7 +347,7 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
       {mobileOpen && (
         <>
           <div className="fixed inset-0 z-40 lg:hidden" style={{ background: 'var(--overlay-scrim)' }} onClick={() => setMobileOpen(false)} />
-          <aside className="ios-frost fixed top-0 bottom-0 start-0 z-50 w-[280px] max-w-[85vw] flex flex-col lg:hidden border-e"
+          <aside className="bg-[#F8FAFC] fixed top-0 bottom-0 start-0 z-50 w-[280px] max-w-[85vw] flex flex-col lg:hidden border-e border-gray-200"
             style={{ animation: 'ios-sheet-up 320ms cubic-bezier(0.32, 0.72, 0, 1)' }}
             role="dialog" aria-label={t('shell.settings')}>
             <SidebarContent />
