@@ -1,0 +1,101 @@
+# ============================================================
+# QUEUE WORKER TRIGGER
+#
+# WHY THIS EXISTS
+# ---------------
+# New-order push notifications are delivered by the `push.order` job, which
+# `order.created` enqueues into job_queue. Something has to *run* that job.
+#
+# The only worker trigger was Vercel Cron at "0 3 * * *" — once per day. Audit
+# heartbeats confirmed it: 1440.0-minute gaps, firing anywhere between 03:12
+# and 03:54 UTC. A merchant could therefore wait up to 24 hours for a "new
+# order" alert, which defeats the purpose of the mobile app.
+#
+# Vercel Hobby cron is limited to once-daily schedules, so raising the
+# frequency in vercel.json is not available on that plan and would make the
+# deployment fail. This workflow calls the SAME authenticated endpoint from
+# GitHub's scheduler instead — no Vercel plan change, no billing change, and
+# no risk to the production deployment.
+#
+# WHY THIS IS SAFE TO RUN FREQUENTLY
+# ----------------------------------
+# `claim_jobs()` selects with `FOR UPDATE SKIP LOCKED` and atomically flips
+# each row to 'processing' in the same statement. Overlapping or concurrent
+# workers therefore cannot claim the same job twice, so notifications cannot
+# be duplicated. Retries, exponential backoff and stale-token pruning are
+# untouched — this changes only HOW OFTEN the existing worker runs.
+#
+# HONEST LIMITATION
+# -----------------
+# GitHub's minimum schedule interval is 5 minutes, and scheduled runs are
+# best-effort: under load GitHub can delay them, occasionally by 10-15
+# minutes. This is "within minutes", NOT "within seconds". For true
+# minute-level delivery see docs/REALTIME_PUSH.md.
+#
+# REQUIRED SETUP (one time)
+#   Repo → Settings → Secrets and variables → Actions → New repository secret
+#     CRON_SECRET   — must equal the CRON_SECRET in Vercel Production
+#   Optionally set the variable PRODUCTION_URL if the domain ever changes.
+# ============================================================
+name: Process job queue
+
+on:
+  schedule:
+    # Every 5 minutes — GitHub's minimum interval.
+    - cron: '*/5 * * * *'
+  # Lets you drain the queue on demand from the Actions tab.
+  workflow_dispatch:
+
+# If a run is still going when the next fires, skip the new one rather than
+# stacking workers. SKIP LOCKED makes overlap safe, but this keeps it tidy.
+concurrency:
+  group: process-queue
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  drain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger queue worker
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL || 'https://dakkani.vercel.app' }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "::error::CRON_SECRET repository secret is not set — the worker cannot authenticate."
+            exit 1
+          fi
+
+          # --fail-with-body gives us a non-zero exit AND the response body.
+          # -sS keeps it quiet on success but still prints transport errors.
+          # The secret is passed via a header and never echoed.
+          http_code=$(curl -sS -o /tmp/queue.json -w '%{http_code}' \
+            --max-time 120 \
+            --retry 2 --retry-delay 5 --retry-connrefused \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${PRODUCTION_URL}/api/cron/process-queue")
+
+          echo "HTTP ${http_code}"
+          cat /tmp/queue.json || true
+          echo
+
+          if [ "${http_code}" = "401" ]; then
+            echo "::error::401 Unauthorized — the CRON_SECRET secret does not match Vercel Production."
+            exit 1
+          fi
+          if [ "${http_code}" != "200" ]; then
+            echo "::error::Queue worker returned HTTP ${http_code}."
+            exit 1
+          fi
+
+          # Surface a worker-level failure (the route returns ok:false on error).
+          if grep -q '"ok":false' /tmp/queue.json; then
+            echo "::error::Worker reported a failure — see the body above."
+            exit 1
+          fi

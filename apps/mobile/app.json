@@ -1,0 +1,95 @@
+{
+  "expo": {
+    "name": "COMMERCO",
+    "slug": "commerco-merchant",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "commerco",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "store.commerco.merchant",
+      "buildNumber": "1",
+      "config": { "usesNonExemptEncryption": false },
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"],
+        "NSFaceIDUsageDescription": "استخدم بصمة الوجه أو الإصبع لفتح تطبيق COMMERCO بأمان.",
+        "NSPhotoLibraryUsageDescription": "اختر صور منتجاتك من معرض الصور.",
+        "NSCameraUsageDescription": "التقط صوراً لمنتجاتك مباشرة.",
+        "CFBundleAllowMixedLocalizations": true,
+        "CFBundleLocalizations": ["ar", "fr", "en"]
+      },
+      "entitlements": {
+        "aps-environment": "production"
+      }
+    },
+    "android": {
+      "package": "store.commerco.merchant",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "VIBRATE",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "READ_MEDIA_IMAGES"
+      ],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [{ "scheme": "commerco" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-local-authentication",
+      [
+        "expo-localization",
+        {
+          "supportsRTL": true,
+          "forcesRTL": true,
+          "allowDynamicLocaleChangesAndroid": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#10B981",
+          "sounds": ["./assets/sounds/new_order.wav"]
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "اسمح لـ COMMERCO بالوصول إلى صورك لرفع صور المنتجات.",
+          "cameraPermission": "اسمح لـ COMMERCO باستخدام الكاميرا لتصوير منتجاتك.",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "extra": {
+      "router": { "origin": false },
+      "eas": { "projectId": "REPLACE_WITH_EAS_PROJECT_ID" }
+    },
+    "experiments": { "typedRoutes": true }
+  }
+}

@@ -1,8 +1,22 @@
 # dependencies
+# NOTE: the leading slash only matched the ROOT node_modules. The mobile app
+# lives in apps/mobile, so its 41k dependency files were NOT ignored.
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.js
 .yarn/install-state.gz
+
+# ── React Native / Expo app (apps/mobile) ──
+**/.expo/
+**/.expo-shared/
+apps/*/dist/
+apps/*/android/
+apps/*/ios/
+*.jks
+*.keystore
+# Firebase CLIENT config is safe to commit (no private key) and EAS needs it
+# in the build context, so it is deliberately NOT ignored here.
 
 # testing
 /coverage

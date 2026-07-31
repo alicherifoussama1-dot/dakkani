@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "762309240823",
+    "project_id": "commerco-a2b53",
+    "storage_bucket": "commerco-a2b53.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:762309240823:android:0f6e5d2e7c29ec1d5af0f2",
+        "android_client_info": {
+          "package_name": "store.commerco.merchant"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBezelpP7C3j6d7hHglxfbvuce-0bZ7YWE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
