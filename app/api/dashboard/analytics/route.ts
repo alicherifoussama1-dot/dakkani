@@ -6,14 +6,19 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createServerClient()
+    // Accepts BOTH auth styles: cookies (web dashboard — unchanged) and
+    // `Authorization: Bearer` (native mobile app). When the header is absent
+    // this is byte-for-byte the previous behaviour.
+    const supabase = createServerClient(req.headers.get('authorization'))
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
 
     if (authErr || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { activeStore: store } = await getActiveStore(supabase, user.id)
+    const { activeStore: store } = await getActiveStore(
+      supabase, user.id, req.headers.get('x-commerco-store'),
+    )
     if (!store) {
       return NextResponse.json({ error: 'No active store' }, { status: 404 })
     }
@@ -42,8 +47,12 @@ export async function GET(req: NextRequest) {
         .lte('created_at', dateRange.prevEndISO),
 
       supabase
+        // FIX: there is no `wilayas.name` column (it is name_ar / name_fr).
+        // Selecting it made Postgres reject the query, and `?? []` swallowed
+        // the error — so wilayaMap was ALWAYS empty and every wilaya rendered
+        // as "ولاية <id>" instead of its real name.
         .from('wilayas')
-        .select('id, name, name_ar, code'),
+        .select('id, name_ar, name_fr, code'),
     ])
 
     const currentOrders = currentOrdersRes.data ?? []
@@ -53,7 +62,7 @@ export async function GET(req: NextRequest) {
     // Map Wilaya IDs to Names
     const wilayaMap: Record<number, string> = {}
     wilayasList.forEach((w) => {
-      wilayaMap[w.id] = w.name_ar || w.name || `ولاية ${w.id}`
+      wilayaMap[w.id] = w.name_ar || w.name_fr || `ولاية ${w.id}`
     })
 
     // Helpers
