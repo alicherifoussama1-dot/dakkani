@@ -12,19 +12,29 @@
       "resizeMode": "contain",
       "backgroundColor": "#FFFFFF"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "store.commerco.merchant",
       "buildNumber": "1",
-      "config": { "usesNonExemptEncryption": false },
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"],
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
         "NSFaceIDUsageDescription": "استخدم بصمة الوجه أو الإصبع لفتح تطبيق COMMERCO بأمان.",
         "NSPhotoLibraryUsageDescription": "اختر صور منتجاتك من معرض الصور.",
         "NSCameraUsageDescription": "التقط صوراً لمنتجاتك مباشرة.",
         "CFBundleAllowMixedLocalizations": true,
-        "CFBundleLocalizations": ["ar", "fr", "en"]
+        "CFBundleLocalizations": [
+          "ar",
+          "fr",
+          "en"
+        ]
       },
       "entitlements": {
         "aps-environment": "production"
@@ -52,8 +62,15 @@
         {
           "action": "VIEW",
           "autoVerify": true,
-          "data": [{ "scheme": "commerco" }],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "data": [
+            {
+              "scheme": "commerco"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -74,7 +91,9 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#10B981",
-          "sounds": ["./assets/sounds/new_order.wav"]
+          "sounds": [
+            "./assets/sounds/new_order.wav"
+          ]
         }
       ],
       [
@@ -87,9 +106,16 @@
       ]
     ],
     "extra": {
-      "router": { "origin": false },
-      "eas": { "projectId": "REPLACE_WITH_EAS_PROJECT_ID" }
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "a5231894-017c-48e6-b82b-86d73229052d"
+      }
     },
-    "experiments": { "typedRoutes": true }
+    "experiments": {
+      "typedRoutes": true
+    },
+    "owner": "commerco1"
   }
 }
