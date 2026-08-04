@@ -5,17 +5,16 @@
 //   orders INSERT → emit('order.created') → job_queue 'push.order'
 //   → lib/push/send.ts → FCM v1 / APNs → this device.
 //
-// Handles: permission, token registration + refresh, Android channels
-// (custom sound), foreground vs background, tap → deep link to the order,
-// badge, and duplicate suppression across multiple devices.
+// This module only OBTAINS the token and reports taps. It deliberately
+// does NOT call /api/mobile/v1/devices itself: in the shell the session
+// lives in the WebView's cookie jar, which React Native's fetch does not
+// share. The shell registers by running the fetch inside the page, where
+// the cookies already are (see registerDeviceScript in app/index.tsx).
 // ============================================================
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import * as SecureStore from 'expo-secure-store'
-import * as Haptics from 'expo-haptics'
 import { Platform } from 'react-native'
-import Constants from 'expo-constants'
-import { api } from './api'
 
 const K_PUSH_TOKEN = 'commerco.push_token'
 
@@ -57,56 +56,25 @@ export async function setupAndroidChannels() {
   })
 }
 
-/** Foreground behaviour — we show our own in-app banner for orders, so we
- *  suppress the OS alert but still play the sound. */
-export function configureForegroundHandler(showInApp: (data: NewOrderPayload) => void) {
+/** The shell shows no UI of its own, so every notification goes to the OS
+ *  tray — including while the app is foregrounded. Tapping it routes the
+ *  WebView, which is what the merchant expects from a website in an app. */
+export function configureForegroundHandler() {
   Notifications.setNotificationHandler({
-    handleNotification: async (n) => {
-      const data = n.request.content.data as any
-      if (data?.type === 'new_order') {
-        showInApp(parsePayload(data))
-        // Unawaited: rejects on devices without a haptic engine.
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-        return { shouldShowAlert: false, shouldPlaySound: true, shouldSetBadge: true }
-      }
-      return { shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: true }
-    },
+    handleNotification: async () => ({
+      shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: true,
+    }),
   })
 }
 
-export interface NewOrderPayload {
-  orderId: string
-  orderNumber: string
-  customer: string
-  itemsCount: number
-  total: number
-  wilaya?: string
-}
-
-function parsePayload(d: any): NewOrderPayload {
-  return {
-    orderId: String(d.order_id ?? ''),
-    orderNumber: String(d.order_number ?? ''),
-    customer: String(d.customer ?? ''),
-    itemsCount: Number(d.items_count ?? 0),
-    total: Number(d.total ?? 0),
-    wilaya: d.wilaya || undefined,
-  }
-}
-
-/** Ask permission (contextually — call AFTER first successful login, never
- *  on cold launch, or merchants deny and never re-enable). */
+/** Ask permission. Called after the first page load rather than on cold
+ *  launch — asked at boot, merchants deny and never re-enable. */
 export async function requestPermission(): Promise<boolean> {
   if (!Device.isDevice) return false // simulators cannot receive real pushes
   const { status: existing } = await Notifications.getPermissionsAsync()
   if (existing === 'granted') return true
   const { status } = await Notifications.requestPermissionsAsync({
-    ios: {
-      allowAlert: true, allowBadge: true, allowSound: true,
-      // Time-sensitive breaks through Focus modes. Needs NO special Apple
-      // entitlement (unlike Critical Alerts).
-      allowProvisional: false,
-    },
+    ios: { allowAlert: true, allowBadge: true, allowSound: true, allowProvisional: false },
   })
   return status === 'granted'
 }
@@ -119,87 +87,59 @@ export async function requestPermission(): Promise<boolean> {
  *  which the server classifies as stale and prunes — silently unregistering
  *  the device for good. getDevicePushTokenAsync() returns what FCM/APNs want.
  */
-async function getNativeToken(): Promise<string | null> {
+export async function getNativeToken(): Promise<string | null> {
+  if (!Device.isDevice) return null
+  if (!(await requestPermission())) return null
+  await setupAndroidChannels()
   const t = await Notifications.getDevicePushTokenAsync()
   return typeof t?.data === 'string' && t.data ? t.data : null
 }
 
-/** Register (or refresh) this device with the backend. Idempotent: the
- *  server upserts on `token`, so re-registering never double-notifies. */
-export async function registerDevice(): Promise<string | null> {
-  if (!Device.isDevice) return null
-  if (!(await requestPermission())) return null
+/** Previous token, so a rotation can unregister the row it replaced —
+ *  otherwise the merchant gets notified twice per order. */
+export function getStoredToken() {
+  return SecureStore.getItemAsync(K_PUSH_TOKEN).catch(() => null)
+}
 
-  await setupAndroidChannels()
-
-  const token = await getNativeToken()
-  if (!token) return null
-
-  const previous = await SecureStore.getItemAsync(K_PUSH_TOKEN).catch(() => null)
-  if (previous && previous !== token) {
-    // Token rotated — drop the old row so the merchant isn't notified twice.
-    try { await api.unregisterDevice(previous) } catch { /* best effort */ }
-  }
-
-  await api.registerDevice({
-    token,
-    platform: Platform.OS === 'ios' ? 'ios' : 'android',
-    app_version: Constants.expoConfig?.version ?? '1.0.0',
-    locale: 'ar',
-  })
-  await SecureStore.setItemAsync(K_PUSH_TOKEN, token)
-  return token
+export async function storeToken(token: string) {
+  try { await SecureStore.setItemAsync(K_PUSH_TOKEN, token) } catch { /* non-fatal */ }
 }
 
 /** Fires when FCM/APNs rotates the token while the app is running. */
-export function onTokenRefresh() {
-  return Notifications.addPushTokenListener(async (next) => {
-    // Same native-token contract as registerDevice(); ignore anything else.
+export function onTokenRefresh(handler: (token: string) => void) {
+  return Notifications.addPushTokenListener(next => {
     const token = typeof next?.data === 'string' ? next.data : null
-    if (!token) return
-    try {
-      const previous = await SecureStore.getItemAsync(K_PUSH_TOKEN).catch(() => null)
-      if (previous === token) return
-      if (previous) { try { await api.unregisterDevice(previous) } catch { /* best effort */ } }
-      await api.registerDevice({
-        token, platform: Platform.OS === 'ios' ? 'ios' : 'android',
-        app_version: Constants.expoConfig?.version ?? '1.0.0', locale: 'ar',
-      })
-      await SecureStore.setItemAsync(K_PUSH_TOKEN, token)
-    } catch { /* offline — re-registered on next launch */ }
+    if (token) handler(token)
   })
 }
 
-/** Tap handling — works from background AND cold start. */
-export function onNotificationTap(navigateToOrder: (orderId: string) => void) {
+/** Tap handling — works from background AND cold start.
+ *  Returns the site-relative path the notification points at. */
+export function onNotificationTap(navigate: (path: string) => void) {
   const sub = Notifications.addNotificationResponseReceivedListener(res => {
-    const d = res.notification.request.content.data as any
-    if (d?.order_id) navigateToOrder(String(d.order_id))
+    const p = pathFromData(res.notification.request.content.data)
+    if (p) navigate(p)
   })
 
   // Cold start: the app was launched BY the notification, so the response
   // was delivered before any listener existed.
   Notifications.getLastNotificationResponseAsync().then(res => {
-    const d = res?.notification.request.content.data as any
-    if (d?.order_id) navigateToOrder(String(d.order_id))
+    const p = pathFromData(res?.notification.request.content.data)
+    if (p) navigate(p)
   })
 
   return sub
 }
 
+/** The server sends `url` for anything routable and `order_id` for the
+ *  order pipeline; both map onto a website path. */
+function pathFromData(d: any): string | null {
+  if (!d) return null
+  if (typeof d.url === 'string' && d.url.startsWith('/')) return d.url
+  if (d.order_id) return `/orders/${String(d.order_id)}`
+  return null
+}
+
 export async function setBadge(count: number) {
   try { await Notifications.setBadgeCountAsync(Math.max(0, count)) } catch {}
-}
-
-export async function getStoredToken() {
-  return SecureStore.getItemAsync(K_PUSH_TOKEN).catch(() => null)
-}
-
-/** Per-device preferences, persisted server-side on device_tokens. */
-export async function updatePrefs(prefs: {
-  push_enabled?: boolean; sound_enabled?: boolean; vibration_enabled?: boolean
-}) {
-  const token = await getStoredToken()
-  if (!token) return
-  await api.updateDevicePrefs({ token, ...prefs })
 }
