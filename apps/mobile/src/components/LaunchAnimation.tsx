@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   glow: {
     position: 'absolute', width: 240, height: 240, borderRadius: 120,
-    backgroundColor: color.em300,
+    backgroundColor: color.br300,
     // A large soft radial glow; on Android shadows don't blur this way, so we
     // rely on opacity+scale which reads correctly on both platforms.
     // (opacity is driven entirely by sGlow — no static value here, it would

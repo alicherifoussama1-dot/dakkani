@@ -181,7 +181,7 @@ export default function ProductEditor() {
               <Pressable style={[styles.imgTile, styles.imgAdd]} onPress={pickImage} disabled={uploading}>
                 {uploading
                   ? <Text style={styles.addText}>...</Text>
-                  : <><IconImage size={20} color={color.em600} /><Text style={styles.addText}>إضافة</Text></>}
+                  : <><IconImage size={20} color={color.br600} /><Text style={styles.addText}>إضافة</Text></>}
               </Pressable>
             </ScrollView>
           </GlassCard>
@@ -249,7 +249,7 @@ export default function ProductEditor() {
                 <Text style={styles.hint}>عند الإيقاف لن يظهر المنتج للزوار</Text>
               </View>
               <Switch value={active} onValueChange={setActive}
-                trackColor={{ true: color.em500, false: '#E2E8F0' }} thumbColor={color.white} />
+                trackColor={{ true: color.br500, false: '#E2E8F0' }} thumbColor={color.white} />
             </View>
           </GlassCard>
 
@@ -314,16 +314,16 @@ const styles = StyleSheet.create({
   imgTile: { width: 82, height: 82, borderRadius: radius.md, backgroundColor: color.sunken },
   imgAdd: {
     alignItems: 'center', justifyContent: 'center', gap: 4,
-    borderWidth: 1.5, borderColor: color.em300, borderStyle: 'dashed', backgroundColor: color.em50,
+    borderWidth: 1.5, borderColor: color.br300, borderStyle: 'dashed', backgroundColor: color.br50,
   },
-  addText: { fontSize: 10.5, fontWeight: '800', color: color.em700 },
+  addText: { fontSize: 10.5, fontWeight: '800', color: color.br700 },
   imgRemove: {
     position: 'absolute', top: 4, end: 4, width: 20, height: 20, borderRadius: 10,
     backgroundColor: 'rgba(15,23,42,0.6)', alignItems: 'center', justifyContent: 'center',
   },
   mainBadge: {
     position: 'absolute', bottom: 4, start: 4, paddingHorizontal: 6, paddingVertical: 2,
-    borderRadius: 999, backgroundColor: color.em600,
+    borderRadius: 999, backgroundColor: color.br600,
   },
   mainBadgeText: { color: color.white, fontSize: 8.5, fontWeight: '800' },
   variantRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 10 },
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     color: color.ink, backgroundColor: color.white, borderWidth: 1, borderColor: color.hairline,
   },
   variantBtn: {
-    width: 40, height: 40, borderRadius: radius.md, backgroundColor: color.em600,
+    width: 40, height: 40, borderRadius: radius.md, backgroundColor: color.br600,
     alignItems: 'center', justifyContent: 'center',
   },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },

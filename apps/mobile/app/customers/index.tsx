@@ -71,7 +71,7 @@ export default function Customers() {
           estimatedItemSize={96}
           keyExtractor={c => c.phone}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.em500} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.br500} />}
           ListEmptyComponent={
             <EmptyState icon={<IconUsers size={44} color={color.ink3} />}
               title="لا يوجد عملاء" body={debounced ? 'لا نتائج لبحثك.' : 'سيظهر عملاؤك هنا بعد أول طلب.'} />
@@ -123,12 +123,12 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   avatar: {
-    width: 44, height: 44, borderRadius: 14, backgroundColor: color.em50,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(16,185,129,0.16)',
+    width: 44, height: 44, borderRadius: 14, backgroundColor: color.br50,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(41,82,227,0.14)',
   },
-  avatarText: { fontSize: 16, fontWeight: '800', color: color.em700 },
+  avatarText: { fontSize: 16, fontWeight: '800', color: color.br700 },
   name: { fontSize: 13.5, fontWeight: '800', color: color.ink, flexShrink: 1 },
-  spend: { fontSize: 13.5, fontWeight: '800', color: color.em700, fontVariant: ['tabular-nums'] },
+  spend: { fontSize: 13.5, fontWeight: '800', color: color.br700, fontVariant: ['tabular-nums'] },
   phone: { fontSize: font.label, fontWeight: '700', color: color.ink3, marginTop: 3, writingDirection: 'ltr' },
   meta: { fontSize: font.label, fontWeight: '700', color: color.ink3, marginTop: 4, flexShrink: 1 },
 })

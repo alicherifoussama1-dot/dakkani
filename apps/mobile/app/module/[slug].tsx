@@ -205,7 +205,7 @@ function Delivery() {
         <View style={styles.divider} />
         {DELIVERY_ZONES.map(z => (
           <View key={z.name} style={styles.zoneRow}>
-            <IconLocation size={15} color={color.em600} />
+            <IconLocation size={15} color={color.br600} />
             <Text style={styles.zoneName}>{z.name}</Text>
             <Text style={styles.zoneParent}>داخل {z.parent}</Text>
           </View>
@@ -263,7 +263,7 @@ function Stopdesk() {
           <View style={styles.divider} />
           {list.map(o => (
             <View key={o.id} style={styles.officeRow}>
-              <IconLocation size={14} color={o.is_active ? color.em600 : color.ink3} />
+              <IconLocation size={14} color={o.is_active ? color.br600 : color.ink3} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={styles.zoneName} numberOfLines={1}>{o.name}</Text>
                 {o.address ? (
@@ -294,7 +294,7 @@ const PLAN_AR: Record<string, string> = {
 function UsageBar({ label, used, limit }: { label: string; used: number; limit: number }) {
   const pct = limit > 0 ? Math.min((used / limit) * 100, 100) : 0
   // Amber at 80%, red at 100% — the merchant sees a cap coming before it bites.
-  const tint = pct >= 100 ? color.rose : pct >= 80 ? color.amber : color.em500
+  const tint = pct >= 100 ? color.rose : pct >= 80 ? color.amber : color.br500
   return (
     <View style={{ marginTop: 12 }}>
       <View style={styles.rowBetween}>
@@ -419,9 +419,9 @@ const styles = StyleSheet.create({
   zoneParent: { fontSize: 11, fontWeight: '600', color: color.ink3, marginStart: 'auto' },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   planName: { fontSize: 15, fontWeight: '800', color: color.ink },
-  currentPlan: { borderColor: color.em400, borderWidth: 2 },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: color.em50 },
-  badgeText: { fontSize: 10.5, fontWeight: '800', color: color.em700 },
+  currentPlan: { borderColor: color.br400, borderWidth: 2 },
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: color.br50 },
+  badgeText: { fontSize: 10.5, fontWeight: '800', color: color.br700 },
   badgeOff: { backgroundColor: color.sunken },
   badgeTextOff: { color: color.ink2 },
   priceHead: { flexDirection: 'row', alignItems: 'center' },

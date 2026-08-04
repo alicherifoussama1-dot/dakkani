@@ -73,7 +73,7 @@ export default function MapScreen() {
           {sel && (
             <GlassCard index={1} style={styles.selCard}>
               <View style={styles.selHead}>
-                <IconLocation size={18} color={color.em700} />
+                <IconLocation size={18} color={color.br700} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.selAr}>{WILAYA_NAMES[sel.id]?.ar ?? sel.id}</Text>
                   <Text style={styles.selFr}>{WILAYA_NAMES[sel.id]?.fr ?? ''}</Text>
@@ -132,14 +132,14 @@ const styles = StyleSheet.create({
   title: { fontSize: 17, fontWeight: '800', color: color.ink },
   sub: { fontSize: 11.5, fontWeight: '600', color: color.ink3, marginTop: 1 },
   section: { fontSize: 14.5, fontWeight: '800', color: color.ink, marginTop: 20, marginBottom: 11 },
-  selCard: { borderColor: color.em300, borderWidth: 1.5 },
+  selCard: { borderColor: color.br300, borderWidth: 1.5 },
   selHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   selAr: { fontSize: 16, fontWeight: '800', color: color.ink },
   selFr: { fontSize: 11.5, fontWeight: '600', color: color.ink3, marginTop: 2 },
-  selCode: { fontSize: 13, fontWeight: '800', color: color.em700, fontVariant: ['tabular-nums'] },
+  selCode: { fontSize: 13, fontWeight: '800', color: color.br700, fontVariant: ['tabular-nums'] },
   selStats: { flexDirection: 'row', gap: 9, marginTop: 12 },
-  selStat: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md, backgroundColor: color.em50 },
-  selStatValue: { fontSize: 14, fontWeight: '800', color: color.em700, fontVariant: ['tabular-nums'] },
+  selStat: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md, backgroundColor: color.br50 },
+  selStatValue: { fontSize: 14, fontWeight: '800', color: color.br700, fontVariant: ['tabular-nums'] },
   selStatLabel: { fontSize: 10, fontWeight: '700', color: color.ink3, marginTop: 3 },
   estimate: { fontSize: 10.5, fontWeight: '600', color: color.ink3, marginTop: 9, lineHeight: 16 },
   rankRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
@@ -149,5 +149,5 @@ const styles = StyleSheet.create({
   },
   rankName: { fontSize: 13, fontWeight: '800', color: color.ink },
   rankFr: { fontSize: 10.5, fontWeight: '600', color: color.ink3, marginTop: 2 },
-  rankCount: { fontSize: 15, fontWeight: '800', color: color.em700, fontVariant: ['tabular-nums'] },
+  rankCount: { fontSize: 15, fontWeight: '800', color: color.br700, fontVariant: ['tabular-nums'] },
 })

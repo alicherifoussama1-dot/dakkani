@@ -26,7 +26,7 @@ function visual(type: string) {
   if (t.includes('stock')) return { Icon: IconBox, tint: '#B45309', bg: color.amber50 }
   if (t.includes('ship') || t.includes('deliver')) return { Icon: IconTruck, tint: '#6D28D9', bg: '#F5F3FF' }
   if (t.includes('review')) return { Icon: IconStar, tint: '#B45309', bg: color.amber50 }
-  return { Icon: IconBell, tint: color.em700, bg: color.em50 }
+  return { Icon: IconBell, tint: color.br700, bg: color.br50 }
 }
 
 export default function Notifications() {
@@ -73,7 +73,7 @@ export default function Notifications() {
         </View>
         {unread > 0 && (
           <Pressable style={styles.iconBtn} onPress={() => mark.mutate({ all: true })} hitSlop={8}>
-            <IconCheck size={18} color={color.em700} />
+            <IconCheck size={18} color={color.br700} />
           </Pressable>
         )}
       </View>
@@ -88,7 +88,7 @@ export default function Notifications() {
           estimatedItemSize={92}
           keyExtractor={(n: any) => n.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.em500} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.br500} />}
           ListEmptyComponent={
             <EmptyState icon={<IconBell size={44} color={color.ink3} />}
               title="لا توجد إشعارات"
@@ -132,12 +132,12 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 21, fontWeight: '800', color: color.ink },
   sub: { fontSize: 11.5, fontWeight: '600', color: color.ink3, marginTop: 1 },
-  unread: { borderStartWidth: 4, borderStartColor: color.em500 },
+  unread: { borderStartWidth: 4, borderStartColor: color.br500 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   icon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   nTitle: { fontSize: 13.5, fontWeight: '800', color: color.ink, flexShrink: 1 },
   time: { fontSize: font.label, fontWeight: '700', color: color.ink3 },
   body: { fontSize: 12.5, color: color.ink2, marginTop: 3, lineHeight: 19 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.em500 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.br500 },
 })

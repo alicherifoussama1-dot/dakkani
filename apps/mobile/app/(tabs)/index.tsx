@@ -96,7 +96,7 @@ export default function Dashboard() {
 
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.em500} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.br500} />}
       >
         {an.isError ? (
           <ErrorState message={(an.error as any)?.message} onRetry={() => an.refetch()} />
@@ -137,7 +137,7 @@ export default function Dashboard() {
               <KpiCard index={0} label="إجمالي الطلبات" value={num(k.totalOrders)}
                 delta={k.totalOrders?.change} icon={<IconOrders size={16} color="#1D4ED8" />} iconBg="#EFF6FF" />
               <KpiCard index={1} label="طلبات عادية" value={num(k.normalOrders)}
-                delta={k.normalOrders?.change} icon={<IconCheck size={16} color={color.em700} />} iconBg={color.em50} />
+                delta={k.normalOrders?.change} icon={<IconCheck size={16} color={color.br700} />} iconBg={color.br50} />
             </View>
             <View style={styles.grid}>
               <KpiCard index={2} label="طلبات مهجورة" value={num(k.abandonedOrders)}
@@ -191,7 +191,7 @@ export default function Dashboard() {
                 <Text style={styles.section}>توزيع الولايات</Text>
                 <View style={styles.linkRow}>
                   <Text style={styles.link}>الخريطة</Text>
-                  <IconChevron size={13} color={color.em600} />
+                  <IconChevron size={13} color={color.br600} />
                 </View>
               </View>
               <GlassCard index={6} style={{ padding: 8 }}>
@@ -213,7 +213,7 @@ export default function Dashboard() {
                       {p.total_orders} طلب · مهجور {p.abandonment_rate}%
                     </Text>
                   </View>
-                  <IconBox size={20} color={color.em600} />
+                  <IconBox size={20} color={color.br600} />
                 </View>
               </GlassCard>
             ))}
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   },
   storeName: { fontSize: 17, fontWeight: '800', color: color.ink },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 1 },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: color.em500 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: color.br500 },
   sub: { fontSize: 11.5, fontWeight: '600', color: color.ink3 },
   iconBtn: {
     width: 38, height: 38, borderRadius: 999, backgroundColor: color.glass2,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   section: { fontSize: 14.5, fontWeight: '800', color: color.ink, marginTop: 22, marginBottom: 11 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 11 },
-  link: { fontSize: 11.5, fontWeight: '800', color: color.em600 },
+  link: { fontSize: 11.5, fontWeight: '800', color: color.br600 },
   grid: { flexDirection: 'row', gap: 11 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rowLabel: { fontSize: 13, fontWeight: '700', color: color.ink },

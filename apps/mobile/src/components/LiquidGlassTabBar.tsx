@@ -91,9 +91,9 @@ export default function LiquidGlassTabBar({ active, onChange, badges = {} }: Pro
           tint="light"
           style={styles.blur}
         >
-          {/* liquid sheen: cyan → transparent → emerald */}
+          {/* liquid sheen: cobalt → transparent → teal */}
           <LinearGradient
-            colors={['rgba(6,182,212,0.14)', 'rgba(255,255,255,0)', 'rgba(16,185,129,0.16)']}
+            colors={['rgba(41,82,227,0.12)', 'rgba(255,255,255,0)', 'rgba(15,131,119,0.12)']}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
@@ -104,7 +104,7 @@ export default function LiquidGlassTabBar({ active, onChange, badges = {} }: Pro
           {/* morphing active pill */}
           <Animated.View style={[styles.pill, pillStyle]} pointerEvents="none">
             <LinearGradient
-              colors={['rgba(16,185,129,0.18)', 'rgba(6,182,212,0.12)']}
+              colors={['rgba(41,82,227,0.16)', 'rgba(41,82,227,0.08)']}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
@@ -162,7 +162,7 @@ function TabIcon({ Icon, active }: { Icon: TabDef['Icon']; active: boolean }) {
 
   return (
     <Animated.View style={st}>
-      <Icon size={21} color={active ? color.em700 : color.ink3} strokeWidth={active ? 2.2 : 1.9} />
+      <Icon size={21} color={active ? color.br700 : color.ink3} strokeWidth={active ? 2.2 : 1.9} />
     </Animated.View>
   )
 }
@@ -187,10 +187,10 @@ const styles = StyleSheet.create({
     // row's horizontal padding, so no extra margin here or it double-counts.
     left: 0,
     borderRadius: 22, overflow: 'hidden',
-    borderWidth: 1, borderColor: 'rgba(16,185,129,0.24)',
+    borderWidth: 1, borderColor: 'rgba(41,82,227,0.22)',
   },
   label: { fontSize: font.micro, fontWeight: '800', color: color.ink3 },
-  labelOn: { color: color.em700 },
+  labelOn: { color: color.br700 },
   badge: {
     position: 'absolute', top: 2,
     // `end` is direction-aware in RN, so this is correct in RTL and LTR.

@@ -44,7 +44,7 @@ export async function setupAndroidChannels() {
     lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     showBadge: true,
     enableVibrate: true,
-    lightColor: '#10B981',
+    lightColor: '#2952E3',
   })
   await Notifications.setNotificationChannelAsync(CHANNELS.abandoned, {
     name: 'السلات المهجورة', importance: Notifications.AndroidImportance.DEFAULT, showBadge: true,

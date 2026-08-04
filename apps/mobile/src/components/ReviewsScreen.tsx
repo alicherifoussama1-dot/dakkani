@@ -56,7 +56,7 @@ export default function ReviewsScreen() {
       <Chips items={FILTERS} active={filter} onChange={setFilter} />
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.em500} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.br500} />}
       >
         {q.isError ? (
           <ErrorState message={(q.error as any)?.message} onRetry={() => q.refetch()} />
@@ -109,7 +109,7 @@ export default function ReviewsScreen() {
                   ) : (
                     <Pressable style={[styles.act, styles.actOn]}
                       onPress={() => patch.mutate({ id: r.id, is_approved: true })}>
-                      <IconCheck size={14} color={color.em700} />
+                      <IconCheck size={14} color={color.br700} />
                       <Text style={styles.actTextOn}>نشر</Text>
                     </Pressable>
                   )}
@@ -158,19 +158,19 @@ const styles = StyleSheet.create({
   comment: { fontSize: 12.5, color: color.ink2, lineHeight: 21, marginTop: 9 },
   reply: {
     marginTop: 10, padding: 11, borderRadius: radius.sm,
-    backgroundColor: color.em50, borderStartWidth: 3, borderStartColor: color.em500,
+    backgroundColor: color.br50, borderStartWidth: 3, borderStartColor: color.br500,
   },
-  replyLabel: { fontSize: 10, fontWeight: '800', color: color.em700 },
+  replyLabel: { fontSize: 10, fontWeight: '800', color: color.br700 },
   replyText: { fontSize: 12, color: color.ink2, marginTop: 3, lineHeight: 19 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 12 },
   act: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999,
   },
-  actOn: { backgroundColor: color.em50 },
+  actOn: { backgroundColor: color.br50 },
   actOff: { backgroundColor: color.sunken },
   actNeutral: { backgroundColor: color.white, borderWidth: 1, borderColor: color.hairline },
-  actTextOn: { fontSize: 11.5, fontWeight: '800', color: color.em700 },
+  actTextOn: { fontSize: 11.5, fontWeight: '800', color: color.br700 },
   actTextOff: { fontSize: 11.5, fontWeight: '800', color: color.ink2 },
   actTextNeutral: { fontSize: 11.5, fontWeight: '800', color: color.ink },
   input: {

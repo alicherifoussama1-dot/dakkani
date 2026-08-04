@@ -104,7 +104,7 @@ export default function More() {
                 <Pressable key={it.key}
                   style={[styles.item, i < g.items.length - 1 && styles.itemBorder]}
                   onPress={() => it.route && router.push(it.route as never)}>
-                  <View style={styles.itemIcon}><it.Icon size={18} color={color.em700} /></View>
+                  <View style={styles.itemIcon}><it.Icon size={18} color={color.br700} /></View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.itemLabel}>{it.label}</Text>
                     <Text style={styles.itemSub} numberOfLines={1}>{it.sub}</Text>
@@ -136,13 +136,13 @@ const styles = StyleSheet.create({
   },
   storeName: { fontSize: 15, fontWeight: '800', color: color.ink },
   sub: { fontSize: 11.5, fontWeight: '600', color: color.ink3, marginTop: 2 },
-  plan: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: color.em50 },
-  planText: { fontSize: 10.5, fontWeight: '800', color: color.em700 },
+  plan: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: color.br50 },
+  planText: { fontSize: 10.5, fontWeight: '800', color: color.br700 },
   section: { fontSize: 14.5, fontWeight: '800', color: color.ink, marginTop: 22, marginBottom: 11 },
   item: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 13 },
   itemBorder: { borderBottomWidth: 1, borderBottomColor: color.hairline },
   itemIcon: {
-    width: 34, height: 34, borderRadius: 11, backgroundColor: color.em50,
+    width: 34, height: 34, borderRadius: 11, backgroundColor: color.br50,
     alignItems: 'center', justifyContent: 'center',
   },
   itemLabel: { fontSize: 13.5, fontWeight: '800', color: color.ink },

@@ -186,7 +186,7 @@ export default function CatalogScreen({ config }: { config: CatalogConfig }) {
     <>
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.em500} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.br500} />}
       >
         {config.readOnlyNote ? (
           <GlassCard index={0}><Text style={styles.note}>{config.readOnlyNote}</Text></GlassCard>
@@ -211,13 +211,13 @@ export default function CatalogScreen({ config }: { config: CatalogConfig }) {
             return (
               <GlassCard key={r.id} index={i}>
                 <View style={styles.row}>
-                  <View style={styles.icon}><config.Icon size={17} color={color.em700} /></View>
+                  <View style={styles.icon}><config.Icon size={17} color={color.br700} /></View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={styles.rowBetween}>
                       <Text style={styles.title} numberOfLines={1}>{config.title(r)}</Text>
                       {b ? (
                         <View style={[styles.badge, b.ok ? styles.badgeOk : styles.badgeOff]}>
-                          <Text style={[styles.badgeText, { color: b.ok ? color.em700 : color.ink2 }]}>{b.text}</Text>
+                          <Text style={[styles.badgeText, { color: b.ok ? color.br700 : color.ink2 }]}>{b.text}</Text>
                         </View>
                       ) : null}
                     </View>
@@ -230,7 +230,7 @@ export default function CatalogScreen({ config }: { config: CatalogConfig }) {
                     <Switch
                       value={!!r[config.toggleField]}
                       onValueChange={v => toggle.mutate({ id: r.id, value: v })}
-                      trackColor={{ true: color.em500, false: '#E2E8F0' }} thumbColor={color.white}
+                      trackColor={{ true: color.br500, false: '#E2E8F0' }} thumbColor={color.white}
                     />
                   ) : null}
 
@@ -262,7 +262,7 @@ export default function CatalogScreen({ config }: { config: CatalogConfig }) {
             {f.type === 'bool' ? (
               <Switch value={!!form[f.key]}
                 onValueChange={v => setForm(s => ({ ...s, [f.key]: v }))}
-                trackColor={{ true: color.em500, false: '#E2E8F0' }} thumbColor={color.white} />
+                trackColor={{ true: color.br500, false: '#E2E8F0' }} thumbColor={color.white} />
             ) : (
               <TextInput
                 value={String(form[f.key] ?? '')}
@@ -285,13 +285,13 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   icon: {
-    width: 38, height: 38, borderRadius: 13, backgroundColor: color.em50,
+    width: 38, height: 38, borderRadius: 13, backgroundColor: color.br50,
     alignItems: 'center', justifyContent: 'center',
   },
   title: { fontSize: 13.5, fontWeight: '800', color: color.ink, flexShrink: 1 },
   sub: { fontSize: font.label, fontWeight: '700', color: color.ink3, marginTop: 3, lineHeight: 17 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
-  badgeOk: { backgroundColor: color.em50 }, badgeOff: { backgroundColor: color.sunken },
+  badgeOk: { backgroundColor: color.br50 }, badgeOff: { backgroundColor: color.sunken },
   badgeText: { fontSize: 10, fontWeight: '800' },
   note: { fontSize: 12, color: color.ink2, lineHeight: 20 },
   fieldLabel: { fontSize: font.label, fontWeight: '700', color: color.ink3, marginBottom: 6 },

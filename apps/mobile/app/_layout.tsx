@@ -200,5 +200,5 @@ const styles = StyleSheet.create({
   fallback: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: color.bg, gap: 12 },
   fallbackTitle: { fontSize: 18, fontWeight: '700', color: color.ink, textAlign: 'center' },
   fallbackBody: { fontSize: 13, color: color.ink2, textAlign: 'center' },
-  fallbackAction: { fontSize: 15, fontWeight: '700', color: color.em600, paddingVertical: 12, paddingHorizontal: 24 },
+  fallbackAction: { fontSize: 15, fontWeight: '700', color: color.br600, paddingVertical: 12, paddingHorizontal: 24 },
 })

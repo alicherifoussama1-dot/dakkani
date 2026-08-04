@@ -102,7 +102,7 @@ function NotificationSettings() {
       {perm !== 'granted' ? (
         <GlassCard index={0}>
           <View style={styles.rowStart}>
-            <IconBell size={20} color={color.em700} />
+            <IconBell size={20} color={color.br700} />
             <View style={{ flex: 1 }}>
               <Text style={styles.rowTitle}>الإشعارات غير مفعّلة</Text>
               <Text style={styles.hint}>
@@ -241,12 +241,12 @@ function LanguageSettings() {
         {LANGS.map((l, i) => (
           <Pressable key={l.key} onPress={() => pick(l)}
             style={[styles.langRow, i < LANGS.length - 1 && styles.langBorder]}>
-            <IconGlobe size={18} color={current === l.key ? color.em700 : color.ink3} />
+            <IconGlobe size={18} color={current === l.key ? color.br700 : color.ink3} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.rowTitle, current === l.key && { color: color.em700 }]}>{l.label}</Text>
+              <Text style={[styles.rowTitle, current === l.key && { color: color.br700 }]}>{l.label}</Text>
               <Text style={styles.hint}>{l.sub}</Text>
             </View>
-            {current === l.key && <IconCheck size={17} color={color.em700} />}
+            {current === l.key && <IconCheck size={17} color={color.br700} />}
           </Pressable>
         ))}
       </GlassCard>
@@ -268,7 +268,7 @@ const Toggle: React.FC<{
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
     <Switch value={value} onValueChange={onChange}
-      trackColor={{ true: color.em500, false: '#E2E8F0' }} thumbColor={color.white} />
+      trackColor={{ true: color.br500, false: '#E2E8F0' }} thumbColor={color.white} />
   </View>
 )
 
@@ -278,7 +278,7 @@ const Item: React.FC<{ label: string; value: string; done?: boolean }> = ({ labe
       <Text style={styles.rowTitle}>{label}</Text>
       <Text style={styles.hint}>{value}</Text>
     </View>
-    {done && <IconCheck size={17} color={color.em700} />}
+    {done && <IconCheck size={17} color={color.br700} />}
   </View>
 )
 
@@ -303,5 +303,5 @@ const styles = StyleSheet.create({
   langBorder: { borderBottomWidth: 1, borderBottomColor: color.hairline },
   techTitle: { fontSize: 12, fontWeight: '800', color: color.ink, marginBottom: 6 },
   tech: { fontSize: 10.5, fontWeight: '600', color: color.ink3, lineHeight: 18, writingDirection: 'ltr' },
-  tokenNote: { fontSize: 11, fontWeight: '800', color: color.em700, marginTop: 8 },
+  tokenNote: { fontSize: 11, fontWeight: '800', color: color.br700, marginTop: 8 },
 })

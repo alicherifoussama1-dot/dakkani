@@ -96,9 +96,9 @@ export default function CustomerDetail() {
           </View>
 
           <View style={styles.actions}>
-            <Action icon={<IconPhone size={19} color={color.em700} />} label="اتصال" onPress={call} />
-            <Action icon={<IconWhatsApp size={19} color={color.em700} />} label="واتساب" onPress={wa} />
-            <Action icon={<IconCopy size={19} color={color.em700} />} label="نسخ" onPress={copy} />
+            <Action icon={<IconPhone size={19} color={color.br700} />} label="اتصال" onPress={call} />
+            <Action icon={<IconWhatsApp size={19} color={color.br700} />} label="واتساب" onPress={wa} />
+            <Action icon={<IconCopy size={19} color={color.br700} />} label="نسخ" onPress={copy} />
             <Action icon={<IconBlock size={19} color="#B91C1C" />} label="حظر"
               onPress={() => Alert.alert('حظر العميل؟', 'سيُضاف رقمه إلى القائمة السوداء.', [
                 { text: 'إلغاء', style: 'cancel' },

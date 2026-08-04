@@ -66,10 +66,10 @@ const COLS = 14, ROWS = 11
 function shade(count: number, max: number): string {
   if (!count) return '#F1F5F9'
   const t = count / Math.max(max, 1)
-  if (t < 0.25) return '#D1FAE5'
-  if (t < 0.5) return '#6EE7B7'
-  if (t < 0.75) return '#10B981'
-  return '#047857'
+  if (t < 0.25) return color.br100
+  if (t < 0.5) return color.br300
+  if (t < 0.75) return color.br500
+  return color.br700
 }
 
 export default function WilayaMap({
@@ -124,7 +124,7 @@ export default function WilayaMap({
       <View style={styles.legend}>
         <Text style={styles.legendText}>0</Text>
         <View style={styles.scale}>
-          {['#F1F5F9', '#D1FAE5', '#6EE7B7', '#10B981', '#047857'].map(c => (
+          {[color.sunken, color.br100, color.br300, color.br500, color.br700].map(c => (
             <View key={c} style={{ flex: 1, backgroundColor: c }} />
           ))}
         </View>
@@ -188,17 +188,17 @@ function Tile({
 }
 
 const styles = StyleSheet.create({
-  highlight: { borderWidth: 2, borderColor: '#047857' },
+  highlight: { borderWidth: 2, borderColor: color.br700 },
   legend: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 6, paddingTop: 8, paddingBottom: 4 },
   legendText: { fontSize: 10.5, fontWeight: '700', color: color.ink3 },
   scale: { flex: 1, height: 8, borderRadius: 5, overflow: 'hidden', flexDirection: 'row' },
   note: { fontSize: 10.5, fontWeight: '700', color: color.ink3, textAlign: 'center', paddingBottom: 4 },
   detail: {
     marginTop: 10, padding: 14, borderRadius: radius.md,
-    backgroundColor: color.em50, borderWidth: 1, borderColor: color.em100,
+    backgroundColor: color.br50, borderWidth: 1, borderColor: color.br100,
   },
   detailAr: { fontSize: 16, fontWeight: '800', color: color.ink },
   detailFr: { fontSize: 12, fontWeight: '600', color: color.ink3, marginTop: 2 },
   detailRow: { flexDirection: 'row', gap: 14, marginTop: 8 },
-  detailStat: { fontSize: 13, fontWeight: '800', color: color.em700 },
+  detailStat: { fontSize: 13, fontWeight: '800', color: color.br700 },
 })

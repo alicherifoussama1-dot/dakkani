@@ -96,7 +96,7 @@ export default function ConfirmiliScreen() {
     <>
       <View style={styles.stats}>
         <Stat label="بانتظار" value={c ? fmtNum(c.new) : '—'} tint="#B45309" bg={color.amber50} />
-        <Stat label="مؤكد" value={c ? fmtNum(c.confirmed) : '—'} tint={color.em700} bg={color.em50} />
+        <Stat label="مؤكد" value={c ? fmtNum(c.confirmed) : '—'} tint={color.br700} bg={color.br50} />
         <Stat label="لم يرد" value={c ? fmtNum(c.failed) : '—'} tint="#B91C1C" bg={color.rose50} />
         <Stat label="مؤجل" value={c ? fmtNum(c.postponed) : '—'} tint={color.ink2} bg={color.sunken} />
       </View>
@@ -105,7 +105,7 @@ export default function ConfirmiliScreen() {
 
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.em500} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.br500} />}
       >
         {q.isError ? (
           <ErrorState message={(q.error as any)?.message} onRetry={() => q.refetch()} />
@@ -139,13 +139,13 @@ export default function ConfirmiliScreen() {
                   <Text style={styles.actTextW}>اتصال</Text>
                 </Pressable>
                 <Pressable style={[styles.act, styles.actWa]} onPress={() => wa(o)}>
-                  <IconWhatsApp size={15} color={color.em700} />
+                  <IconWhatsApp size={15} color={color.br700} />
                   <Text style={styles.actText}>واتساب</Text>
                 </Pressable>
                 {o.status !== 'confirmed' && (
                   <Pressable style={[styles.act, styles.actOk]}
                     onPress={() => setStatus.mutate({ id: o.id, status: 'confirmed' })}>
-                    <IconCheck size={15} color={color.em700} />
+                    <IconCheck size={15} color={color.br700} />
                     <Text style={styles.actText}>تأكيد</Text>
                   </Pressable>
                 )}
@@ -185,15 +185,15 @@ const styles = StyleSheet.create({
   name: { fontSize: 13.5, fontWeight: '800', color: color.ink },
   meta: { fontSize: font.label, fontWeight: '700', color: color.ink3, marginTop: 3 },
   phone: { fontSize: 12.5, fontWeight: '700', color: color.ink2, marginTop: 4, writingDirection: 'ltr' },
-  total: { fontSize: 14, fontWeight: '800', color: color.em700, fontVariant: ['tabular-nums'] },
+  total: { fontSize: 14, fontWeight: '800', color: color.br700, fontVariant: ['tabular-nums'] },
   actions: { flexDirection: 'row', gap: 7, marginTop: 12 },
   act: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     paddingVertical: 9, borderRadius: radius.sm, flex: 1,
   },
-  actCall: { backgroundColor: color.em600 },
+  actCall: { backgroundColor: color.br600 },
   actWa: { backgroundColor: color.white, borderWidth: 1, borderColor: color.hairline },
-  actOk: { backgroundColor: color.em50 },
+  actOk: { backgroundColor: color.br50 },
   actNo: { backgroundColor: color.rose50, flex: 0.5 },
   actText: { fontSize: 11.5, fontWeight: '800', color: color.ink },
   actTextW: { fontSize: 11.5, fontWeight: '800', color: color.white },

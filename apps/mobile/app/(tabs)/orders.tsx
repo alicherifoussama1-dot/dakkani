@@ -102,7 +102,7 @@ export default function Orders() {
           estimatedItemSize={104}
           keyExtractor={o => o.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.em500} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.br500} />}
           onEndReachedThreshold={0.5}
           onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage) q.fetchNextPage() }}
           ListHeaderComponent={isOffline ? <OfflineBanner /> : null}
@@ -168,12 +168,12 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   avatar: {
-    width: 44, height: 44, borderRadius: 14, backgroundColor: color.em50,
+    width: 44, height: 44, borderRadius: 14, backgroundColor: color.br50,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: 'rgba(16,185,129,0.16)',
+    borderWidth: 1, borderColor: 'rgba(41,82,227,0.14)',
   },
-  avatarText: { fontSize: 16, fontWeight: '800', color: color.em700 },
+  avatarText: { fontSize: 16, fontWeight: '800', color: color.br700 },
   name: { fontSize: 13.5, fontWeight: '800', color: color.ink, flexShrink: 1 },
   meta: { fontSize: font.label, fontWeight: '700', color: color.ink3, marginTop: 3, flexShrink: 1 },
-  total: { fontSize: 14.5, fontWeight: '800', color: color.em700, fontVariant: ['tabular-nums'] },
+  total: { fontSize: 14.5, fontWeight: '800', color: color.br700, fontVariant: ['tabular-nums'] },
 })

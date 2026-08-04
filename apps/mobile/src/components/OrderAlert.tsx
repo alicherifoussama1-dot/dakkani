@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.86)',
   },
   // Emerald leading edge — the brand "glow" cue.
-  accent: { position: 'absolute', top: 0, bottom: 0, start: 0, width: 4, backgroundColor: color.em500 },
+  accent: { position: 'absolute', top: 0, bottom: 0, start: 0, width: 4, backgroundColor: color.br500 },
   row: { flexDirection: 'row', gap: 11, alignItems: 'flex-start' },
   logo: {
     width: 38, height: 38, borderRadius: 12, backgroundColor: color.white,
@@ -171,10 +171,10 @@ const styles = StyleSheet.create({
   brand: { fontSize: 10.5, fontWeight: '800', color: color.ink3, letterSpacing: 0.6 },
   title: { fontSize: 15, fontWeight: '800', color: color.ink, marginTop: 2 },
   line: { fontSize: 12.5, color: color.ink2, marginTop: 2 },
-  total: { fontSize: 14, fontWeight: '800', color: color.em700, marginTop: 3, fontVariant: ['tabular-nums'] },
+  total: { fontSize: 14, fontWeight: '800', color: color.br700, marginTop: 3, fontVariant: ['tabular-nums'] },
   actions: { flexDirection: 'row', gap: 7, marginTop: 12 },
   btn: { flex: 1, paddingVertical: 10, borderRadius: radius.sm, alignItems: 'center' },
-  btnPrimary: { backgroundColor: color.em600 },
+  btnPrimary: { backgroundColor: color.br600 },
   btnPrimaryText: { color: color.white, fontWeight: '800', fontSize: 12.5 },
   btnGlass: { backgroundColor: color.white, borderWidth: 1, borderColor: color.hairline },
   btnText: { color: color.ink, fontWeight: '800', fontSize: 12.5 },

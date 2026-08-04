@@ -100,7 +100,7 @@ export default function Products() {
           estimatedItemSize={112}
           keyExtractor={p => p.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.em500} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.br500} />}
           ListEmptyComponent={
             <EmptyState icon={<IconBox size={44} color={color.ink3} />}
               title="لا توجد منتجات"
@@ -157,12 +157,12 @@ const stockStyle = (p: ProductRow) =>
   !p.is_active ? { backgroundColor: color.sunken }
     : p.stock <= 0 ? { backgroundColor: color.rose50 }
     : p.stock < 15 ? { backgroundColor: color.amber50 }
-    : { backgroundColor: color.em50 }
+    : { backgroundColor: color.br50 }
 const stockTextStyle = (p: ProductRow) =>
   !p.is_active ? { color: color.ink2 }
     : p.stock <= 0 ? { color: '#B91C1C' }
     : p.stock < 15 ? { color: '#B45309' }
-    : { color: color.em700 }
+    : { color: color.br700 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.bg },
@@ -170,8 +170,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 21, fontWeight: '800', color: color.ink },
   sub: { fontSize: 11.5, fontWeight: '600', color: color.ink3, marginTop: 1 },
   addBtn: {
-    width: 40, height: 40, borderRadius: 999, backgroundColor: color.em600,
-    alignItems: 'center', justifyContent: 'center', ...shadow.emerald,
+    width: 40, height: 40, borderRadius: 999, backgroundColor: color.br600,
+    alignItems: 'center', justifyContent: 'center', ...shadow.brand,
   },
   searchWrap: {
     flexDirection: 'row', alignItems: 'center', gap: 9, marginHorizontal: 16, marginBottom: 4,
@@ -187,10 +187,10 @@ const styles = StyleSheet.create({
   pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
   pillText: { fontSize: 10, fontWeight: '800' },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 4 },
-  price: { fontSize: 15, fontWeight: '800', color: color.em700, fontVariant: ['tabular-nums'] },
+  price: { fontSize: 15, fontWeight: '800', color: color.br700, fontVariant: ['tabular-nums'] },
   compare: { fontSize: 11.5, color: color.ink3, textDecorationLine: 'line-through' },
-  discount: { backgroundColor: color.em50, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 999 },
-  discountText: { fontSize: 10, fontWeight: '800', color: color.em700 },
+  discount: { backgroundColor: color.br50, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 999 },
+  discountText: { fontSize: 10, fontWeight: '800', color: color.br700 },
   metaRow: { flexDirection: 'row', gap: 12, marginTop: 5 },
   meta: { fontSize: font.label, fontWeight: '700', color: color.ink3 },
 })

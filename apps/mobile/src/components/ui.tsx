@@ -1,5 +1,7 @@
 // ============================================================
-// COMMERCO UI KIT — light glassmorphism primitives.
+// COMMERCO UI KIT — primitives on the web design system.
+// Opaque panels, hairline borders, flat cobalt fills. (GlassCard
+// keeps its name for its many call sites; it is no longer glass.)
 // GlassCard · BrandHero · KpiCard · AnimatedNumber · Chip
 // Skeleton · EmptyState · ErrorState · OfflineBanner · Toast
 // StatusPill · Sparkline · Bars · Sheet
@@ -43,17 +45,16 @@ export const GlassCard: React.FC<{
   return (
     <Animated.View style={[st, styles.cardShadow, style]}>
       <Wrapper onPress={onPress} style={styles.card}>
-        <View style={styles.cardSheen} pointerEvents="none" />
         {children}
       </Wrapper>
     </Animated.View>
   )
 }
 
-// ── BrandHero (cyan→emerald gradient) ─────────────────────
+// ── BrandHero (cobalt→teal, tracing the logo) ─────────────
 export const BrandHero: React.FC<{ children: React.ReactNode; style?: ViewStyle }> = ({ children, style }) => (
   <LinearGradient
-    colors={['#06B6D4', '#10B981', '#059669']}
+    colors={[color.br600, color.br700, color.tl600]}
     start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
     style={[styles.hero, style]}
   >
@@ -103,7 +104,7 @@ export const AnimatedNumber: React.FC<{
 export const KpiCard: React.FC<{
   label: string; value: number; delta?: number; icon?: React.ReactNode
   iconBg?: string; index?: number; suffix?: string
-}> = ({ label, value, delta, icon, iconBg = color.em50, index = 0, suffix }) => {
+}> = ({ label, value, delta, icon, iconBg = color.br50, index = 0, suffix }) => {
   const up = (delta ?? 0) >= 0
   return (
     <GlassCard index={index} style={styles.kpi}>
@@ -111,7 +112,7 @@ export const KpiCard: React.FC<{
         {icon ? <View style={[styles.kpiIcon, { backgroundColor: iconBg }]}>{icon}</View> : <View />}
         {delta !== undefined && (
           <View style={[styles.deltaChip, up ? styles.deltaUp : styles.deltaDown]}>
-            <Text style={[styles.deltaText, { color: up ? color.em700 : '#B91C1C' }]}>
+            <Text style={[styles.deltaText, { color: up ? color.success : color.rose700 }]}>
               {up ? '▲' : '▼'} {Math.abs(delta).toFixed(1)}%
             </Text>
           </View>
@@ -137,10 +138,9 @@ export const Chips: React.FC<{
       }
       return on ? (
         <Pressable key={it.key} onPress={() => onChange(it.key)} {...a11y}>
-          <LinearGradient colors={['#06B6D4', '#10B981']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={[styles.chip, styles.chipOn]}>
+          <View style={[styles.chip, styles.chipOn, { backgroundColor: color.br600 }]}>
             <Text style={[styles.chipText, { color: color.white }]}>{it.label}</Text>
-          </LinearGradient>
+          </View>
         </Pressable>
       ) : (
         <Pressable key={it.key} onPress={() => onChange(it.key)} style={styles.chip} {...a11y}>
@@ -164,7 +164,7 @@ export const StatusPill: React.FC<{ status: string }> = ({ status }) => {
 // ── Sparkline ─────────────────────────────────────────────
 export const Sparkline: React.FC<{
   data: number[]; height?: number; stroke?: string; width?: number
-}> = ({ data, height = 34, stroke = color.em500, width = 260 }) => {
+}> = ({ data, height = 34, stroke = color.br500, width = 260 }) => {
   // A single NaN/undefined from the API would produce "MNaN,NaN", which is an
   // invalid path and throws inside the native SVG renderer on Android.
   const safe = (data ?? []).map(v => (Number.isFinite(v) ? v : 0))
@@ -177,7 +177,7 @@ export const Sparkline: React.FC<{
     <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
       <Defs>
         <SvgGrad id="spark" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#06B6D4" /><Stop offset="1" stopColor="#059669" />
+          <Stop offset="0" stopColor={color.br600} /><Stop offset="1" stopColor={color.tl600} />
         </SvgGrad>
       </Defs>
       <Path d={d} stroke={stroke === 'grad' ? 'url(#spark)' : stroke} strokeWidth={2.4}
@@ -206,7 +206,7 @@ const Bar: React.FC<{ pct: number; delay: number }> = ({ pct, delay }) => {
   const st = useAnimatedStyle(() => ({ height: `${h.value}%` }))
   return (
     <Animated.View style={[styles.bar, st]}>
-      <LinearGradient colors={[color.em400, 'rgba(16,185,129,0.18)']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[color.br500, 'rgba(41,82,227,0.16)']} style={StyleSheet.absoluteFill} />
     </Animated.View>
   )
 }
@@ -253,7 +253,7 @@ export const ErrorState: React.FC<{ message?: string; onRetry?: () => void }> = 
     <Text style={styles.emptyBody}>{message ?? 'حدث خطأ في الاتصال بالخادم'}</Text>
     {onRetry && (
       <Pressable onPress={onRetry} style={styles.retryBtn}>
-        <IconRefresh size={16} color={color.em700} />
+        <IconRefresh size={16} color={color.br700} />
         <Text style={styles.retryText}>إعادة المحاولة</Text>
       </Pressable>
     )}
@@ -269,7 +269,7 @@ export const OfflineBanner: React.FC<{ ageMinutes?: number }> = ({ ageMinutes })
 )
 
 export const Loading: React.FC = () => (
-  <View style={styles.centerBox}><ActivityIndicator color={color.em500} size="large" /></View>
+  <View style={styles.centerBox}><ActivityIndicator color={color.br500} size="large" /></View>
 )
 
 // ── Bottom sheet ──────────────────────────────────────────
@@ -325,24 +325,26 @@ export const Button: React.FC<{
   }
   if (variant === 'primary') {
     return (
+      // Flat cobalt, not a gradient: the web system paints primary buttons
+      // with a single --color-primary-600 fill.
       <Pressable onPress={onPress} disabled={loading} {...a11y}
-        style={[{ borderRadius: radius.md }, shadow.emerald, style]}>
-        <LinearGradient colors={['#06B6D4', '#10B981', '#059669']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-          style={styles.btn}>
-          {loading ? <ActivityIndicator color="#fff" /> : (
-            <View style={styles.btnInner}>{icon}<Text style={styles.btnTextPrimary}>{title}</Text></View>
-          )}
-        </LinearGradient>
+        style={({ pressed }) => [
+          styles.btn, { backgroundColor: pressed ? color.br700 : color.br600, borderRadius: radius.md },
+          shadow.sm, style,
+        ]}>
+        {loading ? <ActivityIndicator color="#fff" /> : (
+          <View style={styles.btnInner}>{icon}<Text style={styles.btnTextPrimary}>{title}</Text></View>
+        )}
       </Pressable>
     )
   }
   return (
     <Pressable onPress={onPress} disabled={loading} {...a11y}
       style={[styles.btn, styles.btnGlass, variant === 'danger' && styles.btnDanger, style]}>
-      {loading ? <ActivityIndicator color={color.em600} /> : (
+      {loading ? <ActivityIndicator color={color.br600} /> : (
         <View style={styles.btnInner}>
           {icon}
-          <Text style={[styles.btnText, variant === 'danger' && { color: '#B91C1C' }]}>{title}</Text>
+          <Text style={[styles.btnText, variant === 'danger' && { color: color.rose700 }]}>{title}</Text>
         </View>
       )}
     </Pressable>
@@ -350,30 +352,31 @@ export const Button: React.FC<{
 }
 
 const styles = StyleSheet.create({
-  cardShadow: { borderRadius: radius.lg, ...shadow.sm, marginBottom: 10 },
+  // Web panels are opaque white on a hairline border — no translucency, no
+  // sheen. Glass over a scrolling list also forced a full repaint per frame.
+  cardShadow: { borderRadius: radius.lg, ...shadow.xs, marginBottom: 12 },
   card: {
-    backgroundColor: color.glass, borderRadius: radius.lg, padding: 14,
-    borderWidth: 1, borderColor: color.glassBorder, overflow: 'hidden',
+    backgroundColor: color.surface, borderRadius: radius.lg, padding: 16,
+    borderWidth: 1, borderColor: color.border, overflow: 'hidden',
   },
-  cardSheen: { position: 'absolute', top: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255,255,255,0.9)' },
-  hero: { padding: 20, borderRadius: radius.xl, overflow: 'hidden', ...shadow.emerald },
-  kpi: { flex: 1, padding: 15 },
-  kpiIcon: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  kpiValue: { fontSize: 25, fontWeight: '800', color: color.ink, marginTop: 6, marginBottom: 3, fontVariant: ['tabular-nums'] },
-  label: { fontSize: font.label, fontWeight: '700', color: color.ink3 },
+  hero: { padding: 20, borderRadius: radius.lg, overflow: 'hidden', ...shadow.sm },
+  kpi: { flex: 1, padding: 16 },
+  kpiIcon: { width: 32, height: 32, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  kpiValue: { fontSize: font.h2, fontWeight: '800', color: color.ink, marginTop: 8, marginBottom: 4, fontVariant: ['tabular-nums'] },
+  label: { fontSize: font.label, fontWeight: '600', color: color.ink2 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   deltaChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },
-  deltaUp: { backgroundColor: color.em50 }, deltaDown: { backgroundColor: color.rose50 },
-  deltaText: { fontSize: 10.5, fontWeight: '800' },
+  deltaUp: { backgroundColor: color.success50 }, deltaDown: { backgroundColor: color.rose50 },
+  deltaText: { fontSize: font.micro, fontWeight: '700' },
   chipsRow: { gap: 7, paddingHorizontal: 16, paddingVertical: 4 },
   chip: {
-    paddingHorizontal: 15, paddingVertical: 9, borderRadius: radius.pill,
-    backgroundColor: color.glass2, borderWidth: 1, borderColor: color.hairline, ...shadow.xs,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill,
+    backgroundColor: color.surface, borderWidth: 1, borderColor: color.border,
   },
-  chipOn: { borderColor: 'transparent', ...shadow.emerald },
-  chipText: { fontSize: 12.5, fontWeight: '700', color: color.ink2 },
-  status: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill },
-  statusText: { fontSize: 10.5, fontWeight: '800' },
+  chipOn: { borderColor: 'transparent' },
+  chipText: { fontSize: font.small, fontWeight: '600', color: color.ink2 },
+  status: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.sm },
+  statusText: { fontSize: font.micro, fontWeight: '700' },
   bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, paddingTop: 8 },
   bar: { flex: 1, borderTopLeftRadius: 5, borderTopRightRadius: 5, overflow: 'hidden', minHeight: 3 },
   centerBox: { alignItems: 'center', justifyContent: 'center', paddingVertical: 54, paddingHorizontal: 24 },
@@ -382,9 +385,9 @@ const styles = StyleSheet.create({
   retryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 16,
     paddingHorizontal: 16, paddingVertical: 11, borderRadius: radius.md,
-    backgroundColor: color.em50, borderWidth: 1, borderColor: color.em100,
+    backgroundColor: color.br50, borderWidth: 1, borderColor: color.br100,
   },
-  retryText: { color: color.em700, fontWeight: '800', fontSize: 13 },
+  retryText: { color: color.br700, fontWeight: '800', fontSize: 13 },
   offline: { backgroundColor: color.amber50, padding: 10, borderRadius: radius.md, marginBottom: 10 },
   offlineText: { color: '#B45309', fontSize: 12, fontWeight: '700', textAlign: 'center' },
   sheetOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.32)', justifyContent: 'flex-end' },
@@ -399,11 +402,12 @@ const styles = StyleSheet.create({
     backgroundColor: color.glass2, borderWidth: 1, borderColor: color.hairline,
     flexDirection: 'row', alignItems: 'center', gap: 11,
   },
-  optionActive: { borderColor: color.em400 },
+  optionActive: { borderColor: color.br400 },
+  // 48px tall at these paddings — comfortably over the 44px touch minimum.
   btn: { paddingVertical: 14, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   btnInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  btnGlass: { backgroundColor: color.glass2, borderWidth: 1, borderColor: color.hairline, ...shadow.xs },
-  btnDanger: { backgroundColor: color.rose50, borderColor: '#FECACA' },
-  btnTextPrimary: { color: color.white, fontWeight: '800', fontSize: 14.5 },
-  btnText: { color: color.ink, fontWeight: '800', fontSize: 14.5 },
+  btnGlass: { backgroundColor: color.surface, borderWidth: 1, borderColor: color.borderStrong },
+  btnDanger: { backgroundColor: color.rose50, borderColor: color.rose100 },
+  btnTextPrimary: { color: color.white, fontWeight: '700', fontSize: 15 },
+  btnText: { color: color.ink, fontWeight: '600', fontSize: 15 },
 })

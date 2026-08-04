@@ -118,10 +118,10 @@ export default function OrderDetail() {
 
           {/* actions */}
           <View style={styles.actions}>
-            <Action icon={<IconPhone size={19} color={color.em700} />} label="اتصال" onPress={call} />
-            <Action icon={<IconWhatsApp size={19} color={color.em700} />} label="واتساب" onPress={whatsapp} />
-            <Action icon={<IconCopy size={19} color={color.em700} />} label="نسخ" onPress={copy} />
-            <Action icon={<IconRefresh size={19} color={color.em700} />} label="الحالة" onPress={() => setSheet(true)} />
+            <Action icon={<IconPhone size={19} color={color.br700} />} label="اتصال" onPress={call} />
+            <Action icon={<IconWhatsApp size={19} color={color.br700} />} label="واتساب" onPress={whatsapp} />
+            <Action icon={<IconCopy size={19} color={color.br700} />} label="نسخ" onPress={copy} />
+            <Action icon={<IconRefresh size={19} color={color.br700} />} label="الحالة" onPress={() => setSheet(true)} />
           </View>
 
           <Text style={styles.section}>بيانات العميل</Text>
@@ -173,7 +173,7 @@ export default function OrderDetail() {
             <KV k="طريقة الدفع" v={o.payment_method === 'cod' ? 'الدفع عند الاستلام' : String(o.payment_method)} />
             <View style={styles.rowBetween}>
               <Text style={styles.kvK}>درجة الاحتيال</Text>
-              <Text style={[styles.kvV, { color: (o.fraud_score ?? 0) > 40 ? '#B91C1C' : color.em700 }]}>
+              <Text style={[styles.kvV, { color: (o.fraud_score ?? 0) > 40 ? '#B91C1C' : color.br700 }]}>
                 {fmtNum(o.fraud_score ?? 0)}/100
               </Text>
             </View>
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   itemPrice: { fontSize: 13.5, fontWeight: '800', color: color.ink, fontVariant: ['tabular-nums'] },
   divider: { height: 1, backgroundColor: color.hairline, marginVertical: 10 },
   totalK: { fontSize: 15, fontWeight: '800', color: color.ink },
-  totalV: { fontSize: 16, fontWeight: '800', color: color.em700, fontVariant: ['tabular-nums'] },
-  tick: { width: 20, height: 20, borderRadius: 10, backgroundColor: color.em500, alignItems: 'center', justifyContent: 'center' },
+  totalV: { fontSize: 16, fontWeight: '800', color: color.br700, fontVariant: ['tabular-nums'] },
+  tick: { width: 20, height: 20, borderRadius: 10, backgroundColor: color.br500, alignItems: 'center', justifyContent: 'center' },
   statusCode: { marginStart: 'auto', fontSize: 10, color: color.ink3, writingDirection: 'ltr' },
 })
