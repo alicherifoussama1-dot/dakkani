@@ -3,7 +3,7 @@
 //
 // The logo geometry is the OFFICIAL asset (assets/brand/logo-icon.svg,
 // copied verbatim from public/brand/). Colours and shape are untouched —
-// only scale/opacity and a brand-blue glow are animated around it.
+// only scale/opacity and an emerald glow are animated around it.
 //
 // Timing: ~1.25s total. Short, premium, never childish.
 // ============================================================
@@ -13,10 +13,10 @@ import { SvgXml } from 'react-native-svg'
 import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, withDelay, withSequence, Easing, runOnJS,
 } from 'react-native-reanimated'
-import { color, motion } from '../theme/tokens'
+import { color, motion , fontFamily } from '../theme/tokens'
 import { LOGO_ICON_XML, LOGO_WORDMARK_XML } from '../assets/logo'
 
-const EASE = Easing.bezier(...motion.easeOut)
+const EASE = Easing.bezier(...motion.standard)
 
 export default function LaunchAnimation({ onDone }: { onDone: () => void }) {
   const logoScale = useSharedValue(0.62)
@@ -51,7 +51,7 @@ export default function LaunchAnimation({ onDone }: { onDone: () => void }) {
       withTiming(1.04, { duration: 520, easing: EASE }),
       withTiming(1, { duration: 200, easing: EASE }),
     )
-    // 2. brand glow breathes once behind it
+    // 2. emerald glow breathes once behind it
     glow.value = withSequence(
       withTiming(1, { duration: 620, easing: EASE }),
       withTiming(0.45, { duration: 380, easing: EASE }),
@@ -106,12 +106,12 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   glow: {
     position: 'absolute', width: 240, height: 240, borderRadius: 120,
-    backgroundColor: color.brand,
+    backgroundColor: color.br300,
     // A large soft radial glow; on Android shadows don't blur this way, so we
     // rely on opacity+scale which reads correctly on both platforms.
     // (opacity is driven entirely by sGlow — no static value here, it would
     // just be overwritten on the first frame.)
   },
   word: { alignItems: 'center', marginTop: 22 },
-  tagline: { marginTop: 8, fontSize: 12, fontWeight: '700', color: color.ink3, letterSpacing: 0.2 },
+  tagline: { marginTop: 8, fontSize: 12, fontFamily: fontFamily.bold, color: color.ink3, letterSpacing: 0.2 },
 })

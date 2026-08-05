@@ -26,6 +26,7 @@
         "UIBackgroundModes": [
           "remote-notification"
         ],
+        "NSFaceIDUsageDescription": "استخدم بصمة الوجه أو الإصبع لفتح تطبيق COMMERCO بأمان.",
         "NSPhotoLibraryUsageDescription": "اختر صور منتجاتك من معرض الصور.",
         "NSCameraUsageDescription": "التقط صوراً لمنتجاتك مباشرة.",
         "CFBundleAllowMixedLocalizations": true,
@@ -49,10 +50,9 @@
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "VIBRATE",
-        "READ_MEDIA_IMAGES",
-        "CAMERA",
-        "READ_MEDIA_VIDEO",
-        "ACCESS_NETWORK_STATE"
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "READ_MEDIA_IMAGES"
       ],
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
@@ -77,6 +77,7 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "expo-local-authentication",
       [
         "expo-localization",
         {
@@ -93,6 +94,14 @@
           "sounds": [
             "./assets/sounds/new_order.wav"
           ]
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "اسمح لـ COMMERCO بالوصول إلى صورك لرفع صور المنتجات.",
+          "cameraPermission": "اسمح لـ COMMERCO باستخدام الكاميرا لتصوير منتجاتك.",
+          "microphonePermission": false
         }
       ]
     ],

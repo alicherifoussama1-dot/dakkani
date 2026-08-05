@@ -10,7 +10,7 @@ import React from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { SvgXml } from 'react-native-svg'
 import { LOGO_ICON_XML } from '../assets/logo'
-import { color } from '../theme/tokens'
+import { color , fontFamily } from '../theme/tokens'
 
 export default function OfflineScreen({ onRetry }: { onRetry: () => void }) {
   return (
@@ -41,12 +41,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     gap: 12,
   },
-  title: { marginTop: 8, fontSize: 19, fontWeight: '700', color: color.ink, textAlign: 'center' },
+  title: { marginTop: 8, fontSize: 19, fontFamily: fontFamily.bold, color: color.ink, textAlign: 'center' },
   body: { fontSize: 14, lineHeight: 22, color: color.ink2, textAlign: 'center' },
   btn: {
     marginTop: 12, paddingVertical: 14, paddingHorizontal: 32,
-    borderRadius: 12, backgroundColor: color.brand,
+    borderRadius: 12, backgroundColor: color.br600,
   },
-  btnPressed: { backgroundColor: color.brandDark },
-  btnText: { color: color.white, fontSize: 15, fontWeight: '700' },
+  btnPressed: { backgroundColor: color.br700 },
+  btnText: { color: color.white, fontSize: 15, fontFamily: fontFamily.bold },
 })
