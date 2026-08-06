@@ -1,129 +1,119 @@
-# Mobile rebuild — complete
+# COMMERCO Merchant — mobile app status
 
-A real React Native app whose UI is built from the production website's own
-design sources. The WebView shell was fully reversed; nothing about the
-website, backend, Supabase, APIs, tracking or ad systems was touched.
+Real React Native app built from the production website's own design and
+API contracts. Nothing outside `apps/mobile` has ever been modified: the
+website, backend, Supabase, APIs, tracking, pixels and commerce logic are
+untouched.
 
-**Verification (all green):**
-
-| Check | Result |
-|---|---|
-| TypeScript | **0 errors** |
-| ESLint (`npx expo lint`) | **0 problems** |
-| Expo Doctor | 16/17 — the 1 failure is a known false positive, see below |
-| Production bundle (`expo export`) | succeeds, 6.27 MB Hermes bytecode |
-
-The Doctor failure claims `app.config.js` ignores `app.json`. It does not:
-line 17 is `const base = require('./app.json').expo`. Doctor cannot detect
-that pattern. Verified by resolving the config — name, package, FCM file,
-plugins, permissions and `forcesRTL` all present.
+**Verification after every round:** TypeScript **0**, ESLint **0**, Expo
+Doctor 16/17 (the 1 failure is a false positive — `app.config.js` line 17
+is `require('./app.json').expo`, which Doctor cannot detect), production
+bundle exports, APK installs and launches on an Android 36 emulator.
 
 ---
 
 ## THE FINDING THAT GOVERNS THIS CODEBASE
 
-**The production dashboard runs two design systems side by side.** Before
-styling anything, check which one the web page uses:
+**The production dashboard runs two design systems side by side.**
 
 | Web page | System | Port against |
 |---|---|---|
 | `DashboardHome.tsx`, `KpiCardsRow.tsx`, other `components/dashboard/*` | plain Tailwind + hardcoded `#0D6EFD` | `src/theme/legacy.ts` |
-| `OrdersPageClient.tsx`, `ProductsPageClient.tsx`, auth, settings — anything using `.c-*` | Commerco Cobalt `#2952E3` | `src/theme/tokens.ts` + `src/components/ui.tsx` |
+| `OrdersPageClient`, `ProductsPageClient`, auth, settings — anything `.c-*` | Commerco Cobalt `#2952E3` | `src/theme/tokens.ts` + `src/components/ui.tsx` |
 
-Matching the site means rendering what the browser actually paints, so the
-app deliberately carries both palettes. **Do not unify them** — that would
-make the app stop matching the site.
+Matching the site means rendering what the browser paints, so the app
+carries both palettes deliberately. **Do not unify them** — that would make
+the app stop matching. Website-side inconsistency: documented, not changed.
 
-This is a website-side inconsistency. Per the production-protection rule it
-was documented, **not** changed. If you ever unify it on the web, retire
-`src/theme/legacy.ts` in the same pass.
-
-Related, both verified rather than assumed:
-- `border-gray-150` is undefined in `tailwind.config.ts`, so it renders as
-  Tailwind's default `#E5E7EB`. The app matches what renders.
-- `components/ui/StatCard.tsx` is legacy and **unused** by the dashboard;
-  `KpiCardsRow` is what actually draws those cards.
+Also verified, not assumed: `border-gray-150` is undefined in
+`tailwind.config.ts` so it renders as `#E5E7EB`; `components/ui/StatCard.tsx`
+is legacy and unused — `KpiCardsRow` is what actually draws those cards.
 
 ---
 
-## Architecture
+## Done
 
-```
-app/
-  _layout.tsx          providers, RTL, auth gate, push, deep links,
-                       font gate, app-wide offline notice
-  (tabs)/_layout.tsx   hosts BottomNav
-  (tabs)/index.tsx     dashboard      ← DashboardHome.tsx      [legacy]
-  (tabs)/orders.tsx    orders list    ← OrdersPageClient.tsx   [cobalt]
-  (tabs)/products.tsx  products list  ← ProductsPageClient.tsx [cobalt]
-  (tabs)/analytics.tsx · (tabs)/more.tsx
-  login.tsx            ← .auth-card                            [cobalt]
-  orders/[id].tsx      ← orders/[id]/page.tsx                  [cobalt]
-  products/[id].tsx · customers/ · settings/ · notifications · map · module/
-src/
-  theme/tokens.ts      1:1 port of design/tokens.css
-  theme/legacy.ts      the dashboard's Tailwind palette (see above)
-  theme/fonts.ts       IBM Plex Sans Arabic loader
-  components/ui.tsx    1:1 port of design/components.css (.c-*)
-  components/dashboard.tsx  KpiCard, AreaSparkline, panels
-  components/BottomNav · TopBar · Stepper · OfflineScreen · Icons
-  lib/{api,auth,push,contact,time}.ts   production logic — UNTOUCHED
-```
-
-**Never modify:** `src/lib/api.ts`, `src/lib/auth.ts`, `src/lib/push.ts`, the
-website, backend, Supabase, database, tracking, or ad systems.
-
----
-
-## What was fixed
-
+### UI rebuild
+- Design tokens ported 1:1 from `design/tokens.css`; UI kit from
+  `design/components.css` (`.c-*`); shell from `DashboardShell.tsx`.
 - **Typography — the largest gap.** The app declared `Tajawal_700Bold` but
-  loaded **no font at all** and never set `fontFamily`, so every screen
-  rendered in Android's system face while the site uses IBM Plex Sans
-  Arabic. Installed the real font at 400/500/600/700 and gated the splash
-  on it. Then removed **every bare `fontWeight`** across 14 files: RN cannot
-  synthesise a weight for a custom family, so each one was silently falling
-  back to the system font even after colours were right. Weight now always
-  comes from `text(size, weight)`.
-- **Icons.** `lucide-react-native` pinned to **0.344.0**, matching
-  `lucide-react@^0.344.0` on the site. (It first resolved to 1.28.0 — a
-  different major with different geometry.) `Icons.tsx` is now a thin alias
-  layer over lucide, so 43 historic `Icon*` names keep working.
-- **Every screen** rebuilt against the correct system, in the website's own
-  layout order and measurements.
-- **RTL.** Converted every physical `left`/`right`/`marginLeft` to logical
-  `start`/`end`/`marginStart` — RN only auto-flips the logical forms.
-- **Accessibility.** Roles and labels on every pressable; the Stepper is a
-  `progressbar`; the wilaya tiles announce name and count.
-- **Removed:** the glassmorphism kit, `LiquidGlassTabBar`, `BrandHero`
-  gradients, hand-drawn icons, hand-rolled headers, and the `index` stagger
-  prop — none of which the website has.
+  loaded **no font** and never set `fontFamily`, so every screen rendered in
+  Android's system face. Loads IBM Plex Sans Arabic (the site's dashboard
+  face) at 400/500/600/700, and every bare `fontWeight` was removed across
+  14 files — RN cannot synthesise weight for a custom family.
+- Icons: `lucide-react-native` pinned to **0.344.0**, matching the site's
+  `lucide-react`. (It first resolved to 1.28.0 — different geometry.)
+- RTL: every physical `left`/`right` converted to logical `start`/`end`.
+- a11y: roles and labels on every pressable.
+
+### Functional parity fixes (found by contract audit, not by clicking)
+- **description/description_ar were collapsed into one field** — loaded
+  `description_ar ?? description`, saved only to `description_ar`, so an
+  English-only description was silently copied into the Arabic column.
+- **SKU could not be cleared** (`|| undefined` omitted the key).
+- **Image reordering was missing entirely.** Index 0 is the main image, so
+  the cover could only be changed by deleting everything and re-uploading.
+- **The "نفد المخزون" chip did nothing** — the server understands
+  `all|active|hidden`; `out` fell through and returned everything.
+- **Orders lacked the web's "مُرجَع" chip**; labels had drifted.
+- **The "إنشاء طلب" button 404'd** — orders is GET-only in the mobile API.
+- **The products count was the page length, not the store total.**
+
+### Capability gaps closed
+- **Store switching.** The backend always supported it
+  (`X-Commerco-Store`, re-validated against `stores.owner_id`) and
+  bootstrap returns every store; the app only printed the count. Switching
+  uses `removeQueries`, not invalidate, so no screen can paint the previous
+  store's data for a frame.
+- **i18n (ar/fr/en) with persistence.** `src/i18n` — persisted locale,
+  device detection on first run, `t()` falling back to Arabic so a missing
+  key degrades to correct Arabic, never a raw key. RTL ownership moved from
+  `forcesRTL:true` in app.json (which re-forced RTL every launch and would
+  have undone a French choice) to the locale layer.
+- **Camera capture.** Editor was gallery-only; both sources now share one
+  upload path, and `CAMERA` is declared now that something calls it.
 
 ---
 
-## Deliberate deviations (all additive, all noted in code)
+## Next task — i18n adoption
 
-1. **Tables → cards.** `.c-table` cannot survive 375px. Order and product
-   rows became `.c-card`s carrying the *same* columns in the same hierarchy
-   and typography.
-2. **Stepper labels kept.** The web hides them below `sm`; a phone is below
-   `sm`, but a bare row of numbers tells a merchant nothing.
-3. **Isometric Algeria map → ranked list.** The SVG cartogram is a
-   desktop flourish; the ranked list carries the same information legibly.
+Dictionaries in `src/i18n/{ar,fr,en}.ts` cover every surface. Adopted so
+far: `BottomNav`, `OfflineScreen`, the language picker. Remaining screens
+still render Arabic literals — correct in Arabic, untranslated in fr/en.
 
-## Known gaps (need your decision — not app-side bugs)
+Adopt per screen: `const t = useT()`, replace literals with `t('key')`,
+add any missing key to **all three** dictionaries (ar first — it is the
+fallback). Order by traffic: login → dashboard → orders → order detail →
+products → editor → more/settings → notifications → customers → modules.
 
-1. **Downloads have no target.** The brief asked to keep downloads, but the
-   website has **no file-download endpoint at all** — no CSV, no PDF, no
-   `Content-Disposition` anywhere in `app/api` or `lib`. A helper was
-   written, then deleted rather than left as dead code. Adding exports means
-   a backend route, which is out of bounds without approval.
-2. **`CAMERA` is not declared.** Nothing calls the camera — the product
-   editor uses `launchImageLibraryAsync` (gallery). Declaring an unused
-   permission gets flagged by Play Console. Say the word if you want camera
-   capture in the editor; it is a small addition.
-3. **https deep links unverified.** `commerco://` works. Making
-   `dakkani.vercel.app` links open the app needs `assetlinks.json` on the
-   site carrying the signing fingerprint — a website change.
-4. **Custom order sound missing.** `assets/sounds/new_order.wav` is absent,
-   so the channel falls back to the system sound. Pre-existing.
+Then: `npx tsc --noEmit`, `npx expo lint`, `npx expo export --platform android`.
+
+---
+
+## Blocked — needs you
+
+1. **Authenticated screens are untested by me.** Everything past login sits
+   behind a real Supabase session and there is no demo mode. Driving it
+   requires typing a password, which I cannot do — that holds even for a
+   test account, so please don't send one. Pre-auth is verified on the
+   emulator (launch, validation with zero network calls on empty submit,
+   error states, RTL). To get real coverage: sign in once on the emulator
+   yourself and I can drive the open session, or run the APK and tell me
+   what fails.
+
+## Blocked — needs a backend change (out of bounds)
+
+2. **Products cap at 60, no pagination.** `/api/mobile/v1/products` takes no
+   offset, so a merchant with more cannot reach them. The app now says so
+   at the ceiling instead of pretending.
+3. **`total` returns page length, not the store count** — same route.
+4. **No download endpoint exists anywhere.** No CSV, PDF or
+   `Content-Disposition` in `app/api` or `lib`, so "downloads" has no
+   target. A helper was written and then deleted rather than left as dead
+   code.
+5. **Order creation is GET-only by design** — production commerce logic,
+   deliberately not exposed.
+6. **https deep links** need `assetlinks.json` on the site carrying the
+   signing fingerprint. `commerco://` works today.
+7. **Custom order sound** — `assets/sounds/new_order.wav` is absent, so the
+   channel falls back to the system sound. Pre-existing.
