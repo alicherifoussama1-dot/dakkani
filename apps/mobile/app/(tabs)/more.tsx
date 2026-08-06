@@ -59,7 +59,7 @@ const GROUPS: Array<{ title: string; items: Entry[] }> = [
     title: 'التفضيلات', items: [
       { key: 'notifs', label: 'إعدادات الإشعارات', sub: 'الصوت والاهتزاز', Icon: IconBell, route: '/settings/notifications' },
       { key: 'security', label: 'الأمان', sub: 'البصمة ورمز الدخول', Icon: IconShield, route: '/settings/security' },
-      { key: 'lang', label: 'اللغة', sub: 'عربية · Français · English', Icon: IconGlobe, route: '/settings/language' },
+      { key: 'lang', label: 'اللغة', sub: 'لغة واجهة التطبيق', Icon: IconGlobe, route: '/settings/language' },
     ],
   },
 ]

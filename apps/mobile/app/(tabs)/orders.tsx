@@ -14,7 +14,7 @@ import { FlashList } from '@shopify/flash-list'
 import { useRouter } from 'expo-router'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Search, ShoppingCart, X, Plus } from 'lucide-react-native'
+import { Search, ShoppingCart, X } from 'lucide-react-native'
 import { api, type OrderRow } from '../../src/lib/api'
 import {
   Card, StatusPill, Chips, ListSkeleton, EmptyState, ErrorState, Input, Button,
@@ -23,15 +23,25 @@ import TopBar from '../../src/components/TopBar'
 import { color, primary, space, radius, text, fontFamily, fmtDZD, fmtNum } from '../../src/theme/tokens'
 import { formatDateShort } from '../../src/lib/time'
 
-/** STATUS_LABELS from OrdersPageClient, in the same order. */
+/** STATUS_VALUES from OrdersPageClient — same set, same order, same labels.
+ *
+ *  Two deliberate differences, both documented:
+ *  · "شُحن" sends the `shipping` GROUP (shipped + in_transit +
+ *    out_for_delivery + with_driver + at_stopdesk) rather than the bare
+ *    `shipped` the web sends. The mobile API defines that group for exactly
+ *    this chip, and a merchant checking shipments on a phone wants every
+ *    order in flight, not just the ones stamped `shipped`.
+ *  · "مهجور" is a chip here; the web exposes it through its type dropdown,
+ *    which has no room on a phone. Same filter, reachable in one tap. */
 const FILTERS = [
   { key: 'all', label: 'الكل' },
   { key: 'new', label: 'جديد' },
   { key: 'confirmed', label: 'مؤكد' },
-  { key: 'processing', label: 'تجهيز' },
-  { key: 'shipping', label: 'شحن' },
-  { key: 'delivered', label: 'تسليم' },
+  { key: 'processing', label: 'يُعالج' },
+  { key: 'shipping', label: 'شُحن' },
+  { key: 'delivered', label: 'مُسلَّم' },
   { key: 'cancelled', label: 'ملغى' },
+  { key: 'returned', label: 'مُرجَع' },
   { key: 'abandoned', label: 'مهجور' },
 ]
 
@@ -121,13 +131,22 @@ export default function Orders() {
           onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage) q.fetchNextPage() }}
           ListEmptyComponent={
             // .c-empty — 56px primary-50 circle, lg bold title, action button
+            // The web offers "إنشاء طلب" here, but /api/mobile/v1/orders is
+            // GET-only — order creation is production commerce logic and is
+            // deliberately not exposed to the app. Offering the button would
+            // route to the detail screen with id="new" and 404. So the empty
+            // state says where orders come from instead of dead-ending.
             <EmptyState
               icon={<ShoppingCart size={24} color={primary[600]} />}
               title="لا توجد طلبات"
-              sub={debounced ? 'لا نتائج لبحثك — جرّب كلمة أخرى.' : undefined}
+              sub={debounced
+                ? 'لا نتائج لبحثك — جرّب كلمة أخرى.'
+                : filtered
+                  ? 'لا يوجد طلب بهذه الحالة حالياً.'
+                  : 'ستظهر الطلبات هنا فور وصولها من متجرك.'}
               action={filtered
                 ? <Button title="الكل" variant="secondary" onPress={() => { setSearch(''); setFilter('all') }} />
-                : <Button title="إنشاء طلب" icon={<Plus size={15} color={color.onBrand} />} onPress={() => router.push('/orders/new' as never)} />}
+                : undefined}
             />
           }
           ListFooterComponent={q.isFetchingNextPage ? <View style={{ paddingTop: space[3] }}><ListSkeleton rows={2} /></View> : null}

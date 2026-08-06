@@ -4,7 +4,7 @@
 // SecureStore (biometrics), store_settings (alert prefs, whitelisted).
 // ============================================================
 import React, { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, Pressable, Switch, Alert, I18nManager } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, Pressable, Switch, Alert } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -23,7 +23,7 @@ import { color, font, radius, shadow , fontFamily } from '../../src/theme/tokens
 const TITLES: Record<string, { title: string; sub: string }> = {
   notifications: { title: 'إعدادات الإشعارات', sub: 'الصوت والاهتزاز والتنبيهات' },
   security: { title: 'الأمان', sub: 'البصمة وحماية الجلسة' },
-  language: { title: 'اللغة', sub: 'عربية · Français · English' },
+  language: { title: 'اللغة', sub: 'لغة واجهة التطبيق' },
 }
 
 export default function SettingsSection() {
@@ -202,50 +202,32 @@ function SecuritySettings() {
 }
 
 // ── Language ───────────────────────────────────────────────
-const LANGS = [
-  { key: 'ar', label: 'العربية', sub: 'من اليمين إلى اليسار (RTL)', rtl: true },
-  { key: 'fr', label: 'Français', sub: 'Gauche à droite (LTR)', rtl: false },
-  { key: 'en', label: 'English', sub: 'Left to right (LTR)', rtl: false },
-]
-
+/** The website ships ar/fr/en through next-intl. The app has no translation
+ *  layer yet — every string in it is written in Arabic — so a picker here
+ *  could only flip the writing direction, leaving Arabic text in an LTR
+ *  layout. That is worse than no picker, so the screen states what is
+ *  actually true instead of offering a choice it cannot honour.
+ *
+ *  Wiring real i18n means keying every string across all screens; it is a
+ *  scoped piece of work, not a toggle. */
 function LanguageSettings() {
-  const [current, setCurrent] = useState('ar')
-
-  const pick = (l: typeof LANGS[number]) => {
-    if (l.key === current) return
-    setCurrent(l.key)
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
-    // Changing writing direction requires a reload in React Native — RN
-    // applies I18nManager.forceRTL only at app start. Be honest about it.
-    if (l.rtl !== I18nManager.isRTL) {
-      I18nManager.allowRTL(l.rtl)
-      I18nManager.forceRTL(l.rtl)
-      Alert.alert(
-        'أعد تشغيل التطبيق',
-        'تغيير اتجاه الواجهة يتطلّب إعادة تشغيل التطبيق ليُطبَّق بالكامل.',
-      )
-    }
-  }
-
   return (
     <>
       <Text style={styles.section}>لغة الواجهة</Text>
       <Card style={{ padding: 0 }}>
-        {LANGS.map((l, i) => (
-          <Pressable key={l.key} onPress={() => pick(l)} accessibilityRole="button" accessibilityLabel={l.label}
-            style={[styles.langRow, i < LANGS.length - 1 && styles.langBorder]}>
-            <IconGlobe size={18} color={current === l.key ? color.br700 : color.ink3} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.rowTitle, current === l.key && { color: color.br700 }]}>{l.label}</Text>
-              <Text style={styles.hint}>{l.sub}</Text>
-            </View>
-            {current === l.key && <IconCheck size={17} color={color.br700} />}
-          </Pressable>
-        ))}
+        <View style={styles.langRow}>
+          <IconGlobe size={18} color={color.br700} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.rowTitle, { color: color.br700 }]}>العربية</Text>
+            <Text style={styles.hint}>لغة التطبيق</Text>
+          </View>
+          <IconCheck size={17} color={color.br700} />
+        </View>
       </Card>
       <Text style={styles.hint}>
-        العربية هي اللغة الافتراضية، والتطبيق مبني RTL-first: كل التخطيطات تستخدم
-        خصائص منطقية (start/end) فتنقلب تلقائياً مع اتجاه الكتابة.
+        التطبيق بالعربية حالياً. الفرنسية والإنجليزية متاحتان في لوحة التحكّم على
+        الموقع. التطبيق مبني RTL-first: كل التخطيطات تستخدم خصائص منطقية
+        (start/end) فتنقلب تلقائياً مع اتجاه الكتابة.
       </Text>
     </>
   )

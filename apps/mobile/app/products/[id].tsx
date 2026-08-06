@@ -16,7 +16,7 @@ import * as Haptics from 'expo-haptics'
 import { api } from '../../src/lib/api'
 import { Card, Button, Skeleton, ErrorState } from '../../src/components/ui'
 import TopBar from '../../src/components/TopBar'
-import { Plus, X, ImageIcon, Trash2 } from 'lucide-react-native'
+import { Plus, X, ImageIcon, Trash2, ChevronRight, ChevronLeft } from 'lucide-react-native'
 import { color, primary, space, radius, text, fontFamily, control, fmtDZD } from '../../src/theme/tokens'
 
 interface Img { url: string }
@@ -34,6 +34,7 @@ export default function ProductEditor() {
   const [comparePrice, setComparePrice] = useState('')
   const [sku, setSku] = useState('')
   const [description, setDescription] = useState('')
+  const [descriptionAr, setDescriptionAr] = useState('')
   const [images, setImages] = useState<Img[]>([])
   const [variants, setVariants] = useState<string[]>([])
   const [variantDraft, setVariantDraft] = useState('')
@@ -56,7 +57,8 @@ export default function ProductEditor() {
     setPrice(String(p.price ?? ''))
     setComparePrice(p.compare_price ? String(p.compare_price) : '')
     setSku(p.sku ?? '')
-    setDescription(p.description_ar ?? p.description ?? '')
+    setDescription(p.description ?? '')
+    setDescriptionAr(p.description_ar ?? '')
     setImages(Array.isArray(p.images) ? p.images : [])
     setVariants(Array.isArray(p.variants) ? p.variants.map((v: any) => v?.label ?? v?.key ?? String(v)) : [])
     setActive(!!p.is_active)
@@ -71,8 +73,9 @@ export default function ProductEditor() {
         name_ar: nameAr.trim() || name.trim(),
         price: Number(price),
         compare_price: comparePrice ? Number(comparePrice) : null,
-        sku: sku.trim() || undefined,
-        description_ar: description.trim() || undefined,
+        sku: sku.trim(),
+        description: description.trim(),
+        description_ar: descriptionAr.trim(),
         images,
         variants: variants.map(v => ({ key: v, label: v })),
         is_active: active,
@@ -132,6 +135,16 @@ export default function ProductEditor() {
   }
 
   const removeImage = (i: number) => setImages(prev => prev.filter((_, idx) => idx !== i))
+
+  /** Reorder within the array the API stores verbatim — index 0 is the
+   *  product's main image. */
+  const moveImage = (from: number, to: number) => setImages(prev => {
+    if (to < 0 || to >= prev.length) return prev
+    const next = [...prev]
+    const [m] = next.splice(from, 1)
+    next.splice(to, 0, m)
+    return next
+  })
   const addVariant = () => {
     const v = variantDraft.trim()
     if (!v || variants.includes(v)) return
@@ -165,13 +178,43 @@ export default function ProductEditor() {
           <Card>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 9 }}>
               {images.map((img, i) => (
-                <View key={img.url + i}>
-                  <Image source={{ uri: img.url }} style={styles.imgTile} contentFit="cover"
-                    cachePolicy="memory-disk" alt={`صورة المنتج ${i + 1}`} />
-                  <Pressable style={styles.imgRemove} onPress={() => removeImage(i)} hitSlop={6} accessibilityRole="button" accessibilityLabel={`حذف الصورة ${i + 1}`}>
-                    <X size={12} color={color.white} />
-                  </Pressable>
-                  {i === 0 && <View style={styles.mainBadge}><Text style={styles.mainBadgeText}>رئيسية</Text></View>}
+                <View key={img.url + i} style={{ gap: 6 }}>
+                  <View>
+                    <Image source={{ uri: img.url }} style={styles.imgTile} contentFit="cover"
+                      cachePolicy="memory-disk" alt={`صورة المنتج ${i + 1}`} />
+                    <Pressable style={styles.imgRemove} onPress={() => removeImage(i)} hitSlop={6} accessibilityRole="button" accessibilityLabel={`حذف الصورة ${i + 1}`}>
+                      <X size={12} color={color.white} />
+                    </Pressable>
+                    {i === 0 && <View style={styles.mainBadge}><Text style={styles.mainBadgeText}>رئيسية</Text></View>}
+                  </View>
+
+                  {/* Reorder — the web editor's onMove. Image 0 is the main
+                      image, so without this a merchant could only change the
+                      cover by deleting everything and re-uploading in order.
+                      Arrows, not drag: a horizontal drag inside a horizontal
+                      ScrollView fights the scroll gesture. */}
+                  <View style={styles.imgMoveRow}>
+                    <Pressable
+                      onPress={() => moveImage(i, i - 1)}
+                      disabled={i === 0}
+                      hitSlop={6}
+                      accessibilityRole="button"
+                      accessibilityLabel={`نقل الصورة ${i + 1} للأمام`}
+                      style={[styles.imgMoveBtn, i === 0 && styles.imgMoveOff]}
+                    >
+                      <ChevronRight size={14} color={i === 0 ? color.ink3 : color.ink} />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => moveImage(i, i + 1)}
+                      disabled={i === images.length - 1}
+                      hitSlop={6}
+                      accessibilityRole="button"
+                      accessibilityLabel={`نقل الصورة ${i + 1} للخلف`}
+                      style={[styles.imgMoveBtn, i === images.length - 1 && styles.imgMoveOff]}
+                    >
+                      <ChevronLeft size={14} color={i === images.length - 1 ? color.ink3 : color.ink} />
+                    </Pressable>
+                  </View>
                 </View>
               ))}
               <Pressable style={[styles.imgTile, styles.imgAdd]} onPress={pickImage} disabled={uploading} accessibilityRole="button" accessibilityLabel="إضافة صورة">
@@ -187,8 +230,13 @@ export default function ProductEditor() {
           <Card>
             <FormField label="الاسم بالعربية *" value={nameAr} onChange={setNameAr} placeholder="مثال: عباية دارين" />
             <FormField label="الاسم بالإنجليزية" value={name} onChange={setName} placeholder="Darin Abaya" />
-            <FormField label="الوصف" value={description} onChange={setDescription} multiline
+            {/* Two descriptions, as the web editor has. Collapsing them into
+                one field silently copied an English description into the
+                Arabic column on save and left the English one stale. */}
+            <FormField label="الوصف بالعربية" value={descriptionAr} onChange={setDescriptionAr} multiline
               placeholder="وصف قصير يظهر في صفحة المنتج" />
+            <FormField label="الوصف بالإنجليزية" value={description} onChange={setDescription} multiline
+              placeholder="اختياري" />
             <FormField label="رمز المنتج (SKU)" value={sku} onChange={setSku} placeholder="اختياري" />
           </Card>
 
@@ -329,6 +377,13 @@ const styles = StyleSheet.create({
   },
   mainBadgeText: { fontFamily: fontFamily.semibold, fontSize: 10, color: color.white },
 
+  imgMoveRow: { flexDirection: 'row', justifyContent: 'center', gap: space[2] },
+  imgMoveBtn: {
+    width: 32, height: 28, borderRadius: radius.sm,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: color.sunken, borderWidth: 1, borderColor: color.border,
+  },
+  imgMoveOff: { opacity: 0.4 },
   variantRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginBottom: space[3] },
   // .c-chip
   variantChip: {

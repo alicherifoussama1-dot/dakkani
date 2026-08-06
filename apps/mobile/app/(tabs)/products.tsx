@@ -22,6 +22,10 @@ import {
 import TopBar from '../../src/components/TopBar'
 import { color, primary, space, radius, text, fontFamily, fmtDZD, fmtNum } from '../../src/theme/tokens'
 
+/** The server caps `limit` at 60 and offers no offset, so this is the
+ *  hard ceiling on what the app can list. */
+const PAGE_CAP = 60
+
 const FILTERS = [
   { key: 'all', label: 'الكل' },
   { key: 'active', label: 'معروض' },
@@ -46,7 +50,7 @@ export default function Products() {
 
   const q = useQuery({
     queryKey: ['products', filter, debounced],
-    queryFn: () => api.products({ filter, q: debounced || undefined, limit: 60 }),
+    queryFn: () => api.products({ filter: filter === 'out' ? 'all' : filter, q: debounced || undefined, limit: PAGE_CAP }),
   })
 
   const del = useMutation({
@@ -67,12 +71,22 @@ export default function Products() {
 
   // Memoised, not just annotated: a fresh [] each render would defeat the
   // useMemo below and recount on every keystroke.
-  const rows: ProductRow[] = useMemo(() => q.data?.products ?? [], [q.data])
+  const rows: ProductRow[] = useMemo(() => {
+    const all: ProductRow[] = q.data?.products ?? []
+    // /products supports all|active|hidden; 'out' is ours to apply.
+    return filter === 'out' ? all.filter(p => p.stock <= 0) : all
+  }, [q.data, filter])
   const counts = useMemo(() => ({
-    total: q.data?.total ?? rows.length,
+    // NOTE: the API's `total` is the returned page length, not the store's
+    // product count, and /products takes no offset — the server caps at
+    // PAGE_CAP with no way to fetch the rest. So these counts describe what
+    // is ON SCREEN, and `capped` warns when there is more the app cannot
+    // reach. Presenting the page length as a store total would be a lie.
+    shown: rows.length,
     active: rows.filter(p => p.is_active).length,
     hidden: rows.filter(p => !p.is_active).length,
-  }), [rows, q.data?.total])
+  }), [rows])
+  const capped = rows.length >= PAGE_CAP
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -90,7 +104,7 @@ export default function Products() {
       <View style={styles.filters}>
         {/* Header badge trio, verbatim from the web page. */}
         <View style={styles.badges}>
-          <Badge label={`${fmtNum(counts.total)} منتج`} tone="neutral" />
+          <Badge label={`${fmtNum(counts.shown)} في القائمة`} tone="neutral" />
           <Badge label={`${fmtNum(counts.active)} معروض`} tone="success" />
           {counts.hidden > 0 ? <Badge label={`${fmtNum(counts.hidden)} مخفي`} tone="warning" /> : null}
         </View>
@@ -119,6 +133,12 @@ export default function Products() {
         </View>
 
         <Chips items={FILTERS} active={filter} onChange={setFilter} />
+
+        {capped ? (
+          <Text style={styles.capNote}>
+            يعرض التطبيق أول {fmtNum(PAGE_CAP)} منتج فقط. استخدم البحث للوصول إلى البقية.
+          </Text>
+        ) : null}
       </View>
 
       {q.isError ? (
@@ -221,6 +241,7 @@ const styles = StyleSheet.create({
   searchInput: { paddingStart: 34, paddingEnd: 34 },
   clear: { position: 'absolute', end: 10, padding: 4 },
   listPad: { paddingHorizontal: space[4] },
+  capNote: { ...text('xs'), color: color.ink2, lineHeight: 18 },
 
   card: { marginBottom: space[3] },
   cardInner: { flexDirection: 'row', alignItems: 'center', gap: space[3], padding: space[4] },
