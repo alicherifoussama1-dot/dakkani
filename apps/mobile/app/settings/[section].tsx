@@ -19,6 +19,7 @@ import { Card, Loading, ErrorState, Button } from '../../src/components/ui'
 import TopBar from '../../src/components/TopBar'
 import { IconBack, IconBell, IconShield, IconGlobe, IconCheck } from '../../src/components/Icons'
 import { color, font, radius, shadow , fontFamily } from '../../src/theme/tokens'
+import { useI18n, LOCALES, isRTLLocale, type Locale } from '../../src/i18n'
 
 const TITLES: Record<string, { title: string; sub: string }> = {
   notifications: { title: 'إعدادات الإشعارات', sub: 'الصوت والاهتزاز والتنبيهات' },
@@ -202,33 +203,41 @@ function SecuritySettings() {
 }
 
 // ── Language ───────────────────────────────────────────────
-/** The website ships ar/fr/en through next-intl. The app has no translation
- *  layer yet — every string in it is written in Arabic — so a picker here
- *  could only flip the writing direction, leaving Arabic text in an LTR
- *  layout. That is worse than no picker, so the screen states what is
- *  actually true instead of offering a choice it cannot honour.
- *
- *  Wiring real i18n means keying every string across all screens; it is a
- *  scoped piece of work, not a toggle. */
 function LanguageSettings() {
+  const { locale, setLocale, t } = useI18n()
+
+  const pick = async (l: Locale) => {
+    if (l === locale) return
+    const flips = isRTLLocale(l) !== isRTLLocale(locale)
+    await setLocale(l)
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+    // Strings swap immediately; the writing direction is a start-time native
+    // decision in React Native, so say so rather than half-flipping.
+    if (flips) Alert.alert(t('settings.restartTitle'), t('settings.restartBody'))
+  }
+
   return (
     <>
-      <Text style={styles.section}>لغة الواجهة</Text>
+      <Text style={styles.section}>{t('settings.interfaceLanguage')}</Text>
       <Card style={{ padding: 0 }}>
-        <View style={styles.langRow}>
-          <IconGlobe size={18} color={color.br700} />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.rowTitle, { color: color.br700 }]}>العربية</Text>
-            <Text style={styles.hint}>لغة التطبيق</Text>
-          </View>
-          <IconCheck size={17} color={color.br700} />
-        </View>
+        {LOCALES.map((l, i) => (
+          <Pressable
+            key={l.key}
+            onPress={() => pick(l.key)}
+            accessibilityRole="button"
+            accessibilityLabel={l.label}
+            accessibilityState={{ selected: l.key === locale }}
+            style={[styles.langRow, i < LOCALES.length - 1 && styles.langBorder]}
+          >
+            <IconGlobe size={18} color={l.key === locale ? color.br700 : color.ink3} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowTitle, l.key === locale && { color: color.br700 }]}>{l.label}</Text>
+              <Text style={styles.hint}>{l.sub}</Text>
+            </View>
+            {l.key === locale ? <IconCheck size={17} color={color.br700} /> : null}
+          </Pressable>
+        ))}
       </Card>
-      <Text style={styles.hint}>
-        التطبيق بالعربية حالياً. الفرنسية والإنجليزية متاحتان في لوحة التحكّم على
-        الموقع. التطبيق مبني RTL-first: كل التخطيطات تستخدم خصائص منطقية
-        (start/end) فتنقلب تلقائياً مع اتجاه الكتابة.
-      </Text>
     </>
   )
 }

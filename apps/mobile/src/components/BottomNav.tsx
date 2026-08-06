@@ -12,20 +12,22 @@ import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Home, ShoppingCart, Package, BarChart2, LayoutGrid, type LucideIcon } from 'lucide-react-native'
 import { color, primary, error, space, radius, fontFamily } from '../theme/tokens'
+import { useT } from '../i18n'
 
 export interface TabDef {
   key: string
-  label: string
+  /** i18n key, resolved at render — the label must follow the locale. */
+  labelKey: string
   Icon: LucideIcon
 }
 
 /** NAV_MOBILE from DashboardShell, in the same order, plus More. */
 export const TABS: TabDef[] = [
-  { key: 'home',      label: 'الرئيسية',   Icon: Home },
-  { key: 'orders',    label: 'الطلبات',    Icon: ShoppingCart },
-  { key: 'products',  label: 'المنتجات',   Icon: Package },
-  { key: 'analytics', label: 'الإحصائيات', Icon: BarChart2 },
-  { key: 'more',      label: 'الإعداد',    Icon: LayoutGrid },
+  { key: 'home',      labelKey: 'nav.home',      Icon: Home },
+  { key: 'orders',    labelKey: 'nav.orders',    Icon: ShoppingCart },
+  { key: 'products',  labelKey: 'nav.products',  Icon: Package },
+  { key: 'analytics', labelKey: 'nav.analytics', Icon: BarChart2 },
+  { key: 'more',      labelKey: 'nav.more',      Icon: LayoutGrid },
 ]
 
 export default function BottomNav({
@@ -36,6 +38,7 @@ export default function BottomNav({
   badges?: Record<string, number>
 }) {
   const insets = useSafeAreaInsets()
+  const t = useT()
 
   return (
     <View
@@ -45,10 +48,11 @@ export default function BottomNav({
       style={[styles.bar, { paddingBottom: insets.bottom }]}
     >
       <View style={styles.row}>
-        {TABS.map(({ key, label, Icon }) => {
+        {TABS.map(({ key, labelKey, Icon }) => {
           const on = key === active
           const count = badges[key] ?? 0
           const fg = on ? primary[700] : color.ink3
+          const label = t(labelKey)
 
           return (
             <Pressable

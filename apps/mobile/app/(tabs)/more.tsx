@@ -3,9 +3,11 @@
 // Nothing from the website is hidden: each entry either navigates to a
 // built screen or opens the module screen.
 // ============================================================
-import React from 'react'
+import React, { useState } from 'react'
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
+import { ChevronDown } from 'lucide-react-native'
+import StoreSwitcher from '../../src/components/StoreSwitcher'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SvgXml } from 'react-native-svg'
@@ -67,8 +69,14 @@ const GROUPS: Array<{ title: string; items: Entry[] }> = [
 export default function More() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
+  const [switcher, setSwitcher] = useState(false)
   const qc = useQueryClient()
   const { data } = useQuery({ queryKey: ['bootstrap'], queryFn: () => api.bootstrap() })
+
+  // bootstrap.stores lists every store this merchant owns; the switcher only
+  // earns its place when there is more than one.
+  const stores = data?.stores ?? []
+  const multiStore = stores.length > 1
 
   const logout = () => Alert.alert('تسجيل الخروج؟', 'ستحتاج إلى تسجيل الدخول مرة أخرى.', [
     { text: 'إلغاء', style: 'cancel' },
@@ -85,16 +93,29 @@ export default function More() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130 }}>
-        <Card onPress={() => router.push('/module/account')}>
+        <Card
+          onPress={() => (multiStore ? setSwitcher(true) : router.push('/module/account'))}
+          accessibilityLabel={multiStore ? 'تبديل المتجر' : 'الحساب'}
+        >
           <View style={styles.row}>
             <View style={styles.logoBox}><SvgXml xml={LOGO_ICON_XML} width={26} height={26} /></View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.storeName} numberOfLines={1}>{data?.store.name ?? '—'}</Text>
-              <Text style={styles.sub}>{data?.store.slug ?? ''}</Text>
+              <Text style={styles.sub}>
+                {multiStore ? `${stores.length} متاجر · اضغط للتبديل` : (data?.store.slug ?? '')}
+              </Text>
             </View>
+            {multiStore ? <ChevronDown size={18} color={color.ink3} /> : null}
             <View style={styles.plan}><Text style={styles.planText}>{(data?.store.plan ?? 'free').toUpperCase()}</Text></View>
           </View>
         </Card>
+
+        <StoreSwitcher
+          visible={switcher}
+          onClose={() => setSwitcher(false)}
+          stores={stores}
+          activeId={data?.store.id}
+        />
 
         {GROUPS.map((g, gi) => (
           <View key={g.title}>

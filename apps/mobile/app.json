@@ -52,7 +52,8 @@
         "VIBRATE",
         "USE_BIOMETRIC",
         "USE_FINGERPRINT",
-        "READ_MEDIA_IMAGES"
+        "READ_MEDIA_IMAGES",
+        "CAMERA"
       ],
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
@@ -82,7 +83,7 @@
         "expo-localization",
         {
           "supportsRTL": true,
-          "forcesRTL": true,
+          "forcesRTL": false,
           "allowDynamicLocaleChangesAndroid": false
         }
       ],

@@ -11,22 +11,22 @@ import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { SvgXml } from 'react-native-svg'
 import { LOGO_ICON_XML } from '../assets/logo'
 import { color , fontFamily } from '../theme/tokens'
+import { useT } from '../i18n'
 
 export default function OfflineScreen({ onRetry }: { onRetry: () => void }) {
+  const t = useT()
   return (
     <View style={styles.root}>
       <SvgXml xml={LOGO_ICON_XML} width={56} height={56} />
-      <Text style={styles.title}>لا يوجد اتصال بالإنترنت</Text>
-      <Text style={styles.body}>
-        تحقّق من اتصالك ثم أعد المحاولة. سيُستأنف العمل من حيث توقّفت.
-      </Text>
+      <Text style={styles.title}>{t('offline.title')}</Text>
+      <Text style={styles.body}>{t('offline.body')}</Text>
       <Pressable
         onPress={onRetry}
         accessibilityRole="button"
-        accessibilityLabel="إعادة المحاولة"
+        accessibilityLabel={t('common.retry')}
         style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
       >
-        <Text style={styles.btnText}>إعادة المحاولة</Text>
+        <Text style={styles.btnText}>{t('common.retry')}</Text>
       </Pressable>
     </View>
   )

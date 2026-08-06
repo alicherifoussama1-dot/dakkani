@@ -107,20 +107,8 @@ export default function ProductEditor() {
     },
   })
 
-  const pickImage = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!perm.granted) {
-      Alert.alert('الصلاحية مرفوضة', 'اسمح بالوصول إلى الصور من إعدادات النظام.')
-      return
-    }
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.85,           // upload-friendly on 3G without visible loss
-      allowsMultipleSelection: false,
-    })
-    if (res.canceled || !res.assets?.[0]) return
-
-    const a = res.assets[0]
+  /** Shared by both sources: upload, then append to the gallery. */
+  const uploadAsset = async (a: ImagePicker.ImagePickerAsset) => {
     setUploading(true)
     try {
       const up = await api.uploadImage(
@@ -133,6 +121,37 @@ export default function ProductEditor() {
       Alert.alert('تعذّر رفع الصورة', e?.message ?? 'حاول مرة أخرى')
     } finally { setUploading(false) }
   }
+
+  const fromGallery = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!perm.granted) {
+      Alert.alert('الصلاحية مرفوضة', 'اسمح بالوصول إلى الصور من إعدادات النظام.')
+      return
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,           // upload-friendly on 3G without visible loss
+      allowsMultipleSelection: false,
+    })
+    if (!res.canceled && res.assets?.[0]) await uploadAsset(res.assets[0])
+  }
+
+  const fromCamera = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync()
+    if (!perm.granted) {
+      Alert.alert('الصلاحية مرفوضة', 'اسمح باستخدام الكاميرا من إعدادات النظام.')
+      return
+    }
+    const res = await ImagePicker.launchCameraAsync({ quality: 0.85 })
+    if (!res.canceled && res.assets?.[0]) await uploadAsset(res.assets[0])
+  }
+
+  /** Both sources behind one control, as a phone expects. */
+  const pickImage = () => Alert.alert('إضافة صورة', undefined, [
+    { text: 'التقاط صورة', onPress: fromCamera },
+    { text: 'اختيار من المعرض', onPress: fromGallery },
+    { text: 'إلغاء', style: 'cancel' },
+  ])
 
   const removeImage = (i: number) => setImages(prev => prev.filter((_, idx) => idx !== i))
 
