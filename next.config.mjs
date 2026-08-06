@@ -91,6 +91,27 @@ const nextConfig = {
   swcMinify: true,
   transpilePackages: ['framer-motion'],
   images: {
+    // ── Vercel Image Optimization is bypassed on purpose ──
+    //
+    // The optimizer began returning 402 OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED
+    // once the account's transformation quota ran out. Every product image in
+    // Supabase Storage still returns 200 with a valid content-type — verified
+    // across all products — but /_next/image served nothing, so storefronts
+    // rendered blank tiles. The only products that kept working were the ones
+    // whose transformations were already in the edge cache, which is why the
+    // failure looked arbitrary rather than quota-shaped.
+    //
+    // `unoptimized` makes <Image> emit the Supabase URL directly. It keeps
+    // every layout prop (fill, sizes, priority, lazy loading) working, so no
+    // component changes are needed and nothing about the markup shifts.
+    //
+    // Cost, measured rather than assumed: originals average ~1.35MB and the
+    // largest is ~3.4MB, so pages now transfer more bytes than the WebP the
+    // optimizer used to emit. The fix that restores compression WITHOUT
+    // depending on Vercel is enabling Supabase Image Transformation — its
+    // /render/image endpoint currently answers 403 FeatureNotEnabled. Once
+    // that is on, replace this flag with a custom `loader` pointing at it.
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co" },
       { protocol: "https", hostname: "*.supabase.in" },
