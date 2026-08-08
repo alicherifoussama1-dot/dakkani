@@ -74,7 +74,19 @@ export default function ProductGallery({ images, productName }: Props) {
                 i === active ? 'border-[#0D6EFD]' : 'border-transparent hover:border-gray-300'
               }`}
             >
-              <img src={img.url} alt="" className="w-full h-full object-cover" />
+              {/* Thumbnails render at 64px but the src is the FULL original
+                  (~1.35MB average, up to 3.4MB). Without a lazy hint a
+                  7-image product downloaded ~10MB of thumbnails before the
+                  page settled. `lazy` defers the off-screen ones; `async`
+                  decoding keeps the main image's paint off the decode queue.
+                  Purely loading hints — the markup and visuals are unchanged. */}
+              <img
+                src={img.url}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover"
+              />
             </button>
           ))}
         </div>
@@ -89,6 +101,7 @@ export default function ProductGallery({ images, productName }: Props) {
           <img
             src={images[active].url}
             alt={productName}
+            decoding="async"
             className="max-w-full max-h-full object-contain rounded-2xl"
             onClick={e => e.stopPropagation()}
           />
