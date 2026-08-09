@@ -7,11 +7,11 @@ import React from 'react'
 import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
 import { api, type OrderRow } from '../../src/lib/api'
-import { Card, Skeleton, ErrorState, EmptyState } from '../../src/components/ui'
+import { Card, Skeleton, ErrorState, EmptyState, Button } from '../../src/components/ui'
 import TopBar from '../../src/components/TopBar'
 import { OrderCard } from '../(tabs)/orders'
 import {
@@ -27,18 +27,33 @@ export default function CustomerDetail() {
   const router = useRouter()
   const qc = useQueryClient()
 
-  // Their orders — the single source for both the stats and the history.
-  const q = useQuery({
-    queryKey: ['customer-orders', p],
-    queryFn: () => api.orders({ q: p, limit: 50 }),
+  // Stats come from the server-side aggregate over EVERY order this phone
+  // placed. Deriving them from one page of orders reported the page length
+  // as the order count and undercounted spend.
+  const agg = useQuery({
+    queryKey: ['customer', p],
+    queryFn: () => api.customer(p),
     enabled: !!p,
   })
 
-  const rows: OrderRow[] = q.data?.orders ?? []
-  const name = rows[0]?.customer_name ?? p
-  const spend = rows.filter(o => o.status !== 'abandoned').reduce((a: number, o) => a + o.total, 0)
-  const lastWilaya = rows[0]?.wilaya_name ?? null
-  const lastCommune = rows[0]?.commune ?? null
+  // History is paginated on an EXACT phone match, so a customer with more
+  // orders than one page is fully reachable.
+  const q = useInfiniteQuery({
+    queryKey: ['customer-orders', p],
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => api.orders({ phone: p, limit: 25, offset: pageParam as number }),
+    getNextPageParam: last => last.next_offset ?? undefined,
+    enabled: !!p,
+  })
+
+  const rows: OrderRow[] = React.useMemo(
+    () => q.data?.pages.flatMap(pg => pg.orders) ?? [], [q.data])
+  const c = agg.data?.customer
+  const name = c?.name ?? rows[0]?.customer_name ?? p
+  const totalOrders = c?.orders ?? q.data?.pages[0]?.total ?? rows.length
+  const spend = c?.spend ?? 0
+  const lastWilaya = c?.wilaya_name ?? rows[0]?.wilaya_name ?? null
+  const lastCommune = c?.commune ?? rows[0]?.commune ?? null
 
   const block = useMutation({
     mutationFn: () => api.catalogCreate('blacklist', {
@@ -83,7 +98,7 @@ export default function CustomerDetail() {
           </Card>
 
           <View style={styles.stats}>
-            <Stat label="الطلبات" value={fmtNum(rows.length)} />
+            <Stat label="الطلبات" value={fmtNum(totalOrders)} />
             <Stat label="الإنفاق" value={fmtDZD(spend)} />
             <Stat label="الولاية" value={lastWilaya ?? '—'} />
           </View>
@@ -112,9 +127,20 @@ export default function CustomerDetail() {
           {rows.length === 0 ? (
             <EmptyState icon={<IconOrders size={40} color={color.ink3} />} title="لا توجد طلبات" />
           ) : (
-            rows.map((o, i: number) => (
-              <OrderCard key={o.id} order={o} onPress={id => router.push(`/orders/${id}`)} />
-            ))
+            <>
+              {rows.map(o => (
+                <OrderCard key={o.id} order={o} onPress={id => router.push(`/orders/${id}`)} />
+              ))}
+              {q.hasNextPage ? (
+                <Button
+                  title="تحميل المزيد"
+                  variant="secondary"
+                  loading={q.isFetchingNextPage}
+                  onPress={() => q.fetchNextPage()}
+                  style={{ marginTop: 4 }}
+                />
+              ) : null}
+            </>
           )}
         </ScrollView>
       )}
@@ -144,11 +170,14 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 17, fontFamily: fontFamily.bold, color: color.ink },
   sub: { fontSize: 11.5, fontFamily: fontFamily.semibold, color: color.ink3, marginTop: 1 },
+  // Leftover from a gradient hero that became a plain white Card: white on
+  // white made the initial invisible. Matches the list avatar instead.
   bigAvatar: {
-    width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.25)',
+    width: 64, height: 64, borderRadius: 20, backgroundColor: color.br50,
+    borderWidth: 1, borderColor: 'rgba(41,82,227,0.14)',
     alignItems: 'center', justifyContent: 'center', marginBottom: 10,
   },
-  bigAvatarText: { fontSize: 25, fontFamily: fontFamily.bold, color: color.white },
+  bigAvatarText: { fontSize: 25, fontFamily: fontFamily.bold, color: color.br700 },
   heroName: { ...text("lg", "bold"), color: color.ink },
   heroPhone: { ...text('sm'), color: color.ink2, marginTop: 4, writingDirection: 'ltr' },
   stats: { flexDirection: 'row', gap: 9, marginTop: 13 },

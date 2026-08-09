@@ -21,7 +21,7 @@ import { Button, Field, Input } from '../src/components/ui'
 import { color, space, radius, shadow, text, control, error as errorScale } from '../src/theme/tokens'
 import {
   signIn, setActiveStore, biometricAvailable, isBiometricEnabled,
-  unlockWithBiometrics, getSession, setBiometricEnabled,
+  unlockWithBiometrics, getSession, setBiometricEnabled, notifySignedIn,
 } from '../src/lib/auth'
 import { api } from '../src/lib/api'
 import * as Push from '../src/lib/push'
@@ -57,6 +57,10 @@ export default function Login() {
       setActiveStore(boot.store.id)
       qc.setQueryData(['bootstrap'], boot)
     } catch { /* offline — restoreActiveStore() supplies the cached store id */ }
+    // Tell the root layout the session is live. Raised HERE, after the store
+    // is resolved, so the wiring it turns on (push handlers, deep links, the
+    // badge) never runs against a missing X-Commerco-Store header.
+    notifySignedIn()
     // Permission is requested HERE (contextually), never on cold launch.
     Push.registerDevice().catch(() => {})
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})

@@ -274,8 +274,13 @@ export default function CatalogScreen({ config }: { config: CatalogConfig }) {
             )}
           </View>
         ))}
+        {/* disabled, not just dimmed — otherwise the create fires with the
+            required columns missing and fails server-side instead of here. */}
         <Button title="إنشاء" onPress={() => create.mutate()} loading={create.isPending}
-          style={{ marginTop: 6, opacity: missingRequired ? 0.5 : 1 }} />
+          disabled={missingRequired} style={{ marginTop: 6 }} />
+        {missingRequired ? (
+          <Text style={styles.note}>أكمل الحقول المطلوبة (*) أولاً.</Text>
+        ) : null}
       </Sheet>
     </>
   )

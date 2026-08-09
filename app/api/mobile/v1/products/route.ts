@@ -5,7 +5,7 @@
 export const dynamic = 'force-dynamic'
 
 import { z } from 'zod'
-import { getMobileContext, ok, fail } from '@/lib/mobile/context'
+import { getMobileContext, ok, fail, ilikeTerm } from '@/lib/mobile/context'
 
 export async function GET(req: Request) {
   const ctx = await getMobileContext(req)
@@ -18,12 +18,17 @@ export async function GET(req: Request) {
 
   let q = ctx.supabase
     .from('products')
-    .select('id,name,name_ar,slug,price,compare_price,images,is_active,variants,created_at')
+    .select('id,name,name_ar,slug,sku,price,compare_price,images,is_active,variants,created_at')
     .eq('store_id', ctx.store.id)
     .order('created_at', { ascending: false })
     .limit(limit)
 
-  if (search) q = q.or(`name.ilike.%${search}%,name_ar.ilike.%${search}%`)
+  // SKU is included because both clients advertise it ("ابحث باسم المنتج أو
+  // SKU"); searching only the names made that promise false.
+  if (search) {
+    const v = ilikeTerm(search)
+    q = q.or(`name.ilike.${v},name_ar.ilike.${v},sku.ilike.${v}`)
+  }
   if (filter === 'active') q = q.eq('is_active', true)
   if (filter === 'hidden') q = q.eq('is_active', false)
 
@@ -62,6 +67,7 @@ export async function GET(req: Request) {
       id: p.id,
       name: p.name_ar ?? p.name,
       slug: p.slug,
+      sku: p.sku ?? null,
       price: Number(p.price ?? 0),
       compare_price: p.compare_price ? Number(p.compare_price) : null,
       discount_pct: p.compare_price && p.compare_price > p.price

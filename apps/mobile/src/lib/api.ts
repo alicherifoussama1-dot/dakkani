@@ -117,7 +117,7 @@ export interface OrderRow {
 }
 
 export interface ProductRow {
-  id: string; name: string; slug: string | null
+  id: string; name: string; slug: string | null; sku: string | null
   price: number; compare_price: number | null; discount_pct: number
   image: string | null; is_active: boolean; variants: unknown[]
   stock: number; orders_count: number; abandonment_rate: number
@@ -179,6 +179,23 @@ export interface Analytics {
   productPerformance: Array<{ id: string; name: string; image_url: string | null; total_orders: number; normal_orders: number; abandoned_orders: number; abandonment_rate: number }>
 }
 
+/** Mirrors app/(dashboard)/analytics/page.tsx — the الإحصائيات page. */
+export interface StoreAnalytics {
+  ok?: boolean
+  days: number
+  totalOrders: number
+  truncated: boolean
+  kpis: {
+    revenue: number; grossProfit: number; avgOrder: number
+    deliveryRate: number; cancelRate: number; deliveryRevenue: number
+    ordersCount: number; uniqueCustomers: number
+  } | null
+  byWilaya: Array<{
+    wilaya_id: number | null; wilaya_name: string | null
+    total: number; delivered: number; delivery_rate: number; revenue: number
+  }>
+}
+
 const qs = (o: Record<string, string | number | undefined | null>) => {
   const p = new URLSearchParams()
   for (const [k, v] of Object.entries(o)) if (v !== undefined && v !== null && v !== '') p.set(k, String(v))
@@ -193,7 +210,13 @@ export const api = {
   analytics: (preset: DatePreset, startDate?: string, endDate?: string) =>
     request<Analytics>(`/api/mobile/v1/dashboard${qs({ preset, startDate, endDate })}`),
 
-  orders: (p: { status?: string; q?: string; limit?: number; offset?: number } = {}) =>
+  /** The الإحصائيات page's numbers (delivery rate, AOV, cancellation…),
+   *  which the dashboard handler does not compute. */
+  storeAnalytics: (days = 30) =>
+    request<StoreAnalytics>(`/api/mobile/v1/analytics${qs({ days })}`),
+
+  /** `phone` is an EXACT customer match; `q` is the fuzzy list search. */
+  orders: (p: { status?: string; q?: string; phone?: string; limit?: number; offset?: number } = {}) =>
     request<{ ok: true; orders: OrderRow[]; total: number; next_offset: number | null }>(
       `/api/mobile/v1/orders${qs(p)}`),
 
@@ -231,6 +254,11 @@ export const api = {
 
   customers: (p: { q?: string; limit?: number } = {}) =>
     request<{ ok: true; customers: CustomerRow[]; total: number }>(`/api/mobile/v1/customers${qs(p)}`),
+
+  /** Exact aggregate for ONE customer — orders count and spend over every
+   *  order they have placed, not over one page of a fuzzy search. */
+  customer: (phone: string) =>
+    request<{ ok: true; customer: CustomerRow | null }>(`/api/mobile/v1/customers${qs({ phone })}`),
 
   notifications: () =>
     request<{ ok: true; notifications: any[]; unread: number }>('/api/mobile/v1/notifications'),
@@ -271,6 +299,14 @@ export const api = {
     request<{ ok: true; settings: Record<string, any> }>('/api/mobile/v1/settings', {
       method: 'PATCH', body: JSON.stringify(body),
     }),
+
+  /** Per-device push preferences as PERSISTED — the settings screen must
+   *  render these, not optimistic defaults. */
+  devicePrefs: (token: string) =>
+    request<{
+      ok: true; registered: boolean
+      prefs: { push_enabled: boolean; sound_enabled: boolean; vibration_enabled: boolean } | null
+    }>(`/api/mobile/v1/devices${qs({ token })}`),
 
   registerDevice: (body: { token: string; platform: 'ios' | 'android'; app_version?: string; locale?: string }) =>
     request<{ ok: true; registered: boolean }>('/api/mobile/v1/devices', {

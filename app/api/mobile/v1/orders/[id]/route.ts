@@ -79,17 +79,23 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     .from('orders').update(patch).eq('id', params.id).eq('store_id', ctx.store.id)
   if (error) return fail(error.message, 500)
 
-  // Audit trail — non-blocking, same as the web.
-  try {
-    await ctx.supabase.from('order_history').insert({
-      order_id: params.id,
-      store_id: ctx.store.id,
-      from_status: (existing as any).status,
-      to_status: status,
-      note: note ?? 'تم التغيير من تطبيق الجوال',
-      changed_by: ctx.userId,
-    })
-  } catch { /* history is best-effort */ }
+  // Audit trail — non-blocking, same columns the web writes (migration 010:
+  // old_status / new_status / notes). It previously wrote from_status /
+  // to_status / note, which do not exist on the table, so EVERY mobile status
+  // change silently lost its history row: new_status is NOT NULL, the insert
+  // always failed, and supabase-js returns the error instead of throwing, so
+  // the try/catch never saw it. The error is inspected explicitly now.
+  const { error: histError } = await ctx.supabase.from('order_history').insert({
+    order_id: params.id,
+    store_id: ctx.store.id,
+    old_status: (existing as any).status,
+    new_status: status,
+    notes: note ?? 'تم التغيير من تطبيق الجوال',
+    changed_by: ctx.userId,
+  })
+  // Still best-effort: the status change itself has already succeeded and
+  // must not be reported as a failure because the timeline row did not land.
+  if (histError) console.error('[mobile] order_history insert failed:', histError.message)
 
   return ok({ id: params.id, status })
 }

@@ -8,8 +8,10 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --ext .ts,.tsx",
+    "//lint": "app/ was NOT linted before — only src/ — so every screen was unchecked. Plugins resolve from the repo root, which is where eslint and its plugins are hoisted to.",
+    "lint": "eslint app src --ext .ts,.tsx --resolve-plugins-relative-to ../..",
     "test:api": "node scripts/verify-api.mjs",
+    "test:fixes": "node scripts/verify-fixes.mjs",
     "build:android:preview": "eas build --platform android --profile preview",
     "build:android:prod": "eas build --platform android --profile production",
     "test:android": "node scripts/verify-android.mjs"

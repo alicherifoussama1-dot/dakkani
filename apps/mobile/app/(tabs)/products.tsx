@@ -50,7 +50,9 @@ export default function Products() {
 
   const q = useQuery({
     queryKey: ['products', filter, debounced],
-    queryFn: () => api.products({ filter: filter === 'out' ? 'all' : filter, q: debounced || undefined, limit: PAGE_CAP }),
+    // The server understands all|active|hidden|out|low — `out` included, so
+    // it is sent through rather than being downgraded to `all` here.
+    queryFn: () => api.products({ filter, q: debounced || undefined, limit: PAGE_CAP }),
   })
 
   const del = useMutation({
@@ -71,11 +73,7 @@ export default function Products() {
 
   // Memoised, not just annotated: a fresh [] each render would defeat the
   // useMemo below and recount on every keystroke.
-  const rows: ProductRow[] = useMemo(() => {
-    const all: ProductRow[] = q.data?.products ?? []
-    // /products supports all|active|hidden; 'out' is ours to apply.
-    return filter === 'out' ? all.filter(p => p.stock <= 0) : all
-  }, [q.data, filter])
+  const rows: ProductRow[] = useMemo(() => q.data?.products ?? [], [q.data])
   const counts = useMemo(() => ({
     // NOTE: the API's `total` is the returned page length, not the store's
     // product count, and /products takes no offset — the server caps at
@@ -95,11 +93,18 @@ export default function Products() {
   }, [qc])
 
   const open = useCallback((id: string) => router.push(`/products/${id}`), [router])
+  const create = useCallback(() => router.push('/products/new' as never), [router])
   const filtered = filter !== 'all' || !!debounced
 
   return (
     <View style={styles.root}>
-      <TopBar title="المنتجات" />
+      {/* The create action lives in the header, not only in the empty state:
+          once a store has one product the empty state never renders again,
+          which left no way to add a second one. */}
+      <TopBar
+        title="المنتجات"
+        actions={[{ key: 'add', label: 'إضافة منتج', Icon: Plus, onPress: create }]}
+      />
 
       <View style={styles.filters}>
         {/* Header badge trio, verbatim from the web page. */}
@@ -159,7 +164,7 @@ export default function Products() {
               sub={debounced ? 'لا نتائج لبحثك — جرّب كلمة أخرى.' : undefined}
               action={filtered
                 ? <Button title="الكل" variant="secondary" onPress={() => { setSearch(''); setFilter('all') }} />
-                : <Button title="إضافة منتج" icon={<Plus size={15} color={color.onBrand} />} onPress={() => router.push('/products/new' as never)} />}
+                : <Button title="إضافة منتج" icon={<Plus size={15} color={color.onBrand} />} onPress={create} />}
             />
           }
           renderItem={({ item }) => (
@@ -185,18 +190,16 @@ export const ProductCard = React.memo(function ProductCard({
   return (
     <Card
       onPress={() => onPress(p.id)}
+      // Long-press mirrors the web's row action menu, which has no touch
+      // equivalent. It belongs on the Card itself: a nested Pressable would
+      // win the responder and swallow every tap, leaving the editor
+      // unreachable.
+      onLongPress={onLongPress ? () => onLongPress(p) : undefined}
       accessibilityLabel={p.name}
       style={styles.card}
       padded={false}
     >
-      <Pressable
-        onLongPress={() => onLongPress?.(p)}
-        // Long-press mirrors the web's row action menu, which has no
-        // touch equivalent.
-        accessibilityRole="button"
-        accessibilityLabel={p.name}
-        style={styles.cardInner}
-      >
+      <View style={styles.cardInner}>
         {/* w-10 h-10 rounded-[--radius-md] on --surface-sunken */}
         {p.image ? (
           <Image source={{ uri: p.image }} style={styles.thumb} resizeMode="cover" alt={p.name} />
@@ -209,6 +212,9 @@ export const ProductCard = React.memo(function ProductCard({
         <View style={styles.info}>
           {/* font-medium text-sm truncate */}
           <Text style={styles.name} numberOfLines={1}>{p.name}</Text>
+          {/* The web row carries an SKU cell, and the search box advertises
+              SKU — showing it makes a search hit explicable. */}
+          {p.sku ? <Text style={styles.sku} numberOfLines={1}>{p.sku}</Text> : null}
 
           <View style={styles.metaRow}>
             {/* font-semibold text-sm, tabular */}
@@ -227,7 +233,7 @@ export const ProductCard = React.memo(function ProductCard({
             )}
           </View>
         </View>
-      </Pressable>
+      </View>
     </Card>
   )
 })
@@ -249,6 +255,8 @@ const styles = StyleSheet.create({
   thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
   info: { flex: 1, minWidth: 0, gap: 4 },
   name: { ...text('sm', 'medium'), color: color.ink },
+  // .c-table SKU cell — always LTR, even inside an RTL row.
+  sku: { ...text('xs'), color: color.ink3, writingDirection: 'ltr', textAlign: 'right' },
   metaRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[2] },
   price: { fontFamily: fontFamily.semibold, fontSize: 14, color: color.ink, fontVariant: ['tabular-nums'] },
   compare: { ...text('xs'), color: color.ink3, textDecorationLine: 'line-through', fontVariant: ['tabular-nums'] },

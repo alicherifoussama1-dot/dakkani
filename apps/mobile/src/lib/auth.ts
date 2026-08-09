@@ -55,6 +55,38 @@ let currentStoreId: string | null = null
 let onLogout: (() => void) | null = null
 let refreshing: Promise<Session | null> | null = null
 
+// ── Session transitions ─────────────────────────────────────
+// The root layout resolves auth once at boot. Nothing told it when the login
+// screen succeeded, so for the whole first session it still believed the
+// merchant was signed out: push handlers were never wired, notification taps
+// and deep links were queued and dropped, and the badge stopped refreshing
+// until the app was relaunched. Sign-out had the mirror bug — the listeners
+// stayed wired for a merchant who had left.
+//
+// Deliberately NOT supabase.auth.onAuthStateChange: that emits
+// INITIAL_SESSION the moment you subscribe, which would report "signed in"
+// before the biometric gate has run and hand a locked app to the push and
+// deep-link wiring. These events are raised only at explicit transitions.
+type SessionListener = (signedIn: boolean) => void
+const sessionListeners = new Set<SessionListener>()
+
+/** Subscribe to explicit sign-in / sign-out transitions. Returns unsubscribe. */
+export function onSessionChange(cb: SessionListener) {
+  sessionListeners.add(cb)
+  return () => { sessionListeners.delete(cb) }
+}
+
+function emitSession(signedIn: boolean) {
+  for (const cb of sessionListeners) {
+    try { cb(signedIn) } catch { /* one bad listener must not stop the rest */ }
+  }
+}
+
+/** Raised by the login screen once the session AND the active store are
+ *  resolved — not inside signIn(), so the first query after navigation
+ *  always carries the right X-Commerco-Store header. */
+export function notifySignedIn() { emitSession(true) }
+
 export function setActiveStore(id: string | null) {
   currentStoreId = id
   if (id) SecureStore.setItemAsync(K_STORE, id).catch(() => {})
@@ -93,7 +125,7 @@ export function initAuth(handlers: { onUnauthorized: () => void }) {
   configureApi({
     getAccessToken,
     getStoreId: () => currentStoreId,
-    onUnauthorized: () => onLogout?.(),
+    onUnauthorized: () => { onLogout?.(); emitSession(false) },
   })
 }
 
@@ -120,6 +152,8 @@ export async function signOut() {
   await SecureStore.deleteItemAsync(K_SESSION).catch(() => {})
   await SecureStore.deleteItemAsync(K_STORE).catch(() => {})
   currentStoreId = null
+  // Tear down push listeners and the badge for a merchant who has left.
+  emitSession(false)
 }
 
 export async function getSession() {

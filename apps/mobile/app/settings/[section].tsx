@@ -3,7 +3,7 @@
 // All three write to REAL stores: device_tokens (per-device push prefs),
 // SecureStore (biometrics), store_settings (alert prefs, whitelisted).
 // ============================================================
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { View, Text, ScrollView, StyleSheet, Pressable, Switch, Alert } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -50,26 +50,45 @@ export default function SettingsSection() {
 function NotificationSettings() {
   const qc = useQueryClient()
   const [perm, setPerm] = useState<string>('undetermined')
-  const [push, setPush] = useState(true)
-  const [sound, setSound] = useState(true)
-  const [vibration, setVibration] = useState(true)
+  // Seeded from the server row, NOT from `true`. Hard-coding the defaults
+  // showed every switch as on each time the screen opened, so a merchant who
+  // had muted the sound was told it was unmuted.
+  const [prefs, setPrefs] = useState<Push.DevicePrefs | null>(null)
   const [token, setToken] = useState<string | null>(null)
 
   const settings = useQuery({ queryKey: ['settings'], queryFn: () => api.settings() })
+
+  const loadPrefs = useCallback(async () => {
+    // A device with no row yet legitimately has the DB defaults.
+    const stored = await Push.getPrefs().catch(() => null)
+    setPrefs(stored ?? Push.DEFAULT_PREFS)
+  }, [])
 
   useEffect(() => {
     (async () => {
       const p = await Notifications.getPermissionsAsync()
       setPerm(p.status)
       setToken(await Push.getStoredToken())
+      await loadPrefs()
     })()
-  }, [])
+  }, [loadPrefs])
 
   const savePrefs = useMutation({
-    mutationFn: (prefs: Record<string, boolean>) => Push.updatePrefs(prefs),
+    mutationFn: (patch: Partial<Push.DevicePrefs>) => Push.updatePrefs(patch),
     onSuccess: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}),
-    onError: () => Alert.alert('تعذّر الحفظ', 'تحقّق من الاتصال'),
+    onError: async () => {
+      // Roll the switch back to what the server actually holds, so the UI
+      // never claims a preference that failed to save.
+      Alert.alert('تعذّر الحفظ', 'تحقّق من الاتصال')
+      await loadPrefs()
+    },
   })
+
+  /** Optimistic flip + write. On failure onError re-reads the truth. */
+  const setPref = (key: keyof Push.DevicePrefs, value: boolean) => {
+    setPrefs(prev => ({ ...(prev ?? Push.DEFAULT_PREFS), [key]: value }))
+    savePrefs.mutate({ [key]: value })
+  }
 
   const saveStore = useMutation({
     mutationFn: (body: Record<string, unknown>) => api.updateSettings(body),
@@ -85,6 +104,8 @@ function NotificationSettings() {
     setToken(t)
     const p = await Notifications.getPermissionsAsync()
     setPerm(p.status)
+    // A row exists now, so its stored preferences are readable.
+    if (t) await loadPrefs()
     if (!t) Alert.alert('الإشعارات معطّلة', 'مكّن الإشعارات لـ COMMERCO من إعدادات النظام.')
   }
 
@@ -109,13 +130,16 @@ function NotificationSettings() {
       ) : (
         <Card>
           <Toggle label="الإشعارات" hint="تفعيل كل إشعارات هذا الجهاز"
-            value={push} onChange={v => { setPush(v); savePrefs.mutate({ push_enabled: v }) }} />
+            value={prefs?.push_enabled ?? true}
+            onChange={v => setPref('push_enabled', v)} />
           <Divider />
-          <Toggle label="الصوت" hint="صوت COMMERCO عند وصول طلب جديد"
-            value={sound} onChange={v => { setSound(v); savePrefs.mutate({ sound_enabled: v }) }} />
+          <Toggle label="الصوت" hint="صوت التنبيه عند وصول طلب جديد"
+            value={prefs?.sound_enabled ?? true}
+            onChange={v => setPref('sound_enabled', v)} />
           <Divider />
           <Toggle label="الاهتزاز" hint="نبضة مزدوجة مميّزة للطلب الجديد"
-            value={vibration} onChange={v => { setVibration(v); savePrefs.mutate({ vibration_enabled: v }) }} />
+            value={prefs?.vibration_enabled ?? true}
+            onChange={v => setPref('vibration_enabled', v)} />
         </Card>
       )}
 
@@ -137,9 +161,16 @@ function NotificationSettings() {
 
       <Card style={{ marginTop: 16 }}>
         <Text style={styles.techTitle}>البنية التقنية</Text>
+        {/* Describes what this build actually does. It used to claim a custom
+            sound in res/raw, but assets/sounds/new_order.wav is not in the
+            repo and app.config.js drops the declaration when it is missing —
+            so the channel falls back to the system sound. */}
         <Text style={styles.tech}>
-          Android — قناة orders_v1 · IMPORTANCE_HIGH · صوت مخصص في res/raw{'\n'}
-          iOS — new-order.caf عبر APNs · interruption-level: time-sensitive
+          Android — قناة orders_v1 · IMPORTANCE_HIGH · اهتزاز مخصص{'\n'}
+          iOS — APNs · interruption-level: time-sensitive
+        </Text>
+        <Text style={styles.hint}>
+          صوت التنبيه هو صوت النظام الافتراضي في هذه النسخة.
         </Text>
         {token ? <Text style={styles.tokenNote}>الجهاز مُسجَّل للإشعارات ✓</Text> : null}
       </Card>
@@ -204,7 +235,7 @@ function SecuritySettings() {
 
 // ── Language ───────────────────────────────────────────────
 function LanguageSettings() {
-  const { locale, setLocale, t } = useI18n()
+  const { locale, setLocale, t, needsRestart } = useI18n()
 
   const pick = async (l: Locale) => {
     if (l === locale) return
@@ -219,6 +250,22 @@ function LanguageSettings() {
   return (
     <>
       <Text style={styles.section}>{t('settings.interfaceLanguage')}</Text>
+
+      {/* A one-shot Alert is missed if the merchant taps through it, and the
+          layout stays in the old direction until relaunch. This states the
+          pending change for as long as it is pending. */}
+      {needsRestart ? (
+        <Card style={{ marginBottom: 12 }}>
+          <View style={styles.rowStart}>
+            <IconGlobe size={20} color={color.br700} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowTitle}>{t('settings.restartTitle')}</Text>
+              <Text style={styles.hint}>{t('settings.restartBody')}</Text>
+            </View>
+          </View>
+        </Card>
+      ) : null}
+
       <Card style={{ padding: 0 }}>
         {LOCALES.map((l, i) => (
           <Pressable

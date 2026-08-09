@@ -6,7 +6,7 @@
 // ============================================================
 export const dynamic = 'force-dynamic'
 
-import { getMobileContext, ok } from '@/lib/mobile/context'
+import { getMobileContext, ok, ilikeTerm } from '@/lib/mobile/context'
 
 // Groups the UI exposes as one chip but that map to several DB statuses.
 const GROUPS: Record<string, string[]> = {
@@ -21,6 +21,10 @@ export async function GET(req: Request) {
   const url = new URL(req.url)
   const status = url.searchParams.get('status')
   const search = url.searchParams.get('q')?.trim()
+  // Exact customer identity, for the customer detail screen. A fuzzy `q`
+  // search on a phone number can also match an order_number that happens to
+  // contain the same digits, which is wrong for a per-customer history.
+  const phone = url.searchParams.get('phone')?.trim()
   const limit = Math.min(Number(url.searchParams.get('limit') ?? 20), 50)
   const cursor = Number(url.searchParams.get('offset') ?? 0)
 
@@ -40,10 +44,12 @@ export async function GET(req: Request) {
     const group = GROUPS[status]
     q = group ? q.in('status', group) : q.eq('status', status)
   }
+  if (phone) q = q.eq('customer_phone', phone)
   if (search) {
     // Order number or customer name/phone — matches the web list behaviour.
+    const v = ilikeTerm(search)
     q = q.or(
-      `order_number.ilike.%${search}%,customer_name.ilike.%${search}%,customer_phone.ilike.%${search}%`,
+      `order_number.ilike.${v},customer_name.ilike.${v},customer_phone.ilike.${v}`,
     )
   }
 

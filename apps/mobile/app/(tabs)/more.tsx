@@ -28,6 +28,10 @@ const GROUPS: Array<{ title: string; items: Entry[] }> = [
   {
     title: 'العملاء والتسويق', items: [
       { key: 'customers', label: 'العملاء', sub: 'قاعدة العملاء وسجل الطلبات', Icon: IconUsers, route: '/customers' },
+      // The map screen was fully built and reachable from nowhere — no entry
+      // point existed anywhere in the app. It reads the same
+      // wilayaDistribution the dashboard does, so it is real, not a stub.
+      { key: 'map', label: 'خريطة الطلبات', sub: 'توزيع الطلبات على الولايات', Icon: IconLocation, route: '/map' },
       { key: 'categories', label: 'الأقسام', sub: 'تنظيم المنتجات', Icon: IconBox, route: '/module/categories' },
       { key: 'landing', label: 'صفحات الهبوط', sub: 'صفحات المنتجات التسويقية', Icon: IconRocket, route: '/module/landing' },
       { key: 'reviews', label: 'التقييمات', sub: 'آراء العملاء', Icon: IconStar, route: '/module/reviews' },

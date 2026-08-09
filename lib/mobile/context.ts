@@ -99,3 +99,18 @@ export function ok<T>(data: T, init?: ResponseInit) {
 export function fail(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: message }, { status })
 }
+
+/**
+ * A search term, safe to interpolate into a PostgREST `or=(...)` filter.
+ *
+ * PostgREST parses `,` `(` `)` and `.` structurally, so a customer searching
+ * for "Ben, Ali" or a product code with a bracket produced a malformed filter
+ * — at best an error, at worst an extra OR branch. Double-quoting is the
+ * grammar's own escape hatch; `"` and `\` are escaped inside it. The `%`
+ * wildcards stay outside the escaping because they are LIKE syntax, not
+ * PostgREST syntax.
+ */
+export function ilikeTerm(term: string): string {
+  const escaped = term.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+  return `"%${escaped}%"`
+}

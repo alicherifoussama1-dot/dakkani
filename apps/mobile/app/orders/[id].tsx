@@ -229,18 +229,26 @@ export default function OrderDetail() {
             <Card padded={false}>
               <SectionHead Icon={History} title="سجل التغييرات" />
               <View style={styles.body}>
-                {history.map((h, i) => (
-                  <View key={h.id ?? i} style={styles.histRow}>
-                    <View style={styles.histDot} />
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={styles.histText}>
-                        {(ORDER_STATUS as any)[h.status]?.ar ?? h.status}
-                      </Text>
-                      {h.note ? <Text style={styles.histNote}>{h.note}</Text> : null}
+                {/* Columns are old_status / new_status / notes (migration
+                    010) — the same ones the web timeline reads. Reading
+                    `status` / `note` here left every row blank. */}
+                {history.map((h, i) => {
+                  const to = (ORDER_STATUS as any)[h.new_status]?.ar ?? h.new_status ?? '—'
+                  const from = h.old_status
+                    ? ((ORDER_STATUS as any)[h.old_status]?.ar ?? h.old_status)
+                    : null
+                  return (
+                    <View key={h.id ?? i} style={styles.histRow}>
+                      <View style={styles.histDot} />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.histText}>{to}</Text>
+                        {from ? <Text style={styles.histNote}>من: {from}</Text> : null}
+                        {h.notes ? <Text style={styles.histNote}>{h.notes}</Text> : null}
+                      </View>
+                      <Text style={styles.histWhen}>{relativeTime(h.created_at)}</Text>
                     </View>
-                    <Text style={styles.histWhen}>{relativeTime(h.created_at)}</Text>
-                  </View>
-                ))}
+                  )
+                })}
               </View>
             </Card>
           ) : null}

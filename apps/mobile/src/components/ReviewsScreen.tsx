@@ -50,6 +50,9 @@ export default function ReviewsScreen() {
 
   const rows: ReviewRow[] = q.data?.reviews ?? []
   const avg = q.data?.avg ?? 0
+  // The server's total, not the filtered page length — "متوسط 3 تقييم" while
+  // showing only the pending ones described the wrong population.
+  const total = q.data?.total ?? rows.length
 
   return (
     <>
@@ -72,7 +75,7 @@ export default function ReviewsScreen() {
                 <Text style={styles.avgValue}>{avg.toFixed(1)}</Text>
                 <View>
                   <Stars n={Math.round(avg)} />
-                  <Text style={styles.avgLabel}>متوسط {rows.length} تقييم</Text>
+                  <Text style={styles.avgLabel}>متوسط {total} تقييم</Text>
                 </View>
               </View>
             </Card>

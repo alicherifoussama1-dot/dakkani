@@ -27,14 +27,20 @@ export const Card: React.FC<{
   children: React.ReactNode
   style?: StyleProp<ViewStyle>
   onPress?: () => void
+  /** Row-action menu equivalent. MUST live here, not on a nested Pressable:
+   *  a child Pressable always wins the responder (Pressability returns true
+   *  from onStartShouldSetResponder unless disabled), which silently ate the
+   *  card's own onPress. */
+  onLongPress?: () => void
   padded?: boolean
   accessibilityLabel?: string
-}> = ({ children, style, onPress, padded = true, accessibilityLabel }) => {
+}> = ({ children, style, onPress, onLongPress, padded = true, accessibilityLabel }) => {
   const base: StyleProp<ViewStyle> = [styles.card, padded && { padding: cardT.pad }, style]
-  if (!onPress) return <View style={base}>{children}</View>
+  if (!onPress && !onLongPress) return <View style={base}>{children}</View>
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       // .c-card--interactive lifts 1px and deepens the shadow on hover;

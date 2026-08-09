@@ -3,7 +3,7 @@
 // push wiring and deep links. Everything boots from here.
 // ============================================================
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, I18nManager, Platform, AppState } from 'react-native'
+import { View, Text, StyleSheet, Platform, AppState } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -17,21 +17,18 @@ import { useAppFonts } from '../src/theme/fonts'
 import LaunchAnimation from '../src/components/LaunchAnimation'
 import OfflineScreen from '../src/components/OfflineScreen'
 import { I18nProvider } from '../src/i18n'
-import { initAuth, getSession, restoreActiveStore, setActiveStore, unlockWithBiometrics } from '../src/lib/auth'
+import {
+  initAuth, getSession, restoreActiveStore, setActiveStore, unlockWithBiometrics, onSessionChange,
+} from '../src/lib/auth'
 import { api } from '../src/lib/api'
 import * as Push from '../src/lib/push'
 import { OrderAlertHost, showOrderAlert } from '../src/components/OrderAlert'
 
-// Arabic-first. RTL is set NATIVELY by the expo-localization config plugin
-// (forcesRTL in app.json), which lands before the first JS frame — a JS-only
-// forceRTL() does not take effect until the app is restarted, so a fresh
-// install would otherwise render its whole first session left-to-right.
-// This stays as a fallback for Expo Go / dev clients, where the native flag
-// is not applied; the guard makes it a no-op in a real build.
-if (!I18nManager.isRTL) {
-  I18nManager.allowRTL(true)
-  I18nManager.forceRTL(true)
-}
+// Layout direction is owned ENTIRELY by src/i18n, which applies the stored
+// locale's direction on every launch. It used to be forced to RTL here too:
+// app.json sets forcesRTL:false, so this block ran on any launch that was
+// LTR — which is exactly the launch after a merchant chose French — and put
+// the app back into RTL behind their back. Do not reintroduce it.
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
@@ -146,6 +143,12 @@ export default function RootLayout() {
     return () => { cancelled = true }
   }, [])
 
+  // Sign-in and sign-out AFTER boot. Without this the layout kept the value
+  // it resolved at launch, so a merchant who signed in during this session
+  // got no push wiring, no notification-tap navigation and a frozen badge
+  // until the next cold start — and one who signed out kept all three.
+  useEffect(() => onSessionChange(signedIn => setAuthed(signedIn)), [])
+
   // ── push: only after we know who the merchant is ──
   useEffect(() => {
     if (authed !== true) return
@@ -200,27 +203,33 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <StatusBar style="dark" backgroundColor={color.page} />
-          <View style={styles.root}>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: color.page },
-                // Native push semantics; RN flips direction automatically in RTL.
-                animation: Platform.OS === 'ios' ? 'default' : 'slide_from_right',
-              }}
-            />
-            <OrderAlertHost />
-            {/* Connectivity is app-wide: a screen that cannot reach the API has
-                nothing useful to render, so the notice sits above the stack
-                rather than being repeated per screen. */}
-            {online === false && <OfflineScreen onRetry={retryConnection} />}
-            {/* Fonts gate the splash: swapping the family mid-session would
-                reflow every screen the merchant is already reading. */}
-            {(phase === 'launch' || !fontsReady) && <LaunchAnimation onDone={onLaunchDone} />}
-          </View>
-        </QueryClientProvider>
+        {/* MUST wrap the tree: the provider was imported and never rendered,
+            so every useT()/useI18n() resolved to the default context — whose
+            setLocale is a no-op. The language picker appeared to work and
+            persisted nothing. */}
+        <I18nProvider>
+          <QueryClientProvider client={queryClient}>
+            <StatusBar style="dark" backgroundColor={color.page} />
+            <View style={styles.root}>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: color.page },
+                  // Native push semantics; RN flips direction automatically in RTL.
+                  animation: Platform.OS === 'ios' ? 'default' : 'slide_from_right',
+                }}
+              />
+              <OrderAlertHost />
+              {/* Connectivity is app-wide: a screen that cannot reach the API has
+                  nothing useful to render, so the notice sits above the stack
+                  rather than being repeated per screen. */}
+              {online === false && <OfflineScreen onRetry={retryConnection} />}
+              {/* Fonts gate the splash: swapping the family mid-session would
+                  reflow every screen the merchant is already reading. */}
+              {(phase === 'launch' || !fontsReady) && <LaunchAnimation onDone={onLaunchDone} />}
+            </View>
+          </QueryClientProvider>
+        </I18nProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )

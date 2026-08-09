@@ -18,6 +18,17 @@ import Constants from 'expo-constants'
 import { api } from './api'
 
 const K_PUSH_TOKEN = 'commerco.push_token'
+/** Written by src/i18n. Read here (not imported) so this module stays free
+ *  of React context — it runs from listeners outside the tree. */
+const K_LOCALE = 'commerco.locale'
+
+/** The merchant's chosen interface language, for the push payload. It used
+ *  to be hard-coded to 'ar', so a merchant who switched to French kept
+ *  receiving Arabic notifications. */
+async function currentLocale(): Promise<string> {
+  const saved = await SecureStore.getItemAsync(K_LOCALE).catch(() => null)
+  return saved === 'fr' || saved === 'en' || saved === 'ar' ? saved : 'ar'
+}
 
 /** Android channels. Separate channels let merchants mute categories in OS
  *  settings (required by Play policy) and are the ONLY place a custom sound
@@ -145,7 +156,7 @@ export async function registerDevice(): Promise<string | null> {
     token,
     platform: Platform.OS === 'ios' ? 'ios' : 'android',
     app_version: Constants.expoConfig?.version ?? '1.0.0',
-    locale: 'ar',
+    locale: await currentLocale(),
   })
   await SecureStore.setItemAsync(K_PUSH_TOKEN, token)
   return token
@@ -163,7 +174,7 @@ export function onTokenRefresh() {
       if (previous) { try { await api.unregisterDevice(previous) } catch { /* best effort */ } }
       await api.registerDevice({
         token, platform: Platform.OS === 'ios' ? 'ios' : 'android',
-        app_version: Constants.expoConfig?.version ?? '1.0.0', locale: 'ar',
+        app_version: Constants.expoConfig?.version ?? '1.0.0', locale: await currentLocale(),
       })
       await SecureStore.setItemAsync(K_PUSH_TOKEN, token)
     } catch { /* offline — re-registered on next launch */ }
@@ -195,11 +206,27 @@ export async function getStoredToken() {
   return SecureStore.getItemAsync(K_PUSH_TOKEN).catch(() => null)
 }
 
+export interface DevicePrefs {
+  push_enabled: boolean; sound_enabled: boolean; vibration_enabled: boolean
+}
+
+/** The DB defaults, used only when this device has no row yet. */
+export const DEFAULT_PREFS: DevicePrefs = {
+  push_enabled: true, sound_enabled: true, vibration_enabled: true,
+}
+
 /** Per-device preferences, persisted server-side on device_tokens. */
-export async function updatePrefs(prefs: {
-  push_enabled?: boolean; sound_enabled?: boolean; vibration_enabled?: boolean
-}) {
+export async function updatePrefs(prefs: Partial<DevicePrefs>) {
   const token = await getStoredToken()
   if (!token) return
   await api.updateDevicePrefs({ token, ...prefs })
+}
+
+/** Read this device's persisted preferences. `null` when the device is not
+ *  registered, so the caller can tell "no row yet" from "all enabled". */
+export async function getPrefs(): Promise<DevicePrefs | null> {
+  const token = await getStoredToken()
+  if (!token) return null
+  const res = await api.devicePrefs(token)
+  return res.prefs ?? null
 }

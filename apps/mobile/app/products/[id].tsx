@@ -3,7 +3,7 @@
 // Route handles BOTH: /products/new and /products/<uuid>
 // Image upload → POST /api/upload · stock → PATCH .../stock
 // ============================================================
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   View, Text, TextInput, ScrollView, StyleSheet, Pressable, Alert, Switch,
 } from 'react-native'
@@ -21,6 +21,20 @@ import { color, primary, space, radius, text, fontFamily, control, fmtDZD } from
 
 interface Img { url: string }
 
+/** A variant row as the platform stores it. The editor NEVER rebuilds this
+ *  object: a variant carries its own price, stock key, image and option map,
+ *  and rewriting it as `{key, label}` silently dropped all of that on save.
+ *  Only the whole row is added or removed; everything else round-trips. */
+type Variant = Record<string, any> | string
+
+/** Display label for a variant of unknown shape. */
+const variantLabel = (v: Variant): string =>
+  typeof v === 'string' ? v : String(v?.label ?? v?.name ?? v?.title ?? v?.key ?? '')
+
+/** The warehouse_stock key a variant maps to — same rule the server uses. */
+const variantKey = (v: Variant): string =>
+  typeof v === 'string' ? v : String(v?.key ?? v?.sku ?? v?.label ?? v?.name ?? 'default')
+
 export default function ProductEditor() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const isNew = !id || id === 'new'
@@ -36,9 +50,13 @@ export default function ProductEditor() {
   const [description, setDescription] = useState('')
   const [descriptionAr, setDescriptionAr] = useState('')
   const [images, setImages] = useState<Img[]>([])
-  const [variants, setVariants] = useState<string[]>([])
+  const [variants, setVariants] = useState<Variant[]>([])
   const [variantDraft, setVariantDraft] = useState('')
-  const [stock, setStock] = useState('')
+  // Stock is per variant_key in warehouse_stock. Editing one number and
+  // writing it to 'default' would strand every other variant's quantity, so
+  // the editor keeps the whole map and only PATCHes the keys that changed.
+  const [stockMap, setStockMap] = useState<Record<string, string>>({})
+  const loadedStock = useRef<Record<string, string>>({})
   const [active, setActive] = useState(true)
   const [uploading, setUploading] = useState(false)
 
@@ -60,10 +78,20 @@ export default function ProductEditor() {
     setDescription(p.description ?? '')
     setDescriptionAr(p.description_ar ?? '')
     setImages(Array.isArray(p.images) ? p.images : [])
-    setVariants(Array.isArray(p.variants) ? p.variants.map((v: any) => v?.label ?? v?.key ?? String(v)) : [])
+    // Verbatim — see the Variant type. Never remapped.
+    setVariants(Array.isArray(p.variants) ? p.variants : [])
     setActive(!!p.is_active)
-    const st = (q.data as any)?.stock ?? {}
-    setStock(String(st.default ?? Object.values(st)[0] ?? ''))
+
+    // Seed a field for every stock key the server knows about, plus one for
+    // each variant that has none yet, plus 'default' for a simple product.
+    const st: Record<string, number> = (q.data as any)?.stock ?? {}
+    const keys = new Set<string>(Object.keys(st))
+    for (const v of (Array.isArray(p.variants) ? p.variants : [])) keys.add(variantKey(v))
+    if (keys.size === 0) keys.add('default')
+    const seeded: Record<string, string> = {}
+    for (const k of keys) seeded[k] = st[k] != null ? String(st[k]) : ''
+    setStockMap(seeded)
+    loadedStock.current = seeded
   }, [q.data])
 
   const save = useMutation({
@@ -77,7 +105,8 @@ export default function ProductEditor() {
         description: description.trim(),
         description_ar: descriptionAr.trim(),
         images,
-        variants: variants.map(v => ({ key: v, label: v })),
+        // Verbatim: preserves per-variant price, stock key, image and options.
+        variants,
         is_active: active,
       }
       const res = isNew
@@ -85,12 +114,18 @@ export default function ProductEditor() {
         : await api.updateProduct(String(id), body)
 
       const productId = (res as any).product?.id ?? id
-      // Stock lives in warehouse_stock, so it is a separate call.
-      if (stock !== '' && Number.isFinite(Number(stock))) {
-        try { await api.setStock(String(productId), Number(stock)) }
+
+      // Stock lives in warehouse_stock, so it is a separate call per key.
+      // Only changed keys are written — an untouched variant is never
+      // rewritten, and a blank field means "leave it alone", not zero.
+      const changed = Object.entries(stockMap).filter(([k, v]) =>
+        v !== '' && Number.isFinite(Number(v)) && v !== (loadedStock.current[k] ?? ''))
+      for (const [key, value] of changed) {
+        try { await api.setStock(String(productId), Number(value), key) }
         catch (e: any) {
           // A store with no warehouse yet → surface it, don't fail the save.
           Alert.alert('تنبيه', e?.message ?? 'تم حفظ المنتج لكن تعذّر تحديث المخزون')
+          break
         }
       }
       return productId
@@ -166,9 +201,14 @@ export default function ProductEditor() {
   })
   const addVariant = () => {
     const v = variantDraft.trim()
-    if (!v || variants.includes(v)) return
-    setVariants(prev => [...prev, v]); setVariantDraft('')
+    if (!v || variants.some(x => variantLabel(x) === v)) return
+    // A NEW variant is the only one this screen constructs; existing rows are
+    // never rebuilt.
+    setVariants(prev => [...prev, { key: v, label: v }])
+    setStockMap(prev => (v in prev ? prev : { ...prev, [v]: '' }))
+    setVariantDraft('')
   }
+  const removeVariant = (i: number) => setVariants(prev => prev.filter((_, idx) => idx !== i))
 
   const priceNum = Number(price), cmpNum = Number(comparePrice)
   const priceError = comparePrice !== '' && cmpNum > 0 && cmpNum <= priceNum
@@ -274,25 +314,40 @@ export default function ProductEditor() {
             )}
           </Card>
 
-          {/* stock */}
+          {/* stock — one field per variant_key, so a multi-variant product
+              keeps every quantity instead of collapsing onto 'default' */}
           <Text style={styles.section}>المخزون</Text>
           <Card>
-            <FormField label="الكمية المتوفرة" value={stock} onChange={setStock}
-              keyboardType="numeric" placeholder="0" />
-            <Text style={styles.hint}>يُحدَّث في warehouse_stock — نفس مصدر الموقع</Text>
+            {Object.keys(stockMap).map(key => (
+              <FormField
+                key={key}
+                label={key === 'default' ? 'الكمية المتوفرة' : `الكمية — ${key}`}
+                value={stockMap[key]}
+                onChange={v => setStockMap(prev => ({ ...prev, [key]: v }))}
+                keyboardType="numeric"
+                placeholder="0"
+              />
+            ))}
+            <Text style={styles.hint}>
+              يُحدَّث في warehouse_stock — نفس مصدر الموقع. الحقل الفارغ يُترك كما هو.
+            </Text>
           </Card>
 
           {/* variants */}
           <Text style={styles.section}>المتغيّرات</Text>
           <Card>
             <View style={styles.variantRow}>
-              {variants.map(v => (
-                <Pressable key={v} style={styles.variantChip} accessibilityRole="button" accessibilityLabel={`حذف المتغيّر ${v}`}
-                  onPress={() => setVariants(prev => prev.filter(x => x !== v))}>
-                  <Text style={styles.variantText}>{v}</Text>
-                  <X size={11} color={color.ink3} />
-                </Pressable>
-              ))}
+              {variants.map((v, i) => {
+                const label = variantLabel(v) || `#${i + 1}`
+                return (
+                  <Pressable key={`${label}-${i}`} style={styles.variantChip} accessibilityRole="button"
+                    accessibilityLabel={`حذف المتغيّر ${label}`}
+                    onPress={() => removeVariant(i)}>
+                    <Text style={styles.variantText}>{label}</Text>
+                    <X size={11} color={color.ink3} />
+                  </Pressable>
+                )
+              })}
             </View>
             <View style={styles.variantAdd}>
               <TextInput value={variantDraft} onChangeText={setVariantDraft}
@@ -316,9 +371,18 @@ export default function ProductEditor() {
             </View>
           </Card>
 
+          {/* disabled, not just dimmed: an unpressable-looking button that
+              still fires produced a server validation error instead of the
+              inline hint the merchant can act on. */}
           <Button title={isNew ? 'إنشاء المنتج' : 'حفظ التغييرات'}
             onPress={() => save.mutate()} loading={save.isPending}
-            style={{ marginTop: 20, opacity: canSave ? 1 : 0.5 }} />
+            disabled={!canSave}
+            style={{ marginTop: 20 }} />
+          {!canSave && !save.isPending ? (
+            <Text style={styles.hint}>
+              {priceError || 'أدخل اسم المنتج وسعراً أكبر من صفر.'}
+            </Text>
+          ) : null}
 
           {!isNew && (
             <Button title="إخفاء المنتج" variant="danger" style={{ marginTop: 10 }}

@@ -59,6 +59,17 @@ function interpolate(s: string, vars?: Record<string, string | number>) {
   return s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m))
 }
 
+/** Direction is a native, START-TIME decision in React Native: forceRTL only
+ *  takes effect on the next launch. Applying it here — and NOWHERE else —
+ *  is what makes the stored locale the single owner of layout direction. */
+function applyDirection(l: Locale) {
+  const rtl = isRTLLocale(l)
+  if (rtl !== I18nManager.isRTL) {
+    I18nManager.allowRTL(rtl)
+    I18nManager.forceRTL(rtl)
+  }
+}
+
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('ar')
   const [ready, setReady] = useState(false)
@@ -66,13 +77,20 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       const saved = await SecureStore.getItemAsync(K_LOCALE).catch(() => null)
-      if (saved === 'ar' || saved === 'fr' || saved === 'en') {
-        setLocaleState(saved)
-      } else {
-        // First run: follow the device, but only into a locale we ship.
-        const dev = Localization.getLocales()[0]?.languageCode
-        setLocaleState(dev === 'fr' ? 'fr' : dev === 'en' ? 'en' : 'ar')
-      }
+      const resolved: Locale =
+        saved === 'ar' || saved === 'fr' || saved === 'en'
+          ? saved
+          // First run: follow the device, but only into a locale we ship.
+          : (() => {
+              const dev = Localization.getLocales()[0]?.languageCode
+              return dev === 'fr' ? 'fr' : dev === 'en' ? 'en' : 'ar'
+            })()
+      setLocaleState(resolved)
+      // Re-assert the STORED locale's direction on every launch. app.json
+      // sets forcesRTL:false, so Arabic (the default) has to claim RTL here —
+      // and a merchant who chose French keeps LTR, instead of having it
+      // silently forced back the way an unconditional forceRTL(true) did.
+      applyDirection(resolved)
       setReady(true)
     })()
   }, [])
@@ -80,13 +98,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const setLocale = useCallback(async (l: Locale) => {
     setLocaleState(l)
     await SecureStore.setItemAsync(K_LOCALE, l).catch(() => {})
-    // Direction is a native, start-time decision. Set it now so the NEXT
-    // launch is correct; this session keeps its current direction.
-    const rtl = isRTLLocale(l)
-    if (rtl !== I18nManager.isRTL) {
-      I18nManager.allowRTL(rtl)
-      I18nManager.forceRTL(rtl)
-    }
+    applyDirection(l)
   }, [])
 
   const t = useCallback((key: string, vars?: Record<string, string | number>) => {
