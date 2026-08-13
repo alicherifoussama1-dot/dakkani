@@ -35,21 +35,38 @@ async function currentLocale(): Promise<string> {
  *  can be set on API 26+. Channels are IMMUTABLE once created — hence the
  *  _v1 suffix: changing the sound later means creating _v2. */
 export const CHANNELS = {
-  orders: 'orders_v1',
+  // _v2 because the cash-register sound was added AFTER v1 shipped. An
+  // Android channel is immutable once created: re-declaring orders_v1 with a
+  // sound is silently ignored on every device that already has it, so every
+  // existing install would have kept the default chime forever. Bumping the
+  // id is the only way the new sound reaches them.
+  orders: 'orders_v2',
   abandoned: 'abandoned_v1',
   shipping: 'shipping_v1',
   system: 'system_v1',
 } as const
 
+/** Channel ids this app has retired. Deleted on setup so a merchant does not
+ *  find two "الطلبات الجديدة" entries in Android's notification settings,
+ *  one of them dead. */
+const RETIRED_CHANNELS = ['orders_v1'] as const
+
 export async function setupAndroidChannels() {
   if (Platform.OS !== 'android') return
 
+  // Drop superseded channels first, so the merchant sees one orders channel.
+  for (const old of RETIRED_CHANNELS) {
+    await Notifications.deleteNotificationChannelAsync(old).catch(() => {})
+  }
+
   await Notifications.setNotificationChannelAsync(CHANNELS.orders, {
     name: 'الطلبات الجديدة',
-    description: 'تنبيه فوري عند وصول طلب جديد',
+    description: 'صوت الصندوق عند وصول طلب جديد',
     importance: Notifications.AndroidImportance.HIGH,
-    // Filename WITHOUT extension, resolved from res/raw (bundled via the
-    // expo-notifications plugin `sounds` array in app.json).
+    // Filename WITHOUT extension, resolved from res/raw. The asset is
+    // assets/sounds/new_order.wav, bundled by the expo-notifications plugin
+    // — app.config.js only declares it once the file exists, which is why it
+    // was silently absent before.
     sound: 'new_order',
     vibrationPattern: [0, 250, 150, 250],
     lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,

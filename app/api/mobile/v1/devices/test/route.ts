@@ -56,8 +56,10 @@ export async function POST(req: Request) {
     {
       title: '🔔 اختبار إشعارات COMMERCO',
       body: 'وصلك هذا من الخادم — الإشعارات تعمل من طرف إلى طرف.',
-      androidChannel: 'orders_v1',
-      iosSound: 'new-order.caf',
+      // Same channel and sound a real order uses — a test on a different
+      // channel would prove nothing about what the merchant will actually hear.
+      androidChannel: 'orders_v2',
+      iosSound: 'new_order.wav',
       data: { type: 'test', sent_at: new Date().toISOString() },
     },
   )

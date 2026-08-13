@@ -147,7 +147,10 @@ async function sendFcm(targets: PushTarget[], msg: PushMessage): Promise<PushRes
               notification: {
                 // channel_id is MANDATORY for the custom sound to play on API 26+.
                 // Without it Android falls back to the default channel.
-                channel_id: msg.androidChannel ?? 'orders_v1',
+                // MUST match CHANNELS.orders in apps/mobile/src/lib/push.ts.
+                // Channels are immutable, so the id carries a version: _v2 is
+                // the one created with the cash-register sound.
+                channel_id: msg.androidChannel ?? 'orders_v2',
                 sound: t.sound_enabled === false ? undefined : 'new_order',
                 notification_priority: 'PRIORITY_HIGH',
                 default_vibrate_timings: false,
@@ -205,7 +208,11 @@ function sendApnsOne(
     const payload = JSON.stringify({
       aps: {
         alert: { title: msg.title, body: msg.body },
-        sound: target.sound_enabled === false ? undefined : (msg.iosSound ?? 'new-order.caf'),
+        // The bundled asset is new_order.wav (expo-notifications copies it
+        // into the app bundle). It used to name new-order.caf, which is not a
+        // file this app has ever shipped — iOS silently fell back to the
+        // default sound.
+        sound: target.sound_enabled === false ? undefined : (msg.iosSound ?? 'new_order.wav'),
         badge: msg.badge,
         // Breaks through Focus modes. Needs NO special entitlement (unlike
         // Critical Alerts) and is appropriate for business-critical orders.
@@ -297,8 +304,8 @@ export function buildNewOrderMessage(o: {
     title: `🔔 طلب جديد ${o.orderNumber}`,
     body: lines.join('\n'),
     badge: o.badge,
-    androidChannel: 'orders_v1',
-    iosSound: 'new-order.caf',
+    androidChannel: 'orders_v2',
+    iosSound: 'new_order.wav',
     data: {
       type: 'new_order',
       order_id: o.orderId,

@@ -246,16 +246,13 @@ function NotificationSettings() {
 
       <Card style={{ marginTop: 16 }}>
         <Text style={styles.techTitle}>البنية التقنية</Text>
-        {/* Describes what this build actually does. It used to claim a custom
-            sound in res/raw, but assets/sounds/new_order.wav is not in the
-            repo and app.config.js drops the declaration when it is missing —
-            so the channel falls back to the system sound. */}
         <Text style={styles.tech}>
-          Android — قناة orders_v1 · IMPORTANCE_HIGH · اهتزاز مخصص{'\n'}
-          iOS — APNs · interruption-level: time-sensitive
+          Android — قناة orders_v2 · IMPORTANCE_HIGH · صوت مخصص في res/raw{'\n'}
+          iOS — new_order.wav عبر APNs · interruption-level: time-sensitive
         </Text>
         <Text style={styles.hint}>
-          صوت التنبيه هو صوت النظام الافتراضي في هذه النسخة.
+          صوت الطلب الجديد هو جرس صندوق النقد. القنوات في أندرويد غير قابلة
+          للتعديل بعد إنشائها، لذلك يحمل اسمها رقم إصدار.
         </Text>
         {token ? <Text style={styles.tokenNote}>الجهاز مُسجَّل للإشعارات ✓</Text> : null}
       </Card>
