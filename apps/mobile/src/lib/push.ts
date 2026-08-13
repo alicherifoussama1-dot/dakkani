@@ -202,6 +202,86 @@ export async function setBadge(count: number) {
   try { await Notifications.setBadgeCountAsync(Math.max(0, count)) } catch {}
 }
 
+// ── Diagnostics ─────────────────────────────────────────────
+// "Are notifications working?" is three separate questions, and a merchant
+// needs to be able to answer them without waiting for a real order:
+//   1. does this DEVICE ring?          → sendLocalTest()
+//   2. is this device REGISTERED?      → diagnose()
+//   3. does the SERVER reach it?       → api.testPush() (real FCM/APNs)
+// A local test proves 1 only; it never leaves the phone. Passing it while
+// the real push fails means the problem is the server or the token, not the
+// phone — which is exactly the distinction that makes this worth having.
+
+export interface PushDiagnostics {
+  /** OS-level permission: 'granted' | 'denied' | 'undetermined'. */
+  permission: string
+  /** A native FCM/APNs token is stored on this device. */
+  hasToken: boolean
+  /** The Android channel carrying the order sound exists. */
+  channelReady: boolean
+  /** Whether this build ships the custom sound (it currently does not). */
+  customSound: boolean
+}
+
+export async function diagnose(): Promise<PushDiagnostics> {
+  const perm = await Notifications.getPermissionsAsync().catch(() => null)
+  const token = await getStoredToken()
+
+  let channelReady = false
+  let customSound = false
+  if (Platform.OS === 'android') {
+    const ch = await Notifications.getNotificationChannelAsync(CHANNELS.orders).catch(() => null)
+    channelReady = !!ch
+    // The channel reports the sound it was CREATED with. Channels are
+    // immutable, so this is the truth for this install regardless of what
+    // app.json says today.
+    customSound = !!ch?.sound && ch.sound !== 'default' && ch.sound !== null
+  } else {
+    channelReady = true // iOS has no channels
+  }
+
+  return {
+    permission: perm?.status ?? 'undetermined',
+    hasToken: !!token,
+    channelReady,
+    customSound,
+  }
+}
+
+/**
+ * Fire a notification from the device itself, through the REAL orders
+ * channel — same importance, same sound, same vibration pattern a new order
+ * uses. Delayed a couple of seconds so the merchant can lock the screen and
+ * see it arrive the way it actually arrives.
+ *
+ * `type: 'test'` on purpose: the foreground handler suppresses the OS banner
+ * for `new_order` (it draws the in-app card instead), and a test that shows
+ * nothing would look like a failure. It also keeps the tap handler from
+ * navigating to an order id that does not exist.
+ */
+export async function sendLocalTest(delaySeconds = 2): Promise<boolean> {
+  const { status } = await Notifications.getPermissionsAsync()
+  if (status !== 'granted') return false
+
+  // The channel is created on registration; a merchant testing before ever
+  // registering would otherwise get a silent default-channel notification.
+  await setupAndroidChannels()
+
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: '🔔 اختبار الإشعارات',
+      body: 'إذا سمعت هذا الصوت وشعرت بالاهتزاز، فإشعارات هذا الجهاز تعمل.',
+      sound: true,
+      data: { type: 'test' },
+      ...(Platform.OS === 'android' ? { vibrate: [0, 250, 150, 250] } : {}),
+    },
+    trigger: Platform.OS === 'android'
+      ? { seconds: delaySeconds, channelId: CHANNELS.orders }
+      : { seconds: delaySeconds },
+  })
+  return true
+}
+
 export async function getStoredToken() {
   return SecureStore.getItemAsync(K_PUSH_TOKEN).catch(() => null)
 }

@@ -55,6 +55,8 @@ function NotificationSettings() {
   // had muted the sound was told it was unmuted.
   const [prefs, setPrefs] = useState<Push.DevicePrefs | null>(null)
   const [token, setToken] = useState<string | null>(null)
+  const [diag, setDiag] = useState<Push.PushDiagnostics | null>(null)
+  const [testing, setTesting] = useState<'local' | 'server' | null>(null)
 
   const settings = useQuery({ queryKey: ['settings'], queryFn: () => api.settings() })
 
@@ -69,9 +71,49 @@ function NotificationSettings() {
       const p = await Notifications.getPermissionsAsync()
       setPerm(p.status)
       setToken(await Push.getStoredToken())
+      setDiag(await Push.diagnose().catch(() => null))
       await loadPrefs()
     })()
   }, [loadPrefs])
+
+  /** Device-side test: proves this phone rings. Never leaves the device. */
+  const runLocalTest = async () => {
+    setTesting('local')
+    try {
+      const fired = await Push.sendLocalTest(2)
+      if (!fired) {
+        Alert.alert('الإشعارات غير مسموحة', 'فعّل إشعارات COMMERCO من إعدادات النظام أولاً.')
+        return
+      }
+      Alert.alert(
+        'أُرسل الاختبار',
+        'أقفل الشاشة الآن — سيصلك الإشعار خلال ثانيتين بنفس صوت واهتزاز الطلب الجديد.',
+      )
+    } catch (e: any) {
+      Alert.alert('تعذّر الاختبار', e?.message ?? 'حاول مرة أخرى')
+    } finally { setTesting(null) }
+  }
+
+  /** Full-chain test: server → FCM/APNs → this device. */
+  const runServerTest = async () => {
+    const t = token ?? await Push.getStoredToken()
+    if (!t) {
+      Alert.alert('الجهاز غير مُسجَّل', 'اضغط «تفعيل الإشعارات» أولاً حتى يُسجَّل هذا الجهاز.')
+      return
+    }
+    setTesting('server')
+    try {
+      await api.testPush(t)
+      Alert.alert(
+        'أرسل الخادم الإشعار',
+        'أغلق التطبيق أو أقفل الشاشة. وصوله يعني أن السلسلة كاملة تعمل: الخادم ← FCM ← جهازك.',
+      )
+    } catch (e: any) {
+      // The route returns a specific reason; showing it verbatim is the
+      // whole point — "لم يصل" would not tell the merchant what to fix.
+      Alert.alert('لم يصل الإشعار', e?.message ?? 'تحقّق من الاتصال')
+    } finally { setTesting(null) }
+  }
 
   const savePrefs = useMutation({
     mutationFn: (patch: Partial<Push.DevicePrefs>) => Push.updatePrefs(patch),
@@ -158,6 +200,49 @@ function NotificationSettings() {
             value={!!s.low_stock_alert} onChange={v => saveStore.mutate({ low_stock_alert: v })} />
         </Card>
       )}
+
+      {/* ── Does it actually work? ──────────────────────────────
+          Two buttons because "الإشعارات لا تعمل" has two very different
+          causes, and only separating them tells the merchant what to fix. */}
+      <Text style={styles.section}>اختبار الإشعارات</Text>
+      <Card>
+        <Text style={styles.rowTitle}>تحقّق أن الإشعارات تصلك</Text>
+        <Text style={styles.hint}>
+          الاختبار المحلي يثبت أن هاتفك يرنّ. اختبار الخادم يثبت أن الطلبات الجديدة
+          ستصلك فعلاً حتى والتطبيق مغلق.
+        </Text>
+
+        <View style={styles.testRow}>
+          <Button
+            title={testing === 'local' ? '...' : 'اختبار الصوت'}
+            variant="secondary"
+            onPress={runLocalTest}
+            disabled={testing !== null}
+            style={{ flex: 1 }}
+          />
+          <Button
+            title={testing === 'server' ? '...' : 'اختبار من الخادم'}
+            onPress={runServerTest}
+            disabled={testing !== null || !token}
+            style={{ flex: 1 }}
+          />
+        </View>
+
+        {/* Each line is a precondition that can independently be the reason
+            nothing arrives, so each is reported separately. */}
+        {diag ? (
+          <View style={styles.diag}>
+            <DiagRow label="إذن النظام" ok={diag.permission === 'granted'}
+              value={diag.permission === 'granted' ? 'مسموح' : 'غير مسموح'} />
+            <DiagRow label="تسجيل الجهاز" ok={diag.hasToken}
+              value={diag.hasToken ? 'مُسجَّل' : 'غير مُسجَّل'} />
+            <DiagRow label="قناة الطلبات" ok={diag.channelReady}
+              value={diag.channelReady ? 'جاهزة' : 'غير منشأة'} />
+            <DiagRow label="صوت مخصص" ok={diag.customSound}
+              value={diag.customSound ? 'مُفعّل' : 'صوت النظام'} />
+          </View>
+        ) : null}
+      </Card>
 
       <Card style={{ marginTop: 16 }}>
         <Text style={styles.techTitle}>البنية التقنية</Text>
@@ -313,6 +398,16 @@ const Item: React.FC<{ label: string; value: string; done?: boolean }> = ({ labe
   </View>
 )
 
+/** One precondition, with the state it is actually in. `ok=false` is not an
+ *  error for every row — "صوت النظام" is a normal, working configuration. */
+const DiagRow: React.FC<{ label: string; value: string; ok: boolean }> = ({ label, value, ok }) => (
+  <View style={styles.diagRow}>
+    <View style={[styles.diagDot, { backgroundColor: ok ? color.br600 : color.ink3 }]} />
+    <Text style={styles.diagLabel}>{label}</Text>
+    <Text style={[styles.diagValue, ok && { color: color.br700 }]}>{value}</Text>
+  </View>
+)
+
 const Divider = () => <View style={styles.divider} />
 
 const styles = StyleSheet.create({
@@ -332,6 +427,12 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: color.border, marginVertical: 8 },
   langRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 14 },
   langBorder: { borderBottomWidth: 1, borderBottomColor: color.border },
+  testRow: { flexDirection: 'row', gap: 9, marginTop: 12 },
+  diag: { marginTop: 14, borderTopWidth: 1, borderTopColor: color.border, paddingTop: 10, gap: 7 },
+  diagRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  diagDot: { width: 7, height: 7, borderRadius: 4 },
+  diagLabel: { flex: 1, fontSize: 11.5, fontFamily: fontFamily.semibold, color: color.ink2 },
+  diagValue: { fontSize: 11.5, fontFamily: fontFamily.bold, color: color.ink3 },
   techTitle: { fontSize: 12, fontFamily: fontFamily.bold, color: color.ink, marginBottom: 6 },
   tech: { fontSize: 10.5, fontFamily: fontFamily.semibold, color: color.ink3, lineHeight: 18, writingDirection: 'ltr' },
   tokenNote: { fontSize: 11, fontFamily: fontFamily.bold, color: color.br700, marginTop: 8 },

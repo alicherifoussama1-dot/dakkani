@@ -316,6 +316,12 @@ export const api = {
   updateDevicePrefs: (body: { token: string; push_enabled?: boolean; sound_enabled?: boolean; vibration_enabled?: boolean }) =>
     request<{ ok: true }>('/api/mobile/v1/devices', { method: 'PATCH', body: JSON.stringify(body) }),
 
+  /** Ask the SERVER to push to this device — the real FCM/APNs path, so a
+   *  failure here means the chain is broken, not that the phone is muted. */
+  testPush: (token: string) =>
+    request<{ ok: true; sent: boolean; platform: 'ios' | 'android' }>(
+      '/api/mobile/v1/devices/test', { method: 'POST', body: JSON.stringify({ token }) }),
+
   unregisterDevice: (token: string) =>
     request<{ ok: true }>(`/api/mobile/v1/devices?token=${encodeURIComponent(token)}`, { method: 'DELETE' }),
 

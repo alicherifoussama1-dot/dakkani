@@ -293,6 +293,57 @@ console.log('\nBOOTSTRAP — Algiers day boundary')
 }
 
 // ════════════════════════════════════════════════════════════
+console.log('\nTEST-PUSH — the "are notifications working?" button')
+{
+  const noAuth = await fetch(BASE + '/api/mobile/v1/devices/test', {
+    method: 'POST', body: JSON.stringify({ token: 'x'.repeat(30) }),
+    headers: { 'Content-Type': 'application/json' },
+  })
+  ok('without a token → 401', noAuth.status === 401, String(noAuth.status))
+
+  const bad = await call('/api/mobile/v1/devices/test', {
+    method: 'POST', body: JSON.stringify({ token: 'short' }),
+  })
+  ok('rejects a malformed token → 400', bad.status === 400, bad.body.error)
+
+  // Without the ownership check this route would push to any token a caller
+  // could guess, so this assertion is the security boundary, not a nicety.
+  const foreign = await call('/api/mobile/v1/devices/test', {
+    method: 'POST', body: JSON.stringify({ token: 'NOT-REGISTERED-' + 'z'.repeat(30) }),
+  })
+  ok('unregistered token → 404 (cannot push to arbitrary tokens)', foreign.status === 404,
+    foreign.body.error)
+
+  const TOKEN = 'TESTPUSH-PROBE-' + Date.now() + '-' + 'q'.repeat(20)
+  await call('/api/mobile/v1/devices', {
+    method: 'POST', body: JSON.stringify({ token: TOKEN, platform: 'android', locale: 'ar' }),
+  })
+
+  const sent = await call('/api/mobile/v1/devices/test', {
+    method: 'POST', body: JSON.stringify({ token: TOKEN }),
+  })
+  // The probe token is fake, so a correctly configured FCM MUST reject it.
+  // That rejection is the proof the credentials and transport work; the one
+  // answer that means the pipeline is dead is "FCM not configured".
+  const configured = !/not configured/i.test(sent.body.error ?? '')
+  ok('FCM credentials are present on this environment', configured,
+    configured ? 'configured' : 'FCM_SERVICE_ACCOUNT_JSON is MISSING — real pushes cannot be sent')
+  ok('reaches the real send path', sent.status === 502 || sent.status === 200,
+    sent.status === 200 ? 'delivered' : sent.body.error)
+
+  await call('/api/mobile/v1/devices', {
+    method: 'PATCH', body: JSON.stringify({ token: TOKEN, push_enabled: false }),
+  })
+  const muted = await call('/api/mobile/v1/devices/test', {
+    method: 'POST', body: JSON.stringify({ token: TOKEN }),
+  })
+  ok('respects push_enabled=false → 409', muted.status === 409, muted.body.error)
+
+  await call('/api/mobile/v1/devices?token=' + TOKEN, { method: 'DELETE' })
+  console.log('    ↳ probe device deleted')
+}
+
+// ════════════════════════════════════════════════════════════
 console.log('\nSTORE ISOLATION still holds after the changes')
 {
   const forged = await call('/api/mobile/v1/bootstrap', {
