@@ -168,70 +168,27 @@ export function initPlatformRuntime(): void {
     if (!result.ok && !result.skipped) throw new Error(result.error)
   })
 
-  // ── push.order: native push to the merchant's mobile devices.
-  // Runs as an isolated job so a dead push provider can never slow down or
-  // fail order creation. Reads only; touches no tracking/checkout code.
+  // ── push.order: RETRY path for the merchant's new-order alert.
+  //
+  // Delivery itself happens inline in app/api/orders/route.ts. It has to:
+  // this queue is drained by a cron that runs once a day at 03:00, so an
+  // order alert that waited for the queue reached the merchant up to 24
+  // hours late — indistinguishable from the feature not working. The order
+  // route enqueues this job only when its inline send failed.
+  //
+  // Both paths call the same notifyNewOrder() so they cannot drift apart.
   registerHandler('push.order', async (job: Job) => {
     const orderId = job.payload.orderId as string
     const storeId = (job.payload.storeId ?? job.store_id) as string
     if (!orderId || !storeId) return
 
-    const client = createServiceClient()
+    const { notifyNewOrder } = await import('@/lib/push/notify-new-order')
+    const res = await notifyNewOrder(orderId, storeId)
 
-    const { data: devices } = await client
-      .from('device_tokens')
-      .select('token,platform,sound_enabled')
-      .eq('store_id', storeId)
-      .eq('push_enabled', true)
-    if (!devices || devices.length === 0) return // nobody to notify
-
-    const { data: order } = await client
-      .from('orders')
-      .select('id,order_number,customer_name,total,wilaya_id,order_items(quantity)')
-      .eq('id', orderId)
-      .maybeSingle()
-    if (!order) return // order deleted before the job ran
-
-    // Badge = the merchant's real backlog of unhandled orders.
-    const { count: newCount } = await client
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .eq('store_id', storeId)
-      .eq('status', 'new')
-
-    let wilayaName: string | null = null
-    if (order.wilaya_id) {
-      const { data: w } = await client
-        .from('wilayas').select('name_ar,name_fr').eq('id', order.wilaya_id).maybeSingle()
-      wilayaName = (w as any)?.name_ar ?? (w as any)?.name_fr ?? null
-    }
-
-    const items = ((order as any).order_items ?? []) as Array<{ quantity: number }>
-    const itemsCount = items.reduce((n, i) => n + (i.quantity ?? 0), 0) || items.length || 1
-
-    const { sendPush, buildNewOrderMessage } = await import('@/lib/push/send')
-    const results = await sendPush(
-      devices as any[],
-      buildNewOrderMessage({
-        orderId: order.id,
-        orderNumber: order.order_number,
-        customerName: order.customer_name,
-        itemsCount,
-        total: Number(order.total ?? 0),
-        wilayaName,
-        badge: newCount ?? undefined,
-      }),
-    )
-
-    // Prune registrations the platforms told us are permanently dead.
-    const stale = results.filter(r => r.stale).map(r => r.token)
-    if (stale.length) await client.from('device_tokens').delete().in('token', stale)
-
-    // Surface a real failure so the queue retries with backoff; ignore the
-    // "not configured" case so staging without push keys stays quiet.
-    const hardFailed = results.filter(r => !r.ok && !r.stale && !/not configured/i.test(r.error ?? ''))
-    if (hardFailed.length === results.length && results.length > 0) {
-      throw new Error(`push.order: all sends failed — ${hardFailed[0].error}`)
+    // Surface a real failure so the queue retries with backoff. No registered
+    // devices, or an order deleted before the retry ran, are not failures.
+    if (!res.ok && res.reason === 'send-failed') {
+      throw new Error(`push.order: all sends failed — ${res.error}`)
     }
   })
 
@@ -241,7 +198,9 @@ export function initPlatformRuntime(): void {
   // avoiding double delivery.)
   subscribe('order.created', 'email.send')
   subscribe('order.created', 'whatsapp.send')
-  subscribe('order.created', 'push.order')
+  // push.order is deliberately NOT subscribed — the order route delivers it
+  // inline and enqueues the job only as a retry. Subscribing here would both
+  // double-notify and put first delivery back on the once-a-day cron.
 
   // ── Plugins register here (see lib/platform/plugins.ts) ──
   // Example: registerPlugin(tiktokShopPlugin)

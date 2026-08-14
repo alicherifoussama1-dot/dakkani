@@ -519,6 +519,28 @@ export async function POST(req: Request) {
       console.error('Order routing error (non-blocking):', e)
     }
 
+    // 8e-bis. PUSH — notify the merchant's phones NOW.
+    //
+    // This is deliberately NOT left to the event bus. Queue jobs are drained
+    // by a cron that runs once a day at 03:00, so a "new order" alert routed
+    // through the queue arrived up to 24 hours late — the merchant heard
+    // nothing while the order was actually sitting there. Same reasoning as
+    // the synchronous Sheets push above: time-critical delivery happens here,
+    // and the queue is the retry net rather than the delivery mechanism.
+    //
+    // Wrapped so that no push failure can ever cost the customer their order.
+    try {
+      const { notifyNewOrder } = await import('@/lib/push/notify-new-order')
+      const res = await notifyNewOrder(order.id, data.store_id)
+      if (!res.ok && res.reason === 'send-failed') {
+        console.error('[orders] push failed for', order.order_number, '—', res.error)
+        await enqueue('push.order', { orderId: order.id }, { storeId: data.store_id })
+      }
+    } catch (e) {
+      console.error('[orders] push dispatch error (non-blocking):', (e as Error).message)
+      await enqueue('push.order', { orderId: order.id }, { storeId: data.store_id }).catch(() => {})
+    }
+
     // 8f. EVENT BUS — announce the new order. Subscribers (emails, WhatsApp,
     // analytics, future plugins) run as isolated queue jobs; emit() never throws.
     await emit('order.created', {

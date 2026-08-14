@@ -286,22 +286,40 @@ export async function sendPush(targets: PushTarget[], msg: PushMessage): Promise
 export function buildNewOrderMessage(o: {
   orderId: string
   orderNumber: string
+  /** Position within the merchant's day ("today's 7th"). order_number cannot
+   *  supply this — it carries a global sequence. */
+  dailyNumber?: number
   customerName: string
+  productName?: string | null
+  variantLabel?: string | null
   itemsCount: number
   total: number
   wilayaName?: string | null
   badge?: number
 }): PushMessage {
   const money = new Intl.NumberFormat('ar-DZ').format(Math.round(o.total))
-  const lines = [
-    `العميل: ${o.customerName}`,
-    `عدد المنتجات: ${o.itemsCount}`,
-    `المجموع: ${money} دج`,
-  ]
-  if (o.wilayaName) lines.push(o.wilayaName)
+
+  // The title is the only part guaranteed to be visible in a collapsed
+  // notification, so it carries what the merchant reacts to: which order of
+  // the day this is, and what it is worth.
+  const title = o.dailyNumber
+    ? `🔔 طلب اليوم رقم ${o.dailyNumber} · ${money} دج`
+    : `🔔 طلب جديد · ${money} دج`
+
+  // customer_name is one field holding the full name as the customer typed
+  // it; there is no separate surname column to join.
+  const lines = [`الاسم: ${o.customerName}`]
+
+  if (o.productName) {
+    lines.push(o.variantLabel ? `المنتج: ${o.productName} — ${o.variantLabel}` : `المنتج: ${o.productName}`)
+  }
+  // Only worth saying when there is more than the item already named above.
+  if (o.itemsCount > 1) lines.push(`عدد المنتجات: ${o.itemsCount}`)
+  if (o.wilayaName) lines.push(`الولاية: ${o.wilayaName}`)
+  lines.push(`رقم الطلب: ${o.orderNumber}`)
 
   return {
-    title: `🔔 طلب جديد ${o.orderNumber}`,
+    title,
     body: lines.join('\n'),
     badge: o.badge,
     androidChannel: 'orders_v2',
@@ -310,7 +328,10 @@ export function buildNewOrderMessage(o: {
       type: 'new_order',
       order_id: o.orderId,
       order_number: o.orderNumber,
+      daily_number: o.dailyNumber != null ? String(o.dailyNumber) : '',
       customer: o.customerName,
+      product: o.productName ?? '',
+      variant: o.variantLabel ?? '',
       items_count: String(o.itemsCount),
       total: String(o.total),
       wilaya: o.wilayaName ?? '',
