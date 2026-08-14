@@ -236,7 +236,7 @@ export interface PushDiagnostics {
   hasToken: boolean
   /** The Android channel carrying the order sound exists. */
   channelReady: boolean
-  /** Whether this build ships the custom sound (it currently does not). */
+  /** Whether this build rings with the cash-register sound. */
   customSound: boolean
 }
 
@@ -255,6 +255,12 @@ export async function diagnose(): Promise<PushDiagnostics> {
     customSound = !!ch?.sound && ch.sound !== 'default' && ch.sound !== null
   } else {
     channelReady = true // iOS has no channels
+    // iOS gives no API to inspect a bundled sound, and unlike an Android
+    // channel there is no per-install state that could disagree with the
+    // build: the .wav is either compiled into the bundle or it is not, and
+    // this build ships it. Which sound actually plays is then APNs' call —
+    // the payload names new_order.wav.
+    customSound = true
   }
 
   return {

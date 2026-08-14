@@ -249,7 +249,11 @@ function sendApnsOne(
 }
 
 async function sendApns(targets: PushTarget[], msg: PushMessage): Promise<PushResult[]> {
-  if (!process.env.APNS_KEY_P8 || !process.env.APNS_KEY_ID || !process.env.APNS_TEAM_ID) {
+  // APNS_BUNDLE_ID belongs in this guard: it is sent as the apns-topic header,
+  // and when it is missing the header goes out as the string "undefined".
+  // Apple answers 400 BadTopic, which reads like a broken payload rather than
+  // a missing env var and sends you looking in the wrong place.
+  if (!process.env.APNS_KEY_P8 || !process.env.APNS_KEY_ID || !process.env.APNS_TEAM_ID || !process.env.APNS_BUNDLE_ID) {
     return targets.map(t => ({ token: t.token, ok: false, stale: false, error: 'APNs not configured' }))
   }
 
