@@ -10,6 +10,7 @@
 // ============================================================
 import { createSign, createPrivateKey, sign as cryptoSign } from 'crypto'
 import http2 from 'http2'
+import { isExpoPushToken, sendViaExpo } from './expo-push'
 
 const FCM_SCOPE = 'https://www.googleapis.com/auth/firebase.messaging'
 const APNS_HOST_PROD = 'api.push.apple.com'
@@ -273,17 +274,34 @@ async function sendApns(targets: PushTarget[], msg: PushMessage): Promise<PushRe
 export async function sendPush(targets: PushTarget[], msg: PushMessage): Promise<PushResult[]> {
   if (targets.length === 0) return []
 
-  const android = targets.filter(t => t.platform === 'android')
-  const ios = targets.filter(t => t.platform === 'ios')
+  // Routing is by token SHAPE first, then platform. An `ExponentPushToken[…]`
+  // belongs to Expo's push service whatever platform reported it: it is what
+  // an iPhone running Expo Go registers, and it is the only delivery path
+  // that needs no Apple Developer membership. Feeding one to APNs would fail
+  // as BadDeviceToken and get the device pruned as dead.
+  const expo = targets.filter(t => isExpoPushToken(t.token))
+  const native = targets.filter(t => !isExpoPushToken(t.token))
+  const android = native.filter(t => t.platform === 'android')
+  const ios = native.filter(t => t.platform === 'ios')
 
-  const [a, i] = await Promise.all([
-    android.length ? sendFcm(android, msg).catch((e): PushResult[] =>
-      android.map(t => ({ token: t.token, ok: false, stale: false, error: (e as Error).message }))) : [],
-    ios.length ? sendApns(ios, msg).catch((e): PushResult[] =>
-      ios.map(t => ({ token: t.token, ok: false, stale: false, error: (e as Error).message }))) : [],
+  const [a, i, e] = await Promise.all([
+    android.length ? sendFcm(android, msg).catch((err): PushResult[] =>
+      android.map(t => ({ token: t.token, ok: false, stale: false, error: (err as Error).message }))) : [],
+    ios.length ? sendApns(ios, msg).catch((err): PushResult[] =>
+      ios.map(t => ({ token: t.token, ok: false, stale: false, error: (err as Error).message }))) : [],
+    expo.length ? sendViaExpo(expo.map(t => ({
+      token: t.token,
+      title: msg.title,
+      body: msg.body,
+      data: msg.data,
+      badge: msg.badge,
+      sound: t.sound_enabled !== false,
+      channelId: msg.androidChannel,
+    }))).catch((err): PushResult[] =>
+      expo.map(t => ({ token: t.token, ok: false, stale: false, error: (err as Error).message }))) : [],
   ])
 
-  return [...a, ...i]
+  return [...a, ...i, ...e]
 }
 
 /** Build the "طلب جديد" notification exactly as specified by the merchant. */

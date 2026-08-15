@@ -139,15 +139,32 @@ export async function requestPermission(): Promise<boolean> {
   return status === 'granted'
 }
 
-/** NATIVE FCM/APNs token — NOT an Expo push token.
+/** True when this JS is running inside the Expo Go app rather than our own
+ *  build. Constants.appOwnership is 'expo' only there. */
+export const IS_EXPO_GO = Constants.appOwnership === 'expo'
+
+/** The push token this build should register.
  *
- *  The backend (lib/push/send.ts) talks to fcm.googleapis.com/v1 and to APNs
- *  over HTTP/2 directly, so it needs the raw device token. An
+ *  In our OWN builds this must be the NATIVE FCM/APNs token: the backend
+ *  talks to fcm.googleapis.com/v1 and to APNs over HTTP/2 directly. An
  *  `ExponentPushToken[...]` would be rejected by FCM with INVALID_ARGUMENT,
  *  which the server classifies as stale and prunes — silently unregistering
- *  the device for good. getDevicePushTokenAsync() returns what FCM/APNs want.
+ *  the device for good.
+ *
+ *  In Expo Go the opposite is true, and it is the whole reason iPhone works
+ *  without an Apple Developer membership. The native token there belongs to
+ *  the Expo Go container, and we hold no credential that can push to it.
+ *  getExpoPushTokenAsync() instead registers with Expo's push service, which
+ *  delivers using EXPO's Apple credentials. The server routes on the token's
+ *  shape, so both kinds coexist.
  */
-async function getNativeToken(): Promise<string | null> {
+async function getPushToken(): Promise<string | null> {
+  if (IS_EXPO_GO) {
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId
+    if (!projectId) return null // cannot address Expo's service without it
+    const t = await Notifications.getExpoPushTokenAsync({ projectId })
+    return typeof t?.data === 'string' && t.data ? t.data : null
+  }
   const t = await Notifications.getDevicePushTokenAsync()
   return typeof t?.data === 'string' && t.data ? t.data : null
 }
@@ -160,7 +177,7 @@ export async function registerDevice(): Promise<string | null> {
 
   await setupAndroidChannels()
 
-  const token = await getNativeToken()
+  const token = await getPushToken()
   if (!token) return null
 
   const previous = await SecureStore.getItemAsync(K_PUSH_TOKEN).catch(() => null)
@@ -179,8 +196,15 @@ export async function registerDevice(): Promise<string | null> {
   return token
 }
 
-/** Fires when FCM/APNs rotates the token while the app is running. */
+/** Fires when FCM/APNs rotates the token while the app is running.
+ *
+ *  Not wired in Expo Go: this listener reports the NATIVE token, which there
+ *  belongs to the Expo Go container. Registering it would replace the working
+ *  ExponentPushToken with one nothing can push to, and the merchant would go
+ *  silent. Expo's token is stable for the install, and registerDevice()
+ *  refreshes it on every launch anyway. */
 export function onTokenRefresh() {
+  if (IS_EXPO_GO) return { remove: () => {} }
   return Notifications.addPushTokenListener(async (next) => {
     // Same native-token contract as registerDevice(); ignore anything else.
     const token = typeof next?.data === 'string' ? next.data : null
@@ -257,10 +281,11 @@ export async function diagnose(): Promise<PushDiagnostics> {
     channelReady = true // iOS has no channels
     // iOS gives no API to inspect a bundled sound, and unlike an Android
     // channel there is no per-install state that could disagree with the
-    // build: the .wav is either compiled into the bundle or it is not, and
-    // this build ships it. Which sound actually plays is then APNs' call —
-    // the payload names new_order.wav.
-    customSound = true
+    // build: the .wav is either compiled into the bundle or it is not.
+    // Our own build ships it; Expo Go cannot, because the file would have to
+    // be inside Expo Go's bundle rather than ours. There it rings with the
+    // system sound — audible, just not the cash register.
+    customSound = !IS_EXPO_GO
   }
 
   return {

@@ -118,6 +118,20 @@ ok('expo-notifications installed', !!notifVer, notifVer)
 // thing that builds fine and misbehaves at runtime.
 ok('matches Expo SDK 51', /~?51\./.test(expoVer) && /0\.28\./.test(notifVer), `expo ${expoVer}`)
 
+// ── Expo Go path: iPhone without an Apple Developer membership ──
+console.log('\nExpo Go route (free iPhone path)')
+const NATIVE_ONLY = ['react-native-mmkv', 'react-native-firebase', '@react-native-firebase/app']
+const offenders = NATIVE_ONLY.filter(d => pkg.dependencies[d])
+ok('no Expo-Go-incompatible native modules', offenders.length === 0, offenders.join(', ') || 'none')
+ok('app asks Expo for a token in Expo Go', push.includes('getExpoPushTokenAsync'))
+ok('Expo Go detected via appOwnership', push.includes("appOwnership === 'expo'"))
+const expoSender = fs.readFileSync(path.join(REPO, 'lib', 'push', 'expo-push.ts'), 'utf8')
+const sendSrc = fs.readFileSync(path.join(REPO, 'lib', 'push', 'send.ts'), 'utf8')
+ok('server routes Expo tokens by shape', sendSrc.includes('isExpoPushToken'))
+// Expo's schema rejects the camelCase spelling and fails the WHOLE batch.
+ok('interruptionLevel is kebab-case', expoSender.includes("'time-sensitive'"))
+ok('DeviceNotRegistered pruned as stale', expoSender.includes('DeviceNotRegistered'))
+
 // ── secrets must not be in the app ──
 console.log('\nSecrets')
 const eas = JSON.parse(fs.readFileSync(path.join(MOBILE, 'eas.json'), 'utf8'))
