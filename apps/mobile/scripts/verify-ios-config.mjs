@@ -118,38 +118,19 @@ ok('expo-notifications installed', !!notifVer, notifVer)
 // thing that builds fine and misbehaves at runtime.
 ok('matches Expo SDK 51', /~?51\./.test(expoVer) && /0\.28\./.test(notifVer), `expo ${expoVer}`)
 
-// ── Free-signing build (Apple Personal Team, no paid membership) ──
-// Apple refuses to sign aps-environment for a free team, and Xcode fails the
-// build outright rather than dropping the capability — so the free config
-// must come out clean or it cannot be built at all.
-console.log('\nFree signing (Apple Personal Team)')
-{
-  delete require.cache[require.resolve(path.join(MOBILE, 'app.config.js'))]
-  process.env.COMMERCO_FREE_SIGNING = '1'
-  const free = require(path.join(MOBILE, 'app.config.js'))().expo
-  delete process.env.COMMERCO_FREE_SIGNING
-
-  const ent = free.ios?.entitlements ?? {}
-  const bgModes = free.ios?.infoPlist?.UIBackgroundModes ?? []
-  const freeNotif = free.plugins.find(p => Array.isArray(p) && p[0] === 'expo-notifications')
-
-  ok('no aps-environment entitlement', !('aps-environment' in ent), JSON.stringify(ent))
-  ok('plugin mode dropped', !freeNotif?.[1]?.mode)
-  ok('no remote-notification background mode', !bgModes.includes('remote-notification'), bgModes.join(', '))
-  ok('background fetch still declared', bgModes.includes('fetch'))
-  ok('sound still bundled (local notifications use it)', (freeNotif?.[1]?.sounds ?? []).length > 0)
-  ok('app icon present (standalone identity)', !!free.icon, free.icon)
-}
-
-// ── Fallback alerting for a build that cannot receive push ──
-console.log('\nNo-push fallback')
-const watch = fs.readFileSync(path.join(MOBILE, 'src', 'lib', 'order-watch.ts'), 'utf8')
-ok('watcher exists', watch.includes('checkForNewOrders'))
-ok('duplicate suppression persisted', watch.includes('SecureStore') && watch.includes('WATERMARK'))
-ok('polls only while foregrounded', watch.includes('AppState'))
-ok('local notification carries order_id for tap', watch.includes('order_id'))
-ok('android excluded from polling', watch.includes("Platform.OS === 'android'") || layout.includes("Platform.OS === 'ios'"))
-ok('activates only when push is unavailable', /if \(!token && Platform\.OS === 'ios'\)/.test(layout))
+// ── Expo Go path: iPhone without an Apple Developer membership ──
+console.log('\nExpo Go route (free iPhone path)')
+const NATIVE_ONLY = ['react-native-mmkv', 'react-native-firebase', '@react-native-firebase/app']
+const offenders = NATIVE_ONLY.filter(d => pkg.dependencies[d])
+ok('no Expo-Go-incompatible native modules', offenders.length === 0, offenders.join(', ') || 'none')
+ok('app asks Expo for a token in Expo Go', push.includes('getExpoPushTokenAsync'))
+ok('Expo Go detected via appOwnership', push.includes("appOwnership === 'expo'"))
+const expoSender = fs.readFileSync(path.join(REPO, 'lib', 'push', 'expo-push.ts'), 'utf8')
+const sendSrc = fs.readFileSync(path.join(REPO, 'lib', 'push', 'send.ts'), 'utf8')
+ok('server routes Expo tokens by shape', sendSrc.includes('isExpoPushToken'))
+// Expo's schema rejects the camelCase spelling and fails the WHOLE batch.
+ok('interruptionLevel is kebab-case', expoSender.includes("'time-sensitive'"))
+ok('DeviceNotRegistered pruned as stale', expoSender.includes('DeviceNotRegistered'))
 
 // ── secrets must not be in the app ──
 console.log('\nSecrets')

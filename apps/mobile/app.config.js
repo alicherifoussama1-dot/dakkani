@@ -71,28 +71,6 @@ module.exports = () => {
     notifPlugin[1].mode = apsMode
     config.ios = config.ios ?? {}
     config.ios.entitlements = { ...(config.ios.entitlements ?? {}), 'aps-environment': apsMode }
-
-    // ── Free-Apple-ID signing (Personal Team).
-    //
-    // Apple issues the push entitlement only to paid memberships. Leaving
-    // aps-environment in the entitlements does not degrade gracefully — Xcode
-    // refuses to sign at all, with "Provisioning profile doesn't support the
-    // Push Notifications capability", and the build simply cannot be made.
-    //
-    // So for a free build the push capability is removed outright rather than
-    // left in to fail: no entitlement, and no remote-notification background
-    // mode, since nothing will ever deliver one. The app then relies on
-    // src/lib/order-watch.ts — polling plus local notifications, neither of
-    // which needs any entitlement.
-    //
-    // Set COMMERCO_FREE_SIGNING=1 before prebuild to get this. Unset, the
-    // config stays exactly as a paid build needs it.
-    if (process.env.COMMERCO_FREE_SIGNING === '1') {
-      delete config.ios.entitlements['aps-environment']
-      delete notifPlugin[1].mode
-      const modes = config.ios.infoPlist?.UIBackgroundModes ?? []
-      config.ios.infoPlist.UIBackgroundModes = modes.filter(m => m !== 'remote-notification')
-    }
   }
 
   // ── App icons. Expo needs real files; fall back to no icon rather than a
