@@ -22,6 +22,9 @@ import {
 } from '../src/lib/auth'
 import { api } from '../src/lib/api'
 import * as Push from '../src/lib/push'
+import { startOrderWatch, stopOrderWatch } from '../src/lib/order-watch'
+// Imported for its side effect: defineTask must run before React mounts.
+import { registerBackgroundOrderCheck } from '../src/lib/order-watch-task'
 import { OrderAlertHost, showOrderAlert } from '../src/components/OrderAlert'
 
 // Layout direction is owned ENTIRELY by src/i18n, which applies the stored
@@ -153,12 +156,37 @@ export default function RootLayout() {
   useEffect(() => {
     if (authed !== true) return
     Push.configureForegroundHandler(p => showOrderAlert(p, () => goToOrder(p.orderId)))
-    Push.registerDevice().catch(() => {})
     pushSubs.current = [
       Push.onNotificationTap(goToOrder),
       Push.onTokenRefresh(),
     ]
-    return () => { pushSubs.current.forEach(s => s?.remove?.()); pushSubs.current = [] }
+
+    // Whether this build can receive push is not a guess — registerDevice()
+    // returns a token or it does not. On iOS signed with a free Apple ID it
+    // cannot: Apple issues the aps-environment entitlement only to paid
+    // memberships, so APNs is closed to the build and no token comes back.
+    //
+    // That failure is the signal. When there is no push, fall back to polling
+    // plus local notifications; when there is, stay off so the merchant never
+    // gets the same order announced twice. Nothing to configure, and it
+    // corrects itself the day a paid account starts issuing tokens.
+    let watching = false
+    Push.registerDevice()
+      .then(token => {
+        if (!token && Platform.OS === 'ios') {
+          watching = true
+          startOrderWatch()
+          registerBackgroundOrderCheck()
+        }
+      })
+      .catch(() => {
+        if (Platform.OS === 'ios') { watching = true; startOrderWatch() }
+      })
+
+    return () => {
+      pushSubs.current.forEach(s => s?.remove?.()); pushSubs.current = []
+      if (watching) stopOrderWatch()
+    }
   }, [authed, goToOrder])
 
   // ── deep links while running: commerco://orders/<uuid> ──

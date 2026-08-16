@@ -24,7 +24,8 @@
       },
       "infoPlist": {
         "UIBackgroundModes": [
-          "remote-notification"
+          "remote-notification",
+          "fetch"
         ],
         "NSFaceIDUsageDescription": "استخدم بصمة الوجه أو الإصبع لفتح تطبيق COMMERCO بأمان.",
         "NSPhotoLibraryUsageDescription": "اختر صور منتجاتك من معرض الصور.",
