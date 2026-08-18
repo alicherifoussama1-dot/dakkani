@@ -61,7 +61,6 @@ export default function Customers() {
       ) : (
         <FlashList<CustomerRow>
           data={rows}
-          estimatedItemSize={96}
           keyExtractor={c => c.phone}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.br500} />}

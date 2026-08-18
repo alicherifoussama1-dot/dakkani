@@ -153,7 +153,6 @@ export default function Products() {
       ) : (
         <FlashList<ProductRow>
           data={rows}
-          estimatedItemSize={96}
           keyExtractor={p => p.id}
           contentContainerStyle={{ paddingHorizontal: space[4], paddingBottom: insets.bottom + 96 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary[600]} />}

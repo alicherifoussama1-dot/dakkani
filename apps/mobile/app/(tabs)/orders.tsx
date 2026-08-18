@@ -123,7 +123,6 @@ export default function Orders() {
       ) : (
         <FlashList<OrderRow>
           data={rows}
-          estimatedItemSize={116}
           keyExtractor={o => o.id}
           contentContainerStyle={{ paddingHorizontal: space[4], paddingBottom: insets.bottom + 96 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary[600]} />}

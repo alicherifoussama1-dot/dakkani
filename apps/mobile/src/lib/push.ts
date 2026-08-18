@@ -95,9 +95,9 @@ export function configureForegroundHandler(showInApp: (data: NewOrderPayload) =>
         showInApp(parsePayload(data))
         // Unawaited: rejects on devices without a haptic engine.
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-        return { shouldShowAlert: false, shouldPlaySound: true, shouldSetBadge: true }
+        return { shouldShowBanner: false, shouldShowList: false, shouldShowAlert: false, shouldPlaySound: true, shouldSetBadge: true }
       }
-      return { shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: true }
+      return { shouldShowBanner: true, shouldShowList: true, shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: true }
     },
   })
 }
@@ -324,8 +324,8 @@ export async function sendLocalTest(delaySeconds = 2): Promise<boolean> {
       ...(Platform.OS === 'android' ? { vibrate: [0, 250, 150, 250] } : {}),
     },
     trigger: Platform.OS === 'android'
-      ? { seconds: delaySeconds, channelId: CHANNELS.orders }
-      : { seconds: delaySeconds },
+      ? { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: delaySeconds, channelId: CHANNELS.orders }
+      : { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: delaySeconds },
   })
   return true
 }

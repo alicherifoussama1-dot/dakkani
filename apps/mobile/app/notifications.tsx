@@ -73,7 +73,6 @@ export default function Notifications() {
       ) : (
         <FlashList
           data={rows}
-          estimatedItemSize={92}
           keyExtractor={(n: any) => n.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={color.br500} />}

@@ -17,7 +17,7 @@ import { useRouter } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
-  ShoppingBag, ShoppingCart, CheckCircle2, Facebook, Globe, Music2, Bell, User,
+  ShoppingBag, ShoppingCart, CheckCircle2, ThumbsUp, Globe, Music2, Bell, User,
 } from 'lucide-react-native'
 import { api, type DatePreset, type Analytics } from '../../src/lib/api'
 import { Chips, ListSkeleton, ErrorState } from '../../src/components/ui'
@@ -78,7 +78,7 @@ export default function Dashboard() {
       { key: 'totalOrders',     title: 'إجمالي الطلبات',   ...at('totalOrders'),     Icon: ShoppingBag,  iconBg: web.blue50,    iconFg: web.blue600,    stroke: web.brand },
       { key: 'abandonedOrders', title: 'الطلبات المتروكة', ...at('abandonedOrders'), Icon: ShoppingCart, iconBg: web.orange50,  iconFg: web.orange600,  stroke: web.amber },
       { key: 'normalOrders',    title: 'الطلبات العادية',  ...at('normalOrders'),    Icon: CheckCircle2, iconBg: web.emerald50, iconFg: web.emerald600, stroke: web.green },
-      { key: 'facebookOrders',  title: 'طلبات فيسبوك',     ...at('facebookOrders'),  Icon: Facebook,     iconBg: web.blue100,   iconFg: web.facebook,   stroke: web.facebook },
+      { key: 'facebookOrders',  title: 'طلبات فيسبوك',     ...at('facebookOrders'),  Icon: ThumbsUp,     iconBg: web.blue100,   iconFg: web.facebook,   stroke: web.facebook },
       { key: 'tiktokOrders',    title: 'طلبات تيك توك',    ...at('tiktokOrders'),    Icon: Music2,       iconBg: web.gray100,   iconFg: web.gray900,    stroke: web.gray900 },
       { key: 'otherOrders',     title: 'مصادر أخرى',       ...at('otherOrders'),     Icon: Globe,        iconBg: web.gray50,    iconFg: web.gray600,    stroke: web.slate },
     ]
