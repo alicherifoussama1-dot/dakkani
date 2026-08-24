@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { ShoppingCart, Star, Loader2, ArrowRight } from 'lucide-react'
 import { formatDZD } from '@/lib/utils/format'
 import { useCart } from '@/lib/store/cart'
+import { cdnImage } from '@/lib/image-url'
 
 export default function DiscoverStorePage() {
   const { storeSlug } = useParams<{ storeSlug: string }>()
@@ -53,7 +54,7 @@ export default function DiscoverStorePage() {
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
           <Link href="/discover" style={{color:'var(--color-text-muted)'}}><ArrowRight size={20}/></Link>
           {store.logo_url
-            ? <img src={store.logo_url} alt={store.name} className="w-12 h-12 rounded-xl object-cover"/>
+            ? <img src={cdnImage(store.logo_url, 128)} alt={store.name} className="w-12 h-12 rounded-xl object-cover"/>
             : <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl font-black" style={{background:'var(--color-accent)'}}>{store.name[0]}</div>
           }
           <div>
@@ -90,7 +91,7 @@ export default function DiscoverStorePage() {
                   style={{borderColor:'var(--color-border)'}}>
                   <div className="aspect-square" style={{background:'var(--color-bg-soft)'}}>
                     {img
-                      ? <img src={img} alt={p.name_ar??p.name} className="w-full h-full object-cover"/>
+                      ? <img src={cdnImage(img, 640)} alt={p.name_ar??p.name} className="w-full h-full object-cover"/>
                       : <div className="w-full h-full flex items-center justify-center text-4xl">{(p.name_ar??p.name)[0]}</div>
                     }
                   </div>

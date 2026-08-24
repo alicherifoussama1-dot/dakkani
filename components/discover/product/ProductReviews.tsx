@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Star, BadgeCheck, ChevronDown } from 'lucide-react'
 import { formatDateShort } from '@/lib/utils/format'
+import { cdnImage } from '@/lib/image-url'
 
 export interface Review {
   id: string
@@ -158,7 +159,7 @@ export default function ProductReviews({ reviews, averageRating }: Props) {
                 {!!r.images?.length && (
                   <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     {r.images.map((img, i) => (
-                      <img key={i} src={img.url} alt="" style={{ width: 64, height: 64, borderRadius: 'var(--pt-radius-sm)', objectFit: 'cover' }} />
+                      <img key={i} src={cdnImage(img.url, 128)} alt="" style={{ width: 64, height: 64, borderRadius: 'var(--pt-radius-sm)', objectFit: 'cover' }} />
                     ))}
                   </div>
                 )}

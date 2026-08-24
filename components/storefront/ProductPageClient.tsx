@@ -14,6 +14,7 @@ import { getProductTheme, themeToCSSVars, normalizeProductOrder } from '@/lib/pr
 import ProductVariants, { type VariantGroup } from '@/components/discover/product/ProductVariants'
 import '@/components/discover/product/product-theme.css'
 import { translateStorefront, type Locale } from '@/lib/utils/translations'
+import { cdnImage } from '@/lib/image-url'
 
 interface Props {
   product: any; store: any; wilayas: any[]
@@ -485,7 +486,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
       {/* Lightbox */}
       {lightbox && images[activeImg]?.url && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: 'rgba(20,18,15,0.92)' }} onClick={() => setLightbox(false)}>
-          <img src={images[activeImg].url} alt={displayName} className="max-w-full max-h-full object-contain rounded-2xl" loading="lazy" decoding="async" onClick={e => e.stopPropagation()} />
+          <img src={cdnImage(images[activeImg].url, 1920)} alt={displayName} className="max-w-full max-h-full object-contain rounded-2xl" loading="lazy" decoding="async" onClick={e => e.stopPropagation()} />
           <button onClick={() => setLightbox(false)} aria-label={lang === 'ar' ? 'إغلاق' : 'Close'}
             className="absolute top-4 right-4 w-11 h-11 rounded-full flex items-center justify-center text-white" style={{ background: 'rgba(255,255,255,0.14)' }}>
             <X className="w-5 h-5" />

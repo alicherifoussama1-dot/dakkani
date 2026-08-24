@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ShoppingCart, Minus, Plus, Trash2, ArrowRight, ChevronRight } from 'lucide-react'
 import { useCart } from '@/lib/store/cart'
 import { formatDZD } from '@/lib/utils/format'
+import { cdnImage } from '@/lib/image-url'
 
 export default function CartPage() {
   const router = useRouter()
@@ -54,7 +55,7 @@ export default function CartPage() {
               {/* Image */}
               <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0" style={{background:'var(--color-bg-soft)'}}>
                 {item.image
-                  ? <img src={item.image} alt={item.name} className="w-full h-full object-cover"/>
+                  ? <img src={cdnImage(item.image, 128)} alt={item.name} className="w-full h-full object-cover"/>
                   : <div className="w-full h-full flex items-center justify-center text-xl">{item.name[0]}</div>
                 }
               </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Truck, Clock, ShieldCheck } from 'lucide-react'
+import { cdnImage } from '@/lib/image-url'
 
 interface Spec { label: string; value: string }
 
@@ -57,7 +58,7 @@ export default function ProductDescription({ description, descriptionImageUrl, s
             {descriptionImageUrl && (
               <div>
                 <img
-                  src={descriptionImageUrl}
+                  src={cdnImage(descriptionImageUrl, 1080)}
                   alt="وصف المنتج"
                   style={{ width: '100%', borderRadius: 'var(--pt-radius-md)', objectFit: 'contain', display: 'block' }}
                 />

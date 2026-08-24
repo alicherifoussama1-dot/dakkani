@@ -10,6 +10,7 @@ import StorefrontLayout from '@/components/storefront/StorefrontLayout'
 import ThankYouClient from '@/components/storefront/ThankYouClient'
 import { resolveThankYouConfig } from '@/lib/utils/whatsapp'
 import { ZR_OFFICES } from '@/lib/delivery/zr-offices'
+import { cdnImage } from '@/lib/image-url'
 
 interface Props {
   params: { storeSlug: string }
@@ -386,7 +387,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Pr
               <div key={item.id} className="flex gap-3 text-sm">
                 {item.image_url ? (
                   <img
-                    src={item.image_url}
+                    src={cdnImage(item.image_url, 128)}
                     alt=""
                     className="w-12 h-12 rounded-xl object-cover border border-gray-100 flex-shrink-0"
                   />

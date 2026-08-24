@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { Play, ZoomIn, X } from 'lucide-react'
+import { cdnImage } from '@/lib/image-url'
 
 interface MediaItem { type: 'image' | 'video'; url: string }
 
@@ -87,7 +88,7 @@ export default function ProductGallery({ images, videoUrl, alt }: Props) {
           />
         ) : (
           <img
-            src={current?.url}
+            src={cdnImage(current?.url, 1080)}
             alt={alt}
             style={{
               width: '100%', height: '100%', objectFit: 'cover',
@@ -151,7 +152,7 @@ export default function ProductGallery({ images, videoUrl, alt }: Props) {
                   <Play size={18} style={{ color: 'var(--pt-accent)' }} />
                 </div>
               ) : (
-                <img src={m.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={cdnImage(m.url, 96)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               )}
             </button>
           ))}
@@ -180,7 +181,7 @@ export default function ProductGallery({ images, videoUrl, alt }: Props) {
             <X size={20} />
           </button>
           <img
-            src={current.url}
+            src={cdnImage(current.url, 1920)}
             alt={alt}
             onClick={e => e.stopPropagation()}
             style={{

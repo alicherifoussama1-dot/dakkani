@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react'
+import { cdnImage } from '@/lib/image-url'
 
 interface Props { images: { url: string }[]; productName: string }
 
@@ -24,7 +25,7 @@ export default function ProductGallery({ images, productName }: Props) {
       {/* Main image */}
       <div className="relative aspect-square bg-white rounded-2xl border border-gray-100 overflow-hidden group">
         <img
-          src={images[active].url}
+          src={cdnImage(images[active].url, 1080)}
           alt={productName}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
@@ -81,7 +82,7 @@ export default function ProductGallery({ images, productName }: Props) {
                   decoding keeps the main image's paint off the decode queue.
                   Purely loading hints — the markup and visuals are unchanged. */}
               <img
-                src={img.url}
+                src={cdnImage(img.url, 96)}
                 alt=""
                 loading="lazy"
                 decoding="async"
@@ -99,7 +100,7 @@ export default function ProductGallery({ images, productName }: Props) {
           onClick={() => setZoom(false)}
         >
           <img
-            src={images[active].url}
+            src={cdnImage(images[active].url, 1920)}
             alt={productName}
             decoding="async"
             className="max-w-full max-h-full object-contain rounded-2xl"

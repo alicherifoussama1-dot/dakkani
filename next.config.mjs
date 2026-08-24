@@ -91,6 +91,19 @@ const nextConfig = {
   swcMinify: true,
   transpilePackages: ['framer-motion'],
   images: {
+    // A CUSTOM loader, not Vercel's optimizer. Two reasons, both hard:
+    //   · the Vercel Image Optimization quota is exhausted (402), so
+    //     /_next/image returns nothing usable;
+    //   · pointing <Image> straight at Supabase made every visitor a direct
+    //     origin fetch, which drained the project's cached-egress quota and
+    //     restricted the entire Supabase project, auth included.
+    // ./lib/image-loader routes Supabase images through /api/img, which is
+    // CDN-cached and resizes with sharp — one origin fetch per (image,width)
+    // for the whole internet. Non-Supabase sources pass through untouched.
+    loader: "custom",
+    loaderFile: "./lib/image-loader.ts",
+    // Kept even with a custom loader: it still documents which hosts the
+    // app may source images from — the contract /api/img enforces server-side.
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co" },
       { protocol: "https", hostname: "*.supabase.in" },

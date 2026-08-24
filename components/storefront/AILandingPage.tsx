@@ -14,6 +14,7 @@ import { getProductTheme, themeToCSSVars } from '@/lib/product-themes'
 import ProductOrderForm from './ProductOrderForm'
 import { FadeUp, StaggerContainer, StaggerItem } from '@/components/ui/animations'
 import '@/components/discover/product/product-theme.css'
+import { cdnImage } from '@/lib/image-url'
 
 // ── Types ────────────────────────────────────────────────────
 interface HowToStep { step: number; icon: string; title: string; text: string }
@@ -127,7 +128,7 @@ function ImageLightbox({ images, startIndex, onClose }: { images: string[]; star
         <X size={24} />
       </button>
       <img
-        src={images[idx]}
+        src={cdnImage(images[idx], 1080)}
         alt=""
         className="max-h-[85vh] max-w-[90vw] object-contain rounded-xl"
         onClick={e => e.stopPropagation()}
@@ -171,7 +172,7 @@ function GallerySection({ images, isPosterTheme }: { images: AIImage[]; isPoster
                 style={{ background: 'var(--pt-surface-soft)' }}
               >
                 <img
-                  src={img.url}
+                  src={cdnImage(img.url, 1080)}
                   alt={img.label_ar || ""}
                   className="w-full h-auto block"
                 />
@@ -211,7 +212,7 @@ function GallerySection({ images, isPosterTheme }: { images: AIImage[]; isPoster
               className="relative group aspect-square overflow-hidden focus:outline-none"
               style={{ borderRadius: 'var(--pt-radius-lg)', background: 'var(--pt-surface-soft)' }}
             >
-              <img src={img.url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              <img src={cdnImage(img.url, 640)} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,.35)' }}>
                 <ZoomIn size={28} color="#fff" />
               </div>
@@ -452,7 +453,7 @@ export default function AILandingPage({ page, product, store, wilayas }: Props) 
             >
               {heroImage ? (
                 <img
-                  src={heroImage}
+                  src={cdnImage(heroImage, 1080)}
                   alt={product.name_ar ?? product.name}
                   className="w-full h-full object-cover"
                 />
@@ -573,7 +574,7 @@ export default function AILandingPage({ page, product, store, wilayas }: Props) 
                 }}
               >
                 <img
-                  src={img.url}
+                  src={cdnImage(img.url, 1080)}
                   alt="إنفوغرافيك المنتج"
                   className="w-full h-auto block"
                   style={{ display: 'block' }}
@@ -823,7 +824,7 @@ export default function AILandingPage({ page, product, store, wilayas }: Props) 
         <div className="flex items-center gap-3">
           {heroImage && (
             <img
-              src={heroImage}
+              src={cdnImage(heroImage, 1080)}
               alt=""
               className="w-11 h-11 object-cover rounded-lg shrink-0"
               style={{ border: '1px solid var(--pt-border)' }}

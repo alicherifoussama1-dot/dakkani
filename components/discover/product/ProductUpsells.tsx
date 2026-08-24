@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { formatDZD } from '@/lib/utils/format'
+import { cdnImage } from '@/lib/image-url'
 
 export interface UpsellProduct {
   id: string
@@ -50,7 +51,7 @@ export default function ProductUpsells({ title, subtitle, products, storeSlug }:
                 fontSize: 36, overflow: 'hidden',
               }}>
                 {p.image ? (
-                  <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={cdnImage(p.image, 384)} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : '📦'}
               </div>
               <div style={{ padding: 12 }}>

@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { cdnImage } from '@/lib/image-url'
 
 interface Category { id: string; name: string; name_ar?: string; image_url?: string; slug: string }
 
@@ -38,7 +39,7 @@ export default function CategoriesBento({ categories, storeSlug }: { categories:
               >
                 {cat.image_url ? (
                   <div className="absolute inset-0">
-                    <img src={cat.image_url} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                    <img src={cdnImage(cat.image_url, 640)} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                   </div>
                 ) : (

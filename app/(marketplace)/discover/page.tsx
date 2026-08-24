@@ -9,6 +9,7 @@ import WilayaSelector from '@/components/ui/WilayaSelector'
 import { SkeletonGrid } from '@/components/ui/SkeletonCard'
 import { formatDZD } from '@/lib/utils/format'
 import { useDebounce } from '@/hooks/useDebounce'
+import { cdnImage } from '@/lib/image-url'
 
 const CATEGORIES = [
   {label:'الكل',slug:''},{label:'🧕 حجابات',slug:'hijab'},{label:'👗 ملابس',slug:'clothing'},
@@ -114,7 +115,7 @@ export default function DiscoverPage() {
                   style={{borderColor:'var(--color-border)'}}>
                   <div className="aspect-square overflow-hidden" style={{background:'var(--color-bg-soft)'}}>
                     {img
-                      ?<img src={img} alt={p.name_ar??p.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
+                      ?<img src={cdnImage(img, 640)} alt={p.name_ar??p.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
                       :<div className="w-full h-full flex items-center justify-center text-4xl">{(p.name_ar??p.name)?.[0]??'📦'}</div>
                     }
                     {hasDisc&&<span className="absolute top-2 right-2 badge badge-red text-[10px]">-{discPct}%</span>}

@@ -6,6 +6,7 @@ import type { Metadata } from 'next'
 import CheckoutForm from '@/components/storefront/CheckoutForm'
 import { applyStoreDeliveryPrices } from '@/lib/delivery/pricing'
 import { getProductTracking } from '@/lib/tracking/service'
+import { cdnImage } from '@/lib/image-url'
 
 interface Props {
   params: { storeSlug: string }
@@ -98,7 +99,7 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
       <header className={headerClass}>
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
           {store.logo_url ? (
-            <img src={store.logo_url} alt={store.name} className="w-9 h-9 rounded-xl object-cover" />
+            <img src={cdnImage(store.logo_url, 96)} alt={store.name} className="w-9 h-9 rounded-xl object-cover" />
           ) : (
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-black ${logoBgClass}`}>
               {store.name[0]}
