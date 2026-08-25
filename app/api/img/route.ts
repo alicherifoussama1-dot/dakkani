@@ -30,10 +30,13 @@ import { NextRequest, NextResponse } from 'next/server'
 // this way, a missing binary costs us the resize and nothing else: the
 // proxy still serves the image and still shields Supabase.
 let sharpMod: (typeof import('sharp'))['default'] | null | undefined
+// Kept so the reason a deployment fell back to passthrough is visible from
+// outside, without a log drain.
+let sharpErr = ''
 async function getSharp() {
   if (sharpMod !== undefined) return sharpMod
   try { sharpMod = (await import('sharp')).default }
-  catch { sharpMod = null }
+  catch (e) { sharpMod = null; sharpErr = (e as Error)?.message ?? String(e) }
   return sharpMod
 }
 
@@ -132,6 +135,7 @@ export async function GET(req: NextRequest) {
         'Content-Type': type || 'application/octet-stream',
         'Cache-Control': YEAR,
         'X-Img-Proxy': 'passthrough;no-sharp',
+        'X-Img-Sharp-Error': sharpErr.replace(/[^ -~]/g, ' ').slice(0, 300),
       },
     })
   }
