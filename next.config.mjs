@@ -110,6 +110,18 @@ const nextConfig = {
     ],
   },
   experimental: {
+    // sharp is a native module split across two packages: the binding
+    // (@img/sharp-linux-x64) and the libvips shared library it dlopens
+    // (@img/sharp-libvips-linux-x64). Next's file tracing picked up the
+    // binding but not the .so, so the deployed route failed at import with
+    // `libvips-cpp.so.8.18.3: cannot open shared object file` and silently
+    // fell back to serving unresized originals. Force both into the lambda.
+    outputFileTracingIncludes: {
+      '/api/img': [
+        './node_modules/@img/sharp-linux-x64/**/*',
+        './node_modules/@img/sharp-libvips-linux-x64/**/*',
+      ],
+    },
     serverComponentsExternalPackages: ["jsbarcode", "bwip-js", "sharp"],
     optimizePackageImports: ["framer-motion", "lucide-react", "recharts"],
   },
