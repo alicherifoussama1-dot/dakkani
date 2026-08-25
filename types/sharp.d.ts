@@ -7,6 +7,6 @@
 // this re-points the module at the declarations it already ships, by a
 // literal path that bypasses the exports map. Full typings, no dep change.
 declare module 'sharp' {
-  const sharp: typeof import('../node_modules/sharp/lib/index')
+  const sharp: (typeof import('../node_modules/sharp/lib/index'))['default']
   export default sharp
 }

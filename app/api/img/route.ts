@@ -22,7 +22,20 @@
 // render time only — product rows stay byte-identical.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import sharp from 'sharp'
+
+// sharp is loaded LAZILY, inside the handler, and never at module scope.
+// A top-level `import sharp` that fails to resolve its native binary in the
+// lambda takes the whole route down with a 500 before a single line of our
+// code runs — which is exactly what happened on the first deploy. Loaded
+// this way, a missing binary costs us the resize and nothing else: the
+// proxy still serves the image and still shields Supabase.
+let sharpMod: (typeof import('sharp'))['default'] | null | undefined
+async function getSharp() {
+  if (sharpMod !== undefined) return sharpMod
+  try { sharpMod = (await import('sharp')).default }
+  catch { sharpMod = null }
+  return sharpMod
+}
 
 // sharp is native; the edge runtime cannot load it.
 export const runtime = 'nodejs'
@@ -109,8 +122,22 @@ export async function GET(req: NextRequest) {
     })
   }
 
+  const sharpFn = await getSharp()
+  if (!sharpFn) {
+    // No native binary in this runtime. Serve the original, still cached for
+    // a year: unresized bytes are correct bytes, and one origin fetch per
+    // image is the whole point of this route.
+    return new NextResponse(bytes, {
+      headers: {
+        'Content-Type': type || 'application/octet-stream',
+        'Cache-Control': YEAR,
+        'X-Img-Proxy': 'passthrough;no-sharp',
+      },
+    })
+  }
+
   try {
-    let img = sharp(bytes, { failOn: 'none' }).rotate() // honour EXIF orientation
+    let img = sharpFn(bytes, { failOn: 'none' }).rotate() // honour EXIF orientation
     if (width) img = img.resize({ width, withoutEnlargement: true })
     const out = new Uint8Array(await img.webp({ quality }).toBuffer())
     return new NextResponse(out, {
