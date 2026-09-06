@@ -263,6 +263,26 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const watchedBaladia = useWatch({ control, name: 'baladia' })
   const icFiredRef = useRef(false)
   const draftIdRef = useRef<string | null>(null)
+
+  // Identity of THIS checkout attempt. Generated once at mount and never
+  // regenerated, so every retry of the same attempt carries the same value
+  // and the server resolves them all to one order. A genuinely new checkout
+  // is a new mount, hence a new token and a new order.
+  //
+  // Deliberately not draft_id: that arrives asynchronously from the abandoned
+  // -checkout call and may never arrive at all (call fails, or the feature is
+  // off). A token that changes mid-attempt would let a retry through as a
+  // second order, which is the exact bug being fixed.
+  const checkoutTokenRef = useRef<string>(
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `ck_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`,
+  )
+
+  // Synchronous re-entry lock. submitState is React state, so the button's
+  // disabled attribute only applies after a re-render — a fast double-click
+  // can call onSubmit twice before that. A ref is set immediately.
+  const submitLockRef = useRef(false)
   const completingRef = useRef(false)
   // PER-PRODUCT toggle («تحتسب») wins; store setting is the legacy fallback.
   const abandonedTrack = typeof (product as any)?.abandoned_count_conversion === 'boolean'
@@ -431,6 +451,11 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
 
   // ── Submit handler ────────────────────────────────────────────
   const onSubmit = async (data: FormData) => {
+    // Synchronous, before any await — the only guard a double-click cannot
+    // outrun. Released in the error branch so a genuine retry stays possible;
+    // on success the form unmounts into the confirmation view.
+    if (submitLockRef.current) return
+    submitLockRef.current = true
     setSubmitState('submitting')
     setServerError('')
     completingRef.current = true // suppress the abandonment beacon while submitting
@@ -443,7 +468,17 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
 
     try {
       // 1. Create order
+      //
+      // 45s abort. Without one the request hangs on a weak mobile connection
+      // until the browser gives up minutes later; the customer concludes it
+      // failed and submits again. Measured, that retry is the single largest
+      // source of duplicates (30 of 65 land 90s-5min after the first). The
+      // timeout bounds the wait, and checkout_token makes the retry harmless
+      // even when the first request did succeed server-side.
+      const abort = new AbortController()
+      const abortTimer = setTimeout(() => abort.abort(), 45_000)
       const orderRes = await fetch('/api/orders', {
+        signal: abort.signal,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -466,12 +501,15 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           coupon_code: data.coupon_code,
           notes: data.notes,
           source: 'storefront',
+          checkout_token: checkoutTokenRef.current,
           utm_source: new URLSearchParams(window.location.search).get('utm_source') ?? undefined,
           utm_medium: new URLSearchParams(window.location.search).get('utm_medium') ?? undefined,
           utm_campaign: new URLSearchParams(window.location.search).get('utm_campaign') ?? undefined,
           items: product ? [{ product_id: product.id, quantity: data.quantity, variant_key: initialVariant }] : [],
         }),
       })
+
+      clearTimeout(abortTimer) // response in — stop the abort from firing later
 
       const orderData = await orderRes.json().catch(() => ({}))
       if (!orderRes.ok || !orderData.success) {
@@ -563,6 +601,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       console.error(err)
       completingRef.current = false // failed — abandonment tracking resumes
       setServerError((err as Error)?.message ?? '')
+      submitLockRef.current = false // failed — allow a real retry
       setSubmitState('error')
     }
   }

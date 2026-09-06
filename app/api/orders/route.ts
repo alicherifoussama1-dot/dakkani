@@ -37,6 +37,10 @@ const orderSchema = z.object({
   coupon_code: z.string().optional(),
   notes: z.string().optional(),
   source: z.string().optional(),
+  // Per-checkout-attempt id from the client, stable across retries of the
+  // SAME attempt. Optional: older cached bundles and the mobile app omit it,
+  // and those requests must keep working exactly as before.
+  checkout_token: z.string().min(8).max(128).optional(),
   utm_source: z.string().optional(),
   utm_medium: z.string().optional(),
   utm_campaign: z.string().optional(),
@@ -199,6 +203,37 @@ export async function POST(req: Request) {
     // blocks a genuine new order: a different product, quantity, total, or a gap
     // beyond 90s all pass through. The separate 24h "duplicate" STATUS flag below
     // is unchanged (that one still creates the order, for merchant review).
+    // 4a. Idempotency by TOKEN — deterministic, and checked first.
+    //
+    // The token identifies one checkout attempt, so this cannot mistake a
+    // genuine second order for a retry the way a phone+total heuristic can.
+    // This is the FAST path only: it closes the common case without touching
+    // the error path. The authority is the unique index (migration 033),
+    // enforced at INSERT below, because two concurrent requests can both
+    // reach this SELECT and both find nothing.
+    if (data.checkout_token) {
+      const { data: tokenHit } = await supabase
+        .from('orders')
+        .select('id, order_number, total')
+        .eq('store_id', data.store_id)
+        .eq('checkout_token', data.checkout_token)
+        .neq('status', 'abandoned')
+        .limit(1)
+        .maybeSingle()
+      if (tokenHit) {
+        console.warn(`[orders] idempotent replay (token) → ${tokenHit.order_number}`)
+        return NextResponse.json({
+          success: true,
+          order_id: tokenHit.id,
+          order_number: tokenHit.order_number,
+          total: tokenHit.total,
+          is_duplicate: false,
+          idempotent_replay: true,
+          chargily_url: null,
+        })
+      }
+    }
+
     const idemSince = new Date(Date.now() - 90_000).toISOString()
     const { data: idemHit } = await supabase
       .from('orders')
@@ -321,6 +356,7 @@ export async function POST(req: Request) {
       utm_medium: data.utm_medium,
       utm_campaign: data.utm_campaign,
       notes: data.notes,
+      checkout_token: data.checkout_token ?? null,
     }
 
     let insertRes = await supabase.from('orders').insert(orderRow).select().single()
@@ -333,6 +369,48 @@ export async function POST(req: Request) {
     }
     // Constraint rejection of 'duplicate' (migration 009 missing) → same row,
     // status 'new', duplicate flagged in the notes. Nothing else changes.
+    // Unique violation on (store_id, checkout_token) — migration 033. This is
+    // the case the SELECT above structurally cannot catch: two requests race,
+    // both find nothing, both insert, and the database lets exactly one win.
+    // The loser is not an error — it is the same checkout arriving twice, so
+    // it resolves to the winner's order and the customer sees success.
+    //
+    // 23505 is the Postgres unique_violation code. Matching on the index name
+    // as well keeps an unrelated future constraint from being swallowed here.
+    if (
+      insertRes.error && data.checkout_token &&
+      (insertRes.error.code === '23505' || /duplicate key value/i.test(insertRes.error.message ?? '')) &&
+      /uq_orders_store_checkout_token/i.test(insertRes.error.message ?? '' )
+    ) {
+      const { data: winner } = await supabase
+        .from('orders')
+        .select('id, order_number, total')
+        .eq('store_id', data.store_id)
+        .eq('checkout_token', data.checkout_token)
+        .neq('status', 'abandoned')
+        .limit(1)
+        .maybeSingle()
+      if (winner) {
+        console.warn(`[orders] concurrent replay (token) → ${winner.order_number}`)
+        return NextResponse.json({
+          success: true,
+          order_id: winner.id,
+          order_number: winner.order_number,
+          total: winner.total,
+          is_duplicate: false,
+          idempotent_replay: true,
+          chargily_url: null,
+        })
+      }
+    }
+
+    // Column missing (migration 033 not applied yet) → retry without it, so
+    // deploying the code before the migration can never stop orders.
+    if (insertRes.error && /column .*checkout_token/i.test(insertRes.error.message ?? '')) {
+      const { checkout_token: _ct, ...noTokenRow } = orderRow as any
+      insertRes = await supabase.from('orders').insert(noTokenRow).select().single()
+    }
+
     if (insertRes.error && finalStatus === 'duplicate' && insertRes.error.message?.includes('check')) {
       insertRes = await supabase.from('orders').insert({
         ...orderRow,

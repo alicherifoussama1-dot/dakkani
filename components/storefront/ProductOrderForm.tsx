@@ -241,6 +241,14 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   const icFiredRef = useRef(false)
   const draftIdRef = useRef<string | null>(null)
   const completingRef = useRef(false)
+  // Identity of this checkout attempt (see CheckoutForm for the reasoning).
+  // Both order surfaces must send one, or orders placed from the product page
+  // would keep bypassing the protection entirely.
+  const checkoutTokenRef = useRef<string>(
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `ck_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`,
+  )
   // PER-PRODUCT toggle («تحتسب») wins; store setting is the legacy fallback.
   const abandonedTrack = typeof (product as any)?.abandoned_count_conversion === 'boolean'
     ? (product as any).abandoned_count_conversion
@@ -329,11 +337,16 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       // the shared commune table (office lists may carry FR or AR spellings).
       const resolved = isStopdesk ? resolveCommune(data.wilaya_id, data.baladia) : null
       const chosenOffice = isStopdesk ? offices.find(o => o.id === data.stopdesk_code) : undefined
+      // Bounded wait, same reasoning as CheckoutForm.
+      const abort = new AbortController()
+      const abortTimer = setTimeout(() => abort.abort(), 45_000)
       const res = await fetch('/api/orders', {
+        signal: abort.signal,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           store_id: store.id,
+          checkout_token: checkoutTokenRef.current,
           ...data,
           baladia: data.baladia, // commune name for both; stopdesk = office commune
           address: isStopdesk ? undefined : data.address,
@@ -345,6 +358,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           source: 'storefront',
         }),
       })
+      clearTimeout(abortTimer)
       const json = await res.json().catch(() => ({}))
       if (res.ok && json.success) {
         draftIdRef.current = null // completed — the server deleted the draft
