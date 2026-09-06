@@ -600,7 +600,22 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
     } catch (err) {
       console.error(err)
       completingRef.current = false // failed — abandonment tracking resumes
-      setServerError((err as Error)?.message ?? '')
+      // The 45s AbortController above rejects with an AbortError whose message
+      // is the browser's own English string. Before the timeout existed this
+      // branch was unreachable by timing out, so showing err.message raw was
+      // safe; now it would put "The user aborted a request" in front of a
+      // customer mid-checkout. Timeouts get the localized message; every other
+      // error keeps the exact behaviour it had.
+      const isTimeout = (err as Error)?.name === 'AbortError'
+      setServerError(
+        isTimeout
+          ? (lang === 'ar'
+              ? 'انتهت مهلة الاتصال. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.'
+              : lang === 'fr'
+                ? 'Délai de connexion dépassé. Vérifiez votre connexion et réessayez.'
+                : 'The connection timed out. Check your connection and try again.')
+          : ((err as Error)?.message ?? ''),
+      )
       submitLockRef.current = false // failed — allow a real retry
       setSubmitState('error')
     }
