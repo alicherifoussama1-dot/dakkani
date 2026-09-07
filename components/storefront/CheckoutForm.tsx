@@ -148,6 +148,10 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const [hasProvider, setHasProvider] = useState(false)
   // Specific server-provided failure message (Arabic) shown under the CTA.
   const [serverError, setServerError] = useState('')
+  // Populated only when the server is in SOFT_BLOCK mode and judged this a
+  // strong duplicate. Dormant in the default MONITOR mode — the server never
+  // returns 409 there, so this stays null and the checkout is untouched.
+  const [dupPrompt, setDupPrompt] = useState<null | { existing_order_number: string; total: number }>(null)
 
   const { pixelId, tiktokId, trackPurchase, trackInitiateCheckout } = useOrderPixels(store, product, resolvedMetaPixelId)
 
@@ -283,6 +287,11 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   // disabled attribute only applies after a re-render — a fast double-click
   // can call onSubmit twice before that. A ref is set immediately.
   const submitLockRef = useRef(false)
+
+  // Set only by the customer choosing أريد طلباً إضافياً. It rides with this
+  // attempt's checkout_token, so it authorises exactly one order and cannot
+  // be reused: a new attempt gets a new token and is judged again.
+  const dupOverrideRef = useRef(false)
   const completingRef = useRef(false)
   // PER-PRODUCT toggle («تحتسب») wins; store setting is the legacy fallback.
   const abandonedTrack = typeof (product as any)?.abandoned_count_conversion === 'boolean'
@@ -502,6 +511,7 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           notes: data.notes,
           source: 'storefront',
           checkout_token: checkoutTokenRef.current,
+          duplicate_override: dupOverrideRef.current || undefined,
           utm_source: new URLSearchParams(window.location.search).get('utm_source') ?? undefined,
           utm_medium: new URLSearchParams(window.location.search).get('utm_medium') ?? undefined,
           utm_campaign: new URLSearchParams(window.location.search).get('utm_campaign') ?? undefined,
@@ -512,6 +522,19 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       clearTimeout(abortTimer) // response in — stop the abort from firing later
 
       const orderData = await orderRes.json().catch(() => ({}))
+      // SOFT_BLOCK verdict: not an error, a question. Release the lock so the
+      // customer's choice can submit, and show them their existing order.
+      if (orderRes.status === 409 && orderData?.duplicate_detected) {
+        setDupPrompt({
+          existing_order_number: String(orderData.existing_order_number ?? ''),
+          total: Number(orderData.total ?? 0),
+        })
+        submitLockRef.current = false
+        completingRef.current = false
+        setSubmitState('idle')
+        return
+      }
+
       if (!orderRes.ok || !orderData.success) {
         throw new Error(orderData.error ?? (lang === 'ar' ? 'حدث خطأ، أعد المحاولة' : lang === 'fr' ? 'Une erreur est survenue, réessayez' : 'An error occurred, please retry'))
       }
@@ -731,6 +754,36 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       {/* Pixel init */}
       {pixelId   && <MetaPixel   pixelId={pixelId} />}
       {tiktokId  && <TikTokPixel pixelId={tiktokId} />}
+
+      {/* Duplicate prompt — rendered only when the server asked (SOFT_BLOCK).
+          Never a technical error, never a silent block, never a fake success:
+          the customer is shown what already exists and decides. */}
+      {dupPrompt && (
+        <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4" role="alert">
+          <p className="font-semibold text-amber-900">
+            يبدو أن لديك طلباً مسجّلاً بنفس المنتج والمقاس بالفعل.
+          </p>
+          <p className="mt-1 text-sm text-amber-800">
+            رقم الطلب: {dupPrompt.existing_order_number} · {formatDZD(dupPrompt.total)}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded-lg bg-amber-600 px-4 py-2 text-white"
+              onClick={() => setDupPrompt(null)}
+            >
+              هذا طلبي، شكراً
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-amber-600 px-4 py-2 text-amber-900"
+              onClick={() => { dupOverrideRef.current = true; setDupPrompt(null); handleSubmit(onSubmit)() }}
+            >
+              أريد طلباً إضافياً
+            </button>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* ── LEFT: Form ──────────────────────────────────────────── */}
