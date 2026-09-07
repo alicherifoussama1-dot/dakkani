@@ -41,6 +41,11 @@ const orderSchema = z.object({
   // SAME attempt. Optional: older cached bundles and the mobile app omit it,
   // and those requests must keep working exactly as before.
   checkout_token: z.string().min(8).max(128).optional(),
+  // Set only when the customer was shown a strong-duplicate prompt and chose
+  // "أريد طلباً إضافياً". Scoped to THIS attempt: it rides with this
+  // checkout_token, so it cannot become a general bypass — a fresh attempt
+  // starts a fresh token and is evaluated again from scratch.
+  duplicate_override: z.boolean().optional(),
   utm_source: z.string().optional(),
   utm_medium: z.string().optional(),
   utm_campaign: z.string().optional(),
@@ -283,6 +288,73 @@ export async function POST(req: Request) {
       .gte('created_at', oneDayAgo)
       .limit(1)
     const isDuplicate = (recentOrders?.length ?? 0) > 0
+
+    // 5b-bis. SECOND LAYER — repeated purchase INTENT across separate
+    // checkout attempts. Distinct from checkout_token above, which settles
+    // whether one attempt arrived twice; this asks whether two attempts mean
+    // one purchase.
+    //
+    // Default mode is MONITOR: it scores, it logs, and it changes nothing.
+    // That is not timidity — the backtest puts the false-positive rate near
+    // 10%, and on a store running paid traffic the cost of refusing a real
+    // customer is far higher than the cost of one extra order. Enforcement is
+    // opt-in via DUPLICATE_DETECTION_MODE and stays off until the numbers are
+    // confirmed against live traffic.
+    //
+    // Wrapped whole: a detector fault must never cost a customer their order.
+    let duplicateVerdict: import('@/lib/orders/duplicate-detector').DuplicateVerdict | null = null
+    try {
+      const { DUPLICATE_POLICY, evaluate, disclose } = await import('@/lib/orders/duplicate-detector')
+      if (DUPLICATE_POLICY.mode !== 'off') {
+        const lookbackFrom = new Date(Date.now() - DUPLICATE_POLICY.lookbackHours * 3_600_000).toISOString()
+        const { data: priorRows } = await supabase
+          .from('orders')
+          .select('id,order_number,customer_name,total,delivery_type,wilaya_id,baladia,status,created_at,order_items(product_id,variant_key,quantity)')
+          .eq('store_id', data.store_id)
+          .eq('customer_phone', data.customer_phone)
+          .neq('status', 'abandoned')   // a draft is never evidence of duplication
+          .gte('created_at', lookbackFrom)
+          .order('created_at', { ascending: false })
+          .limit(20)
+
+        const priors = (priorRows ?? []).map((r: any) => ({
+          id: r.id, order_number: r.order_number, customer_name: r.customer_name,
+          total: Number(r.total), delivery_type: r.delivery_type, wilaya_id: r.wilaya_id,
+          baladia: r.baladia, status: r.status, created_at: r.created_at,
+          items: (r.order_items ?? []).map((i: any) => ({ product_id: i.product_id, variant_key: i.variant_key, quantity: i.quantity })),
+        }))
+
+        duplicateVerdict = evaluate({
+          store_id: data.store_id, customer_phone: data.customer_phone,
+          customer_name: data.customer_name, total, delivery_type: data.delivery_type,
+          wilaya_id: data.wilaya_id, baladia: data.baladia,
+          items: orderItems.map(i => ({ product_id: i.product_id, variant_key: i.variant_key, quantity: i.quantity })),
+        }, priors)
+
+        if (duplicateVerdict.band !== 'allow') {
+          // Diagnostic only — never surfaced to the customer. Phone masked.
+          console.warn(
+            `[orders] dup-layer2 ${duplicateVerdict.band} score=${duplicateVerdict.score} ` +
+            `prior=${duplicateVerdict.match?.order_number ?? "-"} phone=${maskPhone(data.customer_phone)} ` +
+            `[${duplicateVerdict.reasons.join(" ")}]`,
+          )
+        }
+
+        // SOFT_BLOCK: stop BEFORE the insert, so no second order and no
+        // second Purchase is ever created. The customer is told plainly and
+        // chooses; their explicit override replays with the same token.
+        if (
+          DUPLICATE_POLICY.mode === 'soft_block' &&
+          duplicateVerdict.band === 'strong' &&
+          duplicateVerdict.match &&
+          !data.duplicate_override
+        ) {
+          return NextResponse.json({ success: false, ...disclose(duplicateVerdict.match) }, { status: 409 })
+        }
+      }
+    } catch (e) {
+      console.error('[orders] duplicate layer-2 failed (non-blocking):', (e as Error).message)
+    }
 
     // 5c. Wilaya → delivery company auto-routing
     let autoDeliveryCompanyId: string | null = null
