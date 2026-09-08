@@ -102,7 +102,29 @@ export const DUPLICATE_POLICY = {
     absoluteMaxRatio: 0.20,
     minTokenLength: 3,
   },
+
+  /** Which order sources enforcement may act on. Scoring and logging still run
+   *  for every source — the merchant's own duplicates are worth seeing — but
+   *  only these may ever be soft-blocked.
+   *
+   *  'manual' is excluded deliberately, for two independent reasons:
+   *    1. A merchant typing an order into the dashboard is already looking at
+   *       the order list. They are not guessing whether the first one arrived,
+   *       so the question a soft block asks is one they have already answered.
+   *    2. NewOrderClient falls back to a DIRECT Supabase insert whenever this
+   *       API returns anything other than success. A 409 there would not stop
+   *       the order — it would reroute it around this endpoint entirely, past
+   *       the stock decrement and the notification. Refusing to enforce is not
+   *       a concession; it is the only outcome that stays truthful. */
+  enforceSources: ['storefront'] as readonly string[],
 } as const
+
+/** Enforcement gate by order source. Absent means storefront: the mobile app
+ *  and older cached bundles omit the field, and the API already defaults it
+ *  the same way. */
+export function enforcementApplies(source: string | null | undefined): boolean {
+  return DUPLICATE_POLICY.enforceSources.includes(source ?? 'storefront')
+}
 
 export type DetectionMode = 'monitor' | 'soft_block' | 'off'
 export type Band = 'strong' | 'uncertain' | 'allow'
