@@ -16,7 +16,7 @@ import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   evaluate, scoreAgainst, namesMatch, normalizeName, bandFor, disclose,
-  DUPLICATE_POLICY,
+  enforcementApplies, DUPLICATE_POLICY,
 } from '../lib/orders/duplicate-detector.ts'
 
 const HOUR = 3_600_000
@@ -208,5 +208,29 @@ describe('bands and disclosure', () => {
     const v = evaluate(candidate(), [], NOW)
     assert.equal(v.band, 'allow')
     assert.equal(v.gate, 'no-prior')
+  })
+})
+
+describe('enforcement is scoped by order source', () => {
+  test('storefront orders may be enforced', () => {
+    assert.ok(enforcementApplies('storefront'))
+  })
+
+  test('a missing source is treated as storefront', () => {
+    // The mobile app and older cached bundles omit it; the API defaults it the
+    // same way, so the two must not disagree.
+    assert.ok(enforcementApplies(undefined))
+    assert.ok(enforcementApplies(null))
+  })
+
+  test('merchant-entered orders are never soft-blocked', () => {
+    // Not a style preference. NewOrderClient answers any non-success from this
+    // API by inserting the order directly, so a 409 would reroute the order
+    // around the endpoint rather than stop it.
+    assert.ok(!enforcementApplies('manual'))
+  })
+
+  test('an unknown source is not enforced', () => {
+    assert.ok(!enforcementApplies('some_future_integration'))
   })
 })

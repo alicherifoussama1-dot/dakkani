@@ -93,6 +93,10 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   const [submitted, setSubmitted] = useState(false)
   const [orderId, setOrderId] = useState('')
   const [submitError, setSubmitError] = useState('')
+  // Populated only when the server is in SOFT_BLOCK mode and judged this a
+  // strong duplicate. Dormant in the default MONITOR mode — the server never
+  // returns 409 there, so this stays null and this form is untouched.
+  const [dupPrompt, setDupPrompt] = useState<null | { existing_order_number: string; total: number }>(null)
   const formRef = useRef<HTMLFormElement>(null)
   const successRef = useRef<HTMLDivElement>(null)
   const [selectedWilaya, setSelectedWilaya] = useState<Wilaya | null>(null)
@@ -249,6 +253,10 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
       ? crypto.randomUUID()
       : `ck_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`,
   )
+  // Set only by the customer choosing "I want an additional order". It rides
+  // with this attempt's checkout_token, so it authorises this attempt only —
+  // a new visit gets a new token and is judged again.
+  const dupOverrideRef = useRef(false)
   // PER-PRODUCT toggle («تحتسب») wins; store setting is the legacy fallback.
   const abandonedTrack = typeof (product as any)?.abandoned_count_conversion === 'boolean'
     ? (product as any).abandoned_count_conversion
@@ -322,6 +330,7 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
   const onSubmit = async (data: FormData) => {
     if (isSubmitting) return // extra guard against a double submit
     setSubmitError('')
+    setDupPrompt(null)
     completingRef.current = true // suppress the abandonment beacon while submitting
     // Tracking bridge (isolated pixels live in <ProductTracking/>). Fire-and-forget;
     // no pixel logic here so order/business logic stays untouched.
@@ -356,10 +365,24 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           stopdesk_office_name: chosenOffice?.name,
           items: [{ product_id: product.id, quantity: data.quantity, variant_key: variantKey ?? 'default' }],
           source: 'storefront',
+          duplicate_override: dupOverrideRef.current || undefined,
         }),
       })
       clearTimeout(abortTimer)
       const json = await res.json().catch(() => ({}))
+      // SOFT_BLOCK verdict: a question, not a failure. The 409 body carries no
+      // `error` field, so without this branch it falls through to the generic
+      // connection message — false, and offering the customer no way forward.
+      if (res.status === 409 && json?.duplicate_detected) {
+        completingRef.current = false
+        setDupPrompt({
+          existing_order_number: String(json.existing_order_number ?? ''),
+          total: Number(json.total ?? 0),
+        })
+        setTimeout(() => formRef.current?.querySelector<HTMLElement>('[data-dup-prompt="true"]')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0)
+        return
+      }
       if (res.ok && json.success) {
         draftIdRef.current = null // completed — the server deleted the draft
         setOrderId(json.order_number)
@@ -640,6 +663,38 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
           <span className="tabular-nums" style={{ color: DK.accent }}>{formatDZD(total)}</span>
         </div>
       </div>
+
+      {/* Duplicate prompt — rendered only when the server asked (SOFT_BLOCK).
+          Never a technical error, never a silent block, never a fake success:
+          the customer sees what already exists and decides for themselves. */}
+      {dupPrompt && (
+        <div data-dup-prompt="true" role="alert" className="text-sm p-3 rounded-2xl space-y-2"
+          style={{ background: '#FDF6E3', color: '#7A5A12', border: '0.5px solid #E3C46A' }}>
+          <p className="font-bold">
+            {lang === 'ar'
+              ? 'يبدو أن لديك طلباً مسجّلاً بنفس المنتج والمقاس بالفعل.'
+              : lang === 'fr'
+                ? 'Vous semblez avoir déjà une commande pour le même article et la même taille.'
+                : 'You appear to already have an order for the same item and size.'}
+          </p>
+          <p>
+            {lang === 'ar' ? 'رقم الطلب: ' : lang === 'fr' ? 'Numéro de commande : ' : 'Order number: '}
+            <strong>{dupPrompt.existing_order_number}</strong> · {formatDZD(dupPrompt.total)}
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button type="button" className="rounded-xl px-4 py-2 font-bold text-white"
+              style={{ background: '#A87A16' }}
+              onClick={() => setDupPrompt(null)}>
+              {lang === 'ar' ? 'هذا طلبي، شكراً' : lang === 'fr' ? 'C’est ma commande, merci' : "That's my order, thanks"}
+            </button>
+            <button type="button" className="rounded-xl px-4 py-2 font-bold"
+              style={{ color: '#7A5A12', border: '0.5px solid #A87A16' }}
+              onClick={() => { dupOverrideRef.current = true; setDupPrompt(null); handleSubmit(onSubmit, onInvalid)() }}>
+              {lang === 'ar' ? 'أريد طلباً إضافياً' : lang === 'fr' ? 'Je veux une commande supplémentaire' : 'I want an additional order'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {submitError && (
         <div data-submit-error="true" role="alert" className="flex items-start gap-2 text-sm p-3 rounded-2xl"

@@ -304,7 +304,7 @@ export async function POST(req: Request) {
     // Wrapped whole: a detector fault must never cost a customer their order.
     let duplicateVerdict: import('@/lib/orders/duplicate-detector').DuplicateVerdict | null = null
     try {
-      const { DUPLICATE_POLICY, evaluate, disclose } = await import('@/lib/orders/duplicate-detector')
+      const { DUPLICATE_POLICY, evaluate, disclose, enforcementApplies } = await import('@/lib/orders/duplicate-detector')
       if (DUPLICATE_POLICY.mode !== 'off') {
         const lookbackFrom = new Date(Date.now() - DUPLICATE_POLICY.lookbackHours * 3_600_000).toISOString()
         const { data: priorRows } = await supabase
@@ -347,7 +347,12 @@ export async function POST(req: Request) {
           DUPLICATE_POLICY.mode === 'soft_block' &&
           duplicateVerdict.band === 'strong' &&
           duplicateVerdict.match &&
-          !data.duplicate_override
+          !data.duplicate_override &&
+          // Merchant-entered orders are scored and logged, never blocked. The
+          // dashboard has no prompt to answer a 409 with, and NewOrderClient
+          // reacts to a non-success by inserting the order directly instead —
+          // so enforcing here would reroute the order, not prevent it.
+          enforcementApplies(data.source)
         ) {
           return NextResponse.json({ success: false, ...disclose(duplicateVerdict.match) }, { status: 409 })
         }

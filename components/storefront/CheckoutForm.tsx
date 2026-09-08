@@ -761,10 +761,15 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       {dupPrompt && (
         <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4" role="alert">
           <p className="font-semibold text-amber-900">
-            يبدو أن لديك طلباً مسجّلاً بنفس المنتج والمقاس بالفعل.
+            {lang === 'ar'
+              ? 'يبدو أن لديك طلباً مسجّلاً بنفس المنتج والمقاس بالفعل.'
+              : lang === 'fr'
+                ? 'Vous semblez avoir déjà une commande pour le même article et la même taille.'
+                : 'You appear to already have an order for the same item and size.'}
           </p>
           <p className="mt-1 text-sm text-amber-800">
-            رقم الطلب: {dupPrompt.existing_order_number} · {formatDZD(dupPrompt.total)}
+            {lang === 'ar' ? 'رقم الطلب: ' : lang === 'fr' ? 'Numéro de commande : ' : 'Order number: '}
+            {dupPrompt.existing_order_number} · {formatDZD(dupPrompt.total)}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
@@ -772,14 +777,14 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
               className="rounded-lg bg-amber-600 px-4 py-2 text-white"
               onClick={() => setDupPrompt(null)}
             >
-              هذا طلبي، شكراً
+              {lang === 'ar' ? 'هذا طلبي، شكراً' : lang === 'fr' ? 'C’est ma commande, merci' : "That's my order, thanks"}
             </button>
             <button
               type="button"
               className="rounded-lg border border-amber-600 px-4 py-2 text-amber-900"
               onClick={() => { dupOverrideRef.current = true; setDupPrompt(null); handleSubmit(onSubmit)() }}
             >
-              أريد طلباً إضافياً
+              {lang === 'ar' ? 'أريد طلباً إضافياً' : lang === 'fr' ? 'Je veux une commande supplémentaire' : 'I want an additional order'}
             </button>
           </div>
         </div>
