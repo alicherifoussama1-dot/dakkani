@@ -161,6 +161,21 @@ export interface PriorOrder {
   items: CandidateItem[]
 }
 
+/** Per-signal breakdown, for MONITOR diagnostics. Booleans and one number —
+ *  deliberately nothing that identifies the customer. */
+export interface DuplicateSignals {
+  same_quantity: boolean
+  same_total: boolean
+  same_delivery_type: boolean
+  same_wilaya: boolean
+  same_commune: boolean
+  /** True once the name gate has passed, which it must have for signals to exist. */
+  name_match: boolean
+  gap_hours: number
+  prior_status: string
+  prior_status_class: 'dead' | 'reached' | 'unactioned'
+}
+
 export interface DuplicateVerdict {
   band: Band
   score: number
@@ -168,6 +183,8 @@ export interface DuplicateVerdict {
    *  never be shown to a customer. */
   reasons: string[]
   match: PriorOrder | null
+  /** Present only when a pair was actually scored. */
+  signals?: DuplicateSignals
   /** Why the candidate was allowed without scoring, when that happened. */
   gate?: 'different-product' | 'different-variant' | 'different-name' | 'no-prior'
 }
@@ -269,7 +286,7 @@ export function scoreAgainst(
   candidate: CandidateOrder,
   prior: PriorOrder,
   now: Date = new Date(),
-): { score: number; reasons: string[] } | { gate: NonNullable<DuplicateVerdict['gate']> } {
+): { score: number; reasons: string[]; signals: DuplicateSignals } | { gate: NonNullable<DuplicateVerdict['gate']> } {
   if (productSig(candidate.items) !== productSig(prior.items)) return { gate: 'different-product' }
 
   // THE clothing gate. Different size or colour is a different purchase, full
@@ -282,28 +299,51 @@ export function scoreAgainst(
   const reasons: string[] = ['identity(phone+product+variant+name)']
   let score = w.identityBase
 
-  if (quantitySig(candidate.items) === quantitySig(prior.items)) { score += w.sameQuantity; reasons.push(`qty+${w.sameQuantity}`) }
-  if (Number(candidate.total) === Number(prior.total)) { score += w.sameTotal; reasons.push(`total+${w.sameTotal}`) }
-  if (candidate.delivery_type === prior.delivery_type) { score += w.sameDeliveryType; reasons.push(`delivery+${w.sameDeliveryType}`) }
-  if (candidate.wilaya_id === prior.wilaya_id) { score += w.sameWilaya; reasons.push(`wilaya+${w.sameWilaya}`) }
-  if (normalizeName(candidate.baladia) === normalizeName(prior.baladia)) { score += w.sameCommune; reasons.push(`commune+${w.sameCommune}`) }
+  const sameQuantity     = quantitySig(candidate.items) === quantitySig(prior.items)
+  const sameTotal        = Number(candidate.total) === Number(prior.total)
+  const sameDeliveryType = candidate.delivery_type === prior.delivery_type
+  const sameWilaya       = candidate.wilaya_id === prior.wilaya_id
+  const sameCommune      = normalizeName(candidate.baladia) === normalizeName(prior.baladia)
+
+  if (sameQuantity)     { score += w.sameQuantity;     reasons.push(`qty+${w.sameQuantity}`) }
+  if (sameTotal)        { score += w.sameTotal;        reasons.push(`total+${w.sameTotal}`) }
+  if (sameDeliveryType) { score += w.sameDeliveryType; reasons.push(`delivery+${w.sameDeliveryType}`) }
+  if (sameWilaya)       { score += w.sameWilaya;       reasons.push(`wilaya+${w.sameWilaya}`) }
+  if (sameCommune)      { score += w.sameCommune;      reasons.push(`commune+${w.sameCommune}`) }
 
   const gapHours = (now.getTime() - new Date(prior.created_at).getTime()) / 3_600_000
   const tp = timePoints(gapHours)
   score += tp
   reasons.push(`time(${gapHours.toFixed(1)}h)${tp >= 0 ? '+' : ''}${tp}`)
 
+  let priorStatusClass: DuplicateSignals['prior_status_class'] = 'unactioned'
   if (DUPLICATE_POLICY.deadStatuses.includes(prior.status)) {
+    priorStatusClass = 'dead'
     score += DUPLICATE_POLICY.statusPenalties.dead
     reasons.push(`prior-dead(${prior.status})${DUPLICATE_POLICY.statusPenalties.dead}`)
   } else if (DUPLICATE_POLICY.reachedStatuses.includes(prior.status)) {
+    priorStatusClass = 'reached'
     score += DUPLICATE_POLICY.statusPenalties.reached
     reasons.push(`prior-reached(${prior.status})${DUPLICATE_POLICY.statusPenalties.reached}`)
   } else {
     reasons.push(`prior-unactioned(${prior.status})`)
   }
 
-  return { score, reasons }
+  return {
+    score,
+    reasons,
+    signals: {
+      same_quantity: sameQuantity,
+      same_total: sameTotal,
+      same_delivery_type: sameDeliveryType,
+      same_wilaya: sameWilaya,
+      same_commune: sameCommune,
+      name_match: true,   // the name gate passed, or we would not be here
+      gap_hours: Number(gapHours.toFixed(2)),
+      prior_status: prior.status,
+      prior_status_class: priorStatusClass,
+    },
+  }
 }
 
 export function bandFor(score: number): Band {
@@ -333,7 +373,7 @@ export function evaluate(
       continue
     }
     if (r.score > best.score || !best.match) {
-      best = { band: bandFor(r.score), score: r.score, reasons: r.reasons, match: prior }
+      best = { band: bandFor(r.score), score: r.score, reasons: r.reasons, match: prior, signals: r.signals }
     }
   }
   return best
@@ -347,6 +387,76 @@ export interface DuplicateDisclosure {
   existing_order_number: string
   total: number
   created_at: string
+}
+
+/** THE single place that decides whether a customer is ever interrupted.
+ *
+ *  It lives here, and not inline in the route, for one reason: it is the only
+ *  line in the system that can refuse a real customer's order, so it must be
+ *  directly testable rather than only reachable through a database, an HTTP
+ *  request and a live checkout. Every condition below is AND — the default
+ *  answer is false, and it stays false unless every one of them is met.
+ *
+ *  In MONITOR mode this returns false for every input there is. That is the
+ *  property the tests pin down, and it is what makes monitoring safe to run
+ *  against live paid traffic. */
+export function shouldSoftBlock(input: {
+  mode: DetectionMode
+  band: Band
+  hasMatch: boolean
+  customerOverride?: boolean
+  source?: string | null
+}): boolean {
+  return (
+    input.mode === 'soft_block' &&
+    input.band === 'strong' &&
+    input.hasMatch &&
+    !input.customerOverride &&
+    enforcementApplies(input.source)
+  )
+}
+
+/** One structured, non-identifying line per evaluated candidate.
+ *
+ *  Carries ids and booleans. It deliberately does NOT carry the customer's
+ *  name, their full phone number, or their address: monitoring exists to
+ *  judge the detector, and none of those are needed to judge it. The phone is
+ *  reduced to a mask so a merchant can still correlate a report with an order
+ *  without the log itself becoming a customer list. */
+export function monitorDiagnostic(args: {
+  verdict: DuplicateVerdict
+  storeId: string
+  phoneMask: string
+  source?: string | null
+  checkoutToken?: string | null
+  priorsConsidered: number
+}): Record<string, unknown> {
+  const { verdict: v } = args
+  return {
+    layer: 2,
+    mode: DUPLICATE_POLICY.mode,
+    classification: v.band,
+    score: v.score,
+    store_id: args.storeId,
+    // The candidate has no id yet — it is not inserted at this point — so the
+    // checkout attempt is what identifies it. Truncated: it is only needed to
+    // line two log entries up with each other.
+    attempt: args.checkoutToken ? args.checkoutToken.slice(0, 8) : null,
+    source: args.source ?? 'storefront',
+    phone: args.phoneMask,
+    priors_considered: args.priorsConsidered,
+    prior_order_id: v.match?.id ?? null,
+    prior_order_number: v.match?.order_number ?? null,
+    gate: v.gate ?? null,
+    signals: v.signals ?? null,
+    // Whether this verdict WOULD have interrupted the customer had enforcement
+    // been on. In monitor mode nothing acts on it; it is the number to read
+    // before deciding whether enforcement is safe.
+    would_soft_block_if_enforced: shouldSoftBlock({
+      mode: 'soft_block', band: v.band, hasMatch: !!v.match, source: args.source,
+    }),
+    reasons: v.reasons,
+  }
 }
 
 export function disclose(match: PriorOrder): DuplicateDisclosure {
