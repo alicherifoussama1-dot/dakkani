@@ -257,10 +257,12 @@ describe('9 + 10. monitor mode never interrupts a customer', () => {
       for (const hasMatch of [true, false]) {
         for (const customerOverride of [true, false, undefined]) {
           for (const source of ['storefront', 'manual', null, undefined, 'anything']) {
-            assert.equal(
-              shouldSoftBlock({ mode: 'monitor', band, hasMatch, customerOverride, source }), false,
-              `monitor blocked on band=${band} match=${hasMatch} override=${customerOverride} source=${source}`,
-            )
+            for (const hasCheckoutToken of [true, false]) {
+              assert.equal(
+                shouldSoftBlock({ mode: 'monitor', band, hasMatch, customerOverride, source, hasCheckoutToken }), false,
+                `monitor blocked on band=${band} match=${hasMatch} override=${customerOverride} source=${source} token=${hasCheckoutToken}`,
+              )
+            }
           }
         }
       }
@@ -272,17 +274,24 @@ describe('9 + 10. monitor mode never interrupts a customer', () => {
   })
 
   test('only soft_block + strong + match + no override + storefront can block', () => {
-    assert.equal(shouldSoftBlock({ mode: 'soft_block', band: 'strong', hasMatch: true, source: 'storefront' }), true)
+    const ok = { mode: 'soft_block', band: 'strong', hasMatch: true, source: 'storefront', hasCheckoutToken: true }
+    assert.equal(shouldSoftBlock(ok), true)
     // Each condition alone is enough to withhold it.
-    assert.equal(shouldSoftBlock({ mode: 'soft_block', band: 'uncertain', hasMatch: true, source: 'storefront' }), false)
-    assert.equal(shouldSoftBlock({ mode: 'soft_block', band: 'strong', hasMatch: false, source: 'storefront' }), false)
-    assert.equal(shouldSoftBlock({ mode: 'soft_block', band: 'strong', hasMatch: true, customerOverride: true, source: 'storefront' }), false)
-    assert.equal(shouldSoftBlock({ mode: 'soft_block', band: 'strong', hasMatch: true, source: 'manual' }), false)
+    assert.equal(shouldSoftBlock({ ...ok, band: 'uncertain' }), false)
+    assert.equal(shouldSoftBlock({ ...ok, hasMatch: false }), false)
+    assert.equal(shouldSoftBlock({ ...ok, customerOverride: true }), false)
+    assert.equal(shouldSoftBlock({ ...ok, source: 'manual' }), false)
+    assert.equal(shouldSoftBlock({ ...ok, hasCheckoutToken: false }), false)
+  })
+
+  test('a request without a checkout token is never blocked (old bundle, no prompt UI)', () => {
+    assert.equal(shouldSoftBlock({ mode: 'soft_block', band: 'strong', hasMatch: true, source: 'storefront' }), false)
+    assert.equal(shouldSoftBlock({ mode: 'soft_block', band: 'strong', hasMatch: true, source: 'storefront', hasCheckoutToken: false }), false)
   })
 
   test('an unrecognised env value degrades to harmless, never to blocking', () => {
     for (const mode of ['SOFT_BLOCK', 'softblock', 'true', '1', '', 'enabled']) {
-      assert.equal(shouldSoftBlock({ mode, band: 'strong', hasMatch: true, source: 'storefront' }), false, mode)
+      assert.equal(shouldSoftBlock({ mode, band: 'strong', hasMatch: true, source: 'storefront', hasCheckoutToken: true }), false, mode)
     }
   })
 })
@@ -380,5 +389,14 @@ describe('6. monitor diagnostics are complete and non-identifying', () => {
     assert.equal(diff.signals.same_total, false)
     assert.equal(diff.signals.same_wilaya, false)
     assert.equal(diff.signals.prior_status_class, 'unactioned')
+  })
+})
+
+describe('missing-column fallback matches the errors the database really returns', () => {
+  const route = readFileSync('app/api/orders/route.ts', 'utf8')
+  test('route recognises PGRST204 and 42703 for checkout_token', () => {
+    const block = route.slice(route.indexOf('Column missing (migration 033'), route.indexOf("finalStatus === 'duplicate' && insertRes.error.message"))
+    assert.match(block, /PGRST204/)
+    assert.match(block, /42703/)
   })
 })

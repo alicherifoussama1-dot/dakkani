@@ -406,12 +406,18 @@ export function shouldSoftBlock(input: {
   hasMatch: boolean
   customerOverride?: boolean
   source?: string | null
+  /** Only clients that send a checkout_token also ship the duplicate prompt.
+   *  A tab still running the previous bundle, or any other caller, has no UI
+   *  to answer a 409 with and would show the customer a bare error — so a
+   *  request without a token is never blocked. It behaves exactly as before. */
+  hasCheckoutToken?: boolean
 }): boolean {
   return (
     input.mode === 'soft_block' &&
     input.band === 'strong' &&
     input.hasMatch &&
     !input.customerOverride &&
+    !!input.hasCheckoutToken &&
     enforcementApplies(input.source)
   )
 }
@@ -454,6 +460,7 @@ export function monitorDiagnostic(args: {
     // before deciding whether enforcement is safe.
     would_soft_block_if_enforced: shouldSoftBlock({
       mode: 'soft_block', band: v.band, hasMatch: !!v.match, source: args.source,
+      hasCheckoutToken: !!args.checkoutToken,
     }),
     reasons: v.reasons,
   }

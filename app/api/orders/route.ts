@@ -358,6 +358,7 @@ export async function POST(req: Request) {
           hasMatch: !!duplicateVerdict.match,
           customerOverride: data.duplicate_override,
           source: data.source,
+          hasCheckoutToken: !!data.checkout_token,
         })) {
           return NextResponse.json({ success: false, ...disclose(duplicateVerdict.match!) }, { status: 409 })
         }
@@ -488,7 +489,16 @@ export async function POST(req: Request) {
 
     // Column missing (migration 033 not applied yet) → retry without it, so
     // deploying the code before the migration can never stop orders.
-    if (insertRes.error && /column .*checkout_token/i.test(insertRes.error.message ?? '')) {
+    // PostgREST reports an unknown insert column as PGRST204 "Could not find
+    // the 'checkout_token' column of 'orders'", with "column" AFTER the name,
+    // while Postgres says "column orders.checkout_token does not exist". The
+    // earlier pattern only matched the second form, so a stale schema cache
+    // would have failed every order instead of falling back. Match both.
+    if (
+      insertRes.error &&
+      /checkout_token/i.test(insertRes.error.message ?? '') &&
+      (insertRes.error.code === 'PGRST204' || insertRes.error.code === '42703' || /column/i.test(insertRes.error.message ?? ''))
+    ) {
       const { checkout_token: _ct, ...noTokenRow } = orderRow as any
       insertRes = await supabase.from('orders').insert(noTokenRow).select().single()
     }
