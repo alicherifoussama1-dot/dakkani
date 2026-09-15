@@ -304,7 +304,7 @@ export async function POST(req: Request) {
     // Wrapped whole: a detector fault must never cost a customer their order.
     let duplicateVerdict: import('@/lib/orders/duplicate-detector').DuplicateVerdict | null = null
     try {
-      const { DUPLICATE_POLICY, evaluate, disclose, enforcementApplies } = await import('@/lib/orders/duplicate-detector')
+      const { DUPLICATE_POLICY, evaluate, disclose, shouldSoftBlock, monitorDiagnostic } = await import('@/lib/orders/duplicate-detector')
       if (DUPLICATE_POLICY.mode !== 'off') {
         const lookbackFrom = new Date(Date.now() - DUPLICATE_POLICY.lookbackHours * 3_600_000).toISOString()
         const { data: priorRows } = await supabase
@@ -332,29 +332,34 @@ export async function POST(req: Request) {
         }, priors)
 
         if (duplicateVerdict.band !== 'allow') {
-          // Diagnostic only — never surfaced to the customer. Phone masked.
-          console.warn(
-            `[orders] dup-layer2 ${duplicateVerdict.band} score=${duplicateVerdict.score} ` +
-            `prior=${duplicateVerdict.match?.order_number ?? "-"} phone=${maskPhone(data.customer_phone)} ` +
-            `[${duplicateVerdict.reasons.join(" ")}]`,
-          )
+          // Diagnostic only — never surfaced to the customer, never returned in
+          // the response. One structured line so the monitor run can be read
+          // back mechanically instead of by eye; ids and booleans only.
+          console.warn('[orders] dup-layer2 ' + JSON.stringify(monitorDiagnostic({
+            verdict: duplicateVerdict,
+            storeId: data.store_id,
+            phoneMask: maskPhone(data.customer_phone),
+            source: data.source,
+            checkoutToken: data.checkout_token,
+            priorsConsidered: priors.length,
+          })))
         }
 
         // SOFT_BLOCK: stop BEFORE the insert, so no second order and no
         // second Purchase is ever created. The customer is told plainly and
         // chooses; their explicit override replays with the same token.
-        if (
-          DUPLICATE_POLICY.mode === 'soft_block' &&
-          duplicateVerdict.band === 'strong' &&
-          duplicateVerdict.match &&
-          !data.duplicate_override &&
-          // Merchant-entered orders are scored and logged, never blocked. The
-          // dashboard has no prompt to answer a 409 with, and NewOrderClient
-          // reacts to a non-success by inserting the order directly instead —
-          // so enforcing here would reroute the order, not prevent it.
-          enforcementApplies(data.source)
-        ) {
-          return NextResponse.json({ success: false, ...disclose(duplicateVerdict.match) }, { status: 409 })
+        // The ONLY place a customer can be interrupted. Every condition lives
+        // in shouldSoftBlock() so it can be tested directly rather than only
+        // through a live checkout; in monitor mode it is false for every
+        // possible input, which the test suite pins down.
+        if (shouldSoftBlock({
+          mode: DUPLICATE_POLICY.mode,
+          band: duplicateVerdict.band,
+          hasMatch: !!duplicateVerdict.match,
+          customerOverride: data.duplicate_override,
+          source: data.source,
+        })) {
+          return NextResponse.json({ success: false, ...disclose(duplicateVerdict.match!) }, { status: 409 })
         }
       }
     } catch (e) {

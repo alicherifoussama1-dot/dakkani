@@ -16,8 +16,9 @@ import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   evaluate, scoreAgainst, namesMatch, normalizeName, bandFor, disclose,
-  enforcementApplies, DUPLICATE_POLICY,
+  enforcementApplies, shouldSoftBlock, monitorDiagnostic, DUPLICATE_POLICY,
 } from '../lib/orders/duplicate-detector.ts'
+import { readFileSync } from 'node:fs'
 
 const HOUR = 3_600_000
 const NOW = new Date('2026-09-08T12:00:00Z')
@@ -232,5 +233,152 @@ describe('enforcement is scoped by order source', () => {
 
   test('an unknown source is not enforced', () => {
     assert.ok(!enforcementApplies('some_future_integration'))
+  })
+})
+
+// ============================================================
+// MONITOR MODE IS INERT
+//
+// These are the most important tests in the file. Monitor mode runs against
+// live paid traffic, so "it does not interfere" cannot be a claim in a comment
+// — it has to be a property something checks.
+// ============================================================
+describe('9 + 10. monitor mode never interrupts a customer', () => {
+  test('a STRONG match in monitor mode does not block', () => {
+    assert.equal(shouldSoftBlock({ mode: 'monitor', band: 'strong', hasMatch: true, source: 'storefront' }), false)
+  })
+
+  test('an UNCERTAIN match in monitor mode does not block', () => {
+    assert.equal(shouldSoftBlock({ mode: 'monitor', band: 'uncertain', hasMatch: true, source: 'storefront' }), false)
+  })
+
+  test('monitor mode is false for EVERY combination of inputs', () => {
+    for (const band of ['strong', 'uncertain', 'allow']) {
+      for (const hasMatch of [true, false]) {
+        for (const customerOverride of [true, false, undefined]) {
+          for (const source of ['storefront', 'manual', null, undefined, 'anything']) {
+            assert.equal(
+              shouldSoftBlock({ mode: 'monitor', band, hasMatch, customerOverride, source }), false,
+              `monitor blocked on band=${band} match=${hasMatch} override=${customerOverride} source=${source}`,
+            )
+          }
+        }
+      }
+    }
+  })
+
+  test("'off' mode blocks nothing either", () => {
+    assert.equal(shouldSoftBlock({ mode: 'off', band: 'strong', hasMatch: true, source: 'storefront' }), false)
+  })
+
+  test('only soft_block + strong + match + no override + storefront can block', () => {
+    assert.equal(shouldSoftBlock({ mode: 'soft_block', band: 'strong', hasMatch: true, source: 'storefront' }), true)
+    // Each condition alone is enough to withhold it.
+    assert.equal(shouldSoftBlock({ mode: 'soft_block', band: 'uncertain', hasMatch: true, source: 'storefront' }), false)
+    assert.equal(shouldSoftBlock({ mode: 'soft_block', band: 'strong', hasMatch: false, source: 'storefront' }), false)
+    assert.equal(shouldSoftBlock({ mode: 'soft_block', band: 'strong', hasMatch: true, customerOverride: true, source: 'storefront' }), false)
+    assert.equal(shouldSoftBlock({ mode: 'soft_block', band: 'strong', hasMatch: true, source: 'manual' }), false)
+  })
+
+  test('an unrecognised env value degrades to harmless, never to blocking', () => {
+    for (const mode of ['SOFT_BLOCK', 'softblock', 'true', '1', '', 'enabled']) {
+      assert.equal(shouldSoftBlock({ mode, band: 'strong', hasMatch: true, source: 'storefront' }), false, mode)
+    }
+  })
+})
+
+describe('12. the second layer is independent of the checkout token', () => {
+  test('the detector takes no token and cannot read one', () => {
+    // Structural, not behavioural: a new attempt carries a new token, and the
+    // second layer must judge it on the purchase itself. If a token ever became
+    // an input here, the two layers would stop being independent.
+    // Comments discuss the first layer by name, so strip them: the question
+    // is whether any CODE here touches a token, not whether the prose does.
+    const code = readFileSync('lib/orders/duplicate-detector.ts', 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*/g, '')
+    const body = code.slice(0, code.indexOf('export function monitorDiagnostic'))
+    assert.ok(!/checkout_?[tT]oken/.test(body), 'the detector must not read the checkout token')
+  })
+
+  test('a second attempt with the same purchase is still scored', () => {
+    const v = evaluate(candidate(), [prior()], NOW)
+    assert.equal(v.band, 'strong')
+  })
+})
+
+// ============================================================
+// SOURCE GUARDS
+//
+// Store isolation and the abandoned-draft exclusion are SQL filters in the
+// route, not logic in this module, so they cannot be exercised without a
+// database. These assert the filters are present in the source. That is a
+// regression guard, NOT proof of behaviour, and it is labelled as such.
+// ============================================================
+describe('13 + 14. route-level filters (source guard, not a behavioural test)', () => {
+  const route = readFileSync('app/api/orders/route.ts', 'utf8')
+  const layer2 = route.slice(route.indexOf('SECOND LAYER'), route.indexOf('5c. Wilaya'))
+
+  test('13. the prior-order lookup is scoped to one store', () => {
+    assert.match(layer2, /\.eq\('store_id', data\.store_id\)/)
+  })
+
+  test('14. abandoned drafts are excluded from the prior-order lookup', () => {
+    assert.match(layer2, /\.neq\('status', 'abandoned'\)/)
+  })
+
+  test('11. the token fast path is scoped and excludes abandoned drafts', () => {
+    const layer1 = route.slice(route.indexOf('4a. Idempotency by TOKEN'), route.indexOf('const idemSince'))
+    assert.match(layer1, /\.eq\('checkout_token', data\.checkout_token\)/)
+    assert.match(layer1, /\.eq\('store_id', data\.store_id\)/)
+    assert.match(layer1, /\.neq\('status', 'abandoned'\)/)
+  })
+
+  test('the 409 is reachable only through shouldSoftBlock', () => {
+    const count = (layer2.match(/status: 409/g) ?? []).length
+    assert.equal(count, 1, 'exactly one 409 in layer 2')
+    assert.match(layer2, /if \(shouldSoftBlock\(\{/)
+  })
+})
+
+describe('6. monitor diagnostics are complete and non-identifying', () => {
+  const v = evaluate(candidate(), [prior()], NOW)
+  const d = monitorDiagnostic({
+    verdict: v, storeId: 'store-1', phoneMask: '0555•••111',
+    source: 'storefront', checkoutToken: 'abcdef0123456789', priorsConsidered: 3,
+  })
+
+  test('carries every field needed to judge the detector', () => {
+    for (const k of ['classification', 'score', 'store_id', 'prior_order_id', 'prior_order_number',
+      'signals', 'source', 'priors_considered', 'would_soft_block_if_enforced']) {
+      assert.ok(k in d, `missing ${k}`)
+    }
+    for (const k of ['same_quantity', 'same_total', 'same_delivery_type', 'same_wilaya',
+      'same_commune', 'name_match', 'gap_hours', 'prior_status', 'prior_status_class']) {
+      assert.ok(k in d.signals, `missing signal ${k}`)
+    }
+  })
+
+  test('carries no customer name and no full phone number', () => {
+    const blob = JSON.stringify(d)
+    assert.ok(!blob.includes('محمد بن علي'), 'customer name leaked into diagnostics')
+    assert.ok(!blob.includes('0555111111'), 'full phone leaked into diagnostics')
+    assert.ok(!blob.includes('باب الوادي'), 'address leaked into diagnostics')
+  })
+
+  test('the attempt id is truncated, not the whole token', () => {
+    assert.equal(d.attempt, 'abcdef01')
+  })
+
+  test('reports what enforcement WOULD have done, without doing it', () => {
+    assert.equal(d.mode, 'monitor')
+    assert.equal(d.would_soft_block_if_enforced, true)
+  })
+
+  test('signals reflect the actual comparison', () => {
+    const diff = evaluate(candidate({ total: 9999, wilaya_id: 31 }), [prior()], NOW)
+    assert.equal(diff.signals.same_total, false)
+    assert.equal(diff.signals.same_wilaya, false)
+    assert.equal(diff.signals.prior_status_class, 'unactioned')
   })
 })
