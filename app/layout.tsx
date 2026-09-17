@@ -18,22 +18,32 @@ const elMessiri = El_Messiri({subsets: ['arabic','latin'], weight: ['400','500',
 
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['300','400','500','600','700','800'],
+  // 300 dropped because nothing in the app renders at it — zero font-light,
+  // zero font-weight:300, zero inline 300. This saves no bytes on its own:
+  // Inter ships as ONE variable file (48.4 KB) shared by every weight, so the
+  // preload is unchanged. It only stops declaring a weight we never use.
+  weight: ['400','500','600','700','800'],
   variable: '--font-inter',
   display: 'swap',
 })
 const tajawal = Tajawal({
   subsets: ['arabic', 'latin'],
-  weight: ['300','400','500','700','800','900'],
+  // 300 dropped for the same reason as Inter. 400/500/700/800/900 all render.
+  weight: ['400','500','700','800','900'],
   variable: '--font-tajawal',
   display: 'swap',
 })
-// Confirmili design system — Montserrat
+// Confirmili design system — Montserrat.
+// preload:false — only .confirmili-theme (a dashboard surface) applies it, so
+// the storefront was preloading 35.5 KB it never renders. The @font-face stays
+// declared, so the dashboard still gets it; the browser simply fetches it when
+// something actually uses the family instead of on every storefront page.
 const montserrat = Montserrat({
   subsets: ['latin'],
   weight: ['400','500','600','700','800'],
   variable: '--font-montserrat',
   display: 'swap',
+  preload: false,
 })
 // Commerco dashboard Arabic UI font (design system §Typography).
 // preload:false — only the dashboard applies it, storefront never downloads it.
