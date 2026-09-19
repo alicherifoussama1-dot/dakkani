@@ -11,9 +11,9 @@ import { getProductTracking } from '@/lib/tracking/service'
 import ReviewForm          from '@/components/storefront/ReviewForm'
 import Image               from 'next/image'
 import { formatDZD } from '@/lib/utils/format'
-import { applyStoreDeliveryPrices } from '@/lib/delivery/pricing'
+import { fetchStoreDeliveryOverrides, mergeStoreDeliveryPrices } from '@/lib/delivery/pricing'
 import { getProductTheme, themeToCSSVars, normalizeProductOrder } from '@/lib/product-themes'
-import { getStoreBySlug, getProductBySlug } from '@/lib/storefront/product-data'
+import { getStoreBySlug, getProductBySlug, getActiveWilayas } from '@/lib/storefront/product-data'
 import Link from 'next/link'
 
 interface Props { params: { storeSlug: string; slug: string } }
@@ -57,18 +57,22 @@ export default async function ProductPage({ params }: Props) {
 
   // Tracking resolution is independent of the rows below, so run it in the SAME
   // parallel batch to remove one serial Supabase round-trip from TTFB.
-  const [wilayasRes, reviewsRes, relatedRes, stockRes, trackingBundle] = await Promise.all([
-    supabase.from('wilayas').select('*').eq('is_active', true).order('id'),
+  // The store's delivery overrides join this batch too: they need only the
+  // store id, so waiting for the wilaya rows first bought us nothing but a
+  // serial round-trip. They are merged in memory below.
+  const [wilayaRows, reviewsRes, relatedRes, stockRes, trackingBundle, deliveryOverrides] = await Promise.all([
+    getActiveWilayas(),
     supabase.from('reviews').select('customer_name,rating,comment,created_at').eq('product_id', product.id).eq('is_approved', true).order('created_at', { ascending: false }).limit(6),
     relatedQuery,
     supabase.from('warehouse_stock').select('quantity,reserved,variant_key').eq('product_id', product.id).eq('store_id', store.id),
     getProductTracking(supabase, product as any, store.slug),
+    fetchStoreDeliveryOverrides(store.id),
   ])
 
   // Store declared prices override the static wilaya fees. Read server-side
   // via service role (storefront is anon; delivery_declared_prices is RLS),
   // so the customer sees the store's imported courier price per wilaya.
-  const wilayas = await applyStoreDeliveryPrices(store.id, (wilayasRes.data ?? []) as any[])
+  const wilayas = mergeStoreDeliveryPrices(wilayaRows as any[], deliveryOverrides)
 
   let relatedData = relatedRes.data ?? []
   if (relatedData.length < 4) {

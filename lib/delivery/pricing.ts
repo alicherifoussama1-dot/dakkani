@@ -54,23 +54,34 @@ export async function resolveDeclaredFee(opts: {
   }
 }
 
-/** Merge the store's declared delivery prices into the wilayas list. */
-export async function applyStoreDeliveryPrices<T extends { code?: string | number; delivery_fee_home?: number; delivery_fee_stopdesk?: number }>(
-  storeId: string,
-  wilayas: T[],
-): Promise<T[]> {
+/** A store's courier price per wilaya code. */
+export type StoreDeliveryOverrides = Map<string, { home: number; desk: number }>
+
+/**
+ * Read the store's declared delivery prices.
+ *
+ * Split out of applyStoreDeliveryPrices for one reason: it needs only the
+ * store id, while the merge below needs the wilaya rows. Keeping them joined
+ * forced the product page to wait for the wilaya query before this one could
+ * even start — a serial Supabase round-trip on every single page view. A
+ * caller that already knows the store id can now run this IN its parallel
+ * batch and merge afterwards in memory.
+ *
+ * Returns null when there is nothing to override, so the merge is a no-op.
+ */
+export async function fetchStoreDeliveryOverrides(storeId: string): Promise<StoreDeliveryOverrides | null> {
   const a = admin()
-  if (!a || !wilayas?.length) return wilayas
+  if (!a) return null
   try {
     const [{ data: declared }, { data: routes }] = await Promise.all([
       a.from('delivery_declared_prices').select('provider_id, wilaya_code, home_price, stopdesk_price').eq('store_id', storeId),
       a.from('wilaya_company_map').select('wilaya_code, provider_id').eq('store_id', storeId),
     ])
-    if (!declared?.length) return wilayas
+    if (!declared?.length) return null
 
     // Prefer the price from each wilaya's routed provider (wilaya_company_map).
     const routeMap = new Map<string, string>((routes ?? []).map((r: any) => [pad(r.wilaya_code), r.provider_id]))
-    const priceByCode = new Map<string, { home: number; desk: number }>()
+    const priceByCode: StoreDeliveryOverrides = new Map()
     for (const row of declared) {
       const code = pad(row.wilaya_code)
       const routed = routeMap.get(code)
@@ -78,17 +89,35 @@ export async function applyStoreDeliveryPrices<T extends { code?: string | numbe
       const preferred = routed ? row.provider_id === routed : !existing
       if (preferred || !existing) priceByCode.set(code, { home: Number(row.home_price), desk: Number(row.stopdesk_price) })
     }
-
-    return wilayas.map(w => {
-      const p = priceByCode.get(pad(w.code))
-      if (!p) return w
-      return {
-        ...w,
-        delivery_fee_home: p.home > 0 ? p.home : w.delivery_fee_home,
-        delivery_fee_stopdesk: p.desk > 0 ? p.desk : w.delivery_fee_stopdesk,
-      }
-    })
+    return priceByCode
   } catch {
-    return wilayas // table missing / any error → static fees
+    return null // table missing / any error → static fees
   }
+}
+
+/** Pure, no I/O. Same mapping the old function did inline. */
+export function mergeStoreDeliveryPrices<T extends { code?: string | number; delivery_fee_home?: number; delivery_fee_stopdesk?: number }>(
+  wilayas: T[],
+  overrides: StoreDeliveryOverrides | null,
+): T[] {
+  if (!overrides || !wilayas?.length) return wilayas
+  return wilayas.map(w => {
+    const p = overrides.get(pad(w.code))
+    if (!p) return w
+    return {
+      ...w,
+      delivery_fee_home: p.home > 0 ? p.home : w.delivery_fee_home,
+      delivery_fee_stopdesk: p.desk > 0 ? p.desk : w.delivery_fee_stopdesk,
+    }
+  })
+}
+
+/** Merge the store's declared delivery prices into the wilayas list.
+ *  Unchanged signature and behaviour — the checkout page still calls this. */
+export async function applyStoreDeliveryPrices<T extends { code?: string | number; delivery_fee_home?: number; delivery_fee_stopdesk?: number }>(
+  storeId: string,
+  wilayas: T[],
+): Promise<T[]> {
+  if (!wilayas?.length) return wilayas
+  return mergeStoreDeliveryPrices(wilayas, await fetchStoreDeliveryOverrides(storeId))
 }
