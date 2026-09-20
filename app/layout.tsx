@@ -5,7 +5,11 @@ import { Inter, Tajawal, Montserrat, Cairo, Reem_Kufi, Amiri, El_Messiri, IBM_Pl
 // the dashboard opts into the new system via the scoped .commerco-ds layer.
 import '../design/tokens.css'
 import './globals.css'
-import '../design/components.css'
+// design/components.css is NOT imported here on purpose. It is the .c-* /
+// .auth-* component stylesheet, used only by the dashboard, the auth pages and
+// reset-password — never by the storefront. Importing it in the root layout
+// put 45 KB of CSS a customer can never see on the critical path of every
+// product page. It is now imported by the three layouts that actually use it.
 import ScrollProgress from '@/components/layout/ScrollProgress'
 
 // ── Storefront theme display fonts (lazy: preload:false so non-storefront

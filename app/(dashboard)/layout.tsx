@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+import '../../design/components.css'   // .c-* component system (dashboard only)
 import { redirect } from 'next/navigation'
 import { createServerClient, getActiveStore } from '@/lib/supabase/server'
 import DashboardShell from '@/components/layout/DashboardShell'

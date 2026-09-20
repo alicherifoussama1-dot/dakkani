@@ -1,4 +1,5 @@
 'use client'
+import '../../design/components.css'   // .c-* and .auth-* classes
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
