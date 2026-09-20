@@ -44,7 +44,10 @@ export const getActiveWilayas = unstable_cache(
     return data ?? []
   },
   ['storefront:wilayas:active'],
-  { revalidate: 3600, tags: ['wilayas'] },
+  // 300s, not an hour: the query is shared by every visitor, so even a short
+  // window removes virtually all of it, while capping how long a platform-level
+  // fee edit could stay invisible. Store overrides are never cached.
+  { revalidate: 300, tags: ['wilayas'] },
 )
 
 export const getProductBySlug = cache(async (storeId: string, slug: string) => {
