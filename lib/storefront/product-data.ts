@@ -13,53 +13,15 @@ import { createPublicClient } from '@/lib/supabase/public'
 // The selects are supersets ('*') so the page keeps EVERY field it already
 // used (variants, section config, pixels, theme, offers). Nothing removed.
 
-/**
- * The store row + its settings.
- *
- * This is the slowest query on the product page (~1s measured) and it ran from
- * scratch for every visitor. It is now served from the data cache for 30s.
- *
- * WHAT THIS CANNOT AFFECT — checked against the live database, not assumed:
- *   · Tracking. Pixel ids are resolved by getProductTracking(), which queries
- *     tracking_integrations / product_tracking / domains live on every request.
- *     The legacy fallback columns on this row are all NULL for the live store
- *     (meta_pixel_id, tiktok_pixel_id, google_tag_id, snapchat_pixel_id), so a
- *     cached copy contributes nothing to pixel resolution either way. Changing
- *     a pixel in the dashboard still takes effect on the very next request.
- *   · Price, stock and variants. They come from getProductBySlug() and
- *     warehouse_stock, both uncached.
- *   · Delivery fees. fetchStoreDeliveryOverrides() is read live and merged on
- *     top of the wilaya rows.
- *   · Orders. POST /api/orders runs its OWN stores query, so order totals,
- *     fraud scoring and stock decrement never see a cached row.
- *
- * WHAT IT DOES DELAY, by at most 30 seconds, and only on the product page:
- *   store_settings — checkout field config, payment toggles, free-delivery
- *   threshold, theme colours, whatsapp/call numbers, abandoned-cart settings —
- *   plus is_active and the store name.
- *
- * 30s and not longer: the page is viewed many times a minute, so a short
- * window already removes essentially every repeat of this query, while keeping
- * the delay short enough that a merchant editing a setting sees it almost at
- * once.
- */
-const fetchStoreBySlug = unstable_cache(
-  async (slug: string) => {
-    const supabase = createPublicClient()
-    const { data } = await supabase
-      .from('stores')
-      .select('*,store_settings(*)')
-      .eq('slug', slug)
-      .single()
-    return data
-  },
-  ['storefront:store-by-slug'],
-  { revalidate: 30, tags: ['stores'] },
-)
-
-// cache() keeps the per-request dedup that generateMetadata and the page rely
-// on; unstable_cache adds the cross-request layer underneath it.
-export const getStoreBySlug = cache((slug: string) => fetchStoreBySlug(slug))
+export const getStoreBySlug = cache(async (slug: string) => {
+  const supabase = createPublicClient()
+  const { data } = await supabase
+    .from('stores')
+    .select('*,store_settings(*)')
+    .eq('slug', slug)
+    .single()
+  return data
+})
 
 /**
  * The platform wilaya table: 58 reference rows — names, zones and the FALLBACK
