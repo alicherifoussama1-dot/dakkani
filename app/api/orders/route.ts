@@ -568,31 +568,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 10. Chargily payment — create checkout URL
-    let chargilyUrl: string | null = null
-    if (['chargily_cib', 'chargily_edahabia'].includes(data.payment_method)) {
-      const chargilyKey = process.env.CHARGILY_SECRET_KEY
-      if (chargilyKey) {
-        const { ChargilyClient } = await import('@/lib/payment/chargily')
-        const chargily = new ChargilyClient(chargilyKey)
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-        try {
-          const checkout = await chargily.createCheckout({
-            amount: Math.round(total),
-            currency: 'dzd',
-            payment_method: data.payment_method === 'chargily_cib' ? 'CIB' : 'EDAHABIA',
-            success_url: `${appUrl}/order/${order.id}?payment=success`,
-            failure_url:  `${appUrl}/order/${order.id}?payment=failed`,
-            webhook_endpoint: `${appUrl}/api/webhooks/chargily`,
-            locale: 'ar',
-            metadata: { order_id: order.id, order_number: order.order_number },
-          })
-          chargilyUrl = checkout.checkout_url
-        } catch (e) {
-          console.error('Chargily checkout error:', e)
-        }
-      }
-    }
+    const chargilyUrl: string | null = null
 
     // Await the concurrently-started server Purchase before returning so it
     // completes on serverless, but its failure is already swallowed (caught

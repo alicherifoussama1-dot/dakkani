@@ -42,17 +42,13 @@ const NAV_MAIN: NavEntry[] = [
   { href: '/dashboard', key: 'home',      icon: Home },
   { href: '/orders',    key: 'orders',    icon: ShoppingCart },
   { href: '/products',  key: 'products',  icon: Package },
-  { href: '/customers', key: 'customers', icon: Users },
 ]
 const NAV_GROWTH: NavEntry[] = [
   { href: '/analytics',     key: 'analytics',     icon: BarChart2 },
-  { href: '/landing-pages', key: 'landing_pages', icon: Megaphone },
   { href: '/reviews',       key: 'reviews',       icon: Star },
 ]
 const NAV_CHANNELS: NavEntry[] = [
-  { href: '/store-builder',  key: 'store_builder', icon: Store, badge: true },
   { href: '/store/delivery', key: 'delivery',      icon: Truck, badge: true },
-  { href: '/confirmili',     key: 'confirmili',    icon: Phone, badge: true },
   { href: '/google-sheets',  key: 'google_sheets', icon: Globe, badge: true },
   { href: '/blacklist',      key: 'blacklist',     icon: ShieldOff },
 ]
@@ -229,26 +225,6 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
         <SectionTitle>{sec('setup')}</SectionTitle>
         <div className="space-y-0.5">
           {NAV_SETUP.map(item => <NavItem key={item.href} item={item} />)}
-          {/* Billing (collapsible, preserved) */}
-          <button onClick={() => setBillingOpen(o => !o)}
-            className="flex items-center gap-3 h-10 px-3 w-full rounded-[var(--radius-md)] text-sm font-medium transition-colors"
-            style={{ color: isActive('/billing') ? 'var(--nav-item-fg-active)' : 'var(--text-secondary)', background: isActive('/billing') ? 'var(--nav-item-bg-active)' : 'transparent' }}
-            aria-expanded={billingOpen}>
-            <CreditCard size={18} strokeWidth={1.8} className="flex-shrink-0" aria-hidden />
-            <span className="flex-1 truncate text-start">{t('billing.title')}</span>
-            <ChevronDown size={14} className={`transition-transform ${billingOpen ? 'rotate-180' : ''}`} aria-hidden />
-          </button>
-          {billingOpen && (
-            <div className="ps-8 space-y-0.5">
-              {[{ href: '/billing/plans', label: t('billing.plans') }, { href: '/billing/history', label: t('billing.history') }].map(s => (
-                <Link key={s.href} href={s.href}
-                  className="flex items-center gap-2 h-9 px-3 rounded-[var(--radius-md)] text-sm transition-colors"
-                  style={{ color: isActive(s.href) ? 'var(--nav-item-fg-active)' : 'var(--text-secondary)', background: isActive(s.href) ? 'var(--nav-item-bg-active)' : 'transparent' }}>
-                  <ChevronRight size={12} className="rtl:rotate-180" aria-hidden />{s.label}
-                </Link>
-              ))}
-            </div>
-          )}
           <NavItem item={{ href: '/settings', key: 'settings', icon: Settings }} />
         </div>
       </nav>
@@ -326,11 +302,6 @@ export default function DashboardShell({ children, store, user, newOrdersCount =
       </div>
     </div>
   )
-
-  // Confirmili keeps its self-contained theme (unchanged behavior)
-  if (pathname?.startsWith('/confirmili')) {
-    return <div dir={dir} lang={locale} className="h-screen overflow-hidden">{children}</div>
-  }
 
   return (
     <div dir={dir} lang={locale} className="commerco-ds c-ui flex h-screen overflow-hidden" style={{ background: 'var(--surface-page)' }}>

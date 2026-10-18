@@ -6,7 +6,6 @@ import { pickStoreHostname } from '@/lib/domains/url'
 import { I18nProvider } from '@/lib/i18n/react'
 import { getDashboardLocale, getAllDashboardMessages } from '@/lib/i18n/dashboard'
 import { DASHBOARD_LANG_COOKIE } from '@/lib/i18n/config'
-import SupportAccessBanner from '@/components/platform/SupportAccessBanner'
 import { Toaster } from '@/lib/ui/toast'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -45,7 +44,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
         newOrdersCount={newOrdersToday ?? 0}
         allStores={allStores}
       >
-        <SupportAccessBanner storeId={store.id} />
         {children}
       </DashboardShell>
       <Toaster />
