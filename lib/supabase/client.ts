@@ -1,8 +1,6 @@
-import { createBrowserClient } from '@supabase/ssr'
+// Browser client — now backed by /api/db + /api/auth/session (lib/db/browser).
+import { createBrowserDb } from '@/lib/db/browser'
 
 export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  return createBrowserDb()
 }

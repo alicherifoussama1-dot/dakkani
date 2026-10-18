@@ -4,7 +4,7 @@ import { getActiveStore } from '@/lib/supabase/server';
 // GET /api/admin/labels/generate?ids=id1,id2,id3
 // Returns PDF with A4 labels for each order
 // ============================================================
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@/lib/db/compat/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'

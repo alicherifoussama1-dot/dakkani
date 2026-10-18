@@ -2,7 +2,7 @@
 // Auto-blacklist engine
 // Triggered by order status changes
 // ============================================================
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@/lib/db/compat/supabase-js'
 
 const CANCEL_THRESHOLD = 3
 

@@ -10,7 +10,7 @@
 // GUARANTEE: never throws — a Sheets failure must NEVER block order
 // creation. Failures are recorded on orders.sheet_status and retried.
 // ============================================================
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/db/compat/supabase-js'
 import { writeRow, buildOrderRow } from '@/lib/google/service-account'
 
 export type OrderRouting = 'sheet_only' | 'confirmili_only' | 'both'

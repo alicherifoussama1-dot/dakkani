@@ -14,7 +14,7 @@
 // client cannot read another merchant's data by forging the header. RLS
 // remains the real boundary; this is only a selector.
 // ============================================================
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@/lib/db/compat/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 

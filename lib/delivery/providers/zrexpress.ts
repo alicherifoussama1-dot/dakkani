@@ -16,7 +16,7 @@ import type {
 } from '../types'
 import { normalizeStatus } from '../types'
 import { httpJson, fetchRaw } from './base'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/db/compat/supabase-js'
 
 const PROCOLIS = 'https://procolis.com/api_v1'
 const ZRX = 'https://api.zrexpress.app/api/v1'

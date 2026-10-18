@@ -8,16 +8,11 @@
 //    use scoped() to make that impossible to forget.
 //  • Storefront public reads keep using lib/supabase/public.ts.
 // ============================================================
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@/lib/db/compat/supabase-js'
 
 export function createServiceClient(): SupabaseClient {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) throw new Error('Service role client unavailable: missing SUPABASE_SERVICE_ROLE_KEY')
-  return createClient(url, key, {
-    auth: { autoRefreshToken: false, persistSession: false },
-    global: { fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }) },
-  })
+  // Direct PostgreSQL access (service-role semantics).
+  return createClient()
 }
 
 /**

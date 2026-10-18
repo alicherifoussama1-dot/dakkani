@@ -15,7 +15,7 @@
 //
 // Returns a report: { summary, fixed[], skipped[], unresolved[] }.
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/db/compat/supabase-js'
 import { resolveCommune } from '@/lib/algeria-baladias'
 
 export const dynamic = 'force-dynamic'

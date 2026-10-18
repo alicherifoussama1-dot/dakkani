@@ -9,7 +9,7 @@
 // Normalized output: { offices: [{ id, name, address, wilaya, commune }], ... }
 // Credentials are decrypted server-side; the browser only calls this route.
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/db/compat/supabase-js'
 import { decryptCredentials } from '@/lib/delivery'
 import { resolveCommune, resolveCommuneAnywhere } from '@/lib/algeria-baladias'
 import { reportError } from '@/lib/monitoring/report'

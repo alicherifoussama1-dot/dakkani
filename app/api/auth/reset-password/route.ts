@@ -13,7 +13,7 @@ function emailT() {
   const locale: Locale = isLocale(raw) ? raw : 'ar'
   return { t: createTranslator(EMAIL_CATALOG[locale]), dir: locale === 'ar' ? 'rtl' : 'ltr' }
 }
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/db/compat/supabase-js'
 import { z } from 'zod'
 import { checkRateLimit, rateLimitResponse } from '@/lib/platform/rate-limit'
 import { getClientInfo } from '@/lib/platform/security'

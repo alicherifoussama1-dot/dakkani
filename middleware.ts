@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { SESSION_COOKIE, verifySession } from '@/lib/db/session'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -13,26 +13,23 @@ const AUTH_PAGES = ['/login','/register']
 
 // ── Custom-domain host → store slug resolution (cached) ─────
 // afnane.store/product/x  →  rewrite to  /{storeSlug}/product/x
-// Uses the Supabase REST API directly (edge-safe) + in-memory TTL cache.
-const PLATFORM_HOSTS = /(\.vercel\.app|\.commerco\.app|^localhost(:\d+)?$|^127\.0\.0\.1(:\d+)?$)$/i
+// Middleware runs on the edge runtime (no pg), so the lookup goes through
+// /api/internal/resolve-host + an in-memory TTL cache.
+// PLATFORM_HOSTS env (comma list) adds the app's own hosts, e.g. "afnan.store".
+const EXTRA_PLATFORM_HOSTS = (process.env.PLATFORM_HOSTS ?? '').split(',').map(h => h.trim().toLowerCase()).filter(Boolean)
+const PLATFORM_HOSTS_RE = /(\.vercel\.app|\.commerco\.app|^localhost(:\d+)?$|^127\.0\.0\.1(:\d+)?$)$/i
+const PLATFORM_HOSTS = { test: (h: string) => PLATFORM_HOSTS_RE.test(h) || EXTRA_PLATFORM_HOSTS.includes(h) }
 const hostCache = new Map<string, { slug: string | null; at: number }>()
 const HOST_TTL = 60_000
 
-async function resolveCustomHost(host: string): Promise<string | null> {
+async function resolveCustomHost(host: string, origin: string): Promise<string | null> {
   const cached = hostCache.get(host)
   if (cached && Date.now() - cached.at < HOST_TTL) return cached.slug
   let slug: string | null = null
   try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    if (url && key) {
-      const res = await fetch(
-        `${url}/rest/v1/domains?hostname=eq.${encodeURIComponent(host)}&status=eq.ssl_active&select=stores(slug)&limit=1`,
-        { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' },
-      )
-      const rows = await res.json().catch(() => [])
-      slug = rows?.[0]?.stores?.slug ?? null
-    }
+    const base = process.env.INTERNAL_ORIGIN ?? origin
+    const res = await fetch(`${base}/api/internal/resolve-host?host=${encodeURIComponent(host)}`, { cache: 'no-store' })
+    if (res.ok) slug = (await res.json()).slug ?? null
   } catch { slug = null }
   hostCache.set(host, { slug, at: Date.now() })
   return slug
@@ -45,7 +42,7 @@ export async function middleware(request: NextRequest) {
   const rawHost = (request.headers.get('host') ?? '').toLowerCase().split(':')[0]
   const host = rawHost.replace(/^www\./, '')
   if (host && !PLATFORM_HOSTS.test(host) && !pathname.startsWith('/api/') && !pathname.startsWith('/_next')) {
-    const slug = await resolveCustomHost(host)
+    const slug = await resolveCustomHost(host, request.nextUrl.origin)
     if (slug) {
       // Canonicalize internal links: on a custom host, `/store/<slug>/...`
       // (emitted by shared storefront components) collapses to `/...` so the
@@ -95,30 +92,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request: { headers: request.headers } })
   }
 
-  let response = NextResponse.next({ request: { headers: request.headers } })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) { return request.cookies.get(name)?.value },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options })
-          response = NextResponse.next({ request: { headers: request.headers } })
-          response.cookies.set({ name, value, ...options })
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: '', ...options })
-          response = NextResponse.next({ request: { headers: request.headers } })
-          response.cookies.set({ name, value: '', ...options })
-        },
-      },
-    }
-  )
-
-  // Refresh session / read user (only reached for auth pages & protected routes)
-  const { data: { user } } = await supabase.auth.getUser()
+  const response = NextResponse.next({ request: { headers: request.headers } })
+  const session = await verifySession(request.cookies.get(SESSION_COOKIE)?.value)
+  const user = session ? { id: session.sub } : null
 
   if (isAuthPage) {
     if (user) return NextResponse.redirect(new URL('/dashboard', request.url))

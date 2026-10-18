@@ -1,6 +1,6 @@
 // POST /api/sheets/test — verify the service account can access the sheet
 // AND the required headers exist in row 1. Returns a clear Arabic status.
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@/lib/db/compat/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/db/compat/supabase-js'
 import { decryptCredentials } from '@/lib/delivery'
 
 export const dynamic = 'force-dynamic'

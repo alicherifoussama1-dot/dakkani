@@ -1,7 +1,7 @@
 // ============================================================
 // Customer Review Submission API
 // ============================================================
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/db/compat/supabase-js'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 

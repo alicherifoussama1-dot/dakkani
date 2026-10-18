@@ -1,5 +1,5 @@
 // Vercel Cron: runs hourly — auto-blacklists customers with 3+ cancellations
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/db/compat/supabase-js'
 import { NextResponse }  from 'next/server'
 import type { NextRequest } from 'next/server'
 

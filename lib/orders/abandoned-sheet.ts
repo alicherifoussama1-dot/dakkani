@@ -14,7 +14,7 @@
 //     and the queue retries concurrently.
 //   • Converted drafts (status ≠ 'abandoned') are never pushed.
 // ============================================================
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/db/compat/supabase-js'
 import { formatCommuneFrench } from '@/lib/algeria-baladias'
 
 export type AbandonedPushResult =

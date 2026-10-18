@@ -1,5 +1,5 @@
 // PATCH /api/store/layout — save the builder's layout JSON + theme.
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@/lib/db/compat/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'

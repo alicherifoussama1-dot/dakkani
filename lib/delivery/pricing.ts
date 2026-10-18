@@ -8,7 +8,7 @@
 // Uses the service role because delivery_declared_prices is owner-RLS and
 // the storefront runs as an anonymous client. Key is server-only.
 // ============================================================
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/db/compat/supabase-js'
 
 function admin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL

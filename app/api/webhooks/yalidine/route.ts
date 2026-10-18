@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/db/compat/supabase-js'
 import { NextResponse } from 'next/server'
 
 const STATUS_MAP: Record<string, string> = {

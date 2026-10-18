@@ -4,7 +4,7 @@
 // normalizes the status, updates the order (status + tracking_status
 // + delivery_timeline) and logs it. Optional WhatsApp notify.
 // ============================================================
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/db/compat/supabase-js'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { normalizeStatus, UNIFIED_TO_ORDER_STATUS, UNIFIED_STATUS_LABEL, type UnifiedStatus } from '@/lib/delivery/types'

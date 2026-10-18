@@ -1,5 +1,5 @@
 // Sheets registry (service-account model). Owner-scoped via RLS + explicit check.
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@/lib/db/compat/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'

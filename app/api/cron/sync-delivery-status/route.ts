@@ -1,6 +1,6 @@
 // Vercel Cron — periodically sync unified tracking status into orders.
 // Works across ALL providers and ALL stores (per-store encrypted creds).
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/db/compat/supabase-js'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { adapterFromRow, UNIFIED_TO_ORDER_STATUS } from '@/lib/delivery'
