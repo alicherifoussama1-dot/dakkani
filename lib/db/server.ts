@@ -4,6 +4,7 @@
 import { promises as fs } from 'fs'
 import path from 'path'
 import bcrypt from 'bcryptjs'
+import { createHash, randomBytes } from 'crypto'
 import { QueryBuilder, type DbResult, type QuerySpec } from './builder'
 import { compile, qi } from './compile'
 import { getMeta } from './meta'
@@ -109,6 +110,8 @@ export function storageBucket(bucket: string) {
   }
 }
 
+const sha256hex = (v: string) => createHash('sha256').update(v).digest('hex')
+
 // ── auth ─────────────────────────────────────────────────────
 export interface AuthCtx {
   token: string | null
@@ -173,8 +176,8 @@ export function authApi(ctx: AuthCtx) {
       if (!args?.token_hash) return fail
       const r = await query<{ user_id: string; email: string }>(
         `update password_resets pr set used_at = now() from app_users u
-          where pr.token_hash = encode(sha256(convert_to($1, 'utf8')), 'hex') and pr.used_at is null and pr.expires_at > now() and u.id = pr.user_id
-          returning pr.user_id, u.email`, [args.token_hash])
+          where pr.token_hash = $1 and pr.used_at is null and pr.expires_at > now() and u.id = pr.user_id
+          returning pr.user_id, u.email`, [sha256hex(args.token_hash)])
       if (!r[0]) return fail
       const token = await signSession({ id: r[0].user_id, email: r[0].email })
       ctx.setToken?.(token)
@@ -185,8 +188,8 @@ export function authApi(ctx: AuthCtx) {
       async generateLink(args: { type: string; email: string; options?: { redirectTo?: string } }) {
         const u = await findUserByEmail(args.email)
         if (!u) return { data: null, error: { message: 'User not found', status: 404 } }
-        const raw = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('hex')
-        await query(`insert into password_resets (user_id, token_hash, expires_at) values ($1, encode(sha256(convert_to($2, 'utf8')), 'hex'), now() + interval '1 hour')`, [u.id, raw])
+        const raw = randomBytes(32).toString('hex')
+        await query(`insert into password_resets (user_id, token_hash, expires_at) values ($1, $2, now() + interval '1 hour')`, [u.id, sha256hex(raw)])
         const link = `${args.options?.redirectTo ?? ''}?token_hash=${raw}&type=recovery`
         return { data: { properties: { hashed_token: raw, action_link: link }, user: { id: u.id, email: u.email } }, error: null }
       },

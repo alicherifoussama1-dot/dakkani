@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
   // ── Custom domain serving: rewrite the host's paths onto the storefront ──
   const rawHost = (request.headers.get('host') ?? '').toLowerCase().split(':')[0]
   const host = rawHost.replace(/^www\./, '')
-  if (host && !PLATFORM_HOSTS.test(host) && !pathname.startsWith('/api/') && !pathname.startsWith('/_next')) {
+  if (host && !PLATFORM_HOSTS.test(host) && !pathname.startsWith('/api/') && !pathname.startsWith('/_next') && !pathname.startsWith('/uploads/')) {
     const slug = await resolveCustomHost(host, request.nextUrl.origin)
     if (slug) {
       // Canonicalize internal links: on a custom host, `/store/<slug>/...`
