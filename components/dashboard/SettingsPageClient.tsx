@@ -15,6 +15,7 @@ import {
   MessageSquare, RotateCcw,
 } from 'lucide-react'
 import { DEFAULT_WHATSAPP_TEMPLATE, buildWhatsAppMessage } from '@/lib/utils/whatsapp'
+import { storeBaseUrl } from '@/lib/store-url'
 
 // ── Tab identity — icons carry meaning, labels lead ─────────
 const TABS = [
@@ -305,10 +306,8 @@ export default function SettingsPageClient({ store, user, wilayas, storeHostname
     } catch { setLoading(false); toast.error('حدث خطأ أثناء الاتصال بالخادم') }
   }
 
-  // Prefer the store's active custom domain; fall back to the internal platform URL.
-  const storeUrl = storeHostname
-    ? `https://${storeHostname}/`
-    : `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://dakkani.vercel.app'}/store/${store.slug}`
+  // Prefer the store's active custom domain; fall back to its platform subdomain.
+  const storeUrl = `${storeBaseUrl(store.slug, storeHostname)}/`
   const copyStoreUrl = () => { navigator.clipboard.writeText(storeUrl); toast.success('نُسخ الرابط') }
 
   // ── shared UI atoms ─────────────────────────────────────────

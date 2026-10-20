@@ -29,6 +29,7 @@ const storeFor = async host => (await pool.query(
 
 // host -> route | null
 //   afnane.store      -> { slug }                              store domain
+//   arsily-dz.commerco.store -> { slug: 'arsily-dz' }          store subdomain on the platform
 //   roya.afnane.store -> { slug, product: 'ensemble-roya' }    product subdomain
 //   x.afnane.store    -> { base: 'afnane.store' }              unknown label: redirect
 async function routeFor(host) {
@@ -40,7 +41,12 @@ async function routeFor(host) {
     const dot = host.indexOf('.')
     const label = host.slice(0, dot), base = host.slice(dot + 1)
     if (direct) route = { slug: direct.slug }
-    else if (dot > 0 && base.includes('.')) {
+    else if (dot > 0 && PLATFORM.has(base)) {
+      // Store subdomain on the platform: arsily-dz.commerco.store
+      const s = (await pool.query(
+        `select slug from stores where slug = $1 and is_active limit 1`, [label])).rows[0]
+      route = s ? { slug: s.slug } : { base }
+    } else if (dot > 0 && base.includes('.')) {
       const parent = await storeFor(base)
       if (parent) {
         const p = (await pool.query(

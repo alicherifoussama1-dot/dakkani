@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import { CheckCircle2, AlertTriangle, XCircle, ExternalLink, Eye, Globe } from 'lucide-react'
 import { useT, useDir } from '@/lib/i18n/react'
 import { PROVIDER_LIST, type ProviderKey } from '@/lib/tracking/registry'
+import { storeBaseUrl } from '@/lib/store-url'
 import {
   resolveProductTracking, resolveDomain,
   type TrackingIntegration, type ProductTrackingRow, type DomainRow,
@@ -74,9 +75,7 @@ export default function ProductTrackingTab({ productId, storeId }: Props) {
   const resolved = useMemo(() => resolveProductTracking(integrations, assignmentsFromSel), [integrations, assignmentsFromSel])
   const domain = useMemo(() => resolveDomain(domains, domainSel === 'default' ? null : domainSel, storeSlug), [domains, domainSel, storeSlug])
   const productUrl = product
-    ? (domain.isCustom
-        ? `https://${domain.hostname}/product/${product.slug}`
-        : `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://dakkani.vercel.app'}/store/${storeSlug}/product/${product.slug}`)
+    ? `${storeBaseUrl(storeSlug, domain.isCustom ? domain.hostname : null)}/product/${product.slug}`
     : ''
 
   const save = async () => {

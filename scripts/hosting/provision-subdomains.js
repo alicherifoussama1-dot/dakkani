@@ -1,4 +1,6 @@
-// Provision product subdomains on the cPanel host (roya.afnane.store).
+// Provision subdomains on the cPanel host: product subdomains under a store's
+// custom domain (roya.afnane.store) and store subdomains on the platform
+// domain (arsily-dz.commerco.store).
 // For every product with `subdomain` set on a store with an active custom
 // domain: create the cPanel subdomain with docroot public_html (so the same
 // Passenger app serves it), issue a Let's Encrypt certificate (HTTP-01) and
@@ -44,13 +46,19 @@ const certServed = fqdn => {
        from products p join domains d on d.store_id = p.store_id and d.status = 'ssl_active'
       where p.subdomain is not null and d.hostname not like 'www.%'`)
   const existing = new Set(uapi('DomainInfo', 'list_domains').data.sub_domains)
-  for (const r of rows) {
-    const fqdn = `${r.subdomain}.${r.hostname}`
-    let status = 'active'
+
+  // Failed issuance backs off for an hour (Let's Encrypt limits failed validations).
+  const failFile = path.join(tool, '.subdomains-failed.json')
+  let failed = {}; try { failed = JSON.parse(fs.readFileSync(failFile, 'utf8')) } catch {}
+
+  // Create the cPanel subdomain + certificate for label.root; true when served.
+  const ensure = (label, root) => {
+    const fqdn = `${label}.${root}`
+    if (failed[fqdn] && Date.now() - failed[fqdn] < 3600e3) return false
     try {
-      if (!LABEL.test(r.subdomain)) throw new Error('invalid label')
+      if (!LABEL.test(label)) throw new Error('invalid label')
       if (!existing.has(fqdn)) {
-        const res = uapi('SubDomain', 'addsubdomain', `domain=${r.subdomain}`, `rootdomain=${r.hostname}`, 'dir=public_html', 'disallowdot=0')
+        const res = uapi('SubDomain', 'addsubdomain', `domain=${label}`, `rootdomain=${root}`, 'dir=public_html', 'disallowdot=0')
         if (!res.status) throw new Error(JSON.stringify(res.errors))
         existing.add(fqdn)
       }
@@ -61,14 +69,29 @@ const certServed = fqdn => {
         sh(process.execPath, ['install-cert.js', fqdn, fqdn])
       }
       if (!certServed(fqdn)) throw new Error('certificate not served')
+      delete failed[fqdn]
+      return true
     } catch (e) {
-      status = 'error'
+      failed[fqdn] = Date.now()
       console.error(new Date().toISOString(), fqdn, e.message)
-    }
-    if (status !== r.subdomain_status) {
-      await db.query('update products set subdomain_status = $1 where id = $2', [status, r.id])
-      console.log(new Date().toISOString(), fqdn, status)
+      return false
     }
   }
+
+  // 1. Product subdomains under a store's custom domain (roya.afnane.store)
+  for (const r of rows) {
+    const status = ensure(r.subdomain, r.hostname) ? 'active' : 'error'
+    if (status !== r.subdomain_status) {
+      await db.query('update products set subdomain_status = $1 where id = $2', [status, r.id])
+      console.log(new Date().toISOString(), `${r.subdomain}.${r.hostname}`, status)
+    }
+  }
+
+  // 2. Store subdomains on the platform domain (arsily-dz.commerco.store)
+  const platform = new URL(env.NEXT_PUBLIC_APP_URL || 'https://commerco.store').hostname.replace(/^www./, '')
+  const stores = (await db.query('select slug from stores where is_active')).rows
+  for (const st of stores) ensure(st.slug, platform)
+
+  fs.writeFileSync(failFile, JSON.stringify(failed))
   await db.end()
 })().catch(e => { console.error(new Date().toISOString(), 'ERROR', e.message); process.exitCode = 1 })

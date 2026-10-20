@@ -7,6 +7,7 @@ import StorefrontLayout       from '@/components/storefront/StorefrontLayout'
 import StorefrontSections     from '@/components/storefront/StorefrontSections'
 import WhatsAppFloat          from '@/components/storefront/WhatsAppFloat'
 import { normalizeLayout }    from '@/lib/storefront/sections'
+import { storeBaseUrl }       from '@/lib/store-url'
 
 interface Props { params: { storeSlug: string } }
 
@@ -48,7 +49,7 @@ export default async function StorefrontHome({ params }: Props) {
   // LocalBusiness schema
   const localBiz = {
     '@context': 'https://schema.org', '@type': 'Store',
-    name: store.name, url: `${process.env.NEXT_PUBLIC_APP_URL}/store/${store.slug}`,
+    name: store.name, url: storeBaseUrl(store.slug),
     image: store.logo_url, priceRange: '$$', currenciesAccepted: 'DZD',
     paymentAccepted: 'Cash', areaServed: 'Algeria',
     address: { '@type': 'PostalAddress', addressCountry: 'DZ' },
