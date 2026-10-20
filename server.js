@@ -75,11 +75,61 @@ async function rewriteCustomHost(req) {
   req.headers['x-commerco-store-host'] = host // tells the middleware the host is resolved
 }
 
+// ── Storefront micro-cache ──────────────────────────────────
+// Storefront pages on custom hosts are the same for every visitor, so the
+// rendered HTML is kept for PAGE_TTL and served without touching Next.js.
+// The Cache-Control below also lets a CDN (Cloudflare) cache them at the edge.
+// Never cached: order confirmation (per-customer), RSC navigations (their
+// payload depends on request headers), anything that sets a cookie.
+const PAGE_TTL = 30_000
+const PAGE_MAX = 500
+const EDGE_CACHE = 'public, max-age=0, s-maxage=60, stale-while-revalidate=600'
+const pageCache = new Map() // key -> { status, headers, body, at }
+
+function pageCacheKey(req) {
+  if (req.method !== 'GET' || !req.headers['x-commerco-store-host']) return null
+  if (req.headers.rsc || req.headers['next-router-prefetch'] || req.headers['next-action']) return null
+  if (/\/order-confirmation(\/|\?|$)/.test(req.url)) return null
+  const gz = /\bgzip\b/.test(String(req.headers['accept-encoding'] || '')) ? 'gz' : 'id'
+  return `${req.headers['x-commerco-store-host']}|${gz}|${req.url}`
+}
+
+function serveCached(key, res) {
+  const hit = pageCache.get(key)
+  if (!hit || Date.now() - hit.at > PAGE_TTL) return false
+  res.writeHead(hit.status, { ...hit.headers, 'x-page-cache': 'HIT' })
+  res.end(hit.body)
+  return true
+}
+
+function captureForCache(key, res) {
+  const chunks = []
+  const toBuf = (c, enc) => Buffer.isBuffer(c) ? c : Buffer.from(c, typeof enc === 'string' ? enc : 'utf8')
+  const setHeader = res.setHeader.bind(res), write = res.write.bind(res), end = res.end.bind(res)
+  res.setHeader = (name, value) => setHeader(name, String(name).toLowerCase() === 'cache-control' ? EDGE_CACHE : value)
+  res.write = (c, enc, cb) => { if (c) chunks.push(toBuf(c, enc)); return write(c, enc, cb) }
+  res.end = (c, enc, cb) => {
+    if (c && typeof c !== 'function') chunks.push(toBuf(c, enc))
+    if (res.statusCode === 200 && !res.getHeader('set-cookie')) {
+      const headers = { ...res.getHeaders() }
+      delete headers.date
+      if (pageCache.size >= PAGE_MAX) pageCache.delete(pageCache.keys().next().value)
+      pageCache.set(key, { status: 200, headers, body: Buffer.concat(chunks), at: Date.now() })
+    }
+    return end(c, enc, cb)
+  }
+}
+
 app.prepare().then(() => {
   createServer(async (req, res) => {
     let redirect
     try { redirect = await rewriteCustomHost(req) } catch (e) { console.error('[rewrite]', e.message) }
     if (redirect) { res.writeHead(302, { Location: redirect }); return res.end() }
+    const key = pageCacheKey(req)
+    if (key) {
+      if (serveCached(key, res)) return
+      captureForCache(key, res)
+    }
     handle(req, res)
   }).listen(port, () => {
     console.log(`commerco ready on port ${port}`)
