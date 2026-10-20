@@ -27,7 +27,9 @@ async function resolveCustomHost(host: string, origin: string): Promise<string |
   if (cached && Date.now() - cached.at < HOST_TTL) return cached.slug
   let slug: string | null = null
   try {
-    const base = process.env.INTERNAL_ORIGIN ?? origin
+    // Behind Passenger the request origin is not reachable from inside the
+    // edge sandbox, so look up through the platform's own public URL.
+    const base = process.env.INTERNAL_ORIGIN ?? process.env.NEXT_PUBLIC_APP_URL ?? origin
     const res = await fetch(`${base}/api/internal/resolve-host?host=${encodeURIComponent(host)}`, { cache: 'no-store' })
     if (res.ok) slug = (await res.json()).slug ?? null
   } catch { slug = null }
@@ -37,6 +39,12 @@ async function resolveCustomHost(host: string, origin: string): Promise<string |
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Custom store hosts are resolved and rewritten in server.js (Node, direct DB);
+  // the edge sandbox cannot call back into this host on shared hosting.
+  if (request.headers.get('x-commerco-store-host')) {
+    return NextResponse.next({ request: { headers: request.headers } })
+  }
 
   // ── Custom domain serving: rewrite the host's paths onto the storefront ──
   const rawHost = (request.headers.get('host') ?? '').toLowerCase().split(':')[0]
