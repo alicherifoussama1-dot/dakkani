@@ -17,12 +17,13 @@ export default async function EditProductPage({ params }: { params: { id: string
   const { activeStore: store } = await getActiveStore(supabase, user.id)
   if (!store) return null
 
-  const [productRes, categoriesRes, warehousesRes, stockRes, sheetsRes] = await Promise.all([
+  const [productRes, categoriesRes, warehousesRes, stockRes, sheetsRes, domainRes] = await Promise.all([
     supabase.from('products').select('*').eq('id', params.id).eq('store_id', store.id).single(),
     supabase.from('categories').select('id, name, name_ar').eq('store_id', store.id).eq('is_active', true).order('name'),
     supabase.from('warehouses').select('id, name').eq('store_id', store.id).eq('is_active', true),
     supabase.from('warehouse_stock').select('warehouse_id, quantity, reserved, variant_key').eq('product_id', params.id),
     supabase.from('sheets').select('id, sheet_name, sheet_page_name, is_active').eq('store_id', store.id).eq('is_active', true),
+    supabase.from('domains').select('hostname').eq('store_id', store.id).eq('status', 'ssl_active').not('hostname', 'like', 'www.%').limit(1).maybeSingle(),
   ])
 
   if (!productRes.data) notFound()
@@ -40,6 +41,7 @@ export default async function EditProductPage({ params }: { params: { id: string
         product={productRes.data as any}
         stockData={stockRes.data ?? []}
         googleSheets={(sheetsRes.data ?? []).map((s: any) => ({ id: s.id, spreadsheet_name: s.sheet_name, worksheet_name: s.sheet_page_name, is_default: false }))}
+        storeDomain={domainRes.data?.hostname ?? null}
       />
     </div>
   )

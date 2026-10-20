@@ -10,10 +10,11 @@ export default async function NewProductPage() {
   const { activeStore: store } = await getActiveStore(supabase, user!.id)
   if (!store) return null
 
-  const [categoriesRes, warehousesRes, sheetsRes] = await Promise.all([
+  const [categoriesRes, warehousesRes, sheetsRes, domainRes] = await Promise.all([
     supabase.from('categories').select('id, name, name_ar').eq('store_id', store.id).eq('is_active', true).order('name'),
     supabase.from('warehouses').select('id, name').eq('store_id', store.id).eq('is_active', true),
     supabase.from('sheets').select('id, sheet_name, sheet_page_name, is_active').eq('store_id', store.id).eq('is_active', true),
+    supabase.from('domains').select('hostname').eq('store_id', store.id).eq('status', 'ssl_active').not('hostname', 'like', 'www.%').limit(1).maybeSingle(),
   ])
 
   return (
@@ -25,6 +26,7 @@ export default async function NewProductPage() {
         categories={categoriesRes.data ?? []}
         warehouses={warehousesRes.data ?? []}
         googleSheets={(sheetsRes.data ?? []).map((s: any) => ({ id: s.id, spreadsheet_name: s.sheet_name, worksheet_name: s.sheet_page_name, is_default: false }))}
+        storeDomain={domainRes.data?.hostname ?? null}
       />
     </div>
   )

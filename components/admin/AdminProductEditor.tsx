@@ -23,10 +23,17 @@ const variantGroupSchema = z.object({
   options: z.array(z.string().min(1, 'يجب ملء جميع قيم الخيارات')).min(1, 'يجب إضافة خيار واحد على الأقل للمتغير'),
 })
 
+// Labels the hosting uses for its own services (cPanel, mail…).
+const RESERVED_SUBDOMAINS = ['www', 'mail', 'ftp', 'cpanel', 'webmail', 'webdisk', 'whm', 'cpcalendars', 'cpcontacts', 'autodiscover', 'autoconfig', 'api', 'admin']
+
 const schema = z.object({
   name:             z.string().min(1, 'اسم المنتج بالفرنسية / الإنجليزية مطلوب'),
   name_ar:          z.string().optional(),
   slug:             z.string().min(1, 'رابط المنتج (Slug) مطلوب'),
+  subdomain:        z.string().trim().toLowerCase()
+    .regex(/^$|^[a-z0-9](?:[a-z0-9-]{0,40}[a-z0-9])?$/, 'النطاق الفرعي: حروف لاتينية صغيرة وأرقام وشرطة (-) فقط')
+    .refine(v => !RESERVED_SUBDOMAINS.includes(v), 'هذا الاسم محجوز، اختر اسماً آخر')
+    .optional(),
   description:      z.string().optional(),
   description_ar:   z.string().optional(),
   sku:              z.string().optional(),
@@ -74,6 +81,8 @@ interface Props {
   product?:    any
   stockData?:  StockRow[]
   googleSheets?: { id: string; spreadsheet_name: string; worksheet_name: string; is_default: boolean }[]
+  /** The store's active custom domain (afnane.store) — enables product subdomains. */
+  storeDomain?: string | null
 }
 type Tab = 'general' | 'pricing' | 'media' | 'variants' | 'inventory' | 'productpage' | 'checkout' | 'thankyou' | 'pixels' | 'tracking' | 'seo' | 'advanced'
 
@@ -169,6 +178,25 @@ const Toggle = memo(function Toggle({
         <div className="absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-[-20px] transition-transform" />
       </div>
     </label>
+  )
+})
+
+// ── Subdomain preview + provisioning status (isolated useWatch) ──
+const SubdomainPreview = memo(function SubdomainPreview({
+  control, storeDomain, savedSubdomain, savedStatus,
+}: { control: Control<FormData>; storeDomain: string; savedSubdomain: string | null; savedStatus: string | null }) {
+  const value = (useWatch({ control, name: 'subdomain' }) ?? '').trim().toLowerCase()
+  if (!value) return <p className="text-xs mt-1" style={{color:'var(--color-text-secondary)'}}>اختياري — مثال: roya ← يفتح المنتج مباشرة على roya.{storeDomain}</p>
+  const url = `https://${value}.${storeDomain}`
+  const status = value === savedSubdomain ? savedStatus : null
+  return (
+    <div className="flex items-center gap-2 text-xs mt-1 flex-wrap" dir="rtl">
+      <span className="font-mono" dir="ltr">{url}</span>
+      {status === 'active' && <a href={url} target="_blank" rel="noreferrer" className="text-green-600 font-semibold underline">✓ يعمل — فتح</a>}
+      {status === 'pending' && <span className="text-amber-600">⏳ قيد التجهيز (بضع دقائق)</span>}
+      {status === 'error' && <span className="text-red-500">⚠️ تعذّر التجهيز — تأكد من سجل DNS ‎*.{storeDomain}‎ ثم احفظ مجدداً</span>}
+      {!status && <span style={{color:'var(--color-text-secondary)'}}>يُجهَّز تلقائياً بعد الحفظ</span>}
+    </div>
   )
 })
 
@@ -562,7 +590,7 @@ const OrderRoutingSection = memo(function OrderRoutingSection({
 })
 
 export default function AdminProductEditor({
-  storeId, storePixels, categories, warehouses, product, stockData = [], googleSheets = [],
+  storeId, storePixels, categories, warehouses, product, stockData = [], googleSheets = [], storeDomain = null,
 }: Props) {
   const router = useRouter()
   const isEdit = !!product
@@ -591,6 +619,7 @@ export default function AdminProductEditor({
       name:             product?.name            ?? '',
       name_ar:          product?.name_ar         ?? '',
       slug:             product?.slug            ?? '',
+      subdomain:        product?.subdomain       ?? '',
       description:      product?.description     ?? '',
       description_ar:   product?.description_ar  ?? '',
       sku:              product?.sku             ?? '',
@@ -863,6 +892,12 @@ export default function AdminProductEditor({
       category_id: data.category_id || null,
       google_sheet_id: data.google_sheet_id || null,
     }
+    // Subdomain: only stores with a custom domain can use it. A new or changed
+    // label goes back to "pending" until the host provisioner confirms it.
+    const subdomain = storeDomain ? (data.subdomain || null) : (product?.subdomain ?? null)
+    payload.subdomain = subdomain
+    const subdomainChanged = subdomain !== (product?.subdomain ?? null)
+    if (subdomainChanged) payload.subdomain_status = subdomain ? 'pending' : null
 
     // Routing & description_image_url columns fallback check — retries saving by moving missing fields to attributes or removing them
     // When the abandoned columns (migration 029) are missing we still save the
@@ -960,8 +995,16 @@ export default function AdminProductEditor({
     }
 
     const { data: np, error: err } = await trySave(payload)
-    if (err || !np) { setError(err?.message ?? 'خطأ في الحفظ'); return }
+    if (err || !np) {
+      setError(/products_store_subdomain_key/.test(err?.message ?? '')
+        ? 'هذا النطاق الفرعي مستعمل لمنتج آخر في متجرك، اختر اسماً آخر'
+        : err?.message ?? 'خطأ في الحفظ')
+      return
+    }
     const productId = np.id
+    if (subdomain && (subdomainChanged || product?.subdomain_status !== 'active')) {
+      fetch('/api/products/subdomain', { method: 'POST' }).catch(() => {})
+    }
 
     if (productId && data.track_inventory !== false) {
       const activeWarehouseId = data.warehouse_id || warehouses[0]?.id
@@ -1058,6 +1101,25 @@ export default function AdminProductEditor({
               <input {...register('slug')} placeholder="cotton-shirt" className={IC} dir="ltr" />
               <SlugPreview control={control} setValue={setValue} />
               {errors.slug && <p className="text-red-500 text-xs mt-1">⚠️ {errors.slug.message}</p>}
+            </div>
+
+            <div>
+              <label className={LC}>النطاق الفرعي للمنتج 🌐</label>
+              {storeDomain ? (
+                <>
+                  <div className="flex items-center gap-1" dir="ltr">
+                    <input {...register('subdomain')} placeholder="roya" className={IC} dir="ltr" />
+                    <span className="text-sm font-mono whitespace-nowrap" style={{color:'var(--color-text-secondary)'}}>.{storeDomain}</span>
+                  </div>
+                  <SubdomainPreview control={control} storeDomain={storeDomain}
+                    savedSubdomain={product?.subdomain ?? null} savedStatus={product?.subdomain_status ?? null} />
+                  {errors.subdomain && <p className="text-red-500 text-xs mt-1">⚠️ {errors.subdomain.message}</p>}
+                </>
+              ) : (
+                <p className="text-xs" style={{color:'var(--color-text-secondary)'}}>
+                  اربط نطاقاً خاصاً بمتجرك أولاً (مثل afnane.store) لتتمكن من إعطاء كل منتج نطاقاً فرعياً.
+                </p>
+              )}
             </div>
 
             <TextArea label="الوصف بالعربية" name="description_ar" rows={3} placeholder="اكتب وصفاً مقنعاً للمنتج..." register={register} />
