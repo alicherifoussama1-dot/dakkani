@@ -18,10 +18,8 @@ export type OrderRouting = 'sheet_only' | 'confirmili_only' | 'both'
 // Service-role client: storefront customers are anonymous; routing needs
 // merchant rows that RLS protects. Key is server-only (never NEXT_PUBLIC_).
 function adminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) return null
-  return createClient(url, key, { auth: { persistSession: false } })
+  // Server-side DB access is direct (lib/db); no service key needed.
+  return createClient()
 }
 
 export async function resolveRouting(opts: {
