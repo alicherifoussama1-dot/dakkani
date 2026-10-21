@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Tajawal, Montserrat, Cairo, Reem_Kufi, Amiri, El_Messiri, IBM_Plex_Sans_Arabic } from 'next/font/google'
+import { Inter, Tajawal, Cairo, Reem_Kufi, Amiri, El_Messiri, IBM_Plex_Sans_Arabic } from 'next/font/google'
 // Commerco design system: tokens load BEFORE globals so the legacy :root
 // values keep winning global collisions (storefront stays pixel-identical);
 // the dashboard opts into the new system via the scoped .commerco-ds layer.
@@ -16,23 +16,20 @@ const reemKufi  = Reem_Kufi({ subsets: ['arabic','latin'], weight: ['400','500',
 const amiri     = Amiri({     subsets: ['arabic','latin'], weight: ['400','700'],             variable: '--font-amiri',     display: 'swap', preload: false })
 const elMessiri = El_Messiri({subsets: ['arabic','latin'], weight: ['400','500','600','700'], variable: '--font-messiri',   display: 'swap', preload: false })
 
+// Only Tajawal (the Arabic storefront/body font) is preloaded: every extra
+// preloaded weight is one more request competing with the page on a slow
+// mobile connection. Inter is fetched only where Latin text actually uses it.
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['300','400','500','600','700','800'],
+  weight: ['400','500','600','700','800'],
   variable: '--font-inter',
   display: 'swap',
+  preload: false,
 })
 const tajawal = Tajawal({
   subsets: ['arabic', 'latin'],
-  weight: ['300','400','500','700','800','900'],
+  weight: ['400','500','700','800','900'],
   variable: '--font-tajawal',
-  display: 'swap',
-})
-// Confirmili design system — Montserrat
-const montserrat = Montserrat({
-  subsets: ['latin'],
-  weight: ['400','500','600','700','800'],
-  variable: '--font-montserrat',
   display: 'swap',
 })
 // Commerco dashboard Arabic UI font (design system §Typography).
@@ -70,12 +67,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={`${inter.variable} ${tajawal.variable} ${montserrat.variable} ${plexArabic.variable} ${cairo.variable} ${reemKufi.variable} ${amiri.variable} ${elMessiri.variable}`} style={{ colorScheme: 'light' }}>
-      <head>
-        {/* Preconnect to Supabase storage for fast image loading (LCP) */}
-        <link rel="preconnect" href="https://airbzyeircmhzhwenxqb.supabase.co" />
-        <link rel="dns-prefetch" href="https://airbzyeircmhzhwenxqb.supabase.co" />
-      </head>
+    <html lang="ar" dir="rtl" className={`${inter.variable} ${tajawal.variable} ${plexArabic.variable} ${cairo.variable} ${reemKufi.variable} ${amiri.variable} ${elMessiri.variable}`} style={{ colorScheme: 'light' }}>
       <body className="min-h-screen overflow-x-hidden" style={{ fontFamily: 'var(--font-primary)', backgroundColor: '#FFFFFF', color: '#212529' }}>
         <ScrollProgress />
         {children}

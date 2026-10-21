@@ -36,6 +36,7 @@ export default function StorefrontLayout({ store, children }: Props) {
   const nav = [
     { label: 'الرئيسية', href: storeUrl },
     { label: 'المنتجات', href: `${storeUrl}/products` },
+    { label: 'تتبع طلبي', href: `${storeUrl}/track` },
   ]
 
   return (

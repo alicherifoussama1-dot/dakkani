@@ -15,7 +15,8 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  return { title: `المنتجات | ${params.storeSlug}` }
+  const { data: store } = await createPublicClient().from('stores').select('name').eq('slug', params.storeSlug).maybeSingle()
+  return { title: `المنتجات | ${store?.name ?? params.storeSlug}` }
 }
 
 export default async function CataloguePage({ params, searchParams }: Props) {

@@ -16,7 +16,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { data: store } = await supabase.from('stores').select('name, description_ar, logo_url').eq('slug', params.storeSlug).single()
   if (!store) return { title: 'متجر' }
   return {
-    title: store.name,
+    // absolute: a layout's title template does not apply to its own segment's page
+    title: { absolute: store.name },
     description: store.description_ar ?? `تسوق من ${store.name} — الدفع عند الاستلام لكل الجزائر`,
     openGraph: { title: store.name, images: store.logo_url ? [store.logo_url] : [] },
   }
