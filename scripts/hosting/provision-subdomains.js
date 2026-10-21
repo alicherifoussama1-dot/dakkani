@@ -32,10 +32,20 @@ const certFile = fqdn => path.join(home, '.acme-state', fqdn + '.crt')
 const certValid = fqdn => {
   try { sh('openssl', ['x509', '-in', certFile(fqdn), '-noout', '-checkend', String(RENEW_SECONDS)]); return true } catch { return false }
 }
+// SAN names of a PEM certificate (from a file, or as served for an SNI name).
+const sanOf = pem => (sh('openssl', ['x509', '-noout', '-ext', 'subjectAltName'], pem).match(/DNS:[^,\s]+/g) || []).map(s => s.slice(4))
+const covers = (sans, fqdn) => sans.includes(fqdn) || sans.includes('*.' + fqdn.slice(fqdn.indexOf('.') + 1))
 const certServed = fqdn => {
+  try { return covers(sanOf(sh('openssl', ['s_client', '-connect', '127.0.0.1:443', '-servername', fqdn], '')), fqdn) }
+  catch { return false }
+}
+// The shared wildcard certificate (issue-wildcard.js) covers every
+// <label>.commerco.store / <label>.afnane.store: installing it needs no issuance.
+const wildcardCovers = fqdn => {
   try {
-    const out = sh('openssl', ['s_client', '-connect', '127.0.0.1:443', '-servername', fqdn], '')
-    return out.includes(`CN = ${fqdn}`) || out.includes(`CN=${fqdn}`)
+    const pem = fs.readFileSync(path.join(home, '.acme-state', 'wildcard.crt'), 'utf8')
+    sh('openssl', ['x509', '-noout', '-checkend', '86400'], pem)
+    return covers(sanOf(pem), fqdn)
   } catch { return false }
 }
 
@@ -62,7 +72,9 @@ const certServed = fqdn => {
         if (!res.status) throw new Error(JSON.stringify(res.errors))
         existing.add(fqdn)
       }
-      if (!certValid(fqdn)) {
+      if (wildcardCovers(fqdn)) {
+        if (!certServed(fqdn)) sh(process.execPath, ['install-cert.js', 'wildcard', fqdn])
+      } else if (!certValid(fqdn)) {
         sh(process.execPath, ['issue-cert.js', fqdn])
         sh(process.execPath, ['install-cert.js', fqdn, fqdn])
       } else if (!certServed(fqdn)) {

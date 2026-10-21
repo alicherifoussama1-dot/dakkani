@@ -1,0 +1,7 @@
+0 2 * * * $HOME/commerco_cron.sh auto-blacklist
+0 3 * * * $HOME/commerco_cron.sh process-queue
+0 8 * * * $HOME/commerco_cron.sh sync-delivery-status
+17 4 1 * * $HOME/acme-tool/renew.sh
+30 5 * * * $HOME/acme-tool/ensure-ssl.sh
+*/10 * * * * $HOME/acme-tool/sync.sh
+*/5 * * * * /opt/alt/alt-nodejs20/root/usr/bin/node $HOME/acme-tool/provision-subdomains.js >> $HOME/logs/subdomains.log 2>&1
