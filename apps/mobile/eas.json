@@ -12,7 +12,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://dakkani.vercel.app",
+        "EXPO_PUBLIC_API_URL": "https://commerco.store",
         "EXPO_PUBLIC_SUPABASE_URL": "https://airbzyeircmhzhwenxqb.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpcmJ6eWVpcmNtaHpod2VueHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzU1MzAsImV4cCI6MjA5NDQ1MTUzMH0.AQnVBQJtDG2Mvos6YMDxqIo-0rwWXip-f6mhlUxPpmI"
       }
@@ -27,7 +27,7 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://dakkani.vercel.app",
+        "EXPO_PUBLIC_API_URL": "https://commerco.store",
         "EXPO_PUBLIC_SUPABASE_URL": "https://airbzyeircmhzhwenxqb.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpcmJ6eWVpcmNtaHpod2VueHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzU1MzAsImV4cCI6MjA5NDQ1MTUzMH0.AQnVBQJtDG2Mvos6YMDxqIo-0rwWXip-f6mhlUxPpmI"
       }
@@ -39,7 +39,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://dakkani.vercel.app",
+        "EXPO_PUBLIC_API_URL": "https://commerco.store",
         "EXPO_PUBLIC_SUPABASE_URL": "https://airbzyeircmhzhwenxqb.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpcmJ6eWVpcmNtaHpod2VueHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzU1MzAsImV4cCI6MjA5NDQ1MTUzMH0.AQnVBQJtDG2Mvos6YMDxqIo-0rwWXip-f6mhlUxPpmI"
       }
