@@ -47,11 +47,16 @@ export async function POST(req: Request, { params }: { params: { providerId: str
     const manual = new Set((manualRows ?? []).map((r: any) => r.wilaya_code))
     skippedManualCount = manual.size
 
+    // Couriers return a token amount (e.g. ZR: 10 DA) for wilayas they do not
+    // serve; below MIN_REAL_PRICE means "no service" → stored as 0 so the
+    // storefront never offers a 10 DA delivery.
+    const MIN_REAL_PRICE = 100
+    const real = (p: unknown) => { const n = Number(p) || 0; return n >= MIN_REAL_PRICE ? n : 0 }
     const payload = rates
       .filter(r => !manual.has(r.wilayaCode))
       .map(r => ({
         store_id: ctx.store.id, provider_id: provider.id, wilaya_code: r.wilayaCode,
-        home_price: r.homePrice, stopdesk_price: r.stopdeskPrice,
+        home_price: real(r.homePrice), stopdesk_price: real(r.stopdeskPrice),
         source: 'imported', updated_at: new Date().toISOString(),
       }))
 

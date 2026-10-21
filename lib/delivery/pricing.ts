@@ -44,8 +44,11 @@ export async function resolveDeclaredFee(opts: {
       a.from('delivery_declared_prices').select('home_price, stopdesk_price').eq('provider_id', providerId).eq('wilaya_code', code).maybeSingle(),
       a.from('delivery_real_prices').select('home_price, stopdesk_price').eq('provider_id', providerId).eq('wilaya_code', code).maybeSingle(),
     ])
-    if (dp) out.deliveryFee = deliveryType === 'stopdesk' ? Number(dp.stopdesk_price) : Number(dp.home_price)
-    out.realDeliveryFee = rp ? (deliveryType === 'stopdesk' ? Number(rp.stopdesk_price) : Number(rp.home_price)) : out.deliveryFee
+    // A 0 (= "no price") falls back to the wilaya's static fee — exactly what
+    // applyStoreDeliveryPrices shows the customer, so the charged fee matches.
+    const pick = (row: any) => Number(deliveryType === 'stopdesk' ? row?.stopdesk_price : row?.home_price) || 0
+    if (dp && pick(dp) > 0) out.deliveryFee = pick(dp)
+    out.realDeliveryFee = rp && pick(rp) > 0 ? pick(rp) : out.deliveryFee
     return out
   } catch {
     return out
