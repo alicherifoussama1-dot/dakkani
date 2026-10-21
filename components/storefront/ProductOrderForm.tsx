@@ -358,14 +358,16 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         }
         // Set short-lived same-site browser access gate cookie (1 hour)
         document.cookie = `ty_order=${json.order_id}; path=/; max-age=3600; SameSite=Lax`
-        // Redirect with a tiny delay to allow trackers to execute
+        // Redirect after a short delay so the pixels can send Purchase first.
         setTimeout(() => {
-          const isPlatform = window.location.hostname.includes('vercel.app') || window.location.hostname.includes('localhost') || window.location.hostname.includes('dakkani.com')
+          // Path-based storefront (commerco.store/store/<slug>/…) keeps the
+          // prefix; custom domains and store subdomains use root paths.
+          const isPlatform = window.location.pathname.startsWith('/store/')
           const redirectPath = isPlatform
             ? `/store/${store.slug}/order-confirmation?order=${json.order_id}`
             : `/order-confirmation?order=${json.order_id}`
           window.location.href = redirectPath
-        }, 150)
+        }, 400)
       } else {
         completingRef.current = false // failed — abandonment tracking resumes
         setSubmitError(json.error || genericErr)

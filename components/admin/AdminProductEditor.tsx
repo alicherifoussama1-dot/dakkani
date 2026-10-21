@@ -23,6 +23,10 @@ const variantGroupSchema = z.object({
   options: z.array(z.string().min(1, 'يجب ملء جميع قيم الخيارات')).min(1, 'يجب إضافة خيار واحد على الأقل للمتغير'),
 })
 
+// AI tools (description generator, background removal) are not part of this
+// private deployment; their API routes were removed.
+const AI_TOOLS = false
+
 // Labels the hosting uses for its own services (cPanel, mail…).
 const RESERVED_SUBDOMAINS = ['www', 'mail', 'ftp', 'cpanel', 'webmail', 'webdisk', 'whm', 'cpcalendars', 'cpcontacts', 'autodiscover', 'autoconfig', 'api', 'admin']
 
@@ -313,10 +317,10 @@ const ImageGallery = memo(function ImageGallery({
                     <ChevronUp className="w-3 h-3" />
                   </button>
                 )}
-                <button type="button" onClick={() => onRemoveBg(img, idx)} title="إزالة الخلفية" disabled={removingBg === img.url}
+                {AI_TOOLS && (<button type="button" onClick={() => onRemoveBg(img, idx)} title="إزالة الخلفية" disabled={removingBg === img.url}
                   className="p-1 bg-purple-500/60 hover:bg-purple-500/80 rounded-lg text-white text-xs">
                   {removingBg === img.url ? <Loader2 className="w-3 h-3 animate-spin" /> : '✂️'}
-                </button>
+                </button>)}
                 <button type="button" onClick={() => onRemove(idx)} className="p-1 bg-red-500/60 hover:bg-red-500/80 rounded-lg text-white">
                   <X className="w-3 h-3" />
                 </button>
@@ -1084,11 +1088,11 @@ export default function AdminProductEditor({
           <div className={CC}>
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-semibold text-sm" style={{color:"var(--color-text-primary)"}}>معلومات المنتج 📝</h3>
-              <button type="button" onClick={generateDescription} disabled={aiLoading}
+              {AI_TOOLS && (<button type="button" onClick={generateDescription} disabled={aiLoading}
                 className="flex items-center gap-1.5 text-xs bg-purple-50 text-purple-600 border border-purple-200 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition disabled:opacity-50">
                 {aiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                 ✨ توليد بالذكاء الاصطناعي
-              </button>
+              </button>)}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

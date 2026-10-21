@@ -520,31 +520,8 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
         }).catch(() => {})
       }
 
-      // 4. WhatsApp confirmation
-      fetch('/api/notifications/whatsapp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: data.phone,
-          orderNumber: newOrderNumber,
-          customerName: data.customer_name,
-          total: orderData.total,
-          storeName: store.name_ar ?? store.name,
-        }),
-      }).catch(() => {})
-
-      // 5. SMS confirmation
-      fetch('/api/notifications/sms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: data.phone,
-          orderNumber: newOrderNumber,
-          customerName: data.customer_name,
-          total: orderData.total,
-          storeName: store.name_ar ?? store.name,
-        }),
-      }).catch(() => {})
+      // (Customer WhatsApp/SMS confirmations relied on Twilio, which this
+      // deployment does not configure — the merchant confirms by phone.)
 
       // 6. Chargily redirect
       if (data.payment_method !== 'cod' && orderData.chargily_url) {

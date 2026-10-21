@@ -383,7 +383,10 @@ export async function POST(req: Request) {
         const metaR = resolveProductTracking(integrations, assignments).meta
         const integ = metaR?.enabled ? metaR.integration : null
         const pixelId = integ?.pixel_id
-        const token = (integ?.credentials as any)?.accessToken ?? process.env.META_ACCESS_TOKEN
+        // The tracking settings form stores the Meta token as `capiToken`
+        // (lib/tracking/registry.ts); `accessToken` is kept for older rows.
+        const creds = (integ?.credentials ?? {}) as Record<string, string | undefined>
+        const token = creds.capiToken || creds.accessToken || process.env.META_ACCESS_TOKEN
         if (!pixelId || !token) return
         const cookie = req.headers.get('cookie') ?? ''
         await sendMetaPurchase({

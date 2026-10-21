@@ -26,7 +26,6 @@ const TABS = [
   { id: 'whatsapp',   label: 'صفحة الشكر',       icon: MessageSquare },
   { id: 'notifs',     label: 'الإشعارات',         icon: Bell },
   { id: 'checkout',   label: 'صفحة الدفع',        icon: ShoppingCart },
-  { id: 'billing',    label: 'الاشتراك',          icon: CreditCard },
 ] as const
 type TabId = typeof TABS[number]['id']
 
@@ -908,30 +907,6 @@ export default function SettingsPageClient({ store, user, wilayas, storeHostname
         </div>
       )}
 
-      {/* ── BILLING ──────────────────────────────────────────── */}
-      {tab === 'billing' && (
-        <div className="space-y-4">
-          <div className="c-card" style={{
-            background: 'linear-gradient(135deg, var(--color-primary-50), var(--surface-raised))',
-            borderColor: 'var(--color-primary-200)',
-          }}>
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-semibold)', color: 'var(--text-primary)' }}>
-                  {store.name_ar ?? store.name}
-                </p>
-                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBlockStart: 4 }}>
-                  خطة <strong style={{ color: 'var(--color-primary-700)' }}>{store.plan === 'pro' ? 'Pro' : 'أساسي'}</strong>
-                </p>
-              </div>
-              <Link href="/billing/plans" className="c-btn c-btn--primary">ترقية الخطة</Link>
-            </div>
-          </div>
-          <Link href="/billing/history" className="c-btn c-btn--secondary" style={{ inlineSize: '100%' }}>
-            سجل الفواتير
-          </Link>
-        </div>
-      )}
     </div>
   )
 }

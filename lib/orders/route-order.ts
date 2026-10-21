@@ -36,11 +36,14 @@ export async function resolveRouting(opts: {
     ])
 
     const productRouting = product?.order_routing as string | undefined
-    const routing: OrderRouting =
-      (productRouting && productRouting !== 'inherit' ? productRouting : settings?.order_routing ?? 'confirmili_only') as OrderRouting
+    let routing: OrderRouting =
+      (productRouting && productRouting !== 'inherit' ? productRouting : settings?.order_routing ?? 'sheet_only') as OrderRouting
+    // Confirmili is not part of this deployment: an order routed only there
+    // would reach no one, so it goes to the Google Sheet instead.
+    if (routing === 'confirmili_only') routing = 'sheet_only'
 
     let sheetId: string | null = product?.google_sheet_id ?? null
-    if (routing !== 'confirmili_only' && !sheetId) {
+    if (!sheetId) {
       // Store default sheet via sheet_mapping (scoped to this store's sheets).
       const { data: maps } = await admin.from('sheet_mapping').select('sheet_id, sheets!inner(store_id)').eq('linked_to_type', 'default')
       sheetId = (maps ?? []).find((m: any) => m.sheets?.store_id === opts.storeId)?.sheet_id ?? null

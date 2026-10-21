@@ -60,7 +60,8 @@ export function initPlatformRuntime(): void {
         created_at: order.created_at,
         customer_name: order.customer_name,
         customer_phone: order.customer_phone,
-        wilaya_name: order.wilaya_name ?? order.wilaya ?? '',
+        // orders keep only wilaya_id: look the FRENCH name up like checkout does
+        wilaya_name: order.wilaya_name ?? (await client.from('wilayas').select('name_fr, name_ar').eq('id', order.wilaya_id).maybeSingle()).data?.name_fr ?? String(order.wilaya_id ?? ''),
         baladia: frCommune ?? null,
         address: order.address ?? null,
         delivery_type: order.delivery_type ?? null,
