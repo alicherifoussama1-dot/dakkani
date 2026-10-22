@@ -21,13 +21,17 @@ export async function executeSpec(spec: QuerySpec, scope: string[] = [], scopePa
     const meta = await getMeta()
     const c = compile(spec, meta, scope)
     const shift = (sql: string, base: number) => scopeParams.length ? sql.replace(/\$S(\d+)/g, (_, n) => `$${base + Number(n)}`) : sql
+    // Scope params only belong to statements that reference them ($S1…). INSERT/UPSERT
+    // don't embed the scope (rows are checked by checkWriteRows instead), and passing
+    // the extra param makes Postgres reject the bind ("supplies N+1 parameters").
+    const withScope = (sql: string, params: unknown[]) => /\$S\d/.test(sql) ? [...params, ...scopeParams] : params
     let count: number | null = null
     if (c.countSql) {
-      const r = await getPool().query(shift(c.countSql, c.countParams!.length), [...c.countParams!, ...scopeParams] as any[])
+      const r = await getPool().query(shift(c.countSql, c.countParams!.length), withScope(c.countSql, c.countParams!) as any[])
       count = r.rows[0]?.n ?? 0
     }
     if (spec.head) return { data: null, error: null, count, status: 200, statusText: 'OK' }
-    const res = await getPool().query(shift(c.sql, c.params.length), [...c.params, ...scopeParams] as any[])
+    const res = await getPool().query(shift(c.sql, c.params.length), withScope(c.sql, c.params) as any[])
     let rows: any[] = res.rows
     if (spec.action !== 'select' && spec.count) count = res.rowCount ?? rows.length
     if (spec.action !== 'select' && !c.returns) return { data: null, error: null, count, status: spec.action === 'insert' ? 201 : 204, statusText: 'OK' }
