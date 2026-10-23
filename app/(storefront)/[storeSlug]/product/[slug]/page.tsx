@@ -122,7 +122,9 @@ export default async function ProductPage({ params }: Props) {
     offers: {
       '@type': 'Offer',
       price: product.price, priceCurrency: 'DZD',
-      availability: totalStock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      // Untracked inventory means unlimited stock — don't advertise it as sold out
+      availability: (product.track_inventory === false || product.attributes?.track_inventory === false || totalStock > 0)
+        ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       seller: { '@type': 'Organization', name: store.name },
     },
     ...(avgRating && (reviewsRes.data?.length ?? 0) >= 2 ? {
