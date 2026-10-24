@@ -272,7 +272,8 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
     gallery: (
       <div>
         {/* Main image */}
-        <div className="relative group w-full aspect-[2/3] overflow-hidden rounded-3xl" style={{ background: IMG, border: `0.5px solid ${LINE}` }}>
+        {/* Capped on phones so the order form starts within the first screens */}
+        <div className="relative group w-full aspect-[4/5] max-h-[58vh] lg:max-h-none lg:aspect-[2/3] overflow-hidden rounded-3xl" style={{ background: IMG, border: `0.5px solid ${LINE}` }}>
           <div ref={galleryRef} onScroll={handleScroll}
             className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide" style={{ scrollBehavior: 'smooth' }}>
             {images.length > 0 ? images.map((img: any, idx: number) => (
@@ -328,7 +329,7 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
             {images.map((img: any, i: number) => (
               <button key={i} onClick={() => { setActiveImg(i); scrollToIdx(i) }}
                 aria-label={`${lang === 'ar' ? 'صورة' : 'Image'} ${i + 1}`} aria-current={i === activeImg}
-                className="w-[68px] h-[68px] shrink-0 rounded-2xl overflow-hidden relative transition-all"
+                className="w-[56px] h-[56px] lg:w-[68px] lg:h-[68px] shrink-0 rounded-2xl overflow-hidden relative transition-all"
                 style={{ background: IMG, boxShadow: i === activeImg ? `0 0 0 2px ${A}` : `0 0 0 0.5px ${LINE}` }}>
                 {img?.url && <Image src={img.url} alt="" fill sizes="68px" loading="lazy" className="object-cover" />}
               </button>
@@ -421,18 +422,9 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
         )}
       </>
     ) : null,
-    variants: variantGroups.length > 0
-      ? (
-        <div className="mt-5">
-          <ProductVariants
-            groups={variantGroups}
-            selected={selected}
-            onSelect={(g, o) => setSelected(prev => ({ ...prev, [g]: o }))}
-            isOptionAvailable={isOptionAvailable}
-          />
-        </div>
-      )
-      : null,
+    // Colour/size pickers live inside the order form (see buybox) so the shopper
+    // chooses and fills in one card; the standalone section stays empty.
+    variants: null,
     buybox: (
       <ProductOrderForm
         product={product}
@@ -441,6 +433,14 @@ export default function ProductPageClient({ product, store, wilayas, totalStock,
         variantKey={variantKey}
         variantLabel={variantLabel}
         lang={lang}
+        variantsSlot={variantGroups.length > 0 ? (
+          <ProductVariants
+            groups={variantGroups}
+            selected={selected}
+            onSelect={(g, o) => setSelected(prev => ({ ...prev, [g]: o }))}
+            isOptionAvailable={isOptionAvailable}
+          />
+        ) : null}
         maxQty={(product.track_inventory === false || product.attributes?.track_inventory === false) ? undefined : (currentStock > 0 ? currentStock : undefined)}
       />
     ),

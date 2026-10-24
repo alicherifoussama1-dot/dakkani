@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { useEffect, useState, useMemo, useRef, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -87,9 +87,12 @@ interface Props {
   product: Product; store: any; wilayas: Wilaya[]
   variantKey?: string; variantLabel?: string; maxQty?: number
   lang?: Locale
+  // Variant pickers rendered inside the form, right under its header, so the
+  // shopper picks colour/size and fills the form in one card.
+  variantsSlot?: ReactNode
 }
 
-export default function ProductOrderForm({ product, store, wilayas, variantKey, variantLabel, maxQty, lang = 'ar' }: Props) {
+export default function ProductOrderForm({ product, store, wilayas, variantKey, variantLabel, maxQty, lang = 'ar', variantsSlot }: Props) {
   const [submitted, setSubmitted] = useState(false)
   const [orderId, setOrderId] = useState('')
   const [submitError, setSubmitError] = useState('')
@@ -419,6 +422,8 @@ export default function ProductOrderForm({ product, store, wilayas, variantKey, 
         <span className="font-bold text-base flex items-center gap-2">🛒 {completeLabel}</span>
         <span className="text-[10.5px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap" style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.28)' }}>🔥 {lang === 'ar' ? 'عرض اليوم' : lang === 'fr' ? 'Offre du jour' : 'Today'}</span>
       </div>
+
+      {variantsSlot}
 
       {/* Delivery type — compact segmented control; active fill = product accent */}
       <div className={`flex gap-1 p-1 rounded-2xl ${stopdeskHidden ? '' : ''}`} style={{ background: DK.paper, border: `0.5px solid ${DK.line}` }}>
