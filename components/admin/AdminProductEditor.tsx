@@ -1047,7 +1047,15 @@ export default function AdminProductEditor({
       setError('حُفظ المنتج، لكن إعدادات «الطلبات المتروكة 🛒» لم تُحفَظ — نفّذ migration 029 في Supabase أولاً')
       return
     }
-    setTimeout(() => router.push('/products'), 800)
+    // On the shared host the RSC request behind router.push can 503 while the
+    // server is still busy with the save, leaving the editor stuck on screen.
+    // If the client navigation hasn't landed, fall back to a full page load.
+    setTimeout(() => {
+      router.push('/products')
+      setTimeout(() => {
+        if (window.location.pathname !== '/products') window.location.assign('/products')
+      }, 3000)
+    }, 800)
   }
 
   // ── Render ────────────────────────────────────────────────
