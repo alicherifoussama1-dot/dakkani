@@ -54,11 +54,16 @@ export default function OrdersPageClient({
   useEffect(() => { setSelected(new Set()) }, [initialOrders])
 
   // Manual send of the selected orders (incl. abandoned drafts) to Google Sheets.
+  // Orders already in the sheet are skipped here and again on the server.
   const sendToSheet = async () => {
-    const ids = Array.from(selected)
-    if (ids.length === 0) return
-    const alreadySent = initialOrders.filter(o => selected.has(o.id) && o.sheet_status === 'sent').length
-    if (alreadySent > 0 && !confirm(t('orders.sheet_confirm_resend', { count: alreadySent }))) return
+    if (selected.size === 0) return
+    const ids = initialOrders.filter(o => selected.has(o.id) && o.sheet_status !== 'sent').map(o => o.id)
+    const alreadySent = selected.size - ids.length
+    if (ids.length === 0) {
+      setToast(t('orders.sheet_all_sent'))
+      setTimeout(() => setToast(''), 5000)
+      return
+    }
     setSheetSending(true)
     try {
       const res = await fetch('/api/orders/sheet', {
@@ -66,12 +71,15 @@ export default function OrdersPageClient({
         body: JSON.stringify({ storeId, orderIds: ids }),
       })
       const d = await res.json().catch(() => ({}))
+      const skipped = alreadySent + (d.skipped ?? 0)
+      const skippedNote = skipped > 0 ? ` · ${t('orders.sheet_skipped', { count: skipped })}` : ''
       if (!res.ok) setToast(d.error ?? t('orders.sheet_err'))
       else if (d.failed > 0) {
         const firstError = (d.results as any[])?.find(r => !r.ok)?.error ?? ''
-        setToast(t('orders.sheet_partial', { sent: d.sent, failed: d.failed, error: firstError }))
+        setToast(t('orders.sheet_partial', { sent: d.sent, failed: d.failed, error: firstError }) + skippedNote)
       }
-      else setToast(t('orders.sheet_ok', { count: d.sent }))
+      else if (d.sent === 0) setToast(t('orders.sheet_all_sent'))
+      else setToast(t('orders.sheet_ok', { count: d.sent }) + skippedNote)
       if (res.ok) { setSelected(new Set()); router.refresh() }
     } catch { setToast(t('orders.sheet_err')) }
     finally { setSheetSending(false); setTimeout(() => setToast(''), 5000) }

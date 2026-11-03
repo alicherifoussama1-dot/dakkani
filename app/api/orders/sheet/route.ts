@@ -37,11 +37,13 @@ export async function POST(req: Request) {
   const { data: store } = await supabase.from('stores').select('id, owner_id').eq('id', body.storeId).single()
   if (!store || store.owner_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const results: { id: string; ok: boolean; error?: string }[] = []
+  // Orders already in the sheet are skipped, never sent twice.
+  const results: { id: string; ok: boolean; skipped?: boolean; error?: string }[] = []
   for (const id of Array.from(new Set(body.orderIds))) {
     const r = await resendOrderToSheet(id, body.storeId)
-    results.push(r.ok ? { id, ok: true } : { id, ok: false, error: r.error })
+    results.push(r.ok ? { id, ok: true, skipped: !!r.skipped } : { id, ok: false, error: r.error })
   }
-  const sent = results.filter(r => r.ok).length
-  return NextResponse.json({ sent, failed: results.length - sent, results })
+  const skipped = results.filter(r => r.ok && r.skipped).length
+  const sent = results.filter(r => r.ok && !r.skipped).length
+  return NextResponse.json({ sent, skipped, failed: results.length - sent - skipped, results })
 }

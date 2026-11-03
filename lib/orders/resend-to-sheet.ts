@@ -4,9 +4,11 @@
 // Used by the dashboard's bulk "send to Google Sheet" action, for orders and
 // abandoned drafts that never reached the sheet (toggle was off, sheet not
 // linked yet, a Sheets error…). It is an explicit merchant action, so it
-// ignores the per-product abandoned_send_to_sheet toggle and the existing
-// sheet_status: the merchant decides, and the UI confirms before re-sending
-// an order that is already marked 'sent'.
+// ignores the per-product abandoned_send_to_sheet toggle.
+//
+// An order already marked 'sent' is never sent again (that would add a
+// duplicate row): it is skipped. A claim on sheet_status (null|failed →
+// 'sent') makes that hold even when two sends of the same order overlap.
 //
 // Same sheet + row shape as the automatic push (route-order.ts), and the
 // result is recorded on orders.sheet_status / sheet_error.
@@ -15,7 +17,10 @@ import { createClient } from '@/lib/db/compat/supabase-js'
 import { formatCommuneFrench } from '@/lib/algeria-baladias'
 import { resolveRouting, pushOrderToSheet } from '@/lib/orders/route-order'
 
-export type ResendResult = { ok: true } | { ok: false; error: string }
+export type ResendResult =
+  | { ok: true; skipped?: false }
+  | { ok: true; skipped: true }
+  | { ok: false; error: string }
 
 export async function resendOrderToSheet(orderId: string, storeId: string): Promise<ResendResult> {
   const client = createClient()
@@ -24,14 +29,24 @@ export async function resendOrderToSheet(orderId: string, storeId: string): Prom
     .select('*, order_items(*)')
     .eq('id', orderId).eq('store_id', storeId).maybeSingle()
   if (!order) return { ok: false, error: 'الطلب غير موجود' }
+  if (order.sheet_status === 'sent') return { ok: true, skipped: true }
 
   const items = (order.order_items ?? []) as any[]
   const firstProductId = items[0]?.product_id ?? order.abandoned_product_id
   if (!firstProductId) return { ok: false, error: 'لا يوجد منتج في الطلب' }
 
+  const { sheetId } = await resolveRouting({ storeId, firstProductId }).catch(() => ({ sheetId: null }))
+  if (!sheetId) return { ok: false, error: 'لا يوجد Google Sheet مربوط بهذا المنتج أو بالمتجر' }
+
+  // ── Claim: only one caller ever pushes this order ──
+  const { data: claimed } = await client.from('orders')
+    .update({ sheet_status: 'sent' })
+    .eq('id', orderId).eq('store_id', storeId)
+    .or('sheet_status.is.null,sheet_status.eq.failed')
+    .select('id')
+  if (!claimed || claimed.length === 0) return { ok: true, skipped: true }
+
   try {
-    const { sheetId } = await resolveRouting({ storeId, firstProductId })
-    if (!sheetId) return { ok: false, error: 'لا يوجد Google Sheet مربوط بهذا المنتج أو بالمتجر' }
 
     let wilayaName = ''
     if (order.wilaya_id) {
@@ -72,14 +87,17 @@ export async function resendOrderToSheet(orderId: string, storeId: string): Prom
       })),
     })
 
+    // On failure, release the claim as 'failed' so the order can be sent again.
     await client.from('orders')
       .update(res.ok
-        ? { sheet_status: 'sent', sheet_error: null }
+        ? { sheet_error: null }
         : { sheet_status: 'failed', sheet_error: res.error.slice(0, 300) })
       .eq('id', orderId).eq('store_id', storeId)
       .then(() => {}, () => {})
     return res
   } catch (e) {
+    await client.from('orders').update({ sheet_status: 'failed', sheet_error: (e as Error).message.slice(0, 300) })
+      .eq('id', orderId).eq('store_id', storeId).then(() => {}, () => {})
     return { ok: false, error: (e as Error).message }
   }
 }
