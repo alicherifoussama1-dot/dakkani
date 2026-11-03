@@ -213,7 +213,7 @@ export async function POST(req: Request) {
     // The token identifies one checkout attempt, so this cannot mistake a
     // genuine second order for a retry the way a phone+total heuristic can.
     // This is the FAST path only: it closes the common case without touching
-    // the error path. The authority is the unique index (migration 033),
+    // the error path. The authority is the unique index (migration 034),
     // enforced at INSERT below, because two concurrent requests can both
     // reach this SELECT and both find nothing.
     if (data.checkout_token) {
@@ -452,7 +452,7 @@ export async function POST(req: Request) {
     }
     // Constraint rejection of 'duplicate' (migration 009 missing) → same row,
     // status 'new', duplicate flagged in the notes. Nothing else changes.
-    // Unique violation on (store_id, checkout_token) — migration 033. This is
+    // Unique violation on (store_id, checkout_token) — migration 034. This is
     // the case the SELECT above structurally cannot catch: two requests race,
     // both find nothing, both insert, and the database lets exactly one win.
     // The loser is not an error — it is the same checkout arriving twice, so
@@ -487,7 +487,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Column missing (migration 033 not applied yet) → retry without it, so
+    // Column missing (migration 034 not applied yet) → retry without it, so
     // deploying the code before the migration can never stop orders.
     // PostgREST reports an unknown insert column as PGRST204 "Could not find
     // the 'checkout_token' column of 'orders'", with "column" AFTER the name,

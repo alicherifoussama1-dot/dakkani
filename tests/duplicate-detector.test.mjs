@@ -395,7 +395,7 @@ describe('6. monitor diagnostics are complete and non-identifying', () => {
 describe('missing-column fallback matches the errors the database really returns', () => {
   const route = readFileSync('app/api/orders/route.ts', 'utf8')
   test('route recognises PGRST204 and 42703 for checkout_token', () => {
-    const block = route.slice(route.indexOf('Column missing (migration 033'), route.indexOf("finalStatus === 'duplicate' && insertRes.error.message"))
+    const block = route.slice(route.indexOf('Column missing (migration 034'), route.indexOf("finalStatus === 'duplicate' && insertRes.error.message"))
     assert.match(block, /PGRST204/)
     assert.match(block, /42703/)
   })
