@@ -148,6 +148,10 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const [hasProvider, setHasProvider] = useState(false)
   // Specific server-provided failure message (Arabic) shown under the CTA.
   const [serverError, setServerError] = useState('')
+  // Populated only when the server is in SOFT_BLOCK mode and judged this a
+  // strong duplicate. Dormant in the default MONITOR mode — the server never
+  // returns 409 there, so this stays null and the checkout is untouched.
+  const [dupPrompt, setDupPrompt] = useState<null | { existing_order_number: string; total: number }>(null)
 
   const { pixelId, tiktokId, trackPurchase, trackInitiateCheckout } = useOrderPixels(store, product, resolvedMetaPixelId)
 
@@ -263,6 +267,31 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
   const watchedBaladia = useWatch({ control, name: 'baladia' })
   const icFiredRef = useRef(false)
   const draftIdRef = useRef<string | null>(null)
+
+  // Identity of THIS checkout attempt. Generated once at mount and never
+  // regenerated, so every retry of the same attempt carries the same value
+  // and the server resolves them all to one order. A genuinely new checkout
+  // is a new mount, hence a new token and a new order.
+  //
+  // Deliberately not draft_id: that arrives asynchronously from the abandoned
+  // -checkout call and may never arrive at all (call fails, or the feature is
+  // off). A token that changes mid-attempt would let a retry through as a
+  // second order, which is the exact bug being fixed.
+  const checkoutTokenRef = useRef<string>(
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `ck_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`,
+  )
+
+  // Synchronous re-entry lock. submitState is React state, so the button's
+  // disabled attribute only applies after a re-render — a fast double-click
+  // can call onSubmit twice before that. A ref is set immediately.
+  const submitLockRef = useRef(false)
+
+  // Set only by the customer choosing أريد طلباً إضافياً. It rides with this
+  // attempt's checkout_token, so it authorises exactly one order and cannot
+  // be reused: a new attempt gets a new token and is judged again.
+  const dupOverrideRef = useRef(false)
   const completingRef = useRef(false)
   // PER-PRODUCT toggle («تحتسب») wins; store setting is the legacy fallback.
   const abandonedTrack = typeof (product as any)?.abandoned_count_conversion === 'boolean'
@@ -431,6 +460,11 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
 
   // ── Submit handler ────────────────────────────────────────────
   const onSubmit = async (data: FormData) => {
+    // Synchronous, before any await — the only guard a double-click cannot
+    // outrun. Released in the error branch so a genuine retry stays possible;
+    // on success the form unmounts into the confirmation view.
+    if (submitLockRef.current) return
+    submitLockRef.current = true
     setSubmitState('submitting')
     setServerError('')
     completingRef.current = true // suppress the abandonment beacon while submitting
@@ -443,7 +477,17 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
 
     try {
       // 1. Create order
+      //
+      // 45s abort. Without one the request hangs on a weak mobile connection
+      // until the browser gives up minutes later; the customer concludes it
+      // failed and submits again. Measured, that retry is the single largest
+      // source of duplicates (30 of 65 land 90s-5min after the first). The
+      // timeout bounds the wait, and checkout_token makes the retry harmless
+      // even when the first request did succeed server-side.
+      const abort = new AbortController()
+      const abortTimer = setTimeout(() => abort.abort(), 45_000)
       const orderRes = await fetch('/api/orders', {
+        signal: abort.signal,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -466,6 +510,8 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
           coupon_code: data.coupon_code,
           notes: data.notes,
           source: 'storefront',
+          checkout_token: checkoutTokenRef.current,
+          duplicate_override: dupOverrideRef.current || undefined,
           utm_source: new URLSearchParams(window.location.search).get('utm_source') ?? undefined,
           utm_medium: new URLSearchParams(window.location.search).get('utm_medium') ?? undefined,
           utm_campaign: new URLSearchParams(window.location.search).get('utm_campaign') ?? undefined,
@@ -473,7 +519,22 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
         }),
       })
 
+      clearTimeout(abortTimer) // response in — stop the abort from firing later
+
       const orderData = await orderRes.json().catch(() => ({}))
+      // SOFT_BLOCK verdict: not an error, a question. Release the lock so the
+      // customer's choice can submit, and show them their existing order.
+      if (orderRes.status === 409 && orderData?.duplicate_detected) {
+        setDupPrompt({
+          existing_order_number: String(orderData.existing_order_number ?? ''),
+          total: Number(orderData.total ?? 0),
+        })
+        submitLockRef.current = false
+        completingRef.current = false
+        setSubmitState('idle')
+        return
+      }
+
       if (!orderRes.ok || !orderData.success) {
         throw new Error(orderData.error ?? (lang === 'ar' ? 'حدث خطأ، أعد المحاولة' : lang === 'fr' ? 'Une erreur est survenue, réessayez' : 'An error occurred, please retry'))
       }
@@ -539,7 +600,23 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
     } catch (err) {
       console.error(err)
       completingRef.current = false // failed — abandonment tracking resumes
-      setServerError((err as Error)?.message ?? '')
+      // The 45s AbortController above rejects with an AbortError whose message
+      // is the browser's own English string. Before the timeout existed this
+      // branch was unreachable by timing out, so showing err.message raw was
+      // safe; now it would put "The user aborted a request" in front of a
+      // customer mid-checkout. Timeouts get the localized message; every other
+      // error keeps the exact behaviour it had.
+      const isTimeout = (err as Error)?.name === 'AbortError'
+      setServerError(
+        isTimeout
+          ? (lang === 'ar'
+              ? 'انتهت مهلة الاتصال. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.'
+              : lang === 'fr'
+                ? 'Délai de connexion dépassé. Vérifiez votre connexion et réessayez.'
+                : 'The connection timed out. Check your connection and try again.')
+          : ((err as Error)?.message ?? ''),
+      )
+      submitLockRef.current = false // failed — allow a real retry
       setSubmitState('error')
     }
   }
@@ -654,6 +731,41 @@ export default function CheckoutForm({ store, product, wilayas, initialQty, init
       {/* Pixel init */}
       {pixelId   && <MetaPixel   pixelId={pixelId} />}
       {tiktokId  && <TikTokPixel pixelId={tiktokId} />}
+
+      {/* Duplicate prompt — rendered only when the server asked (SOFT_BLOCK).
+          Never a technical error, never a silent block, never a fake success:
+          the customer is shown what already exists and decides. */}
+      {dupPrompt && (
+        <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4" role="alert">
+          <p className="font-semibold text-amber-900">
+            {lang === 'ar'
+              ? 'يبدو أن لديك طلباً مسجّلاً بنفس المنتج والمقاس بالفعل.'
+              : lang === 'fr'
+                ? 'Vous semblez avoir déjà une commande pour le même article et la même taille.'
+                : 'You appear to already have an order for the same item and size.'}
+          </p>
+          <p className="mt-1 text-sm text-amber-800">
+            {lang === 'ar' ? 'رقم الطلب: ' : lang === 'fr' ? 'Numéro de commande : ' : 'Order number: '}
+            {dupPrompt.existing_order_number} · {formatDZD(dupPrompt.total)}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded-lg bg-amber-600 px-4 py-2 text-white"
+              onClick={() => setDupPrompt(null)}
+            >
+              {lang === 'ar' ? 'هذا طلبي، شكراً' : lang === 'fr' ? 'C’est ma commande, merci' : "That's my order, thanks"}
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-amber-600 px-4 py-2 text-amber-900"
+              onClick={() => { dupOverrideRef.current = true; setDupPrompt(null); handleSubmit(onSubmit)() }}
+            >
+              {lang === 'ar' ? 'أريد طلباً إضافياً' : lang === 'fr' ? 'Je veux une commande supplémentaire' : 'I want an additional order'}
+            </button>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* ── LEFT: Form ──────────────────────────────────────────── */}
