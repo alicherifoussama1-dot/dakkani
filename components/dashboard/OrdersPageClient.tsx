@@ -9,7 +9,7 @@ import { useT, useRaw, useDir } from '@/lib/i18n/react'
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { RefreshCw, Plus, Search, Edit2, Download, Truck, Loader2, ShoppingCart } from 'lucide-react'
+import { RefreshCw, Plus, Search, Edit2, Download, Truck, Loader2, ShoppingCart, FileSpreadsheet } from 'lucide-react'
 import { formatDZD, formatDateShort } from '@/lib/utils/format'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -46,7 +46,36 @@ export default function OrdersPageClient({
   const [pp,      setPp]      = useState(perPage)
   const [shipping, setShipping] = useState<string | null>(null)
   const [toast,    setToast]    = useState('')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [sheetSending, setSheetSending] = useState(false)
   const debouncedSearch = useDebounce(search, 400)
+
+  // A new page / filter brings new rows: never act on rows no longer shown.
+  useEffect(() => { setSelected(new Set()) }, [initialOrders])
+
+  // Manual send of the selected orders (incl. abandoned drafts) to Google Sheets.
+  const sendToSheet = async () => {
+    const ids = Array.from(selected)
+    if (ids.length === 0) return
+    const alreadySent = initialOrders.filter(o => selected.has(o.id) && o.sheet_status === 'sent').length
+    if (alreadySent > 0 && !confirm(t('orders.sheet_confirm_resend', { count: alreadySent }))) return
+    setSheetSending(true)
+    try {
+      const res = await fetch('/api/orders/sheet', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storeId, orderIds: ids }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) setToast(d.error ?? t('orders.sheet_err'))
+      else if (d.failed > 0) {
+        const firstError = (d.results as any[])?.find(r => !r.ok)?.error ?? ''
+        setToast(t('orders.sheet_partial', { sent: d.sent, failed: d.failed, error: firstError }))
+      }
+      else setToast(t('orders.sheet_ok', { count: d.sent }))
+      if (res.ok) { setSelected(new Set()); router.refresh() }
+    } catch { setToast(t('orders.sheet_err')) }
+    finally { setSheetSending(false); setTimeout(() => setToast(''), 5000) }
+  }
 
   const sendToDelivery = async (orderId: string) => {
     setShipping(orderId)
@@ -149,6 +178,20 @@ export default function OrdersPageClient({
         </div>
       </div>
 
+      {/* ── Contextual bulk toolbar (appears on selection) ── */}
+      {selected.size > 0 && (
+        <div className="c-card mb-3 flex items-center gap-2 flex-wrap animate-fade-in" style={{ padding: 'var(--space-3)' }} role="toolbar">
+          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+            {selected.size} ✓
+          </span>
+          <span className="h-4 w-px" style={{ background: 'var(--border-default)' }} aria-hidden />
+          <button onClick={sendToSheet} disabled={sheetSending} className={`c-btn c-btn--primary c-btn--sm ${sheetSending ? 'is-loading' : ''}`}>
+            {!sheetSending && <FileSpreadsheet size={13} aria-hidden />}{t('orders.sheet_send', { count: selected.size })}
+          </button>
+          <button onClick={() => setSelected(new Set())} disabled={sheetSending} className="c-btn c-btn--ghost c-btn--sm ms-auto" aria-label={t('orders.sheet_clear')}>✕</button>
+        </div>
+      )}
+
       {/* ── Table / empty state ── */}
       {isEmpty ? (
         <div className="c-card" style={{ padding: 0 }}>
@@ -171,18 +214,52 @@ export default function OrdersPageClient({
           <table className="c-table">
             <thead>
               <tr>
+                <th style={{ inlineSize: 36 }}>
+                  <input type="checkbox"
+                    checked={initialOrders.length > 0 && initialOrders.every(o => selected.has(o.id))}
+                    onChange={e => setSelected(e.target.checked ? new Set(initialOrders.map(o => o.id)) : new Set())}
+                    className="w-4 h-4"
+                    style={{ accentColor: 'var(--interactive-primary)' }}
+                    aria-label={t('common.all')}
+                  />
+                </th>
                 {(raw('orders.cols') as string[] ?? []).map(h => <th key={h}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
-              {initialOrders.map(order => (
-                <tr key={order.id}>
+              {initialOrders.map(order => {
+                const isSel = selected.has(order.id)
+                return (
+                <tr key={order.id} className={isSel ? 'is-selected' : ''}>
+                  <td>
+                    <input type="checkbox" checked={isSel}
+                      onChange={e => {
+                        setSelected(prev => {
+                          const s = new Set(prev)
+                          e.target.checked ? s.add(order.id) : s.delete(order.id)
+                          return s
+                        })
+                      }}
+                      className="w-4 h-4" style={{ accentColor: 'var(--interactive-primary)' }}
+                      aria-label={`#${order.order_number}`}
+                    />
+                  </td>
                   <td>
                     <Link href={`/orders/${order.id}`} className="font-semibold text-xs hover:underline"
                       style={{ color: 'var(--text-link)', fontVariantNumeric: 'tabular-nums' }}>
                       #{order.order_number}
                     </Link>
                     <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{formatDateShort(order.created_at)}</p>
+                    {order.sheet_status === 'sent' && (
+                      <p className="text-[11px] mt-0.5 inline-flex items-center gap-1" style={{ color: 'var(--color-success-600)' }} title={t('orders.sheet_sent_badge')}>
+                        <FileSpreadsheet size={11} aria-hidden />{t('orders.sheet_sent_badge')}
+                      </p>
+                    )}
+                    {order.sheet_status === 'failed' && (
+                      <p className="text-[11px] mt-0.5 inline-flex items-center gap-1" style={{ color: 'var(--color-error-600)' }} title={order.sheet_error ?? ''}>
+                        <FileSpreadsheet size={11} aria-hidden />{t('orders.sheet_failed_badge')}
+                      </p>
+                    )}
                   </td>
                   <td>
                     <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{order.customer_name}</p>
@@ -232,7 +309,8 @@ export default function OrdersPageClient({
                     </Link>
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
 
